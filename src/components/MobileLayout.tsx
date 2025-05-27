@@ -10,7 +10,8 @@ import {
   Users, 
   Settings,
   LogOut,
-  Store 
+  Store,
+  FileText
 } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 
@@ -26,8 +27,9 @@ export const MobileLayout = ({ children }: MobileLayoutProps) => {
   const navigationItems = [
     { id: 'dashboard', label: 'Dashboard', icon: BarChart3, path: '/' },
     { id: 'products', label: 'Products', icon: Package, path: '/products' },
-    { id: 'scanner', label: 'Scan', icon: Scan, path: '/scanner' },
+    { id: 'scanner', label: 'Scanner', icon: Scan, path: '/scanner' },
     { id: 'sales', label: 'Sales', icon: ShoppingCart, path: '/sales' },
+    { id: 'reports', label: 'Reports', icon: FileText, path: '/reports' },
     ...(userProfile?.role === 'owner' ? [
       { id: 'users', label: 'Users', icon: Users, path: '/users' }
     ] : []),
@@ -54,7 +56,7 @@ export const MobileLayout = ({ children }: MobileLayoutProps) => {
             <div>
               <h1 className="text-lg font-bold text-gray-900">SmartShop POS</h1>
               <p className="text-xs text-gray-500">
-                {userProfile?.business_name || 'Your Business'}
+                {userProfile?.business_name || 'Your Business'} • {userProfile?.role}
               </p>
             </div>
           </div>
@@ -75,9 +77,9 @@ export const MobileLayout = ({ children }: MobileLayoutProps) => {
       </main>
 
       {/* Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-4 py-2">
-        <div className="grid grid-cols-4 gap-1">
-          {navigationItems.slice(0, 4).map((item) => (
+      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-2 py-2">
+        <div className="grid grid-cols-5 gap-1">
+          {navigationItems.slice(0, 5).map((item) => (
             <Button
               key={item.id}
               variant="ghost"
@@ -94,9 +96,9 @@ export const MobileLayout = ({ children }: MobileLayoutProps) => {
             </Button>
           ))}
         </div>
-        {navigationItems.length > 4 && (
+        {navigationItems.length > 5 && (
           <div className="grid grid-cols-2 gap-1 mt-1">
-            {navigationItems.slice(4).map((item) => (
+            {navigationItems.slice(5).map((item) => (
               <Button
                 key={item.id}
                 variant="ghost"
