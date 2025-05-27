@@ -5,47 +5,46 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
-import { Save, Download, Upload, User, Building, Lock, Database } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { User, Building, Mail, Lock, Download, Upload, Save } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
 export const SettingsPage = () => {
+  const { userProfile, user } = useAuth();
+  const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [profileData, setProfileData] = useState({
     full_name: '',
-    email: '',
-    business_name: ''
+    business_name: '',
+    email: ''
   });
   const [passwordData, setPasswordData] = useState({
     currentPassword: '',
     newPassword: '',
     confirmPassword: ''
   });
-  
-  const { userProfile, user } = useAuth();
-  const { toast } = useToast();
 
   useEffect(() => {
     if (userProfile) {
       setProfileData({
         full_name: userProfile.full_name || '',
-        email: userProfile.email || '',
-        business_name: userProfile.business_name || ''
+        business_name: userProfile.business_name || '',
+        email: userProfile.email || ''
       });
     }
   }, [userProfile]);
 
-  const handleUpdateProfile = async () => {
-    if (!profileData.full_name || !profileData.email) {
-      toast({
-        title: 'Error',
-        description: 'Please fill in all required fields',
-        variant: 'destructive'
-      });
-      return;
-    }
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map(word => word.charAt(0).toUpperCase())
+      .join('')
+      .slice(0, 2);
+  };
 
+  const handleProfileUpdate = async () => {
     setLoading(true);
     try {
       const { error } = await supabase
@@ -55,7 +54,7 @@ export const SettingsPage = () => {
           business_name: profileData.business_name,
           updated_at: new Date().toISOString()
         })
-        .eq('id', user?.id);
+        .eq('id', userProfile?.id);
 
       if (error) throw error;
 
@@ -75,29 +74,11 @@ export const SettingsPage = () => {
     }
   };
 
-  const handleChangePassword = async () => {
-    if (!passwordData.newPassword || !passwordData.confirmPassword) {
-      toast({
-        title: 'Error',
-        description: 'Please fill in all password fields',
-        variant: 'destructive'
-      });
-      return;
-    }
-
+  const handlePasswordUpdate = async () => {
     if (passwordData.newPassword !== passwordData.confirmPassword) {
       toast({
         title: 'Error',
         description: 'New passwords do not match',
-        variant: 'destructive'
-      });
-      return;
-    }
-
-    if (passwordData.newPassword.length < 6) {
-      toast({
-        title: 'Error',
-        description: 'Password must be at least 6 characters long',
         variant: 'destructive'
       });
       return;
@@ -133,39 +114,30 @@ export const SettingsPage = () => {
     }
   };
 
-  const handleExportData = async () => {
+  const exportData = async () => {
     try {
-      // Export products data
-      const { data: products, error: productsError } = await supabase
+      const { data: products } = await supabase
         .from('products')
-        .select('*');
+        .select('*')
+        .eq('owner_id', userProfile?.id);
 
-      if (productsError) throw productsError;
-
-      // Export sales data
-      const { data: sales, error: salesError } = await supabase
+      const { data: sales } = await supabase
         .from('sales')
-        .select(`
-          *,
-          sale_items (
-            *,
-            products (name)
-          )
-        `);
-
-      if (salesError) throw salesError;
+        .select('*, sale_items(*)')
+        .eq('owner_id', userProfile?.id);
 
       const exportData = {
+        business_info: profileData,
         products: products || [],
         sales: sales || [],
-        exported_at: new Date().toISOString(),
-        business_name: userProfile?.business_name
+        exported_at: new Date().toISOString()
       };
 
-      const dataStr = JSON.stringify(exportData, null, 2);
-      const dataBlob = new Blob([dataStr], { type: 'application/json' });
-      const url = URL.createObjectURL(dataBlob);
+      const blob = new Blob([JSON.stringify(exportData, null, 2)], {
+        type: 'application/json'
+      });
       
+      const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
       link.download = `smartshop-data-${new Date().toISOString().split('T')[0]}.json`;
@@ -192,10 +164,10 @@ export const SettingsPage = () => {
       {/* Header */}
       <div>
         <h2 className="text-2xl font-bold text-gray-900 mb-2">Settings</h2>
-        <p className="text-gray-600">Manage your account and business preferences</p>
+        <p className="text-gray-600">Manage your account and business settings</p>
       </div>
 
-      {/* Profile Settings */}
+      {/* Profile Information */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center">
@@ -203,74 +175,77 @@ export const SettingsPage = () => {
             Profile Information
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div>
-            <Label htmlFor="fullName">Full Name *</Label>
-            <Input
-              id="fullName"
-              value={profileData.full_name}
-              onChange={(e) => setProfileData({...profileData, full_name: e.target.value})}
-              placeholder="Your full name"
-            />
+        <CardContent className="space-y-6">
+          {/* Avatar Section */}
+          <div className="flex items-center space-x-4">
+            <Avatar className="h-16 w-16">
+              <AvatarImage src={userProfile?.avatar_url} />
+              <AvatarFallback className="bg-blue-100 text-blue-600 text-lg">
+                {profileData.full_name ? getInitials(profileData.full_name) : <User className="h-8 w-8" />}
+              </AvatarFallback>
+            </Avatar>
+            <div>
+              <h3 className="text-lg font-medium text-gray-900">
+                {profileData.full_name || 'Add your name'}
+              </h3>
+              <p className="text-sm text-gray-500 capitalize">
+                {userProfile?.role || 'owner'}
+              </p>
+              <p className="text-sm text-gray-500">
+                {profileData.business_name || 'Add your business name'}
+              </p>
+            </div>
           </div>
-          
-          <div>
-            <Label htmlFor="email">Email Address</Label>
-            <Input
-              id="email"
-              type="email"
-              value={profileData.email}
-              disabled
-              className="bg-gray-50"
-            />
-            <p className="text-xs text-gray-500 mt-1">Email cannot be changed</p>
+
+          <Separator />
+
+          {/* Profile Form */}
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="full_name">Full Name</Label>
+              <Input
+                id="full_name"
+                value={profileData.full_name}
+                onChange={(e) => setProfileData({...profileData, full_name: e.target.value})}
+                placeholder="Enter your full name"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="business_name">Business Name</Label>
+              <Input
+                id="business_name"
+                value={profileData.business_name}
+                onChange={(e) => setProfileData({...profileData, business_name: e.target.value})}
+                placeholder="Enter your business name"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                value={profileData.email}
+                disabled
+                className="bg-gray-50"
+              />
+              <p className="text-xs text-gray-500 mt-1">Email cannot be changed</p>
+            </div>
+
+            <Button 
+              onClick={handleProfileUpdate} 
+              disabled={loading}
+              className="w-full"
+            >
+              <Save className="h-4 w-4 mr-2" />
+              {loading ? 'Updating...' : 'Update Profile'}
+            </Button>
           </div>
-          
-          <div>
-            <Label htmlFor="businessName">Business Name</Label>
-            <Input
-              id="businessName"
-              value={profileData.business_name}
-              onChange={(e) => setProfileData({...profileData, business_name: e.target.value})}
-              placeholder="Your business name"
-            />
-          </div>
-          
-          <Button 
-            onClick={handleUpdateProfile}
-            disabled={loading}
-            className="bg-blue-600 hover:bg-blue-700"
-          >
-            <Save className="h-4 w-4 mr-2" />
-            {loading ? 'Saving...' : 'Save Changes'}
-          </Button>
         </CardContent>
       </Card>
 
-      {/* Business Settings */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center">
-            <Building className="h-5 w-5 mr-2" />
-            Business Information
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="bg-blue-50 p-4 rounded-lg">
-            <h4 className="font-medium text-blue-900 mb-2">Account Type</h4>
-            <p className="text-blue-700 capitalize">{userProfile?.role} Account</p>
-          </div>
-          
-          <div className="bg-gray-50 p-4 rounded-lg">
-            <h4 className="font-medium text-gray-900 mb-2">Account Created</h4>
-            <p className="text-gray-600">
-              {userProfile?.created_at ? new Date(userProfile.created_at).toLocaleDateString() : 'Unknown'}
-            </p>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Security Settings */}
+      {/* Password Security */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center">
@@ -280,31 +255,31 @@ export const SettingsPage = () => {
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
-            <Label htmlFor="newPassword">New Password</Label>
+            <Label htmlFor="new_password">New Password</Label>
             <Input
-              id="newPassword"
+              id="new_password"
               type="password"
               value={passwordData.newPassword}
               onChange={(e) => setPasswordData({...passwordData, newPassword: e.target.value})}
               placeholder="Enter new password"
             />
           </div>
-          
+
           <div>
-            <Label htmlFor="confirmPassword">Confirm New Password</Label>
+            <Label htmlFor="confirm_password">Confirm New Password</Label>
             <Input
-              id="confirmPassword"
+              id="confirm_password"
               type="password"
               value={passwordData.confirmPassword}
               onChange={(e) => setPasswordData({...passwordData, confirmPassword: e.target.value})}
               placeholder="Confirm new password"
             />
           </div>
-          
+
           <Button 
-            onClick={handleChangePassword}
-            disabled={loading}
-            variant="outline"
+            onClick={handlePasswordUpdate} 
+            disabled={loading || !passwordData.newPassword}
+            className="w-full"
           >
             <Lock className="h-4 w-4 mr-2" />
             {loading ? 'Updating...' : 'Update Password'}
@@ -316,36 +291,46 @@ export const SettingsPage = () => {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center">
-            <Database className="h-5 w-5 mr-2" />
+            <Building className="h-5 w-5 mr-2" />
             Data Management
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex flex-col sm:flex-row gap-3">
-            <Button 
-              onClick={handleExportData}
-              variant="outline"
-              className="flex-1"
-            >
-              <Download className="h-4 w-4 mr-2" />
-              Export Data
-            </Button>
-            
-            <Button 
-              variant="outline"
-              className="flex-1"
-              disabled
-            >
-              <Upload className="h-4 w-4 mr-2" />
-              Import Data (Coming Soon)
-            </Button>
-          </div>
+          <Button 
+            onClick={exportData}
+            variant="outline"
+            className="w-full"
+          >
+            <Download className="h-4 w-4 mr-2" />
+            Export All Data
+          </Button>
           
-          <div className="bg-yellow-50 p-4 rounded-lg">
-            <h4 className="font-medium text-yellow-900 mb-2">Data Backup</h4>
-            <p className="text-yellow-700 text-sm">
-              Export your data regularly to keep a backup of your products and sales information.
-            </p>
+          <div className="text-sm text-gray-500">
+            <p>• Export includes all products, sales, and business data</p>
+            <p>• Data is exported in JSON format for backup purposes</p>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Business Information */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Business Information</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="flex justify-between items-center">
+            <span className="text-sm text-gray-600">Role</span>
+            <span className="text-sm font-medium capitalize">{userProfile?.role}</span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-sm text-gray-600">Member Since</span>
+            <span className="text-sm font-medium">
+              {userProfile?.created_at ? new Date(userProfile.created_at).toLocaleDateString() : 'N/A'}
+            </span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-sm text-gray-600">User ID</span>
+            <span className="text-xs font-mono text-gray-500">{userProfile?.id?.slice(0, 8)}...</span>
           </div>
         </CardContent>
       </Card>

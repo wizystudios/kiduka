@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { 
@@ -9,7 +10,8 @@ import {
   Package, 
   ShoppingCart, 
   DollarSign, 
-  AlertTriangle 
+  AlertTriangle,
+  User
 } from 'lucide-react';
 
 export const Dashboard = () => {
@@ -73,6 +75,14 @@ export const Dashboard = () => {
     }
   };
 
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map(word => word.charAt(0).toUpperCase())
+      .join('')
+      .slice(0, 2);
+  };
+
   if (loading) {
     return (
       <div className="p-4 space-y-4">
@@ -116,13 +126,37 @@ export const Dashboard = () => {
 
   return (
     <div className="p-4 space-y-6">
-      {/* Welcome Message */}
-      <div className="bg-white rounded-lg p-4 shadow-sm">
-        <h2 className="text-xl font-bold text-gray-900">
-          Welcome back, {userProfile?.full_name}!
-        </h2>
-        <p className="text-gray-600">Here's what's happening in your store today.</p>
-      </div>
+      {/* Welcome Message with Profile */}
+      <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
+        <CardContent className="p-4">
+          <div className="flex items-center space-x-4">
+            <Avatar className="h-12 w-12">
+              <AvatarImage src={userProfile?.avatar_url} />
+              <AvatarFallback className="bg-blue-100 text-blue-600">
+                {userProfile?.full_name ? getInitials(userProfile.full_name) : <User className="h-6 w-6" />}
+              </AvatarFallback>
+            </Avatar>
+            <div className="flex-1">
+              <h2 className="text-xl font-bold text-gray-900">
+                Welcome back, {userProfile?.full_name || 'User'}!
+              </h2>
+              <div className="flex items-center space-x-2 mt-1">
+                <Badge variant="outline" className="text-blue-600 border-blue-200">
+                  {userProfile?.role || 'owner'}
+                </Badge>
+                {userProfile?.business_name && (
+                  <span className="text-sm text-gray-600">
+                    • {userProfile.business_name}
+                  </span>
+                )}
+              </div>
+              <p className="text-gray-600 text-sm mt-1">
+                Here's what's happening in your store today.
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Metrics Grid */}
       <div className="grid grid-cols-2 gap-4">

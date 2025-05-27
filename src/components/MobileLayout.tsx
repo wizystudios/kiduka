@@ -2,6 +2,7 @@
 import { ReactNode } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { 
   BarChart3, 
   Package, 
@@ -11,7 +12,8 @@ import {
   Settings,
   LogOut,
   Store,
-  FileText
+  FileText,
+  User
 } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 
@@ -44,6 +46,14 @@ export const MobileLayout = ({ children }: MobileLayoutProps) => {
     }
   };
 
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map(word => word.charAt(0).toUpperCase())
+      .join('')
+      .slice(0, 2);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* Header */}
@@ -56,18 +66,39 @@ export const MobileLayout = ({ children }: MobileLayoutProps) => {
             <div>
               <h1 className="text-lg font-bold text-gray-900">SmartShop POS</h1>
               <p className="text-xs text-gray-500">
-                {userProfile?.business_name || 'Your Business'} • {userProfile?.role}
+                {userProfile?.business_name || 'Your Business'}
               </p>
             </div>
           </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleSignOut}
-            className="text-gray-500"
-          >
-            <LogOut className="h-4 w-4" />
-          </Button>
+          
+          <div className="flex items-center space-x-3">
+            {/* User Profile Avatar */}
+            <div className="flex items-center space-x-2">
+              <Avatar className="h-8 w-8">
+                <AvatarImage src={userProfile?.avatar_url} />
+                <AvatarFallback className="bg-blue-100 text-blue-600 text-xs">
+                  {userProfile?.full_name ? getInitials(userProfile.full_name) : <User className="h-4 w-4" />}
+                </AvatarFallback>
+              </Avatar>
+              <div className="hidden sm:block">
+                <p className="text-sm font-medium text-gray-900">
+                  {userProfile?.full_name || 'User'}
+                </p>
+                <p className="text-xs text-gray-500 capitalize">
+                  {userProfile?.role || 'owner'}
+                </p>
+              </div>
+            </div>
+            
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleSignOut}
+              className="text-gray-500"
+            >
+              <LogOut className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       </header>
 
