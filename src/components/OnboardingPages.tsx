@@ -11,7 +11,7 @@ import {
   BarChart3, 
   ShoppingCart,
   ArrowRight,
-  Skip
+  X
 } from 'lucide-react';
 
 interface OnboardingPagesProps {
@@ -65,7 +65,7 @@ export const OnboardingPages = ({ onComplete }: OnboardingPagesProps) => {
       <div className="p-6 flex justify-between items-center">
         <KidukaLogo size="lg" animate />
         <Button variant="ghost" onClick={handleSkip} className="text-gray-500">
-          <Skip className="h-4 w-4 mr-2" />
+          <X className="h-4 w-4 mr-2" />
           Skip
         </Button>
       </div>
