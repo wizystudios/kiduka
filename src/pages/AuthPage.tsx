@@ -7,7 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Store, Mail, Lock, User, Building } from 'lucide-react';
+import { KidukaLogo } from '@/components/KidukaLogo';
+import { Mail, Lock, User, Building } from 'lucide-react';
 import { toast } from 'sonner';
 
 export const AuthPage = () => {
@@ -29,7 +30,7 @@ export const AuthPage = () => {
     setLoading(true);
     try {
       await signIn(email, password);
-      toast.success('Welcome back!');
+      toast.success('Welcome back to Kiduka!');
     } catch (error: any) {
       toast.error(error.message);
     } finally {
@@ -51,14 +52,14 @@ export const AuthPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-slate-100 flex items-center justify-center p-4">
-      <Card className="w-full max-w-md">
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-50 flex items-center justify-center p-4">
+      <Card className="w-full max-w-md shadow-xl border-0">
         <CardHeader className="text-center">
-          <div className="mx-auto w-12 h-12 bg-blue-600 rounded-lg flex items-center justify-center mb-4">
-            <Store className="h-6 w-6 text-white" />
+          <div className="flex justify-center mb-4">
+            <KidukaLogo size="lg" />
           </div>
-          <CardTitle className="text-2xl font-bold">SmartShop POS</CardTitle>
-          <p className="text-gray-600">Manage your inventory with ease</p>
+          <CardTitle className="text-2xl font-bold text-gray-900">Welcome to Kiduka</CardTitle>
+          <p className="text-gray-600">Your Smart POS Solution</p>
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="signin" className="w-full">
@@ -99,7 +100,7 @@ export const AuthPage = () => {
                     />
                   </div>
                 </div>
-                <Button type="submit" className="w-full" disabled={loading}>
+                <Button type="submit" className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700" disabled={loading}>
                   {loading ? 'Signing In...' : 'Sign In'}
                 </Button>
               </form>
@@ -166,7 +167,7 @@ export const AuthPage = () => {
                     />
                   </div>
                 </div>
-                <Button type="submit" className="w-full" disabled={loading}>
+                <Button type="submit" className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700" disabled={loading}>
                   {loading ? 'Creating Account...' : 'Sign Up'}
                 </Button>
               </form>

@@ -105,15 +105,15 @@ export const Dashboard = () => {
       title: "Total Products",
       value: metrics.totalProducts.toString(),
       icon: Package,
-      color: "text-blue-600",
-      bgColor: "bg-blue-50"
+      color: "text-purple-600",
+      bgColor: "bg-purple-50"
     },
     {
       title: "Transactions Today",
       value: metrics.todaysTransactions.toString(),
       icon: ShoppingCart,
-      color: "text-purple-600",
-      bgColor: "bg-purple-50"
+      color: "text-blue-600",
+      bgColor: "bg-blue-50"
     },
     {
       title: "Low Stock Alert",
@@ -127,12 +127,12 @@ export const Dashboard = () => {
   return (
     <div className="p-4 space-y-6">
       {/* Welcome Message with Profile */}
-      <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
+      <Card className="bg-gradient-to-r from-purple-50 to-blue-50 border-purple-200">
         <CardContent className="p-4">
           <div className="flex items-center space-x-4">
             <Avatar className="h-12 w-12">
               <AvatarImage src={userProfile?.avatar_url} />
-              <AvatarFallback className="bg-blue-100 text-blue-600">
+              <AvatarFallback className="bg-purple-100 text-purple-600">
                 {userProfile?.full_name ? getInitials(userProfile.full_name) : <User className="h-6 w-6" />}
               </AvatarFallback>
             </Avatar>
@@ -141,7 +141,7 @@ export const Dashboard = () => {
                 Welcome back, {userProfile?.full_name || 'User'}!
               </h2>
               <div className="flex items-center space-x-2 mt-1">
-                <Badge variant="outline" className="text-blue-600 border-blue-200">
+                <Badge variant="outline" className="text-purple-600 border-purple-200">
                   {userProfile?.role || 'owner'}
                 </Badge>
                 {userProfile?.business_name && (
@@ -214,17 +214,17 @@ export const Dashboard = () => {
         <CardContent className="grid grid-cols-2 gap-3">
           <button 
             onClick={() => window.location.href = '/products/add'}
-            className="p-4 bg-blue-50 rounded-lg text-left hover:bg-blue-100 transition-colors"
+            className="p-4 bg-purple-50 rounded-lg text-left hover:bg-purple-100 transition-colors"
           >
-            <Package className="h-6 w-6 text-blue-600 mb-2" />
+            <Package className="h-6 w-6 text-purple-600 mb-2" />
             <p className="font-medium text-gray-900">Add Product</p>
             <p className="text-sm text-gray-600">Add new inventory</p>
           </button>
           <button 
             onClick={() => window.location.href = '/scanner'}
-            className="p-4 bg-green-50 rounded-lg text-left hover:bg-green-100 transition-colors"
+            className="p-4 bg-blue-50 rounded-lg text-left hover:bg-blue-100 transition-colors"
           >
-            <ShoppingCart className="h-6 w-6 text-green-600 mb-2" />
+            <ShoppingCart className="h-6 w-6 text-blue-600 mb-2" />
             <p className="font-medium text-gray-900">New Sale</p>
             <p className="text-sm text-gray-600">Scan to sell</p>
           </button>

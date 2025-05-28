@@ -3,6 +3,7 @@ import { ReactNode } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { KidukaLogo } from '@/components/KidukaLogo';
 import { 
   BarChart3, 
   Package, 
@@ -11,7 +12,6 @@ import {
   Users, 
   Settings,
   LogOut,
-  Store,
   FileText,
   User
 } from 'lucide-react';
@@ -59,24 +59,14 @@ export const MobileLayout = ({ children }: MobileLayoutProps) => {
       {/* Header */}
       <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-50">
         <div className="px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <div className="bg-blue-600 p-2 rounded-lg">
-              <Store className="h-5 w-5 text-white" />
-            </div>
-            <div>
-              <h1 className="text-lg font-bold text-gray-900">SmartShop POS</h1>
-              <p className="text-xs text-gray-500">
-                {userProfile?.business_name || 'Your Business'}
-              </p>
-            </div>
-          </div>
+          <KidukaLogo size="sm" />
           
           <div className="flex items-center space-x-3">
             {/* User Profile Avatar */}
             <div className="flex items-center space-x-2">
               <Avatar className="h-8 w-8">
                 <AvatarImage src={userProfile?.avatar_url} />
-                <AvatarFallback className="bg-blue-100 text-blue-600 text-xs">
+                <AvatarFallback className="bg-purple-100 text-purple-600 text-xs">
                   {userProfile?.full_name ? getInitials(userProfile.full_name) : <User className="h-4 w-4" />}
                 </AvatarFallback>
               </Avatar>
@@ -118,7 +108,7 @@ export const MobileLayout = ({ children }: MobileLayoutProps) => {
               onClick={() => navigate(item.path)}
               className={`flex-col h-auto py-2 ${
                 location.pathname === item.path
-                  ? 'text-blue-600 bg-blue-50'
+                  ? 'text-purple-600 bg-purple-50'
                   : 'text-gray-600'
               }`}
             >
@@ -137,7 +127,7 @@ export const MobileLayout = ({ children }: MobileLayoutProps) => {
                 onClick={() => navigate(item.path)}
                 className={`flex-col h-auto py-2 ${
                   location.pathname === item.path
-                    ? 'text-blue-600 bg-blue-50'
+                    ? 'text-purple-600 bg-purple-50'
                     : 'text-gray-600'
                 }`}
               >
