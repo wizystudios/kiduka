@@ -1,5 +1,5 @@
 
-import { Store } from 'lucide-react';
+import { ShoppingBag } from 'lucide-react';
 
 interface KidukaLogoProps {
   size?: 'sm' | 'md' | 'lg' | 'xl';
@@ -24,15 +24,24 @@ export const KidukaLogo = ({ size = 'md', showText = true, animate = false }: Ki
 
   return (
     <div className="flex items-center space-x-3">
-      <div className={`bg-gradient-to-br from-purple-600 via-blue-600 to-indigo-700 p-2 rounded-xl shadow-lg ${animate ? 'animate-pulse' : ''}`}>
-        <Store className={`${sizeClasses[size]} text-white`} />
+      {/* Unique Kiduka Logo Design */}
+      <div className={`relative ${animate ? 'animate-pulse' : ''}`}>
+        <div className="bg-gradient-to-br from-emerald-500 via-blue-500 to-purple-600 p-3 rounded-2xl shadow-lg transform rotate-12">
+          <div className="bg-white p-1 rounded-lg transform -rotate-12">
+            <ShoppingBag className={`${sizeClasses[size]} text-emerald-600`} />
+          </div>
+        </div>
+        {/* Accent dots */}
+        <div className="absolute -top-1 -right-1 w-3 h-3 bg-yellow-400 rounded-full animate-bounce"></div>
+        <div className="absolute -bottom-1 -left-1 w-2 h-2 bg-pink-400 rounded-full animate-pulse"></div>
       </div>
+      
       {showText && (
         <div>
-          <h1 className={`${textSizeClasses[size]} font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent`}>
+          <h1 className={`${textSizeClasses[size]} font-black bg-gradient-to-r from-emerald-600 via-blue-600 to-purple-600 bg-clip-text text-transparent tracking-tight`}>
             Kiduka
           </h1>
-          <p className="text-xs text-gray-500">Smart POS System</p>
+          <p className="text-xs text-gray-500 font-medium">Smart Business</p>
         </div>
       )}
     </div>

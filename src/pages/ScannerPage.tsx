@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,6 +7,7 @@ import { Camera, Search, Plus, Minus, ShoppingCart } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
+import { ReceiptPrinter } from '@/components/ReceiptPrinter';
 
 interface Product {
   id: string;
@@ -27,6 +27,12 @@ export const ScannerPage = () => {
   const [scannedProduct, setScannedProduct] = useState<Product | null>(null);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(false);
+  const [showReceipt, setShowReceipt] = useState(false);
+  const [completedSale, setCompletedSale] = useState<{
+    id: string;
+    items: any[];
+    total: number;
+  } | null>(null);
   const { toast } = useToast();
   const { userProfile } = useAuth();
 
@@ -162,11 +168,26 @@ export const ScannerPage = () => {
 
       if (itemsError) throw itemsError;
 
+      // Prepare receipt data
+      const receiptItems = cart.map(item => ({
+        name: item.name,
+        quantity: item.quantity,
+        price: item.price,
+        total: item.price * item.quantity
+      }));
+
+      setCompletedSale({
+        id: sale.id.slice(0, 8),
+        items: receiptItems,
+        total: parseFloat(getTotalAmount())
+      });
+
       toast({
         title: 'Sale Completed!',
         description: `Total: $${getTotalAmount()}`
       });
       
+      setShowReceipt(true);
       setCart([]);
       setScannedProduct(null);
       setManualBarcode('');
@@ -182,12 +203,39 @@ export const ScannerPage = () => {
     }
   };
 
+  const handlePrintComplete = () => {
+    setShowReceipt(false);
+    setCompletedSale(null);
+  };
+
   return (
     <div className="p-4 space-y-6">
       <div>
         <h2 className="text-2xl font-bold text-gray-900 mb-2">Barcode Scanner</h2>
         <p className="text-gray-600">Scan or search products to add to sale</p>
       </div>
+
+      {/* Receipt Modal */}
+      {showReceipt && completedSale && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg p-6 max-w-sm w-full">
+            <h3 className="text-lg font-bold mb-4 text-center">Sale Complete!</h3>
+            <ReceiptPrinter
+              items={completedSale.items}
+              total={completedSale.total}
+              transactionId={completedSale.id}
+              onPrint={handlePrintComplete}
+            />
+            <Button 
+              onClick={handlePrintComplete}
+              variant="outline"
+              className="w-full mt-4"
+            >
+              Close
+            </Button>
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Scanner Section */}
