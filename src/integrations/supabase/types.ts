@@ -9,12 +9,74 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      customers: {
+        Row: {
+          address: string | null
+          created_at: string | null
+          email: string | null
+          id: string
+          loyalty_points: number | null
+          name: string
+          phone: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          address?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          loyalty_points?: number | null
+          name: string
+          phone?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          address?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          loyalty_points?: number | null
+          name?: string
+          phone?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      discounts: {
+        Row: {
+          active: boolean | null
+          code: string
+          created_at: string | null
+          id: string
+          type: string
+          value: number
+        }
+        Insert: {
+          active?: boolean | null
+          code: string
+          created_at?: string | null
+          id?: string
+          type: string
+          value: number
+        }
+        Update: {
+          active?: boolean | null
+          code?: string
+          created_at?: string | null
+          id?: string
+          type?: string
+          value?: number
+        }
+        Relationships: []
+      }
       products: {
         Row: {
           barcode: string | null
           category: string | null
+          cost_price: number | null
           created_at: string | null
           description: string | null
+          generated_barcode: boolean | null
           id: string
           image_url: string | null
           low_stock_threshold: number | null
@@ -27,8 +89,10 @@ export type Database = {
         Insert: {
           barcode?: string | null
           category?: string | null
+          cost_price?: number | null
           created_at?: string | null
           description?: string | null
+          generated_barcode?: boolean | null
           id?: string
           image_url?: string | null
           low_stock_threshold?: number | null
@@ -41,8 +105,10 @@ export type Database = {
         Update: {
           barcode?: string | null
           category?: string | null
+          cost_price?: number | null
           created_at?: string | null
           description?: string | null
+          generated_barcode?: boolean | null
           id?: string
           image_url?: string | null
           low_stock_threshold?: number | null
@@ -138,25 +204,37 @@ export type Database = {
         Row: {
           cashier_id: string | null
           created_at: string | null
+          customer_id: string | null
+          discount_amount: number | null
+          discount_id: string | null
           id: string
           owner_id: string
           payment_method: string | null
+          tax_amount: number | null
           total_amount: number
         }
         Insert: {
           cashier_id?: string | null
           created_at?: string | null
+          customer_id?: string | null
+          discount_amount?: number | null
+          discount_id?: string | null
           id?: string
           owner_id: string
           payment_method?: string | null
+          tax_amount?: number | null
           total_amount?: number
         }
         Update: {
           cashier_id?: string | null
           created_at?: string | null
+          customer_id?: string | null
+          discount_amount?: number | null
+          discount_id?: string | null
           id?: string
           owner_id?: string
           payment_method?: string | null
+          tax_amount?: number | null
           total_amount?: number
         }
         Relationships: [
@@ -168,6 +246,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "sales_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_discount_id_fkey"
+            columns: ["discount_id"]
+            isOneToOne: false
+            referencedRelation: "discounts"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "sales_owner_id_fkey"
             columns: ["owner_id"]
             isOneToOne: false
@@ -176,12 +268,51 @@ export type Database = {
           },
         ]
       }
+      settings: {
+        Row: {
+          business_name: string | null
+          created_at: string | null
+          currency: string | null
+          enable_notifications: boolean | null
+          id: string
+          owner_id: string
+          receipt_footer: string | null
+          tax_rate: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          business_name?: string | null
+          created_at?: string | null
+          currency?: string | null
+          enable_notifications?: boolean | null
+          id?: string
+          owner_id: string
+          receipt_footer?: string | null
+          tax_rate?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          business_name?: string | null
+          created_at?: string | null
+          currency?: string | null
+          enable_notifications?: boolean | null
+          id?: string
+          owner_id?: string
+          receipt_footer?: string | null
+          tax_rate?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      generate_barcode_number: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
     }
     Enums: {
       [_ in never]: never

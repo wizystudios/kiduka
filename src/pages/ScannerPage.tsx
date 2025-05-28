@@ -8,6 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { ReceiptPrinter } from '@/components/ReceiptPrinter';
+import { CameraScanner } from '@/components/CameraScanner';
 
 interface Product {
   id: string;
@@ -28,6 +29,7 @@ export const ScannerPage = () => {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [showReceipt, setShowReceipt] = useState(false);
+  const [showCamera, setShowCamera] = useState(false);
   const [completedSale, setCompletedSale] = useState<{
     id: string;
     items: any[];
@@ -72,6 +74,12 @@ export const ScannerPage = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleCameraScan = (barcode: string) => {
+    setManualBarcode(barcode);
+    setShowCamera(false);
+    handleSearchProduct(barcode);
   };
 
   const addToCart = (product: Product) => {
@@ -139,7 +147,6 @@ export const ScannerPage = () => {
 
     setLoading(true);
     try {
-      // Create sale record
       const { data: sale, error: saleError } = await supabase
         .from('sales')
         .insert({
@@ -153,7 +160,6 @@ export const ScannerPage = () => {
 
       if (saleError) throw saleError;
 
-      // Create sale items
       const saleItems = cart.map(item => ({
         sale_id: sale.id,
         product_id: item.id,
@@ -168,7 +174,6 @@ export const ScannerPage = () => {
 
       if (itemsError) throw itemsError;
 
-      // Prepare receipt data
       const receiptItems = cart.map(item => ({
         name: item.name,
         quantity: item.quantity,
@@ -215,6 +220,13 @@ export const ScannerPage = () => {
         <p className="text-gray-600">Scan or search products to add to sale</p>
       </div>
 
+      {/* Camera Scanner Component */}
+      <CameraScanner
+        isOpen={showCamera}
+        onScan={handleCameraScan}
+        onClose={() => setShowCamera(false)}
+      />
+
       {/* Receipt Modal */}
       {showReceipt && completedSale && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -255,14 +267,22 @@ export const ScannerPage = () => {
                   onChange={(e) => setManualBarcode(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && handleSearchProduct(manualBarcode)}
                 />
-                <Button 
-                  onClick={() => handleSearchProduct(manualBarcode)}
-                  className="w-full"
-                  disabled={!manualBarcode || loading}
-                >
-                  <Search className="h-4 w-4 mr-2" />
-                  {loading ? 'Searching...' : 'Search Product'}
-                </Button>
+                <div className="flex gap-2">
+                  <Button 
+                    onClick={() => handleSearchProduct(manualBarcode)}
+                    className="flex-1"
+                    disabled={!manualBarcode || loading}
+                  >
+                    <Search className="h-4 w-4 mr-2" />
+                    {loading ? 'Searching...' : 'Search Product'}
+                  </Button>
+                  <Button 
+                    onClick={() => setShowCamera(true)}
+                    variant="outline"
+                  >
+                    <Camera className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
             </CardContent>
           </Card>
