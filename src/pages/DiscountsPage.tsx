@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -47,7 +46,14 @@ export const DiscountsPage = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setDiscounts(data || []);
+      
+      // Type assertion to fix the type mismatch
+      const typedDiscounts = (data || []).map(discount => ({
+        ...discount,
+        type: discount.type as 'percentage' | 'fixed'
+      }));
+      
+      setDiscounts(typedDiscounts);
     } catch (error) {
       console.error('Error fetching discounts:', error);
       toast({

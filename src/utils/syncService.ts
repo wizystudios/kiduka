@@ -39,6 +39,13 @@ class SyncService {
     
     for (const sale of unsyncedSales) {
       try {
+        // Get current user profile for owner_id
+        const { data: profile } = await supabase.auth.getUser();
+        if (!profile.user) {
+          console.error('No authenticated user found for sync');
+          continue;
+        }
+
         // Insert sale
         const { data: saleData, error: saleError } = await supabase
           .from('sales')
@@ -49,6 +56,7 @@ class SyncService {
             discount_id: sale.discount_id,
             discount_amount: sale.discount_amount,
             tax_amount: sale.tax_amount,
+            owner_id: profile.user.id,
             created_at: sale.created_at
           })
           .select()

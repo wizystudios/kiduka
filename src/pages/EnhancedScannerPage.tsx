@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { QrCode, Plus, Minus, ShoppingCart, Trash2, User, Percent, Calculator } from 'lucide-react';
 import { BarcodeScanner } from '@/components/BarcodeScanner';
 import { supabase } from '@/integrations/supabase/client';
@@ -80,7 +80,14 @@ export const EnhancedScannerPage = () => {
         .single();
 
       setCustomers(customersData || []);
-      setDiscounts(discountsData || []);
+      
+      // Type assertion to fix the type mismatch
+      const typedDiscounts = (discountsData || []).map(discount => ({
+        ...discount,
+        type: discount.type as 'percentage' | 'fixed'
+      }));
+      setDiscounts(typedDiscounts);
+      
       setTaxRate(settingsData?.tax_rate || 0);
     } catch (error) {
       console.error('Error fetching initial data:', error);
@@ -541,7 +548,19 @@ export const EnhancedScannerPage = () => {
           <DialogHeader>
             <DialogTitle>Scan Product Barcode</DialogTitle>
           </DialogHeader>
-          <BarcodeScanner onScan={handleBarcodeScanned} />
+          <div className="py-4">
+            <BarcodeScanner />
+            <div className="mt-4 text-center">
+              <p className="text-sm text-gray-600">Point your camera at a barcode to scan</p>
+              <Button 
+                variant="outline" 
+                className="mt-2"
+                onClick={() => setShowScanner(false)}
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
