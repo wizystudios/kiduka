@@ -1,65 +1,97 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Search, Download, Eye, DollarSign } from "lucide-react";
+import { Calendar, Search, Download, Eye, DollarSign, Receipt } from "lucide-react";
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
+import { useToast } from '@/hooks/use-toast';
+
+interface Sale {
+  id: string;
+  total_amount: number;
+  payment_method: string;
+  created_at: string;
+  sale_items: Array<{
+    id: string;
+    quantity: number;
+    unit_price: number;
+    total_price: number;
+    products: {
+      name: string;
+    };
+  }>;
+}
 
 export const SalesHistory = () => {
+  const { userProfile } = useAuth();
+  const { toast } = useToast();
+  const [sales, setSales] = useState<Sale[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedPeriod, setSelectedPeriod] = useState("today");
+  const [loading, setLoading] = useState(true);
 
-  const mockSales = [
-    {
-      id: "TXN001",
-      date: "2024-01-15 14:32",
-      items: [
-        { name: "Wireless Earbuds", quantity: 1, price: 79.99 },
-        { name: "USB Cable", quantity: 2, price: 12.99 }
-      ],
-      total: 105.97,
-      status: "completed"
-    },
-    {
-      id: "TXN002", 
-      date: "2024-01-15 13:45",
-      items: [
-        { name: "Smartphone Case", quantity: 1, price: 24.99 }
-      ],
-      total: 24.99,
-      status: "completed"
-    },
-    {
-      id: "TXN003",
-      date: "2024-01-15 12:18",
-      items: [
-        { name: "Bluetooth Speaker", quantity: 1, price: 129.99 },
-        { name: "Wireless Earbuds", quantity: 1, price: 79.99 }
-      ],
-      total: 209.98,
-      status: "completed"
-    },
-    {
-      id: "TXN004",
-      date: "2024-01-15 11:30",
-      items: [
-        { name: "USB Cable", quantity: 3, price: 12.99 }
-      ],
-      total: 38.97,
-      status: "refunded"
-    },
-    {
-      id: "TXN005",
-      date: "2024-01-15 10:22",
-      items: [
-        { name: "Smartphone Case", quantity: 2, price: 24.99 },
-        { name: "Wireless Earbuds", quantity: 1, price: 79.99 }
-      ],
-      total: 129.97,
-      status: "completed"
+  useEffect(() => {
+    if (userProfile) {
+      fetchSales();
     }
-  ];
+  }, [userProfile, selectedPeriod]);
+
+  const fetchSales = async () => {
+    if (!userProfile) return;
+
+    setLoading(true);
+    try {
+      let query = supabase
+        .from('sales')
+        .select(`
+          id,
+          total_amount,
+          payment_method,
+          created_at,
+          sale_items (
+            id,
+            quantity,
+            unit_price,
+            total_price,
+            products (
+              name
+            )
+          )
+        `)
+        .eq('owner_id', userProfile.id)
+        .order('created_at', { ascending: false });
+
+      // Filter by period
+      const now = new Date();
+      if (selectedPeriod === 'today') {
+        const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        query = query.gte('created_at', startOfDay.toISOString());
+      } else if (selectedPeriod === 'week') {
+        const startOfWeek = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        query = query.gte('created_at', startOfWeek.toISOString());
+      } else if (selectedPeriod === 'month') {
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        query = query.gte('created_at', startOfMonth.toISOString());
+      }
+
+      const { data, error } = await query;
+
+      if (error) throw error;
+      setSales(data || []);
+    } catch (error) {
+      console.error('Error fetching sales:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to load sales history',
+        variant: 'destructive'
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const periodOptions = [
     { id: "today", label: "Today" },
@@ -69,38 +101,39 @@ export const SalesHistory = () => {
   ];
 
   const getSalesStats = () => {
-    const completedSales = mockSales.filter(sale => sale.status === "completed");
-    const totalRevenue = completedSales.reduce((sum, sale) => sum + sale.total, 0);
-    const totalTransactions = completedSales.length;
+    const totalRevenue = sales.reduce((sum, sale) => sum + Number(sale.total_amount), 0);
+    const totalTransactions = sales.length;
     const averageTicket = totalRevenue / totalTransactions || 0;
 
     return {
       totalRevenue: totalRevenue.toFixed(2),
       totalTransactions,
-      averageTicket: averageTicket.toFixed(2),
-      refunds: mockSales.filter(sale => sale.status === "refunded").length
+      averageTicket: averageTicket.toFixed(2)
     };
   };
 
-  const filteredSales = mockSales.filter(sale =>
+  const filteredSales = sales.filter(sale =>
     sale.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    sale.items.some(item => 
-      item.name.toLowerCase().includes(searchTerm.toLowerCase())
+    sale.sale_items.some(item => 
+      item.products.name.toLowerCase().includes(searchTerm.toLowerCase())
     )
   );
 
   const stats = getSalesStats();
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "completed":
-        return "bg-green-100 text-green-800";
-      case "refunded":
-        return "bg-red-100 text-red-800";
-      default:
-        return "bg-gray-100 text-gray-800";
-    }
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleString();
   };
+
+  if (loading) {
+    return (
+      <div className="space-y-4">
+        {[...Array(5)].map((_, i) => (
+          <div key={i} className="h-32 bg-gray-200 rounded-lg animate-pulse" />
+        ))}
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -117,7 +150,7 @@ export const SalesHistory = () => {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
@@ -137,7 +170,7 @@ export const SalesHistory = () => {
                 <p className="text-sm text-gray-600">Transactions</p>
                 <p className="text-2xl font-bold text-blue-600">{stats.totalTransactions}</p>
               </div>
-              <Calendar className="h-8 w-8 text-blue-600" />
+              <Receipt className="h-8 w-8 text-blue-600" />
             </div>
           </CardContent>
         </Card>
@@ -147,15 +180,6 @@ export const SalesHistory = () => {
             <div>
               <p className="text-sm text-gray-600">Average Ticket</p>
               <p className="text-2xl font-bold text-purple-600">${stats.averageTicket}</p>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardContent className="p-4">
-            <div>
-              <p className="text-sm text-gray-600">Refunds</p>
-              <p className="text-2xl font-bold text-red-600">{stats.refunds}</p>
             </div>
           </CardContent>
         </Card>
@@ -194,18 +218,18 @@ export const SalesHistory = () => {
               <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-2">
-                    <h3 className="font-semibold text-lg">#{sale.id}</h3>
-                    <Badge className={getStatusColor(sale.status)}>
-                      {sale.status}
+                    <h3 className="font-semibold text-lg">#{sale.id.slice(0, 8)}</h3>
+                    <Badge variant="outline" className="text-green-600 border-green-200">
+                      {sale.payment_method}
                     </Badge>
                   </div>
-                  <p className="text-sm text-gray-600 mb-3">{sale.date}</p>
+                  <p className="text-sm text-gray-600 mb-3">{formatDate(sale.created_at)}</p>
                   
                   <div className="space-y-1">
-                    {sale.items.map((item, index) => (
+                    {sale.sale_items.map((item, index) => (
                       <div key={index} className="flex justify-between text-sm">
-                        <span>{item.quantity}x {item.name}</span>
-                        <span className="font-medium">${(item.quantity * item.price).toFixed(2)}</span>
+                        <span>{item.quantity}x {item.products.name}</span>
+                        <span className="font-medium">${item.total_price.toFixed(2)}</span>
                       </div>
                     ))}
                   </div>
@@ -214,7 +238,7 @@ export const SalesHistory = () => {
                 <div className="flex flex-col lg:items-end gap-3">
                   <div className="text-right">
                     <p className="text-sm text-gray-600">Total</p>
-                    <p className="text-2xl font-bold text-gray-900">${sale.total.toFixed(2)}</p>
+                    <p className="text-2xl font-bold text-gray-900">${sale.total_amount.toFixed(2)}</p>
                   </div>
                   <Button variant="outline" size="sm">
                     <Eye className="h-4 w-4 mr-2" />

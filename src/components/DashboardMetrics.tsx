@@ -1,14 +1,152 @@
 
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { TrendingUp, Package, ShoppingCart, DollarSign, AlertTriangle } from "lucide-react";
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
+
+interface LowStockItem {
+  name: string;
+  current: number;
+  min: number;
+  percentage: number;
+}
+
+interface ActivityItem {
+  action: string;
+  item: string;
+  time: string;
+  type: 'success' | 'info' | 'warning';
+}
 
 export const DashboardMetrics = () => {
-  const metrics = [
+  const { userProfile } = useAuth();
+  const [metrics, setMetrics] = useState({
+    todaysSales: 0,
+    totalProducts: 0,
+    todaysTransactions: 0,
+    lowStockCount: 0
+  });
+  const [lowStockItems, setLowStockItems] = useState<LowStockItem[]>([]);
+  const [recentActivity, setRecentActivity] = useState<ActivityItem[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (userProfile) {
+      fetchDashboardData();
+    }
+  }, [userProfile]);
+
+  const fetchDashboardData = async () => {
+    if (!userProfile) return;
+
+    try {
+      // Get today's date range
+      const today = new Date();
+      const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+      const endOfDay = new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000);
+
+      // Fetch today's sales
+      const { data: todaysSales } = await supabase
+        .from('sales')
+        .select('total_amount')
+        .eq('owner_id', userProfile.id)
+        .gte('created_at', startOfDay.toISOString())
+        .lt('created_at', endOfDay.toISOString());
+
+      // Fetch all products for this owner
+      const { data: products } = await supabase
+        .from('products')
+        .select('*')
+        .eq('owner_id', userProfile.id);
+
+      // Fetch recent sales for activity
+      const { data: recentSales } = await supabase
+        .from('sales')
+        .select(`
+          id,
+          total_amount,
+          created_at,
+          sale_items (
+            products (name)
+          )
+        `)
+        .eq('owner_id', userProfile.id)
+        .order('created_at', { ascending: false })
+        .limit(5);
+
+      // Calculate metrics
+      const totalSales = todaysSales?.reduce((sum, sale) => sum + Number(sale.total_amount), 0) || 0;
+      const totalProducts = products?.length || 0;
+      const transactionCount = todaysSales?.length || 0;
+      
+      // Find low stock items
+      const lowStock = products?.filter(p => p.stock_quantity <= p.low_stock_threshold) || [];
+      
+      // Transform low stock items
+      const lowStockFormatted = lowStock.slice(0, 4).map(item => ({
+        name: item.name,
+        current: item.stock_quantity,
+        min: item.low_stock_threshold,
+        percentage: Math.round((item.stock_quantity / item.low_stock_threshold) * 100)
+      }));
+
+      // Transform recent activity
+      const activityFormatted = recentSales?.map(sale => ({
+        action: "Sale Completed",
+        item: `$${Number(sale.total_amount).toFixed(2)}`,
+        time: getTimeAgo(new Date(sale.created_at)),
+        type: 'success' as const
+      })) || [];
+
+      setMetrics({
+        todaysSales: totalSales,
+        totalProducts,
+        todaysTransactions: transactionCount,
+        lowStockCount: lowStock.length
+      });
+
+      setLowStockItems(lowStockFormatted);
+      setRecentActivity(activityFormatted);
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getTimeAgo = (date: Date) => {
+    const now = new Date();
+    const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
+    
+    if (diffInMinutes < 1) return 'Just now';
+    if (diffInMinutes < 60) return `${diffInMinutes} min ago`;
+    
+    const diffInHours = Math.floor(diffInMinutes / 60);
+    if (diffInHours < 24) return `${diffInHours}h ago`;
+    
+    const diffInDays = Math.floor(diffInHours / 24);
+    return `${diffInDays}d ago`;
+  };
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="h-20 bg-gray-200 rounded-lg animate-pulse" />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  const dashboardMetrics = [
     {
       title: "Today's Sales",
-      value: "$1,247",
+      value: `$${metrics.todaysSales.toFixed(2)}`,
       change: "+12.5%",
       trend: "up",
       icon: DollarSign,
@@ -16,7 +154,7 @@ export const DashboardMetrics = () => {
     },
     {
       title: "Total Products",
-      value: "342",
+      value: metrics.totalProducts.toString(),
       change: "+5 new",
       trend: "up",
       icon: Package,
@@ -24,7 +162,7 @@ export const DashboardMetrics = () => {
     },
     {
       title: "Transactions",
-      value: "89",
+      value: metrics.todaysTransactions.toString(),
       change: "+23%",
       trend: "up",
       icon: ShoppingCart,
@@ -32,7 +170,7 @@ export const DashboardMetrics = () => {
     },
     {
       title: "Low Stock Alert",
-      value: "7",
+      value: metrics.lowStockCount.toString(),
       change: "Items",
       trend: "warning",
       icon: AlertTriangle,
@@ -40,25 +178,11 @@ export const DashboardMetrics = () => {
     }
   ];
 
-  const recentActivity = [
-    { action: "Product Added", item: "Wireless Earbuds", time: "2 min ago", type: "success" },
-    { action: "Sale Completed", item: "$45.99", time: "5 min ago", type: "info" },
-    { action: "Stock Updated", item: "Smartphone Cases", time: "12 min ago", type: "warning" },
-    { action: "New Barcode Scanned", item: "Gaming Mouse", time: "18 min ago", type: "info" }
-  ];
-
-  const lowStockItems = [
-    { name: "iPhone Cases", current: 3, min: 10, percentage: 30 },
-    { name: "Wireless Chargers", current: 5, min: 15, percentage: 33 },
-    { name: "Screen Protectors", current: 8, min: 20, percentage: 40 },
-    { name: "Bluetooth Speakers", current: 2, min: 8, percentage: 25 }
-  ];
-
   return (
     <div className="space-y-6">
       {/* Metrics Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {metrics.map((metric, index) => (
+        {dashboardMetrics.map((metric, index) => (
           <Card key={index} className="hover:shadow-lg transition-all duration-300 border border-gray-200">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
@@ -83,29 +207,31 @@ export const DashboardMetrics = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Low Stock Alert */}
-        <Card className="border border-orange-200">
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center text-orange-700">
-              <AlertTriangle className="h-5 w-5 mr-2" />
-              Low Stock Alerts
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {lowStockItems.map((item, index) => (
-                <div key={index} className="space-y-2">
-                  <div className="flex justify-between items-center">
-                    <span className="font-medium text-gray-900">{item.name}</span>
-                    <Badge variant="outline" className="text-orange-600 border-orange-200">
-                      {item.current}/{item.min}
-                    </Badge>
+        {lowStockItems.length > 0 && (
+          <Card className="border border-orange-200">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center text-orange-700">
+                <AlertTriangle className="h-5 w-5 mr-2" />
+                Low Stock Alerts
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {lowStockItems.map((item, index) => (
+                  <div key={index} className="space-y-2">
+                    <div className="flex justify-between items-center">
+                      <span className="font-medium text-gray-900">{item.name}</span>
+                      <Badge variant="outline" className="text-orange-600 border-orange-200">
+                        {item.current}/{item.min}
+                      </Badge>
+                    </div>
+                    <Progress value={item.percentage} className="h-2" />
                   </div>
-                  <Progress value={item.percentage} className="h-2" />
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Recent Activity */}
         <Card>
@@ -114,19 +240,23 @@ export const DashboardMetrics = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {recentActivity.map((activity, index) => (
-                <div key={index} className="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-50 transition-colors">
-                  <div className={`w-2 h-2 rounded-full ${
-                    activity.type === 'success' ? 'bg-green-500' :
-                    activity.type === 'warning' ? 'bg-orange-500' : 'bg-blue-500'
-                  }`}></div>
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-gray-900">{activity.action}</p>
-                    <p className="text-sm text-gray-500">{activity.item}</p>
+              {recentActivity.length > 0 ? (
+                recentActivity.map((activity, index) => (
+                  <div key={index} className="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-50 transition-colors">
+                    <div className={`w-2 h-2 rounded-full ${
+                      activity.type === 'success' ? 'bg-green-500' :
+                      activity.type === 'warning' ? 'bg-orange-500' : 'bg-blue-500'
+                    }`}></div>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-gray-900">{activity.action}</p>
+                      <p className="text-sm text-gray-500">{activity.item}</p>
+                    </div>
+                    <span className="text-xs text-gray-400">{activity.time}</span>
                   </div>
-                  <span className="text-xs text-gray-400">{activity.time}</span>
-                </div>
-              ))}
+                ))
+              ) : (
+                <p className="text-sm text-gray-500">No recent activity</p>
+              )}
             </div>
           </CardContent>
         </Card>
