@@ -21,6 +21,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [userProfile, setUserProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
+  const fetchUserProfile = async (userId: string) => {
+    try {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+      setUserProfile(profile);
+    } catch (error) {
+      console.error('Error fetching profile:', error);
+    }
+  };
+
   useEffect(() => {
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -29,13 +42,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          // Fetch user profile
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', session.user.id)
-            .single();
-          setUserProfile(profile);
+          // Defer profile fetching to avoid deadlocks
+          setTimeout(() => {
+            fetchUserProfile(session.user.id);
+          }, 0);
         } else {
           setUserProfile(null);
         }
@@ -47,6 +57,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
+      if (session?.user) {
+        setTimeout(() => {
+          fetchUserProfile(session.user.id);
+        }, 0);
+      }
       if (!session) setLoading(false);
     });
 

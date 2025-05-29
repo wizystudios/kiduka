@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -27,7 +26,7 @@ export const EnhancedSettingsPage = () => {
     receipt_footer: '',
     enable_notifications: true
   });
-  const { userProfile, updateProfile } = useAuth();
+  const { userProfile } = useAuth();
   const { toast } = useToast();
 
   useEffect(() => {
@@ -77,7 +76,6 @@ export const EnhancedSettingsPage = () => {
 
       if (error) throw error;
 
-      await updateProfile();
       toast({
         title: 'Success',
         description: 'Profile updated successfully'
