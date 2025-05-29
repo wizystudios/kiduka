@@ -1,143 +1,198 @@
 
-import { ReactNode } from 'react';
-import { useAuth } from '@/hooks/useAuth';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { KidukaLogo } from '@/components/KidukaLogo';
+import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { 
-  BarChart3, 
+  Home, 
   Package, 
-  Scan, 
+  QrCode, 
   ShoppingCart, 
-  Users, 
-  Settings,
-  LogOut,
-  FileText,
-  User
+  BarChart3, 
+  Settings, 
+  Menu, 
+  X, 
+  Users,
+  UserCheck,
+  Percent,
+  Bell,
+  Wifi,
+  WifiOff
 } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useAuth } from '@/hooks/useAuth';
+import { syncService } from '@/utils/syncService';
 
 interface MobileLayoutProps {
-  children: ReactNode;
+  children: React.ReactNode;
 }
 
 export const MobileLayout = ({ children }: MobileLayoutProps) => {
-  const { userProfile, signOut } = useAuth();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [syncStatus, setSyncStatus] = useState(syncService.getSyncStatus());
   const navigate = useNavigate();
   const location = useLocation();
+  const { signOut, userProfile } = useAuth();
+
+  useEffect(() => {
+    // Update sync status periodically
+    const interval = setInterval(() => {
+      setSyncStatus(syncService.getSyncStatus());
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   const navigationItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: BarChart3, path: '/' },
-    { id: 'products', label: 'Products', icon: Package, path: '/products' },
-    { id: 'scanner', label: 'Scanner', icon: Scan, path: '/scanner' },
-    { id: 'sales', label: 'Sales', icon: ShoppingCart, path: '/sales' },
-    { id: 'reports', label: 'Reports', icon: FileText, path: '/reports' },
+    { id: 'dashboard', label: 'Dashboard', icon: Home, href: '/' },
+    { id: 'products', label: 'Products', icon: Package, href: '/products' },
+    { id: 'scanner', label: 'Scanner', icon: QrCode, href: '/scanner' },
+    { id: 'sales', label: 'Sales', icon: ShoppingCart, href: '/sales' },
+    { id: 'customers', label: 'Customers', icon: Users, href: '/customers' },
+    { id: 'discounts', label: 'Discounts', icon: Percent, href: '/discounts' },
+    { id: 'reports', label: 'Reports', icon: BarChart3, href: '/reports' },
     ...(userProfile?.role === 'owner' ? [
-      { id: 'users', label: 'Users', icon: Users, path: '/users' }
+      { id: 'users', label: 'Users', icon: UserCheck, href: '/users' }
     ] : []),
-    { id: 'settings', label: 'Settings', icon: Settings, path: '/settings' }
+    { id: 'settings', label: 'Settings', icon: Settings, href: '/settings' },
   ];
+
+  const handleNavigation = (href: string) => {
+    navigate(href);
+    setSidebarOpen(false);
+  };
 
   const handleSignOut = async () => {
     try {
       await signOut();
+      navigate('/auth');
     } catch (error) {
       console.error('Error signing out:', error);
     }
   };
 
-  const getInitials = (name: string) => {
-    return name
-      .split(' ')
-      .map(word => word.charAt(0).toUpperCase())
-      .join('')
-      .slice(0, 2);
+  const isActive = (href: string) => {
+    if (href === '/') {
+      return location.pathname === '/';
+    }
+    return location.pathname.startsWith(href);
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-50">
-        <div className="px-4 py-3 flex items-center justify-between">
-          <KidukaLogo size="sm" />
+      <header className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
+        <div className="flex items-center space-x-3">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            className="lg:hidden"
+          >
+            {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </Button>
+          <h1 className="text-xl font-bold text-gray-900">Kiduka POS</h1>
+        </div>
+        
+        <div className="flex items-center space-x-2">
+          {/* Network Status */}
+          <div className="flex items-center space-x-1">
+            {syncStatus.isOnline ? (
+              <Wifi className="h-4 w-4 text-green-600" />
+            ) : (
+              <WifiOff className="h-4 w-4 text-red-600" />
+            )}
+            {!syncStatus.isOnline && syncStatus.summary.unsyncedSalesCount > 0 && (
+              <Badge variant="destructive" className="text-xs">
+                {syncStatus.summary.unsyncedSalesCount} pending
+              </Badge>
+            )}
+          </div>
           
-          <div className="flex items-center space-x-3">
-            {/* User Profile Avatar */}
-            <div className="flex items-center space-x-2">
-              <Avatar className="h-8 w-8">
-                <AvatarImage src={userProfile?.avatar_url} />
-                <AvatarFallback className="bg-purple-100 text-purple-600 text-xs">
-                  {userProfile?.full_name ? getInitials(userProfile.full_name) : <User className="h-4 w-4" />}
-                </AvatarFallback>
-              </Avatar>
-              <div className="hidden sm:block">
-                <p className="text-sm font-medium text-gray-900">
-                  {userProfile?.full_name || 'User'}
-                </p>
-                <p className="text-xs text-gray-500 capitalize">
-                  {userProfile?.role || 'owner'}
-                </p>
-              </div>
-            </div>
-            
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleSignOut}
-              className="text-gray-500"
-            >
-              <LogOut className="h-4 w-4" />
-            </Button>
+          {/* User Menu */}
+          <div className="flex items-center space-x-2">
+            <span className="text-sm text-gray-600 hidden sm:block">
+              {userProfile?.full_name || userProfile?.email}
+            </span>
+            <Badge variant="outline" className="text-xs">
+              {userProfile?.role}
+            </Badge>
           </div>
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="flex-1 pb-20">
-        {children}
-      </main>
-
-      {/* Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-2 py-2">
-        <div className="grid grid-cols-5 gap-1">
-          {navigationItems.slice(0, 5).map((item) => (
-            <Button
-              key={item.id}
-              variant="ghost"
-              size="sm"
-              onClick={() => navigate(item.path)}
-              className={`flex-col h-auto py-2 ${
-                location.pathname === item.path
-                  ? 'text-purple-600 bg-purple-50'
-                  : 'text-gray-600'
-              }`}
-            >
-              <item.icon className="h-4 w-4 mb-1" />
-              <span className="text-xs">{item.label}</span>
-            </Button>
-          ))}
-        </div>
-        {navigationItems.length > 5 && (
-          <div className="grid grid-cols-2 gap-1 mt-1">
-            {navigationItems.slice(5).map((item) => (
-              <Button
-                key={item.id}
-                variant="ghost"
-                size="sm"
-                onClick={() => navigate(item.path)}
-                className={`flex-col h-auto py-2 ${
-                  location.pathname === item.path
-                    ? 'text-purple-600 bg-purple-50'
-                    : 'text-gray-600'
-                }`}
+      <div className="flex">
+        {/* Sidebar */}
+        <aside className={`
+          fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200 transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0
+          ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+        `}>
+          <div className="flex flex-col h-full pt-16 lg:pt-0">
+            <nav className="flex-1 px-4 py-4 space-y-2">
+              {navigationItems.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <Button
+                    key={item.id}
+                    variant={isActive(item.href) ? "default" : "ghost"}
+                    className={`w-full justify-start ${
+                      isActive(item.href) ? 'bg-blue-600 text-white' : 'text-gray-700 hover:bg-gray-100'
+                    }`}
+                    onClick={() => handleNavigation(item.href)}
+                  >
+                    <Icon className="h-5 w-5 mr-3" />
+                    {item.label}
+                  </Button>
+                );
+              })}
+            </nav>
+            
+            {/* Sync Status Footer */}
+            {!syncStatus.isOnline && (
+              <div className="p-4 border-t">
+                <Card className="bg-yellow-50 border-yellow-200">
+                  <CardContent className="p-3">
+                    <div className="flex items-center space-x-2">
+                      <WifiOff className="h-4 w-4 text-yellow-600" />
+                      <div className="text-xs">
+                        <p className="font-medium text-yellow-800">Offline Mode</p>
+                        <p className="text-yellow-600">
+                          {syncStatus.summary.unsyncedSalesCount} sales pending sync
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+            
+            <div className="p-4 border-t">
+              <Button 
+                variant="outline" 
+                className="w-full" 
+                onClick={handleSignOut}
               >
-                <item.icon className="h-4 w-4 mb-1" />
-                <span className="text-xs">{item.label}</span>
+                Sign Out
               </Button>
-            ))}
+            </div>
           </div>
+        </aside>
+
+        {/* Overlay for mobile */}
+        {sidebarOpen && (
+          <div 
+            className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden" 
+            onClick={() => setSidebarOpen(false)}
+          />
         )}
-      </nav>
+
+        {/* Main content */}
+        <main className="flex-1 lg:ml-0">
+          <div className="h-full">
+            {children}
+          </div>
+        </main>
+      </div>
     </div>
   );
 };

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -66,22 +65,57 @@ export const UsersPage = () => {
     }
 
     try {
-      // In a real app, you would send an invitation email
-      // For now, we'll just create a placeholder entry
+      // Create the user profile directly (simulating invitation)
+      const { data: authUser, error: signUpError } = await supabase.auth.signUp({
+        email: inviteData.email,
+        password: 'TempPassword123!', // In production, generate secure temp password
+        options: {
+          data: {
+            full_name: inviteData.fullName,
+            role: inviteData.role
+          }
+        }
+      });
+
+      if (signUpError) throw signUpError;
+
+      if (authUser.user) {
+        // Create profile with the specified role
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .insert({
+            id: authUser.user.id,
+            email: inviteData.email,
+            full_name: inviteData.fullName,
+            role: inviteData.role
+          });
+
+        if (profileError) throw profileError;
+      }
+
       toast({
-        title: 'Invitation Sent',
-        description: `Invitation sent to ${inviteData.email}`,
+        title: 'User Invited',
+        description: `${inviteData.fullName} has been added as ${inviteData.role}`,
       });
       
       setInviteData({ email: '', fullName: '', role: 'assistant' });
       setDialogOpen(false);
-    } catch (error) {
+      fetchUsers();
+    } catch (error: any) {
       console.error('Error inviting user:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to send invitation',
-        variant: 'destructive'
-      });
+      if (error.code === '23505') {
+        toast({
+          title: 'Error',
+          description: 'User with this email already exists',
+          variant: 'destructive'
+        });
+      } else {
+        toast({
+          title: 'Error',
+          description: 'Failed to invite user',
+          variant: 'destructive'
+        });
+      }
     }
   };
 

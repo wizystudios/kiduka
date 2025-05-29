@@ -18,8 +18,12 @@ import { EditProductPage } from "@/pages/EditProductPage";
 import { ScannerPage } from "@/pages/ScannerPage";
 import { SalesPage } from "@/pages/SalesPage";
 import { ReportsPage } from "@/pages/ReportsPage";
+import { EnhancedReportsPage } from "@/pages/EnhancedReportsPage";
 import { UsersPage } from "@/pages/UsersPage";
-import { SettingsPage } from "@/pages/SettingsPage";
+import { CustomersPage } from "@/pages/CustomersPage";
+import { DiscountsPage } from "@/pages/DiscountsPage";
+import { EnhancedSettingsPage } from "@/pages/EnhancedSettingsPage";
+import { syncService } from "@/utils/syncService";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -34,6 +38,9 @@ const App = () => {
     if (!hasSeenOnboarding) {
       setShowOnboarding(true);
     }
+
+    // Setup sync service
+    syncService.setupAutoSync();
   }, []);
 
   const handleLoadingComplete = () => {
@@ -114,6 +121,27 @@ const App = () => {
                   </MobileLayout>
                 </ProtectedRoute>
               } />
+              <Route path="/reports/advanced" element={
+                <ProtectedRoute>
+                  <MobileLayout>
+                    <EnhancedReportsPage />
+                  </MobileLayout>
+                </ProtectedRoute>
+              } />
+              <Route path="/customers" element={
+                <ProtectedRoute>
+                  <MobileLayout>
+                    <CustomersPage />
+                  </MobileLayout>
+                </ProtectedRoute>
+              } />
+              <Route path="/discounts" element={
+                <ProtectedRoute>
+                  <MobileLayout>
+                    <DiscountsPage />
+                  </MobileLayout>
+                </ProtectedRoute>
+              } />
               <Route path="/users" element={
                 <ProtectedRoute requiredRole="owner">
                   <MobileLayout>
@@ -124,7 +152,7 @@ const App = () => {
               <Route path="/settings" element={
                 <ProtectedRoute>
                   <MobileLayout>
-                    <SettingsPage />
+                    <EnhancedSettingsPage />
                   </MobileLayout>
                 </ProtectedRoute>
               } />
