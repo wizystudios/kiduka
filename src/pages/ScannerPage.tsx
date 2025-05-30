@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -7,8 +8,10 @@ import { Camera, Search, Plus, Minus, ShoppingCart } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
-import { ReceiptPrinter } from '@/components/ReceiptPrinter';
 import { CameraScanner } from '@/components/CameraScanner';
+import { PaymentMethodDialog } from '@/components/PaymentMethodDialog';
+import { EnhancedReceiptPrinter } from '@/components/EnhancedReceiptPrinter';
+import { DigitalReceiptService } from '@/components/DigitalReceiptService';
 
 interface Product {
   id: string;
@@ -23,17 +26,31 @@ interface CartItem extends Product {
   quantity: number;
 }
 
+interface PaymentData {
+  method: 'cash' | 'mobile' | 'bank';
+  provider?: string;
+  phoneNumber?: string;
+  accountNumber?: string;
+  transactionId?: string;
+}
+
 export const ScannerPage = () => {
   const [manualBarcode, setManualBarcode] = useState('');
   const [scannedProduct, setScannedProduct] = useState<Product | null>(null);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(false);
+  const [showPayment, setShowPayment] = useState(false);
   const [showReceipt, setShowReceipt] = useState(false);
+  const [showDigitalReceipt, setShowDigitalReceipt] = useState(false);
   const [showCamera, setShowCamera] = useState(false);
   const [completedSale, setCompletedSale] = useState<{
     id: string;
     items: any[];
+    subtotal: number;
+    vatAmount: number;
     total: number;
+    paymentData: PaymentData;
+    businessName: string;
   } | null>(null);
   const { toast } = useToast();
   const { userProfile } = useAuth();
@@ -62,7 +79,7 @@ export const ScannerPage = () => {
       setScannedProduct(data);
       toast({
         title: 'Product Found!',
-        description: `${data.name} - $${data.price}`
+        description: `${data.name} - TZS ${data.price.toLocaleString()}`
       });
     } catch (error) {
       console.error('Error searching product:', error);
@@ -131,19 +148,20 @@ export const ScannerPage = () => {
     setCart(cart.filter(item => item.id !== id));
   };
 
-  const getTotalAmount = () => {
-    return cart.reduce((total, item) => total + (item.price * item.quantity), 0).toFixed(2);
+  const getSubtotal = () => {
+    return cart.reduce((total, item) => total + (item.price * item.quantity), 0);
   };
 
-  const completeSale = async () => {
-    if (cart.length === 0) {
-      toast({
-        title: 'Empty Cart',
-        description: 'Please add items to cart before completing sale',
-        variant: 'destructive'
-      });
-      return;
-    }
+  const getVatAmount = () => {
+    return getSubtotal() * 0.18;
+  };
+
+  const getTotalAmount = () => {
+    return getSubtotal() + getVatAmount();
+  };
+
+  const handlePaymentComplete = async (paymentData: PaymentData) => {
+    if (cart.length === 0) return;
 
     setLoading(true);
     try {
@@ -152,8 +170,8 @@ export const ScannerPage = () => {
         .insert({
           owner_id: userProfile?.id,
           cashier_id: userProfile?.id,
-          total_amount: parseFloat(getTotalAmount()),
-          payment_method: 'cash'
+          total_amount: getTotalAmount(),
+          payment_method: paymentData.method
         })
         .select()
         .single();
@@ -184,14 +202,19 @@ export const ScannerPage = () => {
       setCompletedSale({
         id: sale.id.slice(0, 8),
         items: receiptItems,
-        total: parseFloat(getTotalAmount())
+        subtotal: getSubtotal(),
+        vatAmount: getVatAmount(),
+        total: getTotalAmount(),
+        paymentData,
+        businessName: userProfile?.business_name || 'KIDUKA STORE'
       });
 
       toast({
         title: 'Sale Completed!',
-        description: `Total: $${getTotalAmount()}`
+        description: `Total: TZS ${getTotalAmount().toLocaleString()}`
       });
       
+      setShowPayment(false);
       setShowReceipt(true);
       setCart([]);
       setScannedProduct(null);
@@ -210,6 +233,11 @@ export const ScannerPage = () => {
 
   const handlePrintComplete = () => {
     setShowReceipt(false);
+    setShowDigitalReceipt(true);
+  };
+
+  const handleDigitalReceiptClose = () => {
+    setShowDigitalReceipt(false);
     setCompletedSale(null);
   };
 
@@ -227,15 +255,27 @@ export const ScannerPage = () => {
         onClose={() => setShowCamera(false)}
       />
 
+      {/* Payment Modal */}
+      <PaymentMethodDialog
+        open={showPayment}
+        onOpenChange={setShowPayment}
+        totalAmount={getTotalAmount()}
+        onPaymentComplete={handlePaymentComplete}
+      />
+
       {/* Receipt Modal */}
       {showReceipt && completedSale && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg p-6 max-w-sm w-full">
             <h3 className="text-lg font-bold mb-4 text-center">Sale Complete!</h3>
-            <ReceiptPrinter
+            <EnhancedReceiptPrinter
               items={completedSale.items}
+              subtotal={completedSale.subtotal}
+              vatAmount={completedSale.vatAmount}
               total={completedSale.total}
               transactionId={completedSale.id}
+              paymentData={completedSale.paymentData}
+              businessName={completedSale.businessName}
               onPrint={handlePrintComplete}
             />
             <Button 
@@ -243,9 +283,27 @@ export const ScannerPage = () => {
               variant="outline"
               className="w-full mt-4"
             >
-              Close
+              Continue to Digital Receipt
             </Button>
           </div>
+        </div>
+      )}
+
+      {/* Digital Receipt Modal */}
+      {showDigitalReceipt && completedSale && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <DigitalReceiptService
+            receiptData={{
+              transactionId: completedSale.id,
+              items: completedSale.items,
+              subtotal: completedSale.subtotal,
+              vatAmount: completedSale.vatAmount,
+              total: completedSale.total,
+              paymentData: completedSale.paymentData,
+              businessName: completedSale.businessName
+            }}
+            onClose={handleDigitalReceiptClose}
+          />
         </div>
       )}
 
@@ -297,7 +355,7 @@ export const ScannerPage = () => {
                 <div className="space-y-3">
                   <div>
                     <h3 className="font-semibold text-lg">{scannedProduct.name}</h3>
-                    <p className="text-green-600 font-bold text-xl">${scannedProduct.price}</p>
+                    <p className="text-green-600 font-bold text-xl">TZS {scannedProduct.price.toLocaleString()}</p>
                   </div>
                   <div className="flex justify-between items-center">
                     <Badge variant="outline" className="text-blue-600">
@@ -339,7 +397,7 @@ export const ScannerPage = () => {
                   <div key={item.id} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
                     <div className="flex-1">
                       <h4 className="font-medium">{item.name}</h4>
-                      <p className="text-sm text-gray-600">${item.price} each</p>
+                      <p className="text-sm text-gray-600">TZS {item.price.toLocaleString()} each</p>
                     </div>
                     <div className="flex items-center space-x-2">
                       <Button
@@ -362,7 +420,7 @@ export const ScannerPage = () => {
                       </Button>
                     </div>
                     <div className="text-right ml-4">
-                      <p className="font-bold">${(item.price * item.quantity).toFixed(2)}</p>
+                      <p className="font-bold">TZS {(item.price * item.quantity).toLocaleString()}</p>
                       <Button
                         variant="ghost"
                         size="sm"
@@ -376,16 +434,26 @@ export const ScannerPage = () => {
                 ))}
                 
                 <div className="border-t pt-4">
-                  <div className="flex justify-between items-center mb-4">
-                    <span className="text-xl font-bold">Total:</span>
-                    <span className="text-2xl font-bold text-green-600">${getTotalAmount()}</span>
+                  <div className="space-y-2 mb-4">
+                    <div className="flex justify-between text-sm">
+                      <span>Subtotal:</span>
+                      <span>TZS {getSubtotal().toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span>VAT (18%):</span>
+                      <span>TZS {getVatAmount().toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between items-center border-t pt-2">
+                      <span className="text-xl font-bold">Total:</span>
+                      <span className="text-2xl font-bold text-green-600">TZS {getTotalAmount().toLocaleString()}</span>
+                    </div>
                   </div>
                   <Button 
-                    onClick={completeSale}
+                    onClick={() => setShowPayment(true)}
                     disabled={loading}
                     className="w-full bg-green-600 hover:bg-green-700 text-white py-3"
                   >
-                    {loading ? 'Processing...' : 'Complete Sale'}
+                    {loading ? 'Processing...' : 'Proceed to Payment'}
                   </Button>
                 </div>
               </div>
