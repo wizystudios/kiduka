@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { QrCode, MessageSquare, Download, Phone } from 'lucide-react';
+import { QrCode, MessageSquare, Download, Phone, CheckCircle, AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -38,6 +38,7 @@ export const DigitalReceiptService = ({ receiptData, onClose }: DigitalReceiptSe
   const [sendingMethod, setSendingMethod] = useState<'sms' | 'qr'>('sms');
   const [isProcessing, setIsProcessing] = useState(false);
   const [qrCodeData, setQrCodeData] = useState('');
+  const [smsStatus, setSmsStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const { toast } = useToast();
 
   const generateReceiptSummary = () => {
@@ -65,8 +66,23 @@ Powered by Kiduka POS
     `.trim();
   };
 
+  const validatePhoneNumber = (phone: string) => {
+    // Remove spaces and non-digits except +
+    const cleaned = phone.replace(/[^\d+]/g, '');
+    
+    // Check if it's a valid Tanzanian number
+    if (cleaned.startsWith('+255') && cleaned.length === 13) return true;
+    if (cleaned.startsWith('255') && cleaned.length === 12) return true;
+    if (cleaned.startsWith('0') && cleaned.length === 10) return true;
+    if (cleaned.length === 9 && /^[67]/.test(cleaned)) return true;
+    
+    return false;
+  };
+
   const sendSMSReceipt = async () => {
-    if (!customerPhone.trim()) {
+    const phoneToValidate = customerPhone.trim();
+    
+    if (!phoneToValidate) {
       toast({
         title: 'Namba ya Simu Inahitajika',
         description: 'Tafadhali ingiza namba ya simu ya mteja',
@@ -75,30 +91,53 @@ Powered by Kiduka POS
       return;
     }
 
+    if (!validatePhoneNumber(phoneToValidate)) {
+      toast({
+        title: 'Namba si Sahihi',
+        description: 'Tafadhali ingiza namba sahihi ya simu (mfano: 0754123456 au +255754123456)',
+        variant: 'destructive'
+      });
+      return;
+    }
+
     setIsProcessing(true);
+    setSmsStatus('idle');
+    
     try {
-      // Call the Supabase edge function
+      console.log('Sending SMS to:', phoneToValidate);
+      
       const { data, error } = await supabase.functions.invoke('send-sms', {
         body: {
-          phoneNumber: customerPhone,
+          phoneNumber: phoneToValidate,
           message: generateReceiptSummary(),
           transactionId: receiptData.transactionId
         }
       });
 
-      if (error) throw error;
-      
-      toast({
-        title: 'Risiti Imetumwa!',
-        description: `Risiti imetumwa kwa namba ${customerPhone}`,
-      });
+      console.log('SMS response:', { data, error });
 
-      console.log('SMS sent successfully:', data);
-    } catch (error) {
+      if (error) {
+        console.error('Supabase function error:', error);
+        throw new Error(error.message || 'Failed to send SMS');
+      }
+      
+      if (data && data.success) {
+        setSmsStatus('success');
+        toast({
+          title: 'Risiti Imetumwa!',
+          description: `Risiti imetumwa kwa namba ${data.phoneNumber || phoneToValidate}`,
+        });
+        console.log('SMS sent successfully:', data);
+      } else {
+        throw new Error(data?.error || 'SMS sending failed');
+      }
+
+    } catch (error: any) {
       console.error('Error sending SMS:', error);
+      setSmsStatus('error');
       toast({
         title: 'Hitilafu',
-        description: 'Imeshindwa kutuma risiti kwa SMS. Hakikisha namba sahihi.',
+        description: error.message || 'Imeshindwa kutuma risiti kwa SMS. Hakikisha namba sahihi.',
         variant: 'destructive'
       });
     } finally {
@@ -183,18 +222,46 @@ Powered by Kiduka POS
               <Input
                 id="phone"
                 type="tel"
-                placeholder="255xxxxxxxxx"
+                placeholder="0754123456 au +255754123456"
                 value={customerPhone}
                 onChange={(e) => setCustomerPhone(e.target.value)}
+                className={smsStatus === 'error' ? 'border-red-500' : smsStatus === 'success' ? 'border-green-500' : ''}
               />
+              <p className="text-xs text-gray-500 mt-1">
+                Mfano: 0754123456, +255754123456, 754123456
+              </p>
             </div>
+            
             <Button 
               onClick={sendSMSReceipt}
               disabled={isProcessing}
-              className="w-full bg-green-600 hover:bg-green-700"
+              className="w-full bg-green-600 hover:bg-green-700 flex items-center justify-center"
             >
-              {isProcessing ? 'Inatuma...' : 'Tuma Risiti kwa SMS'}
+              {isProcessing ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Inatuma...
+                </>
+              ) : smsStatus === 'success' ? (
+                <>
+                  <CheckCircle className="h-4 w-4 mr-2" />
+                  Imetumwa!
+                </>
+              ) : smsStatus === 'error' ? (
+                <>
+                  <AlertCircle className="h-4 w-4 mr-2" />
+                  Jaribu Tena
+                </>
+              ) : (
+                'Tuma Risiti kwa SMS'
+              )}
             </Button>
+            
+            {smsStatus === 'success' && (
+              <div className="text-center text-sm text-green-600 bg-green-50 p-2 rounded">
+                Risiti imetumwa kikamilifu!
+              </div>
+            )}
           </div>
         )}
 
