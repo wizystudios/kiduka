@@ -1,91 +1,75 @@
 
-import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
+import { KidukaLogo } from "@/components/KidukaLogo";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Package, ShoppingCart, BarChart3, Scan, Plus, AlertTriangle } from "lucide-react";
-import { ProductManagement } from "@/components/ProductManagement";
-import { BarcodeScanner } from "@/components/BarcodeScanner";
-import { SalesHistory } from "@/components/SalesHistory";
-import { DashboardMetrics } from "@/components/DashboardMetrics";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 const Index = () => {
-  const [activeTab, setActiveTab] = useState("dashboard");
+  const navigate = useNavigate();
+  const { user } = useAuth();
 
-  const renderContent = () => {
-    switch (activeTab) {
-      case "dashboard":
-        return <DashboardMetrics />;
-      case "products":
-        return <ProductManagement />;
-      case "scanner":
-        return <BarcodeScanner />;
-      case "sales":
-        return <SalesHistory />;
-      default:
-        return <DashboardMetrics />;
+  useEffect(() => {
+    if (user) {
+      navigate('/dashboard');
     }
-  };
-
-  const tabItems = [
-    { id: "dashboard", label: "Dashboard", icon: BarChart3 },
-    { id: "products", label: "Products", icon: Package },
-    { id: "scanner", label: "Scan", icon: Scan },
-    { id: "sales", label: "Sales", icon: ShoppingCart }
-  ];
+  }, [user, navigate]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-slate-100">
-      {/* Header */}
-      <header className="bg-white shadow-lg border-b border-blue-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-4">
-            <div className="flex items-center space-x-3">
-              <div className="bg-blue-600 p-2 rounded-lg">
-                <Package className="h-6 w-6 text-white" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">SmartShop POS</h1>
-                <p className="text-sm text-gray-500">Inventory & Sales Management</p>
-              </div>
-            </div>
-            <div className="flex items-center space-x-3">
-              <Badge variant="outline" className="text-green-600 border-green-200">
-                <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
-                Online
-              </Badge>
-            </div>
+    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-blue-50 to-purple-50">
+      <div className="container mx-auto px-4 py-8">
+        <div className="text-center mb-12">
+          <div className="flex justify-center mb-6">
+            <KidukaLogo size="xl" showText={true} animate={true} />
           </div>
+          <h1 className="text-4xl font-bold text-gray-900 mb-4">
+            Welcome to Kiduka
+          </h1>
+          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+            Your complete business management solution for inventory, sales, and customer management
+          </p>
         </div>
-      </header>
 
-      {/* Navigation */}
-      <nav className="bg-white border-b border-gray-200 sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex space-x-1 py-3 overflow-x-auto">
-            {tabItems.map((tab) => (
-              <Button
-                key={tab.id}
-                variant={activeTab === tab.id ? "default" : "ghost"}
-                onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-all duration-200 ${
-                  activeTab === tab.id
-                    ? "bg-blue-600 text-white shadow-md"
-                    : "text-gray-600 hover:bg-blue-50 hover:text-blue-600"
-                }`}
-              >
-                <tab.icon className="h-4 w-4" />
-                <span className="whitespace-nowrap">{tab.label}</span>
-              </Button>
-            ))}
-          </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+          <Card className="text-center">
+            <CardHeader>
+              <CardTitle className="text-emerald-600">Inventory Management</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-gray-600">Track your products, stock levels, and get low stock alerts</p>
+            </CardContent>
+          </Card>
+
+          <Card className="text-center">
+            <CardHeader>
+              <CardTitle className="text-blue-600">Point of Sale</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-gray-600">Fast barcode scanning and payment processing</p>
+            </CardContent>
+          </Card>
+
+          <Card className="text-center">
+            <CardHeader>
+              <CardTitle className="text-purple-600">Reports & Analytics</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-gray-600">Detailed sales reports and business insights</p>
+            </CardContent>
+          </Card>
         </div>
-      </nav>
 
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {renderContent()}
-      </main>
+        <div className="text-center">
+          <Button 
+            onClick={() => navigate('/auth')}
+            size="lg"
+            className="bg-gradient-to-r from-emerald-600 via-blue-600 to-purple-600 text-white px-8 py-3 text-lg"
+          >
+            Get Started with Kiduka
+          </Button>
+        </div>
+      </div>
     </div>
   );
 };

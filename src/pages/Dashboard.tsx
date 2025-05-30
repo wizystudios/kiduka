@@ -1,20 +1,25 @@
+
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useNavigate } from 'react-router-dom';
 import { 
   TrendingUp, 
   Package, 
   ShoppingCart, 
   DollarSign, 
   AlertTriangle,
-  User
+  User,
+  Plus
 } from 'lucide-react';
 
 export const Dashboard = () => {
   const { userProfile } = useAuth();
+  const navigate = useNavigate();
   const [metrics, setMetrics] = useState({
     todaysSales: 0,
     totalProducts: 0,
@@ -66,7 +71,7 @@ export const Dashboard = () => {
         lowStockItems: lowStock.length
       });
 
-      setLowStockProducts(lowStock.slice(0, 5)); // Show top 5 low stock items
+      setLowStockProducts(lowStock.slice(0, 5));
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
     } finally {
@@ -95,7 +100,7 @@ export const Dashboard = () => {
   const dashboardMetrics = [
     {
       title: "Today's Sales",
-      value: `$${metrics.todaysSales.toFixed(2)}`,
+      value: `TZS ${metrics.todaysSales.toLocaleString()}`,
       icon: DollarSign,
       color: "text-green-600",
       bgColor: "bg-green-50"
@@ -126,18 +131,18 @@ export const Dashboard = () => {
   return (
     <div className="p-4 space-y-6">
       {/* Welcome Message with Profile */}
-      <Card className="bg-gradient-to-r from-purple-50 to-blue-50 border-purple-200">
+      <Card className="bg-gradient-to-r from-emerald-50 via-blue-50 to-purple-50 border-purple-200">
         <CardContent className="p-4">
           <div className="flex items-center space-x-4">
             <Avatar className="h-12 w-12">
               <AvatarImage src={userProfile?.avatar_url} />
-              <AvatarFallback className="bg-purple-100 text-purple-600">
+              <AvatarFallback className="bg-gradient-to-br from-emerald-500 via-blue-500 to-purple-600 text-white">
                 {userProfile?.full_name ? getInitials(userProfile.full_name) : <User className="h-6 w-6" />}
               </AvatarFallback>
             </Avatar>
             <div className="flex-1">
               <h2 className="text-xl font-bold text-gray-900">
-                Welcome back, {userProfile?.full_name || 'User'}!
+                Karibu, {userProfile?.full_name || 'User'}!
               </h2>
               <div className="flex items-center space-x-2 mt-1">
                 <Badge variant="outline" className="text-purple-600 border-purple-200">
@@ -150,7 +155,7 @@ export const Dashboard = () => {
                 )}
               </div>
               <p className="text-gray-600 text-sm mt-1">
-                Here's what's happening in your store today.
+                Hapa kuna kilichoendelea leo katika duka lako.
               </p>
             </div>
           </div>
@@ -186,7 +191,7 @@ export const Dashboard = () => {
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center text-orange-700">
               <AlertTriangle className="h-5 w-5 mr-2" />
-              Low Stock Alerts
+              Bidhaa Zinazokaribia Kuisha
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -197,7 +202,7 @@ export const Dashboard = () => {
                   <p className="text-sm text-gray-600">{product.category}</p>
                 </div>
                 <Badge variant="outline" className="text-orange-600 border-orange-200">
-                  {product.stock_quantity} left
+                  {product.stock_quantity} zimebaki
                 </Badge>
               </div>
             ))}
@@ -208,25 +213,31 @@ export const Dashboard = () => {
       {/* Quick Actions */}
       <Card>
         <CardHeader>
-          <CardTitle>Quick Actions</CardTitle>
+          <CardTitle>Vitendo vya Haraka</CardTitle>
         </CardHeader>
         <CardContent className="grid grid-cols-2 gap-3">
-          <button 
-            onClick={() => window.location.href = '/products/add'}
-            className="p-4 bg-purple-50 rounded-lg text-left hover:bg-purple-100 transition-colors"
+          <Button 
+            onClick={() => navigate('/add-product')}
+            className="p-4 bg-purple-50 rounded-lg text-left hover:bg-purple-100 transition-colors h-auto justify-start"
+            variant="ghost"
           >
-            <Package className="h-6 w-6 text-purple-600 mb-2" />
-            <p className="font-medium text-gray-900">Add Product</p>
-            <p className="text-sm text-gray-600">Add new inventory</p>
-          </button>
-          <button 
-            onClick={() => window.location.href = '/scanner'}
-            className="p-4 bg-blue-50 rounded-lg text-left hover:bg-blue-100 transition-colors"
+            <div>
+              <Package className="h-6 w-6 text-purple-600 mb-2" />
+              <p className="font-medium text-gray-900">Ongeza Bidhaa</p>
+              <p className="text-sm text-gray-600">Ongeza stock mpya</p>
+            </div>
+          </Button>
+          <Button 
+            onClick={() => navigate('/scanner')}
+            className="p-4 bg-blue-50 rounded-lg text-left hover:bg-blue-100 transition-colors h-auto justify-start"
+            variant="ghost"
           >
-            <ShoppingCart className="h-6 w-6 text-blue-600 mb-2" />
-            <p className="font-medium text-gray-900">New Sale</p>
-            <p className="text-sm text-gray-600">Scan to sell</p>
-          </button>
+            <div>
+              <ShoppingCart className="h-6 w-6 text-blue-600 mb-2" />
+              <p className="font-medium text-gray-900">Muuzo Mpya</p>
+              <p className="text-sm text-gray-600">Scan kuuza</p>
+            </div>
+          </Button>
         </CardContent>
       </Card>
     </div>

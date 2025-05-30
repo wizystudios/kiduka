@@ -48,7 +48,7 @@ export const DashboardMetrics = () => {
       const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
       const endOfDay = new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000);
 
-      // Fetch today's sales
+      // Fetch today's sales from real database
       const { data: todaysSales } = await supabase
         .from('sales')
         .select('total_amount')
@@ -56,13 +56,13 @@ export const DashboardMetrics = () => {
         .gte('created_at', startOfDay.toISOString())
         .lt('created_at', endOfDay.toISOString());
 
-      // Fetch all products for this owner
+      // Fetch all products for this owner from real database
       const { data: products } = await supabase
         .from('products')
         .select('*')
         .eq('owner_id', userProfile.id);
 
-      // Fetch recent sales for activity
+      // Fetch recent sales for activity from real database
       const { data: recentSales } = await supabase
         .from('sales')
         .select(`
@@ -77,12 +77,12 @@ export const DashboardMetrics = () => {
         .order('created_at', { ascending: false })
         .limit(5);
 
-      // Calculate metrics
+      // Calculate metrics from real data
       const totalSales = todaysSales?.reduce((sum, sale) => sum + Number(sale.total_amount), 0) || 0;
       const totalProducts = products?.length || 0;
       const transactionCount = todaysSales?.length || 0;
       
-      // Find low stock items
+      // Find low stock items from real data
       const lowStock = products?.filter(p => p.stock_quantity <= p.low_stock_threshold) || [];
       
       // Transform low stock items
@@ -93,10 +93,10 @@ export const DashboardMetrics = () => {
         percentage: Math.round((item.stock_quantity / item.low_stock_threshold) * 100)
       }));
 
-      // Transform recent activity
+      // Transform recent activity from real data
       const activityFormatted = recentSales?.map(sale => ({
-        action: "Sale Completed",
-        item: `$${Number(sale.total_amount).toFixed(2)}`,
+        action: "Muuzo Umekamilika",
+        item: `TZS ${Number(sale.total_amount).toLocaleString()}`,
         time: getTimeAgo(new Date(sale.created_at)),
         type: 'success' as const
       })) || [];
@@ -111,7 +111,7 @@ export const DashboardMetrics = () => {
       setLowStockItems(lowStockFormatted);
       setRecentActivity(activityFormatted);
     } catch (error) {
-      console.error('Error fetching dashboard data:', error);
+      console.error('Error fetching real dashboard data:', error);
     } finally {
       setLoading(false);
     }
@@ -121,14 +121,14 @@ export const DashboardMetrics = () => {
     const now = new Date();
     const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
     
-    if (diffInMinutes < 1) return 'Just now';
-    if (diffInMinutes < 60) return `${diffInMinutes} min ago`;
+    if (diffInMinutes < 1) return 'Sasa hivi';
+    if (diffInMinutes < 60) return `dakika ${diffInMinutes} zilizopita`;
     
     const diffInHours = Math.floor(diffInMinutes / 60);
-    if (diffInHours < 24) return `${diffInHours}h ago`;
+    if (diffInHours < 24) return `saa ${diffInHours} zilizopita`;
     
     const diffInDays = Math.floor(diffInHours / 24);
-    return `${diffInDays}d ago`;
+    return `siku ${diffInDays} zilizopita`;
   };
 
   if (loading) {
@@ -145,33 +145,33 @@ export const DashboardMetrics = () => {
 
   const dashboardMetrics = [
     {
-      title: "Today's Sales",
-      value: `$${metrics.todaysSales.toFixed(2)}`,
-      change: "+12.5%",
+      title: "Mauzo ya Leo",
+      value: `TZS ${metrics.todaysSales.toLocaleString()}`,
+      change: metrics.todaysTransactions > 0 ? `+${metrics.todaysTransactions} miamala` : "Hakuna miamala",
       trend: "up",
       icon: DollarSign,
       color: "text-green-600"
     },
     {
-      title: "Total Products",
+      title: "Jumla ya Bidhaa",
       value: metrics.totalProducts.toString(),
-      change: "+5 new",
+      change: "katika hifadhi",
       trend: "up",
       icon: Package,
       color: "text-blue-600"
     },
     {
-      title: "Transactions",
+      title: "Miamala ya Leo",
       value: metrics.todaysTransactions.toString(),
-      change: "+23%",
+      change: "imekamilika",
       trend: "up",
       icon: ShoppingCart,
       color: "text-purple-600"
     },
     {
-      title: "Low Stock Alert",
+      title: "Stock Inayokaribia Kuisha",
       value: metrics.lowStockCount.toString(),
-      change: "Items",
+      change: "bidhaa",
       trend: "warning",
       icon: AlertTriangle,
       color: "text-orange-600"
@@ -212,7 +212,7 @@ export const DashboardMetrics = () => {
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center text-orange-700">
                 <AlertTriangle className="h-5 w-5 mr-2" />
-                Low Stock Alerts
+                Bidhaa Zinazokaribia Kuisha
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -236,7 +236,7 @@ export const DashboardMetrics = () => {
         {/* Recent Activity */}
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-gray-900">Recent Activity</CardTitle>
+            <CardTitle className="text-gray-900">Shughuli za Hivi Karibuni</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
@@ -255,7 +255,7 @@ export const DashboardMetrics = () => {
                   </div>
                 ))
               ) : (
-                <p className="text-sm text-gray-500">No recent activity</p>
+                <p className="text-sm text-gray-500">Hakuna shughuli za hivi karibuni</p>
               )}
             </div>
           </CardContent>
