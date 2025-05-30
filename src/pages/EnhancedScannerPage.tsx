@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -10,6 +9,7 @@ import { QrCode, Plus, Minus, ShoppingCart, Trash2, User, Percent, Calculator } 
 import { BarcodeScanner } from '@/components/BarcodeScanner';
 import { PaymentMethodDialog } from '@/components/PaymentMethodDialog';
 import { EnhancedReceiptPrinter } from '@/components/EnhancedReceiptPrinter';
+import { DigitalReceiptService } from '@/components/DigitalReceiptService';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
@@ -55,6 +55,8 @@ export const EnhancedScannerPage = () => {
   const [showScanner, setShowScanner] = useState(false);
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
   const [showReceipt, setShowReceipt] = useState(false);
+  const [showDigitalReceipt, setShowDigitalReceipt] = useState(false);
+  const [currentReceiptData, setCurrentReceiptData] = useState<any>(null);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [discounts, setDiscounts] = useState<Discount[]>([]);
@@ -306,25 +308,58 @@ export const EnhancedScannerPage = () => {
             .update({ stock_quantity: item.stock_quantity - item.quantity })
             .eq('id', item.id);
         }
+
+        // Prepare digital receipt data
+        setCurrentReceiptData({
+          transactionId: sale.id,
+          items: cart.map(item => ({
+            name: item.name,
+            quantity: item.quantity,
+            price: item.price,
+            total: item.total
+          })),
+          subtotal: totals.subtotal,
+          vatAmount: totals.vatAmount,
+          total: totals.total,
+          paymentData: payment,
+          businessName: businessSettings?.business_name || 'Kiduka Store',
+          customerName: selectedCustomerData?.name
+        });
       } else {
         offlineStorage.saveSale(saleData);
         cart.forEach(item => {
           offlineStorage.updateProductStock(item.id, item.stock_quantity - item.quantity);
         });
+
+        setCurrentReceiptData({
+          transactionId: saleId,
+          items: cart.map(item => ({
+            name: item.name,
+            quantity: item.quantity,
+            price: item.price,
+            total: item.total
+          })),
+          subtotal: totals.subtotal,
+          vatAmount: totals.vatAmount,
+          total: totals.total,
+          paymentData: payment,
+          businessName: businessSettings?.business_name || 'Kiduka Store',
+          customerName: selectedCustomerData?.name
+        });
       }
 
-      setShowReceipt(true);
+      setShowDigitalReceipt(true);
 
       toast({
-        title: 'Sale completed',
-        description: `Sale of TZS ${totals.total.toLocaleString()} completed successfully${!navigator.onLine ? ' (saved offline)' : ''}`
+        title: 'Muuzo Umekamilika',
+        description: `Muuzo wa TZS ${totals.total.toLocaleString()} umekamilika${!navigator.onLine ? ' (imehifadhiwa offline)' : ''}`,
       });
 
     } catch (error) {
       console.error('Error completing sale:', error);
       toast({
-        title: 'Error',
-        description: 'Failed to complete sale',
+        title: 'Hitilafu',
+        description: 'Imeshindwa kukamilisha muuzo',
         variant: 'destructive'
       });
     }
@@ -336,6 +371,8 @@ export const EnhancedScannerPage = () => {
     setSelectedDiscount('');
     setPaymentData(null);
     setShowReceipt(false);
+    setShowDigitalReceipt(false);
+    setCurrentReceiptData(null);
   };
 
   const totals = calculateTotals();
@@ -537,8 +574,24 @@ export const EnhancedScannerPage = () => {
         </Card>
       )}
 
-      {/* Receipt Display */}
-      {showReceipt && paymentData && (
+      {/* Digital Receipt Modal */}
+      {showDigitalReceipt && currentReceiptData && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full max-h-[90vh] overflow-y-auto">
+            <h3 className="text-lg font-bold mb-4 text-center">Muuzo Umekamilika!</h3>
+            <DigitalReceiptService
+              receiptData={currentReceiptData}
+              onClose={() => {
+                setShowDigitalReceipt(false);
+                resetSale();
+              }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Traditional Receipt Display (for backup) */}
+      {showReceipt && paymentData && !showDigitalReceipt && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <EnhancedReceiptPrinter
             items={cart}
@@ -552,14 +605,14 @@ export const EnhancedScannerPage = () => {
             vatNumber={businessSettings?.vat_number}
             onPrint={() => {
               toast({
-                title: 'Receipt printed',
-                description: 'Receipt has been sent to printer'
+                title: 'Risiti Imechapishwa',
+                description: 'Risiti imetumwa kwa kichapishi'
               });
             }}
           />
           <div className="space-y-4">
             <Button onClick={resetSale} className="w-full">
-              New Sale
+              Muuzo Mpya
             </Button>
           </div>
         </div>
