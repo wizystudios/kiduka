@@ -232,5 +232,3 @@ export const Dashboard = () => {
     </div>
   );
 };
-
-export { Dashboard };
