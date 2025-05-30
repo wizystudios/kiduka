@@ -1,4 +1,3 @@
-
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Printer, Download } from 'lucide-react';
@@ -55,24 +54,28 @@ export const EnhancedReceiptPrinter = ({
     });
     
     const getPaymentMethodDisplay = () => {
-      if (paymentData.method === 'cash') return 'CASH PAYMENT';
-      if (paymentData.method === 'mobile') {
-        const providerNames: Record<string, string> = {
-          'mpesa': 'M-Pesa',
-          'airtel': 'Airtel Money',
-          'halopesa': 'Halo Pesa',
-          'tigopesa': 'Mixx by Yas (Tigo Pesa)'
-        };
-        return `${providerNames[paymentData.provider || '']} - ${paymentData.phoneNumber}`;
+      switch (paymentData.method) {
+        case 'cash':
+          return 'CASH PAYMENT';
+        case 'mobile': {
+          const providerNames: Record<string, string> = {
+            'mpesa': 'M-Pesa',
+            'airtel': 'Airtel Money',
+            'halopesa': 'Halo Pesa',
+            'tigopesa': 'Mixx by Yas (Tigo Pesa)'
+          };
+          return `${providerNames[paymentData.provider || '']} - ${paymentData.phoneNumber}`;
+        }
+        case 'bank': {
+          const bankNames: Record<string, string> = {
+            'nmb': 'NMB Bank',
+            'crdb': 'CRDB Bank'
+          };
+          return `${bankNames[paymentData.provider || '']} - ****${paymentData.accountNumber?.slice(-4)}`;
+        }
+        default:
+          return 'UNKNOWN PAYMENT';
       }
-      if (paymentData.method === 'bank') {
-        const bankNames: Record<string, string> = {
-          'nmb': 'NMB Bank',
-          'crdb': 'CRDB Bank'
-        };
-        return `${bankNames[paymentData.provider || '']} - ****${paymentData.accountNumber?.slice(-4)}`;
-      }
-      return paymentData.method.toUpperCase();
     };
     
     return `
