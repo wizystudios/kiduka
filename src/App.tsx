@@ -1,4 +1,3 @@
-
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from '@/components/ui/toaster';
@@ -10,7 +9,7 @@ import { ThemeProvider } from '@/contexts/ThemeContext';
 // Import pages
 import Index from '@/pages/Index';
 import { AuthPage } from '@/pages/AuthPage';
-import Dashboard from '@/pages/Dashboard';
+import { Dashboard } from '@/pages/Dashboard';
 import { ProductsPage } from '@/pages/ProductsPage';
 import { AddProductPage } from '@/pages/AddProductPage';
 import { EditProductPage } from '@/pages/EditProductPage';
@@ -27,7 +26,7 @@ import { UsersManagementPage } from '@/pages/UsersManagementPage';
 import { SettingsPage } from '@/pages/SettingsPage';
 import { EnhancedSettingsPage } from '@/pages/EnhancedSettingsPage';
 import { ReceiptViewPage } from '@/pages/ReceiptViewPage';
-import { NotFound } from '@/pages/NotFound';
+import NotFound from '@/pages/NotFound';
 
 const queryClient = new QueryClient();
 
