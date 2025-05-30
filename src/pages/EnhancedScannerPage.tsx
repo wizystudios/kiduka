@@ -8,6 +8,8 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { QrCode, Plus, Minus, ShoppingCart, Trash2, User, Percent, Calculator } from 'lucide-react';
 import { BarcodeScanner } from '@/components/BarcodeScanner';
+import { PaymentMethodDialog } from '@/components/PaymentMethodDialog';
+import { EnhancedReceiptPrinter } from '@/components/EnhancedReceiptPrinter';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
@@ -41,16 +43,28 @@ interface Discount {
   active: boolean;
 }
 
+interface PaymentData {
+  method: 'cash' | 'mobile' | 'bank';
+  provider?: string;
+  phoneNumber?: string;
+  accountNumber?: string;
+  transactionId?: string;
+}
+
 export const EnhancedScannerPage = () => {
   const [showScanner, setShowScanner] = useState(false);
+  const [showPaymentDialog, setShowPaymentDialog] = useState(false);
+  const [showReceipt, setShowReceipt] = useState(false);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [discounts, setDiscounts] = useState<Discount[]>([]);
   const [selectedCustomer, setSelectedCustomer] = useState<string>('');
   const [selectedDiscount, setSelectedDiscount] = useState<string>('');
-  const [taxRate, setTaxRate] = useState(0);
+  const [vatRate] = useState(18); // 18% VAT for Tanzania
   const [loading, setLoading] = useState(false);
   const [manualBarcode, setManualBarcode] = useState('');
+  const [paymentData, setPaymentData] = useState<PaymentData | null>(null);
+  const [businessSettings, setBusinessSettings] = useState<any>(null);
   const { userProfile } = useAuth();
   const { toast } = useToast();
 
@@ -72,37 +86,24 @@ export const EnhancedScannerPage = () => {
         .select('*')
         .eq('active', true);
 
-      // Fetch tax rate from settings
+      // Fetch business settings
       const { data: settingsData } = await supabase
         .from('settings')
-        .select('tax_rate')
+        .select('*')
         .eq('owner_id', userProfile?.id)
         .single();
 
       setCustomers(customersData || []);
       
-      // Type assertion to fix the type mismatch
       const typedDiscounts = (discountsData || []).map(discount => ({
         ...discount,
         type: discount.type as 'percentage' | 'fixed'
       }));
       setDiscounts(typedDiscounts);
       
-      setTaxRate(settingsData?.tax_rate || 0);
+      setBusinessSettings(settingsData);
     } catch (error) {
       console.error('Error fetching initial data:', error);
-    }
-  };
-
-  const handleBarcodeScanned = async (barcode: string) => {
-    await addProductToCart(barcode);
-    setShowScanner(false);
-  };
-
-  const handleManualBarcodeSubmit = async () => {
-    if (manualBarcode.trim()) {
-      await addProductToCart(manualBarcode.trim());
-      setManualBarcode('');
     }
   };
 
@@ -111,7 +112,6 @@ export const EnhancedScannerPage = () => {
     try {
       let product: Product | null = null;
 
-      // Try to find product online first
       if (navigator.onLine) {
         const { data, error } = await supabase
           .from('products')
@@ -124,7 +124,6 @@ export const EnhancedScannerPage = () => {
           product = data;
         }
       } else {
-        // Fallback to offline products
         const offlineProducts = offlineStorage.getOfflineProducts();
         product = offlineProducts.find(p => p.barcode === barcode) || null;
       }
@@ -147,7 +146,6 @@ export const EnhancedScannerPage = () => {
         return;
       }
 
-      // Check if product already in cart
       const existingItem = cart.find(item => item.id === product.id);
       
       if (existingItem) {
@@ -225,31 +223,27 @@ export const EnhancedScannerPage = () => {
     }
     
     const afterDiscount = subtotal - discountAmount;
-    const taxAmount = (afterDiscount * taxRate) / 100;
-    const total = afterDiscount + taxAmount;
+    const vatAmount = (afterDiscount * vatRate) / 100;
+    const total = afterDiscount + vatAmount;
 
     return {
       subtotal,
       discountAmount,
-      taxAmount,
+      vatAmount,
       total
     };
   };
 
-  const completeSale = async () => {
-    if (cart.length === 0) {
-      toast({
-        title: 'Empty cart',
-        description: 'Add products to cart before completing sale',
-        variant: 'destructive'
-      });
-      return;
-    }
-
-    setLoading(true);
+  const handlePaymentComplete = async (payment: PaymentData) => {
+    setPaymentData(payment);
+    setShowPaymentDialog(false);
+    
     try {
       const totals = calculateTotals();
       const saleId = crypto.randomUUID();
+      
+      const selectedCustomerData = customers.find(c => c.id === selectedCustomer);
+      
       const saleData = {
         id: saleId,
         items: cart.map(item => ({
@@ -259,16 +253,22 @@ export const EnhancedScannerPage = () => {
           total_price: item.total
         })),
         total_amount: totals.total,
-        payment_method: 'cash',
+        payment_method: payment.method,
         customer_id: selectedCustomer || undefined,
         discount_id: selectedDiscount || undefined,
         discount_amount: totals.discountAmount,
-        tax_amount: totals.taxAmount,
-        created_at: new Date().toISOString()
+        tax_amount: totals.vatAmount,
+        created_at: new Date().toISOString(),
+        payment_details: {
+          method: payment.method,
+          provider: payment.provider,
+          phone: payment.phoneNumber,
+          account: payment.accountNumber,
+          transactionId: payment.transactionId
+        }
       };
 
       if (navigator.onLine) {
-        // Process sale online
         const { data: sale, error: saleError } = await supabase
           .from('sales')
           .insert({
@@ -278,15 +278,13 @@ export const EnhancedScannerPage = () => {
             discount_id: saleData.discount_id,
             discount_amount: saleData.discount_amount,
             tax_amount: saleData.tax_amount,
-            owner_id: userProfile?.id,
-            created_at: saleData.created_at
+            owner_id: userProfile?.id
           })
           .select()
           .single();
 
         if (saleError) throw saleError;
 
-        // Add sale items
         const saleItems = saleData.items.map(item => ({
           sale_id: sale.id,
           product_id: item.product_id,
@@ -300,36 +298,28 @@ export const EnhancedScannerPage = () => {
           .insert(saleItems);
 
         if (itemsError) throw itemsError;
+
+        // Update product stock
+        for (const item of cart) {
+          await supabase
+            .from('products')
+            .update({ stock_quantity: item.stock_quantity - item.quantity })
+            .eq('id', item.id);
+        }
       } else {
-        // Save sale offline
         offlineStorage.saveSale(saleData);
-        
-        // Update offline product stock
         cart.forEach(item => {
           offlineStorage.updateProductStock(item.id, item.stock_quantity - item.quantity);
         });
       }
 
-      // Update customer loyalty points
-      if (selectedCustomer && navigator.onLine) {
-        const pointsEarned = Math.floor(totals.total / 10);
-        await supabase
-          .from('customers')
-          .update({
-            loyalty_points: customers.find(c => c.id === selectedCustomer)?.loyalty_points + pointsEarned
-          })
-          .eq('id', selectedCustomer);
-      }
+      setShowReceipt(true);
 
       toast({
         title: 'Sale completed',
-        description: `Sale of $${totals.total.toFixed(2)} completed successfully${!navigator.onLine ? ' (saved offline)' : ''}`
+        description: `Sale of TZS ${totals.total.toLocaleString()} completed successfully${!navigator.onLine ? ' (saved offline)' : ''}`
       });
 
-      // Reset cart
-      setCart([]);
-      setSelectedCustomer('');
-      setSelectedDiscount('');
     } catch (error) {
       console.error('Error completing sale:', error);
       toast({
@@ -337,12 +327,19 @@ export const EnhancedScannerPage = () => {
         description: 'Failed to complete sale',
         variant: 'destructive'
       });
-    } finally {
-      setLoading(false);
     }
   };
 
+  const resetSale = () => {
+    setCart([]);
+    setSelectedCustomer('');
+    setSelectedDiscount('');
+    setPaymentData(null);
+    setShowReceipt(false);
+  };
+
   const totals = calculateTotals();
+  const selectedCustomerData = customers.find(c => c.id === selectedCustomer);
 
   return (
     <div className="p-4 space-y-6">
@@ -377,9 +374,9 @@ export const EnhancedScannerPage = () => {
               placeholder="Enter barcode manually"
               value={manualBarcode}
               onChange={(e) => setManualBarcode(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && handleManualBarcodeSubmit()}
+              onKeyPress={(e) => e.key === 'Enter' && addProductToCart(manualBarcode.trim())}
             />
-            <Button onClick={handleManualBarcodeSubmit} disabled={!manualBarcode.trim()}>
+            <Button onClick={() => addProductToCart(manualBarcode.trim())} disabled={!manualBarcode.trim()}>
               Add
             </Button>
           </div>
@@ -428,7 +425,7 @@ export const EnhancedScannerPage = () => {
                 <SelectItem value="">No discount</SelectItem>
                 {discounts.map(discount => (
                   <SelectItem key={discount.id} value={discount.id}>
-                    {discount.code} ({discount.type === 'percentage' ? `${discount.value}%` : `$${discount.value}`} off)
+                    {discount.code} ({discount.type === 'percentage' ? `${discount.value}%` : `TZS ${discount.value}`} off)
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -454,7 +451,7 @@ export const EnhancedScannerPage = () => {
                 <div key={item.id} className="flex items-center justify-between p-3 border rounded-lg">
                   <div className="flex-1">
                     <h4 className="font-medium">{item.name}</h4>
-                    <p className="text-sm text-gray-600">${item.price.toFixed(2)} each</p>
+                    <p className="text-sm text-gray-600">TZS {item.price.toLocaleString()} each</p>
                   </div>
                   
                   <div className="flex items-center space-x-2">
@@ -477,7 +474,7 @@ export const EnhancedScannerPage = () => {
                       <Plus className="h-3 w-3" />
                     </Button>
                     
-                    <span className="w-16 text-right font-medium">${item.total.toFixed(2)}</span>
+                    <span className="w-20 text-right font-medium">TZS {item.total.toLocaleString()}</span>
                     
                     <Button
                       size="sm"
@@ -507,39 +504,65 @@ export const EnhancedScannerPage = () => {
           <CardContent className="space-y-3">
             <div className="flex justify-between">
               <span>Subtotal:</span>
-              <span>${totals.subtotal.toFixed(2)}</span>
+              <span>TZS {totals.subtotal.toLocaleString()}</span>
             </div>
             
             {totals.discountAmount > 0 && (
               <div className="flex justify-between text-green-600">
                 <span>Discount:</span>
-                <span>-${totals.discountAmount.toFixed(2)}</span>
+                <span>-TZS {totals.discountAmount.toLocaleString()}</span>
               </div>
             )}
             
-            {totals.taxAmount > 0 && (
-              <div className="flex justify-between">
-                <span>Tax ({taxRate}%):</span>
-                <span>${totals.taxAmount.toFixed(2)}</span>
-              </div>
-            )}
+            <div className="flex justify-between">
+              <span>VAT ({vatRate}%):</span>
+              <span>TZS {totals.vatAmount.toLocaleString()}</span>
+            </div>
             
             <div className="border-t pt-3">
               <div className="flex justify-between text-lg font-bold">
                 <span>Total:</span>
-                <span>${totals.total.toFixed(2)}</span>
+                <span>TZS {totals.total.toLocaleString()}</span>
               </div>
             </div>
             
             <Button 
-              onClick={completeSale} 
+              onClick={() => setShowPaymentDialog(true)}
               disabled={loading}
               className="w-full bg-green-600 hover:bg-green-700 text-white py-3 text-lg"
             >
-              {loading ? 'Processing...' : 'Complete Sale'}
+              Proceed to Payment
             </Button>
           </CardContent>
         </Card>
+      )}
+
+      {/* Receipt Display */}
+      {showReceipt && paymentData && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <EnhancedReceiptPrinter
+            items={cart}
+            subtotal={totals.subtotal}
+            vatAmount={totals.vatAmount}
+            total={totals.total}
+            transactionId={paymentData.transactionId || ''}
+            paymentData={paymentData}
+            customerName={selectedCustomerData?.name}
+            businessName={businessSettings?.business_name || 'Kiduka Store'}
+            vatNumber={businessSettings?.vat_number}
+            onPrint={() => {
+              toast({
+                title: 'Receipt printed',
+                description: 'Receipt has been sent to printer'
+              });
+            }}
+          />
+          <div className="space-y-4">
+            <Button onClick={resetSale} className="w-full">
+              New Sale
+            </Button>
+          </div>
+        </div>
       )}
 
       {/* Barcode Scanner Modal */}
@@ -563,6 +586,14 @@ export const EnhancedScannerPage = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Payment Method Dialog */}
+      <PaymentMethodDialog
+        open={showPaymentDialog}
+        onOpenChange={setShowPaymentDialog}
+        totalAmount={totals.total}
+        onPaymentComplete={handlePaymentComplete}
+      />
     </div>
   );
 };

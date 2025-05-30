@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { 
   Home, 
   Package, 
@@ -15,12 +16,12 @@ import {
   Users,
   UserCheck,
   Percent,
-  Bell,
   Wifi,
   WifiOff
 } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+import { KidukaLogo } from '@/components/KidukaLogo';
 import { syncService } from '@/utils/syncService';
 
 interface MobileLayoutProps {
@@ -35,7 +36,6 @@ export const MobileLayout = ({ children }: MobileLayoutProps) => {
   const { signOut, userProfile } = useAuth();
 
   useEffect(() => {
-    // Update sync status periodically
     const interval = setInterval(() => {
       setSyncStatus(syncService.getSyncStatus());
     }, 5000);
@@ -78,10 +78,20 @@ export const MobileLayout = ({ children }: MobileLayoutProps) => {
     return location.pathname.startsWith(href);
   };
 
+  const getUserInitials = () => {
+    if (userProfile?.full_name) {
+      return userProfile.full_name.split(' ').map(n => n[0]).join('').toUpperCase();
+    }
+    if (userProfile?.email) {
+      return userProfile.email.substring(0, 2).toUpperCase();
+    }
+    return 'U';
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
+      <header className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between shadow-sm">
         <div className="flex items-center space-x-3">
           <Button
             variant="ghost"
@@ -91,10 +101,10 @@ export const MobileLayout = ({ children }: MobileLayoutProps) => {
           >
             {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </Button>
-          <h1 className="text-xl font-bold text-gray-900">Kiduka POS</h1>
+          <KidukaLogo size="sm" showText={true} />
         </div>
         
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-3">
           {/* Network Status */}
           <div className="flex items-center space-x-1">
             {syncStatus.isOnline ? (
@@ -109,14 +119,22 @@ export const MobileLayout = ({ children }: MobileLayoutProps) => {
             )}
           </div>
           
-          {/* User Menu */}
+          {/* User Profile */}
           <div className="flex items-center space-x-2">
-            <span className="text-sm text-gray-600 hidden sm:block">
-              {userProfile?.full_name || userProfile?.email}
-            </span>
-            <Badge variant="outline" className="text-xs">
-              {userProfile?.role}
-            </Badge>
+            <Avatar className="h-8 w-8">
+              <AvatarImage src={userProfile?.avatar_url} />
+              <AvatarFallback className="bg-gradient-to-br from-emerald-500 to-blue-600 text-white text-xs">
+                {getUserInitials()}
+              </AvatarFallback>
+            </Avatar>
+            <div className="hidden sm:block">
+              <span className="text-sm font-medium text-gray-700">
+                {userProfile?.full_name || userProfile?.email}
+              </span>
+              <Badge variant="outline" className="text-xs ml-2">
+                {userProfile?.role}
+              </Badge>
+            </div>
           </div>
         </div>
       </header>
@@ -128,6 +146,26 @@ export const MobileLayout = ({ children }: MobileLayoutProps) => {
           ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
         `}>
           <div className="flex flex-col h-full pt-16 lg:pt-0">
+            {/* User Profile in Sidebar */}
+            <div className="p-4 border-b border-gray-200">
+              <div className="flex items-center space-x-3">
+                <Avatar className="h-10 w-10">
+                  <AvatarImage src={userProfile?.avatar_url} />
+                  <AvatarFallback className="bg-gradient-to-br from-emerald-500 to-blue-600 text-white">
+                    {getUserInitials()}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-900 truncate">
+                    {userProfile?.full_name || userProfile?.email}
+                  </p>
+                  <p className="text-xs text-gray-500 truncate">
+                    {userProfile?.role}
+                  </p>
+                </div>
+              </div>
+            </div>
+
             <nav className="flex-1 px-4 py-4 space-y-2">
               {navigationItems.map((item) => {
                 const Icon = item.icon;
