@@ -56,12 +56,13 @@ const handler = async (req: Request): Promise<Response> => {
     formData.append('username', africasTalkingUsername);
     formData.append('to', formattedPhone);
     formData.append('message', message);
+    // Use your approved sender ID or remove this line to use default
     formData.append('from', 'KIDUKA');
 
     console.log('Sending SMS to Africa\'s Talking API...');
     console.log('Form data:', Object.fromEntries(formData));
 
-    // Use production endpoint for real SMS
+    // Use production endpoint
     const apiUrl = "https://api.africastalking.com/version1/messaging";
     
     const response = await fetch(apiUrl, {
@@ -123,7 +124,8 @@ const handler = async (req: Request): Promise<Response> => {
     const firstRecipient = recipients[0];
     console.log('First recipient status:', firstRecipient);
     
-    if (firstRecipient.status !== 'Success') {
+    // Accept both "Success" and "Sent" as valid statuses
+    if (firstRecipient.status !== 'Success' && firstRecipient.status !== 'Sent') {
       console.error('SMS failed for recipient:', firstRecipient);
       return new Response(JSON.stringify({ 
         error: `SMS delivery failed: ${firstRecipient.status}`,
