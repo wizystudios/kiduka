@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -5,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Plus, Search, Edit, Trash2, Users, Mail, UserCheck } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, Users, Mail, UserCheck, Copy } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -27,6 +28,7 @@ export const UsersPage = () => {
     fullName: '',
     role: 'assistant'
   });
+  const [tempPassword, setTempPassword] = useState('');
   const { toast } = useToast();
 
   useEffect(() => {
@@ -45,8 +47,8 @@ export const UsersPage = () => {
     } catch (error) {
       console.error('Error fetching users:', error);
       toast({
-        title: 'Error',
-        description: 'Failed to load users',
+        title: 'Hitilafu',
+        description: 'Imeshindwa kupakia watumiaji',
         variant: 'destructive'
       });
     } finally {
@@ -54,73 +56,101 @@ export const UsersPage = () => {
     }
   };
 
+  const generateTempPassword = () => {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
+    let password = '';
+    for (let i = 0; i < 8; i++) {
+      password += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return password;
+  };
+
   const handleInviteUser = async () => {
     if (!inviteData.email || !inviteData.fullName) {
       toast({
-        title: 'Error',
-        description: 'Please fill in all required fields',
+        title: 'Hitilafu',
+        description: 'Tafadhali jaza sehemu zote zinazohitajika',
         variant: 'destructive'
       });
       return;
     }
 
     try {
-      // Create the user profile directly (simulating invitation)
-      const { data: authUser, error: signUpError } = await supabase.auth.signUp({
+      // Generate temporary password
+      const tempPass = generateTempPassword();
+      setTempPassword(tempPass);
+
+      // Create user account with email/password
+      const { data: authData, error: signUpError } = await supabase.auth.signUp({
         email: inviteData.email,
-        password: 'TempPassword123!', // In production, generate secure temp password
+        password: tempPass,
         options: {
           data: {
             full_name: inviteData.fullName,
             role: inviteData.role
-          }
+          },
+          emailRedirectTo: `${window.location.origin}/auth`
         }
       });
 
-      if (signUpError) throw signUpError;
+      if (signUpError) {
+        console.error('SignUp error:', signUpError);
+        throw signUpError;
+      }
 
-      if (authUser.user) {
-        // Create profile with the specified role
+      if (authData.user) {
+        // Insert profile manually since the trigger might not work properly
         const { error: profileError } = await supabase
           .from('profiles')
-          .insert({
-            id: authUser.user.id,
+          .upsert({
+            id: authData.user.id,
             email: inviteData.email,
             full_name: inviteData.fullName,
             role: inviteData.role
           });
 
-        if (profileError) throw profileError;
+        if (profileError) {
+          console.error('Profile error:', profileError);
+          // Don't throw here, user was created successfully
+        }
       }
 
       toast({
-        title: 'User Invited',
-        description: `${inviteData.fullName} has been added as ${inviteData.role}`,
+        title: 'Mtumiaji Amealikwa',
+        description: `${inviteData.fullName} ameongezwa kama ${inviteData.role}. Nywila ni ya muda: ${tempPass}`,
+        duration: 10000
       });
       
       setInviteData({ email: '', fullName: '', role: 'assistant' });
-      setDialogOpen(false);
       fetchUsers();
     } catch (error: any) {
       console.error('Error inviting user:', error);
-      if (error.code === '23505') {
+      if (error.message?.includes('already registered')) {
         toast({
-          title: 'Error',
-          description: 'User with this email already exists',
+          title: 'Hitilafu',
+          description: 'Mtumiaji wa barua pepe hii tayari yupo',
           variant: 'destructive'
         });
       } else {
         toast({
-          title: 'Error',
-          description: 'Failed to invite user',
+          title: 'Hitilafu',
+          description: `Imeshindwa kumwalika mtumiaji: ${error.message}`,
           variant: 'destructive'
         });
       }
     }
   };
 
+  const copyPassword = () => {
+    navigator.clipboard.writeText(tempPassword);
+    toast({
+      title: 'Imenakiliwa',
+      description: 'Nywila imenakiliwa kwenye clipboard'
+    });
+  };
+
   const handleDeleteUser = async (id: string) => {
-    if (!confirm('Are you sure you want to remove this user?')) return;
+    if (!confirm('Una uhakika unataka kumwondoa mtumiaji huyu?')) return;
 
     try {
       const { error } = await supabase
@@ -132,14 +162,14 @@ export const UsersPage = () => {
 
       setUsers(users.filter(u => u.id !== id));
       toast({
-        title: 'Success',
-        description: 'User removed successfully'
+        title: 'Imefanikiwa',
+        description: 'Mtumiaji ameondolewa kikamilifu'
       });
     } catch (error) {
       console.error('Error deleting user:', error);
       toast({
-        title: 'Error',
-        description: 'Failed to remove user',
+        title: 'Hitilafu',
+        description: 'Imeshindwa kumwondoa mtumiaji',
         variant: 'destructive'
       });
     }
@@ -152,8 +182,8 @@ export const UsersPage = () => {
 
   const getRoleBadge = (role: string) => {
     return role === 'owner' 
-      ? { color: 'bg-blue-100 text-blue-800', label: 'Owner' }
-      : { color: 'bg-green-100 text-green-800', label: 'Assistant' };
+      ? { color: 'bg-blue-100 text-blue-800', label: 'Mmiliki' }
+      : { color: 'bg-green-100 text-green-800', label: 'Msaidizi' };
   };
 
   if (loading) {
@@ -171,55 +201,81 @@ export const UsersPage = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">User Management</h2>
-          <p className="text-gray-600">Manage your team members and permissions</p>
+          <h2 className="text-2xl font-bold text-gray-900">Usimamizi wa Watumiaji</h2>
+          <p className="text-gray-600">Simamia wanatimu wako na ruhusa</p>
         </div>
         
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
             <Button className="bg-blue-600 hover:bg-blue-700 text-white">
               <Plus className="h-4 w-4 mr-2" />
-              Invite User
+              Alika Mtumiaji
             </Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
-              <DialogTitle>Invite New User</DialogTitle>
+              <DialogTitle>Alika Mtumiaji Mpya</DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
+              {tempPassword && (
+                <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="font-medium text-yellow-800">Nywila ya Muda</h4>
+                      <p className="text-sm text-yellow-700 font-mono">{tempPassword}</p>
+                      <p className="text-xs text-yellow-600 mt-1">
+                        Mpe mtumiaji nywila hii ili aweze kuingia
+                      </p>
+                    </div>
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      onClick={copyPassword}
+                      className="border-yellow-300"
+                    >
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              )}
+              
               <div>
-                <Label htmlFor="email">Email Address *</Label>
+                <Label htmlFor="email">Barua Pepe *</Label>
                 <Input
                   id="email"
                   type="email"
                   value={inviteData.email}
                   onChange={(e) => setInviteData({...inviteData, email: e.target.value})}
-                  placeholder="user@example.com"
+                  placeholder="mtumiaji@mfano.com"
                 />
               </div>
               <div>
-                <Label htmlFor="fullName">Full Name *</Label>
+                <Label htmlFor="fullName">Jina Kamili *</Label>
                 <Input
                   id="fullName"
                   value={inviteData.fullName}
                   onChange={(e) => setInviteData({...inviteData, fullName: e.target.value})}
-                  placeholder="John Doe"
+                  placeholder="Juma Mwangi"
                 />
               </div>
               <div>
-                <Label htmlFor="role">Role</Label>
+                <Label htmlFor="role">Jukumu</Label>
                 <select
                   id="role"
                   value={inviteData.role}
                   onChange={(e) => setInviteData({...inviteData, role: e.target.value})}
                   className="w-full p-2 border border-gray-300 rounded-md"
                 >
-                  <option value="assistant">Assistant</option>
-                  <option value="owner">Owner</option>
+                  <option value="assistant">Msaidizi</option>
+                  <option value="owner">Mmiliki</option>
                 </select>
               </div>
-              <Button onClick={handleInviteUser} className="w-full bg-blue-600 hover:bg-blue-700">
-                Send Invitation
+              <Button 
+                onClick={handleInviteUser} 
+                className="w-full bg-blue-600 hover:bg-blue-700"
+                disabled={!inviteData.email || !inviteData.fullName}
+              >
+                Tuma Mwaliko
               </Button>
             </div>
           </DialogContent>
@@ -230,7 +286,7 @@ export const UsersPage = () => {
       <div className="relative">
         <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
         <Input
-          placeholder="Search users by name or email..."
+          placeholder="Tafuta watumiaji kwa jina au barua pepe..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="pl-10"
@@ -250,13 +306,13 @@ export const UsersPage = () => {
                       <UserCheck className="h-6 w-6 text-gray-600" />
                     </div>
                     <div>
-                      <h3 className="font-semibold text-lg">{user.full_name || 'Unknown User'}</h3>
+                      <h3 className="font-semibold text-lg">{user.full_name || 'Mtumiaji Asiyejulikana'}</h3>
                       <div className="flex items-center space-x-2 text-sm text-gray-600">
                         <Mail className="h-4 w-4" />
                         <span>{user.email}</span>
                       </div>
                       <p className="text-xs text-gray-500 mt-1">
-                        Joined: {new Date(user.created_at).toLocaleDateString()}
+                        Alijiunga: {new Date(user.created_at).toLocaleDateString('sw')}
                       </p>
                     </div>
                   </div>
@@ -293,14 +349,14 @@ export const UsersPage = () => {
         <Card className="text-center py-12">
           <CardContent>
             <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">No users found</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Hakuna watumiaji waliopatikana</h3>
             <p className="text-gray-600 mb-4">
-              {searchTerm ? "Try adjusting your search terms" : "Start by inviting your first team member"}
+              {searchTerm ? "Jaribu kubadilisha maneno yako ya utafutaji" : "Anza kwa kumwalika mwanatimu wako wa kwanza"}
             </p>
             {!searchTerm && (
               <Button onClick={() => setDialogOpen(true)}>
                 <Plus className="h-4 w-4 mr-2" />
-                Invite User
+                Alika Mtumiaji
               </Button>
             )}
           </CardContent>

@@ -6,7 +6,8 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Card, CardContent } from '@/components/ui/card';
-import { CreditCard, Smartphone, Banknote } from 'lucide-react';
+import { CreditCard, Smartphone, Banknote, CheckCircle, AlertCircle } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 interface PaymentMethodDialogProps {
   open: boolean;
@@ -30,6 +31,9 @@ export const PaymentMethodDialog = ({ open, onOpenChange, totalAmount, onPayment
   const [bankProvider, setBankProvider] = useState('');
   const [accountNumber, setAccountNumber] = useState('');
   const [processing, setProcessing] = useState(false);
+  const [awaitingPayment, setAwaitingPayment] = useState(false);
+  const [paymentConfirmed, setPaymentConfirmed] = useState(false);
+  const { toast } = useToast();
 
   const mobileProviders = [
     { id: 'mpesa', name: 'M-Pesa', prefix: '255' },
@@ -44,40 +48,69 @@ export const PaymentMethodDialog = ({ open, onOpenChange, totalAmount, onPayment
   ];
 
   const handlePayment = async () => {
-    setProcessing(true);
-    
-    try {
-      if (selectedMethod === 'cash') {
-        onPaymentComplete({
-          method: 'cash',
-          transactionId: `CASH_${Date.now()}`
-        });
-      } else if (selectedMethod === 'mobile') {
-        // Simulate mobile payment processing
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        
-        onPaymentComplete({
-          method: 'mobile',
-          provider: mobileProvider,
-          phoneNumber: phoneNumber,
-          transactionId: `MOB_${Date.now()}`
-        });
-      } else if (selectedMethod === 'bank') {
-        // Simulate bank payment processing
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        
-        onPaymentComplete({
-          method: 'bank',
-          provider: bankProvider,
-          accountNumber: accountNumber,
-          transactionId: `BANK_${Date.now()}`
-        });
-      }
-    } catch (error) {
-      console.error('Payment processing error:', error);
-    } finally {
-      setProcessing(false);
+    if (selectedMethod === 'cash') {
+      // Cash payment - immediate confirmation
+      onPaymentComplete({
+        method: 'cash',
+        transactionId: `CASH_${Date.now()}`
+      });
+      return;
     }
+
+    if (selectedMethod === 'mobile') {
+      setProcessing(true);
+      setAwaitingPayment(true);
+      
+      // Show customer payment instructions
+      toast({
+        title: 'Malipo ya Simu',
+        description: `Mteja anapaswa kulipa TZS ${totalAmount.toLocaleString()} kupitia ${mobileProvider} kwa namba ${phoneNumber}`,
+        duration: 10000
+      });
+
+      // In real implementation, this would trigger USSD or payment gateway
+      // For now, we simulate waiting for customer confirmation
+      
+      setProcessing(false);
+      return;
+    }
+
+    if (selectedMethod === 'bank') {
+      setProcessing(true);
+      setAwaitingPayment(true);
+      
+      toast({
+        title: 'Malipo ya Benki',
+        description: `Mteja anapaswa kuthibitisha malipo ya TZS ${totalAmount.toLocaleString()} kupitia ${bankProvider}`,
+        duration: 10000
+      });
+      
+      setProcessing(false);
+      return;
+    }
+  };
+
+  const confirmPaymentReceived = () => {
+    setPaymentConfirmed(true);
+    setAwaitingPayment(false);
+    
+    const transactionId = selectedMethod === 'mobile' 
+      ? `MOB_${Date.now()}`
+      : `BANK_${Date.now()}`;
+
+    onPaymentComplete({
+      method: selectedMethod,
+      provider: selectedMethod === 'mobile' ? mobileProvider : bankProvider,
+      phoneNumber: selectedMethod === 'mobile' ? phoneNumber : undefined,
+      accountNumber: selectedMethod === 'bank' ? accountNumber : undefined,
+      transactionId
+    });
+  };
+
+  const cancelPayment = () => {
+    setAwaitingPayment(false);
+    setPaymentConfirmed(false);
+    setProcessing(false);
   };
 
   const isValidPayment = () => {
@@ -91,114 +124,165 @@ export const PaymentMethodDialog = ({ open, onOpenChange, totalAmount, onPayment
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Select Payment Method</DialogTitle>
+          <DialogTitle>Chagua Njia ya Malipo</DialogTitle>
         </DialogHeader>
         
         <div className="space-y-4">
           <div className="text-center">
-            <p className="text-lg font-semibold">Total Amount: TZS {totalAmount.toLocaleString()}</p>
+            <p className="text-lg font-semibold">Jumla: TZS {totalAmount.toLocaleString()}</p>
           </div>
 
           {/* Payment Method Selection */}
-          <div className="grid grid-cols-3 gap-2">
-            <Card 
-              className={`cursor-pointer ${selectedMethod === 'cash' ? 'border-blue-500 bg-blue-50' : ''}`}
-              onClick={() => setSelectedMethod('cash')}
-            >
-              <CardContent className="p-3 text-center">
-                <Banknote className="h-6 w-6 mx-auto mb-1" />
-                <p className="text-xs">Cash</p>
-              </CardContent>
-            </Card>
+          {!awaitingPayment && !paymentConfirmed && (
+            <>
+              <div className="grid grid-cols-3 gap-2">
+                <Card 
+                  className={`cursor-pointer ${selectedMethod === 'cash' ? 'border-blue-500 bg-blue-50' : ''}`}
+                  onClick={() => setSelectedMethod('cash')}
+                >
+                  <CardContent className="p-3 text-center">
+                    <Banknote className="h-6 w-6 mx-auto mb-1" />
+                    <p className="text-xs">Taslimu</p>
+                  </CardContent>
+                </Card>
 
-            <Card 
-              className={`cursor-pointer ${selectedMethod === 'mobile' ? 'border-blue-500 bg-blue-50' : ''}`}
-              onClick={() => setSelectedMethod('mobile')}
-            >
-              <CardContent className="p-3 text-center">
-                <Smartphone className="h-6 w-6 mx-auto mb-1" />
-                <p className="text-xs">Mobile</p>
-              </CardContent>
-            </Card>
+                <Card 
+                  className={`cursor-pointer ${selectedMethod === 'mobile' ? 'border-blue-500 bg-blue-50' : ''}`}
+                  onClick={() => setSelectedMethod('mobile')}
+                >
+                  <CardContent className="p-3 text-center">
+                    <Smartphone className="h-6 w-6 mx-auto mb-1" />
+                    <p className="text-xs">Simu</p>
+                  </CardContent>
+                </Card>
 
-            <Card 
-              className={`cursor-pointer ${selectedMethod === 'bank' ? 'border-blue-500 bg-blue-50' : ''}`}
-              onClick={() => setSelectedMethod('bank')}
-            >
-              <CardContent className="p-3 text-center">
-                <CreditCard className="h-6 w-6 mx-auto mb-1" />
-                <p className="text-xs">Bank</p>
-              </CardContent>
-            </Card>
-          </div>
+                <Card 
+                  className={`cursor-pointer ${selectedMethod === 'bank' ? 'border-blue-500 bg-blue-50' : ''}`}
+                  onClick={() => setSelectedMethod('bank')}
+                >
+                  <CardContent className="p-3 text-center">
+                    <CreditCard className="h-6 w-6 mx-auto mb-1" />
+                    <p className="text-xs">Benki</p>
+                  </CardContent>
+                </Card>
+              </div>
 
-          {/* Mobile Payment Details */}
-          {selectedMethod === 'mobile' && (
-            <div className="space-y-3">
+              {/* Mobile Payment Details */}
+              {selectedMethod === 'mobile' && (
+                <div className="space-y-3">
+                  <div>
+                    <Label>Chagua Mtoa Huduma</Label>
+                    <Select value={mobileProvider} onValueChange={setMobileProvider}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Chagua mtoa huduma" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {mobileProviders.map(provider => (
+                          <SelectItem key={provider.id} value={provider.id}>
+                            {provider.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div>
+                    <Label>Namba ya Simu ya Mteja</Label>
+                    <Input
+                      placeholder="255xxxxxxxxx"
+                      value={phoneNumber}
+                      onChange={(e) => setPhoneNumber(e.target.value)}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Bank Payment Details */}
+              {selectedMethod === 'bank' && (
+                <div className="space-y-3">
+                  <div>
+                    <Label>Chagua Benki</Label>
+                    <Select value={bankProvider} onValueChange={setBankProvider}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Chagua benki" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {bankProviders.map(bank => (
+                          <SelectItem key={bank.id} value={bank.id}>
+                            {bank.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div>
+                    <Label>Namba ya Akaunti</Label>
+                    <Input
+                      placeholder="Ingiza namba ya akaunti"
+                      value={accountNumber}
+                      onChange={(e) => setAccountNumber(e.target.value)}
+                    />
+                  </div>
+                </div>
+              )}
+
+              <Button 
+                onClick={handlePayment}
+                disabled={!isValidPayment() || processing}
+                className="w-full"
+              >
+                {processing ? 'Inasubiri Malipo...' : selectedMethod === 'cash' ? `Pokea TZS ${totalAmount.toLocaleString()}` : `Tuma Ombi la Malipo`}
+              </Button>
+            </>
+          )}
+
+          {/* Awaiting Payment Confirmation */}
+          {awaitingPayment && !paymentConfirmed && (
+            <div className="text-center space-y-4">
+              <div className="flex justify-center">
+                <AlertCircle className="h-12 w-12 text-orange-500" />
+              </div>
               <div>
-                <Label>Select Mobile Provider</Label>
-                <Select value={mobileProvider} onValueChange={setMobileProvider}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Choose provider" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {mobileProviders.map(provider => (
-                      <SelectItem key={provider.id} value={provider.id}>
-                        {provider.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <h3 className="text-lg font-semibold">Inasubiri Uthibitisho wa Malipo</h3>
+                <p className="text-sm text-gray-600 mt-2">
+                  Mteja anapaswa kuthibitisha malipo ya TZS {totalAmount.toLocaleString()}
+                  {selectedMethod === 'mobile' && ` kupitia ${mobileProvider}`}
+                  {selectedMethod === 'bank' && ` kupitia ${bankProvider}`}
+                </p>
               </div>
               
-              <div>
-                <Label>Phone Number</Label>
-                <Input
-                  placeholder="255xxxxxxxxx"
-                  value={phoneNumber}
-                  onChange={(e) => setPhoneNumber(e.target.value)}
-                />
+              <div className="flex gap-2">
+                <Button 
+                  onClick={confirmPaymentReceived}
+                  className="flex-1 bg-green-600 hover:bg-green-700"
+                >
+                  <CheckCircle className="h-4 w-4 mr-2" />
+                  Malipo Yamepokewa
+                </Button>
+                <Button 
+                  onClick={cancelPayment}
+                  variant="outline"
+                  className="flex-1"
+                >
+                  Ghairi
+                </Button>
               </div>
             </div>
           )}
 
-          {/* Bank Payment Details */}
-          {selectedMethod === 'bank' && (
-            <div className="space-y-3">
-              <div>
-                <Label>Select Bank</Label>
-                <Select value={bankProvider} onValueChange={setBankProvider}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Choose bank" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {bankProviders.map(bank => (
-                      <SelectItem key={bank.id} value={bank.id}>
-                        {bank.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+          {/* Payment Confirmed */}
+          {paymentConfirmed && (
+            <div className="text-center space-y-4">
+              <div className="flex justify-center">
+                <CheckCircle className="h-12 w-12 text-green-500" />
               </div>
-              
               <div>
-                <Label>Account Number</Label>
-                <Input
-                  placeholder="Enter account number"
-                  value={accountNumber}
-                  onChange={(e) => setAccountNumber(e.target.value)}
-                />
+                <h3 className="text-lg font-semibold text-green-600">Malipo Yamekamilika!</h3>
+                <p className="text-sm text-gray-600">TZS {totalAmount.toLocaleString()} yamepokewa kikamilifu</p>
               </div>
             </div>
           )}
-
-          <Button 
-            onClick={handlePayment}
-            disabled={!isValidPayment() || processing}
-            className="w-full"
-          >
-            {processing ? 'Processing Payment...' : `Pay TZS ${totalAmount.toLocaleString()}`}
-          </Button>
         </div>
       </DialogContent>
     </Dialog>

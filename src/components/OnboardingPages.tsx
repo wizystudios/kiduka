@@ -23,25 +23,25 @@ export const OnboardingPages = ({ onComplete }: OnboardingPagesProps) => {
 
   const pages = [
     {
-      title: "Welcome to Kiduka",
-      subtitle: "Your Smart Point of Sale Solution",
-      description: "Manage your inventory, sales, and business with ease. Built for modern retailers who want to grow.",
+      title: "Karibu Kiduka",
+      subtitle: "Mfumo wa Kisasa wa Mauzo",
+      description: "Simamia stock yako, mauzo, na biashara yako kwa urahisi. Imeundwa kwa wafanyabiashara wa kisasa wanaotaka kukua.",
       icon: Package,
-      color: "from-purple-500 to-blue-500"
+      color: "from-emerald-500 to-blue-500"
     },
     {
-      title: "Scan & Sell Instantly",
-      subtitle: "Barcode Scanner Built-In",
-      description: "Simply scan product barcodes to add them to your inventory or process sales instantly. No more manual entry.",
+      title: "Scan na Uuze Moja Kwa Moja",
+      subtitle: "Scanner ya Barcode Imejengwa Ndani",
+      description: "Scan tu barcode za bidhaa kuziongeza kwenye stock au kuchakata mauzo moja kwa moja. Hakuna kuandika kwa mkono tena.",
       icon: Scan,
-      color: "from-blue-500 to-indigo-500"
+      color: "from-blue-500 to-purple-500"
     },
     {
-      title: "Track Everything",
-      subtitle: "Real-Time Analytics & Reports",
-      description: "Monitor your sales, inventory levels, and business performance with detailed reports and insights.",
+      title: "Fuatilia Kila Kitu",
+      subtitle: "Ripoti na Takwimu za Wakati Halisi",
+      description: "Chunguza mauzo yako, viwango vya stock, na utendaji wa biashara yako kupitia ripoti na maelezo ya kina.",
       icon: TrendingUp,
-      color: "from-indigo-500 to-purple-500"
+      color: "from-purple-500 to-emerald-500"
     }
   ];
 
@@ -60,13 +60,13 @@ export const OnboardingPages = ({ onComplete }: OnboardingPagesProps) => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-50 flex flex-col">
+    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-blue-50 to-purple-50 flex flex-col">
       {/* Header with Logo */}
       <div className="p-6 flex justify-between items-center">
         <KidukaLogo size="lg" animate />
         <Button variant="ghost" onClick={handleSkip} className="text-gray-500">
           <X className="h-4 w-4 mr-2" />
-          Skip
+          Ruka
         </Button>
       </div>
 
@@ -84,7 +84,7 @@ export const OnboardingPages = ({ onComplete }: OnboardingPagesProps) => {
               <h2 className="text-2xl font-bold text-gray-900">
                 {currentPageData.title}
               </h2>
-              <h3 className="text-lg font-semibold text-purple-600">
+              <h3 className="text-lg font-semibold text-emerald-600">
                 {currentPageData.subtitle}
               </h3>
               <p className="text-gray-600 leading-relaxed">
@@ -97,22 +97,22 @@ export const OnboardingPages = ({ onComplete }: OnboardingPagesProps) => {
               {currentPage === 0 && (
                 <>
                   <div className="flex flex-col items-center space-y-2">
-                    <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
-                      <Package className="h-5 w-5 text-purple-600" />
+                    <div className="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center">
+                      <Package className="h-5 w-5 text-emerald-600" />
                     </div>
-                    <span className="text-xs text-gray-600">Inventory</span>
+                    <span className="text-xs text-gray-600">Stock</span>
                   </div>
                   <div className="flex flex-col items-center space-y-2">
                     <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
                       <ShoppingCart className="h-5 w-5 text-blue-600" />
                     </div>
-                    <span className="text-xs text-gray-600">Sales</span>
+                    <span className="text-xs text-gray-600">Mauzo</span>
                   </div>
                   <div className="flex flex-col items-center space-y-2">
-                    <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center">
-                      <Users className="h-5 w-5 text-indigo-600" />
+                    <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                      <Users className="h-5 w-5 text-purple-600" />
                     </div>
-                    <span className="text-xs text-gray-600">Users</span>
+                    <span className="text-xs text-gray-600">Watumiaji</span>
                   </div>
                 </>
               )}
@@ -122,19 +122,19 @@ export const OnboardingPages = ({ onComplete }: OnboardingPagesProps) => {
                     <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
                       <Scan className="h-5 w-5 text-green-600" />
                     </div>
-                    <span className="text-xs text-gray-600">Quick Scan</span>
+                    <span className="text-xs text-gray-600">Scan Haraka</span>
                   </div>
                   <div className="flex flex-col items-center space-y-2">
                     <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
                       <Package className="h-5 w-5 text-orange-600" />
                     </div>
-                    <span className="text-xs text-gray-600">Add Product</span>
+                    <span className="text-xs text-gray-600">Ongeza Bidhaa</span>
                   </div>
                   <div className="flex flex-col items-center space-y-2">
                     <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
                       <ShoppingCart className="h-5 w-5 text-blue-600" />
                     </div>
-                    <span className="text-xs text-gray-600">Checkout</span>
+                    <span className="text-xs text-gray-600">Lipia</span>
                   </div>
                 </>
               )}
@@ -144,19 +144,19 @@ export const OnboardingPages = ({ onComplete }: OnboardingPagesProps) => {
                     <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
                       <BarChart3 className="h-5 w-5 text-purple-600" />
                     </div>
-                    <span className="text-xs text-gray-600">Analytics</span>
+                    <span className="text-xs text-gray-600">Takwimu</span>
                   </div>
                   <div className="flex flex-col items-center space-y-2">
                     <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
                       <TrendingUp className="h-5 w-5 text-green-600" />
                     </div>
-                    <span className="text-xs text-gray-600">Reports</span>
+                    <span className="text-xs text-gray-600">Ripoti</span>
                   </div>
                   <div className="flex flex-col items-center space-y-2">
                     <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
                       <Users className="h-5 w-5 text-blue-600" />
                     </div>
-                    <span className="text-xs text-gray-600">Multi-User</span>
+                    <span className="text-xs text-gray-600">Watumiaji Wengi</span>
                   </div>
                 </>
               )}
@@ -174,7 +174,7 @@ export const OnboardingPages = ({ onComplete }: OnboardingPagesProps) => {
               key={index}
               className={`w-3 h-3 rounded-full transition-all duration-300 ${
                 index === currentPage 
-                  ? 'bg-gradient-to-r from-purple-500 to-blue-500 scale-125' 
+                  ? 'bg-gradient-to-r from-emerald-500 to-blue-500 scale-125' 
                   : 'bg-gray-300'
               }`}
             />
@@ -184,15 +184,15 @@ export const OnboardingPages = ({ onComplete }: OnboardingPagesProps) => {
         {/* Next Button */}
         <Button 
           onClick={handleNext} 
-          className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white py-3 text-lg font-semibold"
+          className="w-full bg-gradient-to-r from-emerald-600 to-blue-600 hover:from-emerald-700 hover:to-blue-700 text-white py-3 text-lg font-semibold"
         >
           {currentPage < pages.length - 1 ? (
             <>
-              Next
+              Endelea
               <ArrowRight className="ml-2 h-5 w-5" />
             </>
           ) : (
-            'Get Started'
+            'Anza Kutumia'
           )}
         </Button>
       </div>

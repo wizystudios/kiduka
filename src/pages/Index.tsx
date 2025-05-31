@@ -1,14 +1,13 @@
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { KidukaLogo } from "@/components/KidukaLogo";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { OnboardingPages } from "@/components/OnboardingPages";
 
 const Index = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const [showOnboarding, setShowOnboarding] = useState(true);
 
   useEffect(() => {
     if (user) {
@@ -16,58 +15,48 @@ const Index = () => {
     }
   }, [user, navigate]);
 
+  useEffect(() => {
+    // Check if user has seen onboarding before
+    const hasSeenOnboarding = localStorage.getItem('kiduka_onboarding_seen');
+    if (hasSeenOnboarding) {
+      setShowOnboarding(false);
+    }
+  }, []);
+
+  const handleOnboardingComplete = () => {
+    localStorage.setItem('kiduka_onboarding_seen', 'true');
+    setShowOnboarding(false);
+  };
+
+  if (showOnboarding) {
+    return <OnboardingPages onComplete={handleOnboardingComplete} />;
+  }
+
+  // Main landing page after onboarding
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-blue-50 to-purple-50">
-      <div className="container mx-auto px-4 py-8">
-        <div className="text-center mb-12">
-          <div className="flex justify-center mb-6">
-            <KidukaLogo size="xl" showText={true} animate={true} />
-          </div>
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">
-            Welcome to Kiduka
-          </h1>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-            Your complete business management solution for inventory, sales, and customer management
+    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-blue-50 to-purple-50 flex items-center justify-center p-4">
+      <div className="max-w-md w-full text-center space-y-8">
+        <div className="space-y-4">
+          <h1 className="text-4xl font-bold text-gray-900">Kiduka POS</h1>
+          <p className="text-xl text-gray-600">
+            Mfumo wa kisasa wa usimamizi wa biashara
           </p>
         </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-          <Card className="text-center">
-            <CardHeader>
-              <CardTitle className="text-emerald-600">Inventory Management</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-gray-600">Track your products, stock levels, and get low stock alerts</p>
-            </CardContent>
-          </Card>
-
-          <Card className="text-center">
-            <CardHeader>
-              <CardTitle className="text-blue-600">Point of Sale</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-gray-600">Fast barcode scanning and payment processing</p>
-            </CardContent>
-          </Card>
-
-          <Card className="text-center">
-            <CardHeader>
-              <CardTitle className="text-purple-600">Reports & Analytics</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-gray-600">Detailed sales reports and business insights</p>
-            </CardContent>
-          </Card>
-        </div>
-
-        <div className="text-center">
-          <Button 
+        
+        <div className="space-y-4">
+          <button
             onClick={() => navigate('/auth')}
-            size="lg"
-            className="bg-gradient-to-r from-emerald-600 via-blue-600 to-purple-600 text-white px-8 py-3 text-lg"
+            className="w-full bg-gradient-to-r from-emerald-600 to-blue-600 text-white py-4 px-6 rounded-lg text-lg font-semibold hover:from-emerald-700 hover:to-blue-700 transition-all"
           >
-            Get Started with Kiduka
-          </Button>
+            Anza Kutumia Kiduka
+          </button>
+          
+          <button
+            onClick={() => setShowOnboarding(true)}
+            className="w-full border-2 border-gray-300 text-gray-700 py-3 px-6 rounded-lg font-medium hover:bg-gray-50 transition-all"
+          >
+            Ona Mwongozo Tena
+          </button>
         </div>
       </div>
     </div>

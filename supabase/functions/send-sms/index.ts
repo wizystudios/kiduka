@@ -28,7 +28,13 @@ const handler = async (req: Request): Promise<Response> => {
     
     if (!africasTalkingApiKey || !africasTalkingUsername) {
       console.error('Missing Africa\'s Talking credentials');
-      throw new Error("SMS service not configured - missing API credentials");
+      return new Response(JSON.stringify({ 
+        error: "SMS service not configured - missing API credentials",
+        success: false 
+      }), {
+        status: 500,
+        headers: { "Content-Type": "application/json", ...corsHeaders }
+      });
     }
 
     console.log('Using Africa\'s Talking credentials:', { username: africasTalkingUsername });
@@ -40,7 +46,7 @@ const handler = async (req: Request): Promise<Response> => {
     } else if (formattedPhone.startsWith('255')) {
       formattedPhone = '+' + formattedPhone;
     } else if (!formattedPhone.startsWith('+')) {
-      formattedPhone = '+' + formattedPhone;
+      formattedPhone = '+255' + formattedPhone;
     }
     
     console.log('Formatted phone number:', formattedPhone);
@@ -64,24 +70,60 @@ const handler = async (req: Request): Promise<Response> => {
       body: smsData
     });
 
-    const result = await response.json();
-    
+    console.log('Response status:', response.status);
+    console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+
+    let result;
+    const responseText = await response.text();
+    console.log('Raw response text:', responseText);
+
+    try {
+      result = JSON.parse(responseText);
+    } catch (parseError) {
+      console.error('Failed to parse response as JSON:', parseError);
+      return new Response(JSON.stringify({ 
+        error: `Invalid response from SMS API: ${responseText}`,
+        success: false 
+      }), {
+        status: 500,
+        headers: { "Content-Type": "application/json", ...corsHeaders }
+      });
+    }
+
     console.log('Africa\'s Talking API response:', result);
 
     if (!response.ok) {
       console.error('SMS API error:', result);
-      throw new Error(`SMS API error: ${result.message || 'Unknown error'}`);
+      return new Response(JSON.stringify({ 
+        error: `SMS API error: ${result.message || 'Unknown error'}`,
+        success: false 
+      }), {
+        status: response.status,
+        headers: { "Content-Type": "application/json", ...corsHeaders }
+      });
     }
 
     // Check if the SMS was accepted
     const recipients = result.SMSMessageData?.Recipients || [];
     if (recipients.length === 0) {
-      throw new Error('No recipients processed');
+      return new Response(JSON.stringify({ 
+        error: 'No recipients processed',
+        success: false 
+      }), {
+        status: 400,
+        headers: { "Content-Type": "application/json", ...corsHeaders }
+      });
     }
 
     const firstRecipient = recipients[0];
     if (firstRecipient.status !== 'Success') {
-      throw new Error(`SMS failed: ${firstRecipient.status}`);
+      return new Response(JSON.stringify({ 
+        error: `SMS failed: ${firstRecipient.status}`,
+        success: false 
+      }), {
+        status: 400,
+        headers: { "Content-Type": "application/json", ...corsHeaders }
+      });
     }
 
     console.log('SMS sent successfully:', {
@@ -108,7 +150,7 @@ const handler = async (req: Request): Promise<Response> => {
     console.error("Error sending SMS:", error);
     return new Response(
       JSON.stringify({ 
-        error: error.message,
+        error: error.message || 'Unknown error occurred',
         success: false 
       }),
       {
