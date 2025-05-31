@@ -22,14 +22,14 @@ const handler = async (req: Request): Promise<Response> => {
     
     console.log('SMS request received:', { phoneNumber, transactionId });
     
-    // Using Africa's Talking SMS API for Tanzania
+    // Get Africa's Talking credentials
     const africasTalkingApiKey = Deno.env.get("AFRICAS_TALKING_API_KEY");
     const africasTalkingUsername = Deno.env.get("AFRICAS_TALKING_USERNAME");
     
     if (!africasTalkingApiKey || !africasTalkingUsername) {
       console.error('Missing Africa\'s Talking credentials');
       return new Response(JSON.stringify({ 
-        error: "SMS service not configured - missing API credentials",
+        error: "SMS service not configured properly - missing API credentials",
         success: false 
       }), {
         status: 500,
@@ -37,7 +37,7 @@ const handler = async (req: Request): Promise<Response> => {
       });
     }
 
-    console.log('Using Africa\'s Talking credentials:', { username: africasTalkingUsername });
+    console.log('Using Africa\'s Talking credentials for username:', africasTalkingUsername);
 
     // Format phone number for Tanzania - ensure it starts with +255
     let formattedPhone = phoneNumber.trim();
@@ -51,38 +51,42 @@ const handler = async (req: Request): Promise<Response> => {
     
     console.log('Formatted phone number:', formattedPhone);
 
-    const smsData = new URLSearchParams({
-      username: africasTalkingUsername,
-      to: formattedPhone,
-      message: message,
-      from: "KIDUKA"
-    });
+    // Prepare form data for Africa's Talking API
+    const formData = new URLSearchParams();
+    formData.append('username', africasTalkingUsername);
+    formData.append('to', formattedPhone);
+    formData.append('message', message);
+    formData.append('from', 'KIDUKA');
 
     console.log('Sending SMS to Africa\'s Talking API...');
+    console.log('Form data:', Object.fromEntries(formData));
 
-    const response = await fetch("https://api.sandbox.africastalking.com/version1/messaging", {
+    // Use production endpoint for real SMS
+    const apiUrl = "https://api.africastalking.com/version1/messaging";
+    
+    const response = await fetch(apiUrl, {
       method: "POST",
       headers: {
         "apiKey": africasTalkingApiKey,
         "Content-Type": "application/x-www-form-urlencoded",
         "Accept": "application/json"
       },
-      body: smsData
+      body: formData.toString()
     });
 
-    console.log('Response status:', response.status);
+    console.log('Africa\'s Talking response status:', response.status);
     console.log('Response headers:', Object.fromEntries(response.headers.entries()));
 
-    let result;
     const responseText = await response.text();
     console.log('Raw response text:', responseText);
 
+    let result;
     try {
       result = JSON.parse(responseText);
     } catch (parseError) {
       console.error('Failed to parse response as JSON:', parseError);
       return new Response(JSON.stringify({ 
-        error: `Invalid response from SMS API: ${responseText}`,
+        error: `SMS API returned invalid response: ${responseText}`,
         success: false 
       }), {
         status: 500,
@@ -90,12 +94,12 @@ const handler = async (req: Request): Promise<Response> => {
       });
     }
 
-    console.log('Africa\'s Talking API response:', result);
+    console.log('Parsed Africa\'s Talking response:', result);
 
     if (!response.ok) {
-      console.error('SMS API error:', result);
+      console.error('SMS API error response:', result);
       return new Response(JSON.stringify({ 
-        error: `SMS API error: ${result.message || 'Unknown error'}`,
+        error: `SMS API error (${response.status}): ${result.message || responseText}`,
         success: false 
       }), {
         status: response.status,
@@ -106,8 +110,9 @@ const handler = async (req: Request): Promise<Response> => {
     // Check if the SMS was accepted
     const recipients = result.SMSMessageData?.Recipients || [];
     if (recipients.length === 0) {
+      console.error('No recipients processed in response');
       return new Response(JSON.stringify({ 
-        error: 'No recipients processed',
+        error: 'SMS API processed no recipients',
         success: false 
       }), {
         status: 400,
@@ -116,9 +121,12 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     const firstRecipient = recipients[0];
+    console.log('First recipient status:', firstRecipient);
+    
     if (firstRecipient.status !== 'Success') {
+      console.error('SMS failed for recipient:', firstRecipient);
       return new Response(JSON.stringify({ 
-        error: `SMS failed: ${firstRecipient.status}`,
+        error: `SMS delivery failed: ${firstRecipient.status}`,
         success: false 
       }), {
         status: 400,
@@ -128,6 +136,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log('SMS sent successfully:', {
       messageId: firstRecipient.messageId,
+      cost: firstRecipient.cost,
       status: firstRecipient.status,
       transactionId
     });
@@ -135,6 +144,7 @@ const handler = async (req: Request): Promise<Response> => {
     return new Response(JSON.stringify({
       success: true,
       messageId: firstRecipient.messageId,
+      cost: firstRecipient.cost,
       status: firstRecipient.status,
       transactionId,
       phoneNumber: formattedPhone
@@ -147,10 +157,10 @@ const handler = async (req: Request): Promise<Response> => {
     });
 
   } catch (error: any) {
-    console.error("Error sending SMS:", error);
+    console.error("Unexpected error in SMS function:", error);
     return new Response(
       JSON.stringify({ 
-        error: error.message || 'Unknown error occurred',
+        error: `SMS service error: ${error.message}`,
         success: false 
       }),
       {
