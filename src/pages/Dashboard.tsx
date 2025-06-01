@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -217,7 +216,7 @@ export const Dashboard = () => {
         </CardHeader>
         <CardContent className="grid grid-cols-2 gap-3">
           <Button 
-            onClick={() => navigate('/add-product')}
+            onClick={() => navigate('/products/add')}
             className="p-4 bg-purple-50 rounded-lg text-left hover:bg-purple-100 transition-colors h-auto justify-start"
             variant="ghost"
           >
