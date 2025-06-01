@@ -51,17 +51,16 @@ const handler = async (req: Request): Promise<Response> => {
     
     console.log('Formatted phone number:', formattedPhone);
 
-    // Prepare form data for Africa's Talking API - optimized for speed
+    // Prepare form data for Africa's Talking API
     const formData = new URLSearchParams();
     formData.append('username', africasTalkingUsername);
     formData.append('to', formattedPhone);
     formData.append('message', message);
-    // Use default sender ID for faster delivery - custom sender IDs can be slower
-    // formData.append('from', 'KIDUKA'); // Uncomment when KIDUKA is approved
-
+    // Don't use custom sender ID - causes delays and requires approval
+    
     console.log('Sending SMS to Africa\'s Talking API...');
 
-    // Use production endpoint with optimized settings
+    // Use production endpoint
     const apiUrl = "https://api.africastalking.com/version1/messaging";
     
     const response = await fetch(apiUrl, {
@@ -110,29 +109,8 @@ const handler = async (req: Request): Promise<Response> => {
     const recipients = result.SMSMessageData?.Recipients || [];
     if (recipients.length === 0) {
       console.error('No recipients processed in response');
-      
-      // Handle special cases that might cause slow delivery
-      if (result.SMSMessageData?.Message === 'InvalidSenderId') {
-        console.log('InvalidSenderId detected - using default sender for faster delivery');
-        return new Response(JSON.stringify({
-          success: true,
-          messageId: 'queued-' + transactionId,
-          cost: 'TZS 30.00',
-          status: 'Queued',
-          transactionId,
-          phoneNumber: formattedPhone,
-          note: 'SMS queued successfully using default sender for optimal delivery speed.'
-        }), {
-          status: 200,
-          headers: {
-            "Content-Type": "application/json",
-            ...corsHeaders,
-          },
-        });
-      }
-      
       return new Response(JSON.stringify({ 
-        error: 'SMS API processed no recipients',
+        error: 'SMS API processed no recipients - possibly insufficient balance or invalid number',
         success: false 
       }), {
         status: 400,
@@ -143,12 +121,24 @@ const handler = async (req: Request): Promise<Response> => {
     const firstRecipient = recipients[0];
     console.log('First recipient status:', firstRecipient);
     
+    // Handle different status types
+    if (firstRecipient.status === 'InsufficientBalance') {
+      console.error('Insufficient balance in Africa\'s Talking account');
+      return new Response(JSON.stringify({ 
+        error: 'SMS failed: Insufficient balance in Africa\'s Talking account. Please top up your account.',
+        success: false 
+      }), {
+        status: 402, // Payment Required
+        headers: { "Content-Type": "application/json", ...corsHeaders }
+      });
+    }
+
     // Accept Success, Sent, and Queued as valid statuses
     const validStatuses = ['Success', 'Sent', 'Queued'];
     if (!validStatuses.includes(firstRecipient.status)) {
       console.error('SMS failed for recipient:', firstRecipient);
       return new Response(JSON.stringify({ 
-        error: `SMS delivery failed: ${firstRecipient.status}`,
+        error: `SMS delivery failed: ${firstRecipient.status}. Status code: ${firstRecipient.statusCode}`,
         success: false 
       }), {
         status: 400,
