@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -25,15 +24,15 @@ interface MarketplaceListing {
   seller_id: string;
   seller_name: string;
   product_name: string;
-  description: string;
+  description: string | null;
   quantity: number;
   unit_price: number;
-  category: string;
-  location: string;
+  category: string | null;
+  location: string | null;
   listing_type: 'sell' | 'buy' | 'trade' | 'emergency_share';
   expires_at: string | null;
   created_at: string;
-  is_active: boolean;
+  is_active: boolean | null;
 }
 
 export const CommunityMarketplace = () => {
@@ -66,23 +65,30 @@ export const CommunityMarketplace = () => {
     try {
       const { data, error } = await supabase
         .from('marketplace_listings')
-        .select(`
-          *,
-          profiles (
-            full_name
-          )
-        `)
+        .select('*')
         .eq('is_active', true)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
 
-      const formattedData = data?.map(item => ({
-        ...item,
-        seller_name: item.profiles?.full_name || 'Anonymous'
-      })) || [];
+      // Add seller name from a separate query since we don't have a direct relation
+      const enrichedData = await Promise.all(
+        (data || []).map(async (item) => {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('full_name')
+            .eq('id', item.seller_id)
+            .single();
 
-      setListings(formattedData);
+          return {
+            ...item,
+            seller_name: profile?.full_name || 'Anonymous',
+            listing_type: item.listing_type as 'sell' | 'buy' | 'trade' | 'emergency_share'
+          };
+        })
+      );
+
+      setListings(enrichedData);
     } catch (error) {
       console.error('Error fetching listings:', error);
     } finally {
@@ -101,7 +107,14 @@ export const CommunityMarketplace = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setMyListings(data || []);
+      
+      const typedData = (data || []).map(item => ({
+        ...item,
+        seller_name: userProfile?.full_name || 'You',
+        listing_type: item.listing_type as 'sell' | 'buy' | 'trade' | 'emergency_share'
+      }));
+      
+      setMyListings(typedData);
     } catch (error) {
       console.error('Error fetching my listings:', error);
     }
@@ -160,7 +173,7 @@ export const CommunityMarketplace = () => {
     }
   };
 
-  const toggleListingStatus = async (listingId: string, isActive: boolean) => {
+  const toggleListingStatus = async (listingId: string, isActive: boolean | null) => {
     try {
       const { error } = await supabase
         .from('marketplace_listings')

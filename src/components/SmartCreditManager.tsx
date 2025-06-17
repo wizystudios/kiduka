@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -61,7 +62,11 @@ export const SmartCreditManager = () => {
       const formattedData = data?.map(item => ({
         ...item,
         customer_name: item.customers?.name || 'Unknown',
-        customer_phone: item.customers?.phone || ''
+        customer_phone: item.customers?.phone || '',
+        credit_limit: item.credit_limit || 0,
+        current_balance: item.current_balance || 0,
+        credit_score: item.credit_score || 50,
+        payment_history: Array.isArray(item.payment_history) ? item.payment_history : []
       })) || [];
 
       setCreditCustomers(formattedData);
@@ -88,7 +93,6 @@ export const SmartCreditManager = () => {
 
       const updatedHistory = [...(customer.payment_history || []), paymentRecord];
       
-      // Calculate new credit score based on payment behavior
       const newCreditScore = calculateCreditScore(updatedHistory, newBalance, customer.credit_limit);
 
       const { error } = await supabase
@@ -130,18 +134,14 @@ export const SmartCreditManager = () => {
     
     let score = 50;
     
-    // Bonus for regular payments
     if (recentPayments.length >= 3) score += 20;
     
-    // Penalty for high balance
     const balanceRatio = balance / limit;
     if (balanceRatio > 0.8) score -= 20;
     else if (balanceRatio > 0.5) score -= 10;
     
-    // Bonus for keeping balance low
     if (balanceRatio < 0.3) score += 15;
     
-    // Check payment consistency
     const avgDaysBetweenPayments = calculateAvgPaymentDays(payments);
     if (avgDaysBetweenPayments <= 30) score += 15;
     else if (avgDaysBetweenPayments > 60) score -= 15;
@@ -167,7 +167,6 @@ export const SmartCreditManager = () => {
       const message = `Habari ${customer.customer_name}, una deni la TZS ${customer.current_balance.toLocaleString()} katika duka letu. Tafadhali lipa mapema iwezekanavyo. Asante.`;
       
       if (method === 'sms') {
-        // Send SMS using existing SMS function
         const response = await supabase.functions.invoke('send-sms', {
           body: {
             phoneNumber: customer.customer_phone,
@@ -307,7 +306,6 @@ export const SmartCreditManager = () => {
         ))}
       </div>
 
-      {/* Payment Modal */}
       {selectedCustomer && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <Card className="w-full max-w-md">

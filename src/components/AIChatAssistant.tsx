@@ -34,6 +34,14 @@ interface AIChatAssistantProps {
   language?: 'sw' | 'en';
 }
 
+// Extend Window interface for speech recognition
+declare global {
+  interface Window {
+    webkitSpeechRecognition: any;
+    SpeechRecognition: any;
+  }
+}
+
 export const AIChatAssistant = ({ 
   sessionType = 'business_advisor', 
   language = 'sw' 
@@ -76,7 +84,6 @@ export const AIChatAssistant = ({
       if (error) throw error;
       setSessionId(data.id);
 
-      // Add welcome message
       const welcomeMessages = {
         sw: {
           business_advisor: 'Karibu! Mimi ni mshauri wako wa kibiashara. Nitakusaidia kupata maamuzi mazuri kwa ajili ya biashara yako.',
@@ -122,7 +129,6 @@ export const AIChatAssistant = ({
     setIsLoading(true);
 
     try {
-      // Simulate AI response (replace with actual AI service)
       const aiResponse = await generateAIResponse(inputMessage, sessionType, language);
       
       const aiMessage: Message = {
@@ -135,8 +141,15 @@ export const AIChatAssistant = ({
 
       setMessages(prev => [...prev, aiMessage]);
 
-      // Update session in database
-      const updatedMessages = [...messages, userMessage, aiMessage];
+      // Convert messages to JSON-compatible format for database
+      const updatedMessages = [...messages, userMessage, aiMessage].map(msg => ({
+        id: msg.id,
+        type: msg.type,
+        content: msg.content,
+        timestamp: msg.timestamp.toISOString(),
+        language: msg.language
+      }));
+
       await supabase
         .from('ai_chat_sessions')
         .update({
@@ -158,9 +171,6 @@ export const AIChatAssistant = ({
   };
 
   const generateAIResponse = async (message: string, type: string, lang: string): Promise<string> => {
-    // This is a simplified AI response generator
-    // In production, you would integrate with OpenAI, Anthropic, or other AI services
-    
     const responses = {
       sw: {
         business_advisor: [
@@ -178,6 +188,11 @@ export const AIChatAssistant = ({
           'Stock yako ya bidhaa hii inakaribia kuisha. Nashauri uagize zaidi mapema.',
           'Kuna bidhaa ambazo hazijauza kwa wiki 2. Je, tunaweza kubadilisha mikakati ya mauzo?',
           'Msimu wa mvua unakuja. Ongeza stock ya vitu vya mvua.'
+        ],
+        general: [
+          'Hii ni swali nzuri! Nitakusaidia kupata jibu.',
+          'Kutokana na uelewa wangu, naona hivi...',
+          'Nashauri ufuate hatua hizi...'
         ]
       },
       en: {
@@ -196,11 +211,16 @@ export const AIChatAssistant = ({
           'Your stock for this product is running low. I recommend ordering more soon.',
           'Some products haven\'t sold in 2 weeks. Should we adjust the sales strategy?',
           'Rainy season is coming. Increase stock for rain-related items.'
+        ],
+        general: [
+          'That\'s a good question! Let me help you find an answer.',
+          'Based on my understanding, I see it this way...',
+          'I recommend following these steps...'
         ]
       }
     };
 
-    const categoryResponses = responses[lang][type] || responses[lang].business_advisor;
+    const categoryResponses = responses[lang][type] || responses[lang].general;
     return categoryResponses[Math.floor(Math.random() * categoryResponses.length)];
   };
 
@@ -225,11 +245,10 @@ export const AIChatAssistant = ({
       setIsListening(true);
     };
 
-    recognition.onresult = async (event) => {
+    recognition.onresult = async (event: any) => {
       const transcript = event.results[0][0].transcript;
       setInputMessage(transcript);
       
-      // Log voice command
       if (user) {
         await supabase.from('voice_commands').insert({
           user_id: user.id,
