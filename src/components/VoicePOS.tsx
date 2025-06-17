@@ -17,9 +17,6 @@ import {
   BarChart
 } from 'lucide-react';
 
-// Import the type definitions
-import '../types/speech-recognition.d.ts';
-
 interface VoiceCommand {
   id: string;
   command_text: string;
@@ -46,6 +43,14 @@ interface SaleItem {
   total_price: number;
 }
 
+// Declare the Web Speech API types locally
+declare global {
+  interface Window {
+    SpeechRecognition: any;
+    webkitSpeechRecognition: any;
+  }
+}
+
 export const VoicePOS = () => {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -56,7 +61,7 @@ export const VoicePOS = () => {
   const [currentSale, setCurrentSale] = useState<SaleItem[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(false);
-  const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const recognitionRef = useRef<any>(null);
 
   useEffect(() => {
     fetchProducts();
@@ -123,13 +128,13 @@ export const VoicePOS = () => {
       setCurrentCommand('Nazisikiliza...');
     };
 
-    recognition.onresult = (event: SpeechRecognitionEvent) => {
+    recognition.onresult = (event: any) => {
       const command = event.results[0][0].transcript.toLowerCase();
       setCurrentCommand(command);
       processVoiceCommand(command);
     };
 
-    recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
+    recognition.onerror = (event: any) => {
       console.error('Voice recognition error:', event.error);
       setIsListening(false);
       setCurrentCommand('');
