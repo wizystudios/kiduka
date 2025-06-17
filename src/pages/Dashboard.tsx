@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
+import { AIChatAssistant } from '@/components/AIChatAssistant';
 import { 
   TrendingUp, 
   Package, 
@@ -13,7 +14,11 @@ import {
   DollarSign, 
   AlertTriangle,
   User,
-  Plus
+  Plus,
+  Brain,
+  MessageCircle,
+  CreditCard,
+  Store
 } from 'lucide-react';
 
 export const Dashboard = () => {
@@ -27,6 +32,7 @@ export const Dashboard = () => {
   });
   const [lowStockProducts, setLowStockProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showAIChat, setShowAIChat] = useState(false);
 
   useEffect(() => {
     fetchDashboardData();
@@ -184,6 +190,40 @@ export const Dashboard = () => {
         ))}
       </div>
 
+      {/* AI Quick Actions */}
+      <Card className="border-purple-200 bg-gradient-to-r from-purple-50 to-blue-50">
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center text-purple-700">
+            <Brain className="h-5 w-5 mr-2" />
+            Vitendo vya Akili Bandia
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="grid grid-cols-2 gap-3">
+          <Button 
+            onClick={() => setShowAIChat(true)}
+            className="p-4 bg-white rounded-lg text-left hover:bg-gray-50 transition-colors h-auto justify-start"
+            variant="ghost"
+          >
+            <div>
+              <MessageCircle className="h-6 w-6 text-purple-600 mb-2" />
+              <p className="font-medium text-gray-900">Mshauri wa AI</p>
+              <p className="text-sm text-gray-600">Uliza swali</p>
+            </div>
+          </Button>
+          <Button 
+            onClick={() => navigate('/business-intelligence')}
+            className="p-4 bg-white rounded-lg text-left hover:bg-gray-50 transition-colors h-auto justify-start"
+            variant="ghost"
+          >
+            <div>
+              <TrendingUp className="h-6 w-6 text-green-600 mb-2" />
+              <p className="font-medium text-gray-900">Takwimu za AI</p>
+              <p className="text-sm text-gray-600">Ona uchambuzi</p>
+            </div>
+          </Button>
+        </CardContent>
+      </Card>
+
       {/* Low Stock Alert */}
       {lowStockProducts.length > 0 && (
         <Card className="border-orange-200">
@@ -239,6 +279,53 @@ export const Dashboard = () => {
           </Button>
         </CardContent>
       </Card>
+
+      {/* New Advanced Features */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Vipengele vya Hali ya Juu</CardTitle>
+        </CardHeader>
+        <CardContent className="grid grid-cols-2 gap-3">
+          <Button 
+            onClick={() => navigate('/credit-management')}
+            className="p-4 bg-green-50 rounded-lg text-left hover:bg-green-100 transition-colors h-auto justify-start"
+            variant="ghost"
+          >
+            <div>
+              <CreditCard className="h-6 w-6 text-green-600 mb-2" />
+              <p className="font-medium text-gray-900">Mikopo</p>
+              <p className="text-sm text-gray-600">Simamia mikopo</p>
+            </div>
+          </Button>
+          <Button 
+            onClick={() => navigate('/marketplace')}
+            className="p-4 bg-orange-50 rounded-lg text-left hover:bg-orange-100 transition-colors h-auto justify-start"
+            variant="ghost"
+          >
+            <div>
+              <Store className="h-6 w-6 text-orange-600 mb-2" />
+              <p className="font-medium text-gray-900">Soko la Jamii</p>
+              <p className="text-sm text-gray-600">Uza na ununue</p>
+            </div>
+          </Button>
+        </CardContent>
+      </Card>
+
+      {/* AI Chat Modal */}
+      {showAIChat && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="w-full max-w-md">
+            <AIChatAssistant />
+            <Button 
+              onClick={() => setShowAIChat(false)}
+              variant="outline"
+              className="w-full mt-4"
+            >
+              Funga
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

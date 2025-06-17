@@ -20,6 +20,9 @@ import { UsersPage } from "./pages/UsersPage";
 import { CustomersPage } from "./pages/CustomersPage";
 import { DiscountsPage } from "./pages/DiscountsPage";
 import { ReceiptViewPage } from "./pages/ReceiptViewPage";
+import { BusinessIntelligencePage } from "./pages/BusinessIntelligencePage";
+import { CreditManagementPage } from "./pages/CreditManagementPage";
+import { MarketplacePage } from "./pages/MarketplacePage";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { MobileLayout } from "./components/MobileLayout";
 
@@ -89,6 +92,27 @@ const App = () => (
               <ProtectedRoute>
                 <MobileLayout>
                   <ReportsPage />
+                </MobileLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/business-intelligence" element={
+              <ProtectedRoute>
+                <MobileLayout>
+                  <BusinessIntelligencePage />
+                </MobileLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/credit-management" element={
+              <ProtectedRoute>
+                <MobileLayout>
+                  <CreditManagementPage />
+                </MobileLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/marketplace" element={
+              <ProtectedRoute>
+                <MobileLayout>
+                  <MarketplacePage />
                 </MobileLayout>
               </ProtectedRoute>
             } />
