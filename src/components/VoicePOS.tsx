@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -15,6 +16,9 @@ import {
   Search,
   BarChart
 } from 'lucide-react';
+
+// Import the type definitions
+import '../types/speech-recognition.d.ts';
 
 interface VoiceCommand {
   id: string;
@@ -107,8 +111,8 @@ export const VoicePOS = () => {
       return;
     }
 
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    const recognition = new SpeechRecognition();
+    const SpeechRecognitionConstructor = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const recognition = new SpeechRecognitionConstructor();
     
     recognition.continuous = false;
     recognition.interimResults = false;
