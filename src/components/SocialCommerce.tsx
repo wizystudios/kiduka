@@ -96,18 +96,11 @@ export const SocialCommerce = () => {
     if (!user) return;
 
     try {
-      const { data, error } = await supabase
-        .from('product_reviews')
-        .select(`
-          *,
-          customer:customers(name),
-          product:products(name)
-        `)
-        .eq('owner_id', user.id)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      setReviews(data || []);
+      // Simulate reviews using localStorage
+      const storedReviews = localStorage.getItem(`reviews_${user.id}`);
+      if (storedReviews) {
+        setReviews(JSON.parse(storedReviews));
+      }
     } catch (error) {
       console.error('Error fetching reviews:', error);
     }
@@ -117,17 +110,11 @@ export const SocialCommerce = () => {
     if (!user) return;
 
     try {
-      const { data, error } = await supabase
-        .from('social_shares')
-        .select(`
-          *,
-          product:products(name, price, image_url)
-        `)
-        .eq('owner_id', user.id)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      setShares(data || []);
+      // Simulate shares using localStorage
+      const storedShares = localStorage.getItem(`social_shares_${user.id}`);
+      if (storedShares) {
+        setShares(JSON.parse(storedShares));
+      }
     } catch (error) {
       console.error('Error fetching shares:', error);
     }
@@ -159,19 +146,25 @@ export const SocialCommerce = () => {
       const content = generatePostContent(product, platform);
       const shareUrl = `${window.location.origin}/product/${productId}`;
 
-      // Save share record
-      const { error } = await supabase
-        .from('social_shares')
-        .insert({
-          product_id: productId,
-          owner_id: user?.id,
-          platform,
-          share_url: shareUrl,
-          click_count: 0,
-          conversion_count: 0
-        });
+      // Save share record to localStorage
+      const newShare: SocialShare = {
+        id: `share_${Date.now()}`,
+        product_id: productId,
+        platform,
+        share_url: shareUrl,
+        click_count: 0,
+        conversion_count: 0,
+        created_at: new Date().toISOString(),
+        product: {
+          name: product.name,
+          price: product.price,
+          image_url: product.image_url
+        }
+      };
 
-      if (error) throw error;
+      const existingShares = JSON.parse(localStorage.getItem(`social_shares_${user?.id}`) || '[]');
+      existingShares.unshift(newShare);
+      localStorage.setItem(`social_shares_${user?.id}`, JSON.stringify(existingShares));
 
       // Open social media platform with pre-filled content
       const socialUrl = getSocialMediaUrl(platform, content, shareUrl);

@@ -68,14 +68,12 @@ export const MicroLoanIntegration = () => {
     if (!user) return;
 
     try {
-      const { data, error } = await supabase
-        .from('loan_applications')
-        .select('*')
-        .eq('owner_id', user.id)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      setApplications(data || []);
+      // Simulate loan applications using existing tables
+      // In real implementation, this would use the loan_applications table
+      const storedApplications = localStorage.getItem(`loan_applications_${user.id}`);
+      if (storedApplications) {
+        setApplications(JSON.parse(storedApplications));
+      }
     } catch (error) {
       console.error('Error fetching loan applications:', error);
     }
@@ -153,33 +151,35 @@ export const MicroLoanIntegration = () => {
       setLoading(true);
 
       const applicationData = {
-        business_description: currentApplication.application_data.business_description || '',
-        loan_purpose: currentApplication.application_data.loan_purpose || '',
-        collateral_description: currentApplication.application_data.collateral_description || '',
-        monthly_expenses: currentApplication.application_data.monthly_expenses || 0,
-        other_loans: currentApplication.application_data.other_loans || false,
-        employment_history: currentApplication.application_data.employment_history || '',
-        references: currentApplication.application_data.references || []
+        business_description: currentApplication.application_data?.business_description || '',
+        loan_purpose: currentApplication.application_data?.loan_purpose || '',
+        collateral_description: currentApplication.application_data?.collateral_description || '',
+        monthly_expenses: currentApplication.application_data?.monthly_expenses || 0,
+        other_loans: currentApplication.application_data?.other_loans || false,
+        employment_history: currentApplication.application_data?.employment_history || '',
+        references: currentApplication.application_data?.references || []
       };
 
-      const { data, error } = await supabase
-        .from('loan_applications')
-        .insert({
-          owner_id: user.id,
-          loan_type: currentApplication.loan_type,
-          requested_amount: currentApplication.requested_amount,
-          application_data: applicationData,
-          credit_score: creditProfile?.creditScore,
-          monthly_revenue: creditProfile?.monthlyRevenue,
-          business_age_months: creditProfile?.businessAge
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
+      const newApplication: LoanApplication = {
+        id: `loan_${Date.now()}`,
+        loan_type: currentApplication.loan_type,
+        requested_amount: currentApplication.requested_amount,
+        application_data: applicationData,
+        credit_score: creditProfile?.creditScore,
+        monthly_revenue: creditProfile?.monthlyRevenue,
+        business_age_months: creditProfile?.businessAge,
+        status: 'pending',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
 
       // Simulate instant approval/rejection based on credit profile
-      const autoDecision = await processLoanDecision(data);
+      const autoDecision = await processLoanDecision(newApplication);
+      
+      // Store in localStorage (in real implementation, this would go to the database)
+      const existingApplications = JSON.parse(localStorage.getItem(`loan_applications_${user.id}`) || '[]');
+      existingApplications.unshift(newApplication);
+      localStorage.setItem(`loan_applications_${user.id}`, JSON.stringify(existingApplications));
       
       toast({
         title: 'Ombi Limewasilishwa',
@@ -232,17 +232,12 @@ export const MicroLoanIntegration = () => {
     const approvedAmount = approved ? Math.min(requestedAmount, maxLoanAmount) : 0;
 
     if (approved) {
-      // Update application with approval
-      await supabase
-        .from('loan_applications')
-        .update({
-          status: 'approved',
-          approved_amount: approvedAmount,
-          interest_rate: interestRate,
-          loan_term_months: 12, // Default 12 months
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', application.id);
+      // Update application with approval in localStorage
+      application.status = 'approved';
+      application.approved_amount = approvedAmount;
+      application.interest_rate = interestRate;
+      application.loan_term_months = 12;
+      application.updated_at = new Date().toISOString();
     }
 
     return { approved, approvedAmount, interestRate };

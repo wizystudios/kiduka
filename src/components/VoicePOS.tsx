@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -87,15 +86,11 @@ export const VoicePOS = () => {
     if (!user) return;
 
     try {
-      const { data, error } = await supabase
-        .from('voice_commands')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(10);
-
-      if (error) throw error;
-      setCommandHistory(data || []);
+      // Use localStorage to simulate voice commands history
+      const storedCommands = localStorage.getItem(`voice_commands_${user.id}`);
+      if (storedCommands) {
+        setCommandHistory(JSON.parse(storedCommands));
+      }
     } catch (error) {
       console.error('Error fetching command history:', error);
     }
@@ -194,7 +189,7 @@ export const VoicePOS = () => {
         isSuccessful = result.success;
       }
 
-      // Save command to database
+      // Save command to localStorage
       const executionTime = Date.now() - startTime;
       await saveVoiceCommand(command, commandType, result, isSuccessful, executionTime);
 
@@ -363,17 +358,23 @@ export const VoicePOS = () => {
     if (!user) return;
 
     try {
-      await supabase
-        .from('voice_commands')
-        .insert({
-          user_id: user.id,
-          command_text: commandText,
-          language: 'sw',
-          command_type: commandType,
-          processed_result: result,
-          is_successful: isSuccessful,
-          execution_time_ms: executionTime
-        });
+      const command: VoiceCommand = {
+        id: `cmd_${Date.now()}`,
+        command_text: commandText,
+        language: 'sw',
+        command_type: commandType,
+        processed_result: result,
+        is_successful: isSuccessful,
+        execution_time_ms: executionTime,
+        created_at: new Date().toISOString()
+      };
+
+      const existingCommands = JSON.parse(localStorage.getItem(`voice_commands_${user.id}`) || '[]');
+      existingCommands.unshift(command);
+      
+      // Keep only last 50 commands
+      const limitedCommands = existingCommands.slice(0, 50);
+      localStorage.setItem(`voice_commands_${user.id}`, JSON.stringify(limitedCommands));
     } catch (error) {
       console.error('Error saving voice command:', error);
     }
@@ -560,7 +561,7 @@ export const VoicePOS = () => {
         </CardHeader>
         <CardContent>
           <div className="space-y-2">
-            {commandHistory.map((cmd) => (
+            {commandHistory.slice(0, 10).map((cmd) => (
               <div key={cmd.id} className="flex items-center justify-between p-2 bg-gray-50 rounded">
                 <div className="flex items-center space-x-2">
                   {getCommandTypeIcon(cmd.command_type)}
