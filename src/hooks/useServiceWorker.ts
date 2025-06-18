@@ -1,6 +1,6 @@
-
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
+import { ToastAction } from '@/components/ui/toast';
 
 interface ServiceWorkerState {
   isSupported: boolean;
@@ -53,11 +53,11 @@ export const useServiceWorker = () => {
             toast({
               title: 'Sasisha Linaloweza',
               description: 'Toleo jipya la programu linaloweza. Bonyeza kubadilisha.',
-              action: {
-                altText: 'Sasisha',
-                onClick: updateServiceWorker,
-                children: 'Sasisha'
-              }
+              action: (
+                <ToastAction altText="Sasisha" onClick={updateServiceWorker}>
+                  Sasisha
+                </ToastAction>
+              )
             });
           }
         });

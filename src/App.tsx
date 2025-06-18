@@ -34,7 +34,7 @@ import { ProtectedRoute } from "./components/ProtectedRoute";
 import { MobileLayout } from "./components/MobileLayout";
 import { NotificationSettingsPage } from '@/pages/NotificationSettingsPage';
 import { ThemeProvider } from 'next-themes';
-import { LanguageProvider } from '@/context/LanguageContext';
+import { LanguageProvider } from '@/contexts/LanguageContext';
 
 const queryClient = new QueryClient();
 
