@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -303,8 +302,8 @@ export const AIChatAssistant = ({
   };
 
   return (
-    <Card className="h-[600px] flex flex-col">
-      <CardHeader className="flex flex-row items-center space-y-0 pb-3">
+    <Card className="h-[600px] flex flex-col w-full max-w-4xl mx-auto">
+      <CardHeader className="flex flex-row items-center space-y-0 pb-3 px-4">
         <div className="flex items-center space-x-2">
           {getSessionIcon()}
           <CardTitle className="text-lg">{getSessionTitle()}</CardTitle>
@@ -314,8 +313,8 @@ export const AIChatAssistant = ({
         </Badge>
       </CardHeader>
       
-      <CardContent className="flex-1 flex flex-col space-y-4 p-4">
-        <ScrollArea className="flex-1 pr-4">
+      <CardContent className="flex-1 flex flex-col space-y-4 p-4 min-h-0">
+        <ScrollArea className="flex-1 pr-2">
           <div className="space-y-4">
             {messages.map((message) => (
               <div
@@ -323,17 +322,17 @@ export const AIChatAssistant = ({
                 className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
               >
                 <div
-                  className={`max-w-[80%] rounded-lg p-3 ${
+                  className={`max-w-[85%] rounded-lg p-3 break-words ${
                     message.type === 'user'
                       ? 'bg-purple-600 text-white'
                       : 'bg-gray-100 text-gray-900'
                   }`}
                 >
                   <div className="flex items-start space-x-2">
-                    {message.type === 'ai' && <Bot className="h-4 w-4 mt-0.5 text-purple-600" />}
-                    {message.type === 'user' && <User className="h-4 w-4 mt-0.5" />}
-                    <div className="flex-1">
-                      <p className="text-sm">{message.content}</p>
+                    {message.type === 'ai' && <Bot className="h-4 w-4 mt-0.5 text-purple-600 flex-shrink-0" />}
+                    {message.type === 'user' && <User className="h-4 w-4 mt-0.5 flex-shrink-0" />}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm whitespace-pre-wrap word-break-all">{message.content}</p>
                       <p className="text-xs opacity-70 mt-1">
                         {message.timestamp.toLocaleTimeString()}
                       </p>
@@ -360,19 +359,21 @@ export const AIChatAssistant = ({
           <div ref={messagesEndRef} />
         </ScrollArea>
 
-        <div className="flex space-x-2">
+        <div className="flex space-x-2 pt-2 border-t">
           <Input
             value={inputMessage}
             onChange={(e) => setInputMessage(e.target.value)}
             placeholder={language === 'sw' ? 'Andika ujumbe...' : 'Type a message...'}
             onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
             disabled={isLoading}
+            className="flex-1"
           />
           <Button
             onClick={startVoiceRecognition}
             disabled={isListening || isLoading}
             variant="outline"
             size="icon"
+            className="flex-shrink-0"
           >
             {isListening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
           </Button>
@@ -380,6 +381,7 @@ export const AIChatAssistant = ({
             onClick={sendMessage}
             disabled={!inputMessage.trim() || isLoading}
             size="icon"
+            className="flex-shrink-0"
           >
             <Send className="h-4 w-4" />
           </Button>
