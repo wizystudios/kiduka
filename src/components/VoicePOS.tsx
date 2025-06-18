@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -6,11 +5,8 @@ import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
-import { 
-  Mic, 
-  MicOff, 
-  Volume2, 
-  VolumeX,
+import { VoiceCommandProcessor } from '@/utils/voiceCommandProcessor';
+import { Mic, MicOff, Volume2, VolumeX,
   ShoppingCart,
   Package,
   Search,
@@ -62,6 +58,7 @@ export const VoicePOS = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(false);
   const recognitionRef = useRef<any>(null);
+  const commandProcessorRef = useRef<VoiceCommandProcessor | null>(null);
 
   useEffect(() => {
     fetchProducts();
@@ -74,6 +71,13 @@ export const VoicePOS = () => {
       }
     };
   }, [user]);
+
+  useEffect(() => {
+    // Update command processor when products or current sale changes
+    if (products.length > 0) {
+      commandProcessorRef.current = new VoiceCommandProcessor(products, currentSale);
+    }
+  }, [products, currentSale]);
 
   const fetchProducts = async () => {
     if (!user) return;
@@ -167,43 +171,42 @@ export const VoicePOS = () => {
   };
 
   const processVoiceCommand = async (command: string) => {
+    if (!user || !commandProcessorRef.current) return;
+
     const startTime = Date.now();
     setLoading(true);
 
     try {
-      let commandType = 'general';
-      let result: any = {};
-      let isSuccessful = false;
-
-      // Parse Swahili commands
-      if (command.includes('uza') || command.includes('nunua')) {
-        // Sale commands: "uza mkate miwili" = sell two breads
-        commandType = 'sale';
-        result = await processSaleCommand(command);
-        isSuccessful = result.success;
-      } else if (command.includes('hesabu') || command.includes('stock') || command.includes('hisa')) {
-        // Inventory commands: "hesabu mkate" = count bread
-        commandType = 'inventory';
-        result = await processInventoryCommand(command);
-        isSuccessful = result.success;
-      } else if (command.includes('tafuta') || command.includes('search')) {
-        // Search commands: "tafuta mkate" = search bread
-        commandType = 'search';
-        result = await processSearchCommand(command);
-        isSuccessful = result.success;
-      } else if (command.includes('ripoti') || command.includes('report')) {
-        // Report commands: "ripoti ya leo" = today's report
-        commandType = 'report';
-        result = await processReportCommand(command);
-        isSuccessful = result.success;
+      const result = await commandProcessorRef.current.processCommand(command, user.id);
+      
+      const executionTime = Date.now() - startTime;
+      
+      // Handle successful sale commands
+      if (result.success && result.data?.product && result.data?.quantity) {
+        const { product, quantity } = result.data;
+        
+        // Add to current sale
+        const existingItem = currentSale.find(item => item.product.id === product.id);
+        if (existingItem) {
+          existingItem.quantity += quantity;
+          existingItem.total_price = existingItem.quantity * existingItem.unit_price;
+          setCurrentSale([...currentSale]);
+        } else {
+          const newItem: SaleItem = {
+            product,
+            quantity,
+            unit_price: product.price,
+            total_price: quantity * product.price
+          };
+          setCurrentSale([...currentSale, newItem]);
+        }
       }
 
-      // Save command to localStorage
-      const executionTime = Date.now() - startTime;
-      await saveVoiceCommand(command, commandType, result, isSuccessful, executionTime);
+      // Save command to database
+      await saveVoiceCommand(command, 'voice_command', result, result.success, executionTime);
 
       // Provide voice feedback
-      speakResponse(result.message || 'Amri imekamilika');
+      speakResponse(result.message);
 
       fetchCommandHistory();
     } catch (error) {
@@ -211,149 +214,6 @@ export const VoicePOS = () => {
       speakResponse('Samahani, imeshindwa kuchakata amri');
     } finally {
       setLoading(false);
-    }
-  };
-
-  const processSaleCommand = async (command: string): Promise<any> => {
-    // Parse quantity and product name from Swahili
-    const quantities = {
-      'moja': 1, 'mmoja': 1, 'mwili': 2, 'miwili': 2, 'mitatu': 3, 'mine': 4, 'mitano': 5,
-      'sita': 6, 'saba': 7, 'nane': 8, 'tisa': 9, 'kumi': 10
-    };
-
-    let quantity = 1;
-    let productName = '';
-
-    // Extract quantity
-    for (const [word, num] of Object.entries(quantities)) {
-      if (command.includes(word)) {
-        quantity = num;
-        break;
-      }
-    }
-
-    // Extract numbers
-    const numberMatch = command.match(/\d+/);
-    if (numberMatch) {
-      quantity = parseInt(numberMatch[0]);
-    }
-
-    // Find product by name (fuzzy search)
-    const product = products.find(p => 
-      command.includes(p.name.toLowerCase()) ||
-      p.name.toLowerCase().includes(command.split(' ').find(word => word.length > 3) || '')
-    );
-
-    if (!product) {
-      return {
-        success: false,
-        message: 'Bidhaa haijapatikana'
-      };
-    }
-
-    if (product.stock_quantity < quantity) {
-      return {
-        success: false,
-        message: `Huna stock ya kutosha. Una ${product.stock_quantity} tu`
-      };
-    }
-
-    // Add to current sale
-    const existingItem = currentSale.find(item => item.product.id === product.id);
-    if (existingItem) {
-      existingItem.quantity += quantity;
-      existingItem.total_price = existingItem.quantity * existingItem.unit_price;
-      setCurrentSale([...currentSale]);
-    } else {
-      const newItem: SaleItem = {
-        product,
-        quantity,
-        unit_price: product.price,
-        total_price: quantity * product.price
-      };
-      setCurrentSale([...currentSale, newItem]);
-    }
-
-    return {
-      success: true,
-      message: `Umeweka ${product.name} ${quantity} kwenye mauzo`,
-      product: product.name,
-      quantity
-    };
-  };
-
-  const processInventoryCommand = async (command: string): Promise<any> => {
-    // Find product mentioned
-    const product = products.find(p => 
-      command.includes(p.name.toLowerCase())
-    );
-
-    if (!product) {
-      const totalProducts = products.length;
-      const totalValue = products.reduce((sum, p) => sum + (p.stock_quantity * p.price), 0);
-      
-      return {
-        success: true,
-        message: `Una bidhaa ${totalProducts} jumla, thamani ${totalValue.toLocaleString()} shilingi`,
-        totalProducts,
-        totalValue
-      };
-    }
-
-    return {
-      success: true,
-      message: `${product.name}: una ${product.stock_quantity} kwenye hifadhi`,
-      product: product.name,
-      stock: product.stock_quantity
-    };
-  };
-
-  const processSearchCommand = async (command: string): Promise<any> => {
-    const searchTerm = command.replace('tafuta', '').replace('search', '').trim();
-    const results = products.filter(p => 
-      p.name.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-
-    if (results.length === 0) {
-      return {
-        success: false,
-        message: 'Hakuna bidhaa iliyopatikana'
-      };
-    }
-
-    const product = results[0];
-    return {
-      success: true,
-      message: `${product.name}: Bei ${product.price} shilingi, Stock ${product.stock_quantity}`,
-      results: results.length
-    };
-  };
-
-  const processReportCommand = async (command: string): Promise<any> => {
-    try {
-      const today = new Date().toISOString().split('T')[0];
-      const { data: todaySales, error } = await supabase
-        .from('sales')
-        .select('total_amount')
-        .eq('owner_id', user?.id)
-        .gte('created_at', `${today}T00:00:00`);
-
-      if (error) throw error;
-
-      const totalSales = todaySales?.reduce((sum, sale) => sum + Number(sale.total_amount), 0) || 0;
-      const saleCount = todaySales?.length || 0;
-
-      return {
-        success: true,
-        message: `Leo umefanya mauzo ${saleCount}, jumla ya shilingi ${totalSales.toLocaleString()}`,
-        salesCount: saleCount,
-        totalAmount: totalSales
-      };
-    } catch (error) {
-      return {
-        success: false,
-        message: 'Imeshindwa kupata ripoti'
-      };
     }
   };
 
@@ -367,23 +227,17 @@ export const VoicePOS = () => {
     if (!user) return;
 
     try {
-      const command: VoiceCommand = {
-        id: `cmd_${Date.now()}`,
-        command_text: commandText,
-        language: 'sw',
-        command_type: commandType,
-        processed_result: result,
-        is_successful: isSuccessful,
-        execution_time_ms: executionTime,
-        created_at: new Date().toISOString()
-      };
+      const { error } = await supabase
+        .from('voice_commands')
+        .insert({
+          user_id: user.id,
+          command_text: commandText,
+          language: 'sw',
+          action_taken: result.message,
+          success: isSuccessful
+        });
 
-      const existingCommands = JSON.parse(localStorage.getItem(`voice_commands_${user.id}`) || '[]');
-      existingCommands.unshift(command);
-      
-      // Keep only last 50 commands
-      const limitedCommands = existingCommands.slice(0, 50);
-      localStorage.setItem(`voice_commands_${user.id}`, JSON.stringify(limitedCommands));
+      if (error) throw error;
     } catch (error) {
       console.error('Error saving voice command:', error);
     }

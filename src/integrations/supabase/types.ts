@@ -250,6 +250,39 @@ export type Database = {
         }
         Relationships: []
       }
+      loan_applications: {
+        Row: {
+          application_data: Json | null
+          created_at: string
+          id: string
+          loan_type: string
+          requested_amount: number
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          application_data?: Json | null
+          created_at?: string
+          id?: string
+          loan_type: string
+          requested_amount: number
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          application_data?: Json | null
+          created_at?: string
+          id?: string
+          loan_type?: string
+          requested_amount?: number
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       loyalty_programs: {
         Row: {
           created_at: string
@@ -720,6 +753,53 @@ export type Database = {
         }
         Relationships: []
       }
+      staff_members: {
+        Row: {
+          created_at: string
+          email: string | null
+          hire_date: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          owner_id: string
+          phone: string | null
+          role: string
+          store_location_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          hire_date?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          owner_id: string
+          phone?: string | null
+          role?: string
+          store_location_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          hire_date?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          owner_id?: string
+          phone?: string | null
+          role?: string
+          store_location_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_members_store_location_id_fkey"
+            columns: ["store_location_id"]
+            isOneToOne: false
+            referencedRelation: "store_locations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       staff_performance: {
         Row: {
           commission_earned: number | null
@@ -761,6 +841,36 @@ export type Database = {
           },
         ]
       }
+      store_locations: {
+        Row: {
+          address: string | null
+          created_at: string
+          id: string
+          is_main_location: boolean | null
+          manager_id: string | null
+          name: string
+          owner_id: string
+        }
+        Insert: {
+          address?: string | null
+          created_at?: string
+          id?: string
+          is_main_location?: boolean | null
+          manager_id?: string | null
+          name: string
+          owner_id: string
+        }
+        Update: {
+          address?: string | null
+          created_at?: string
+          id?: string
+          is_main_location?: boolean | null
+          manager_id?: string | null
+          name?: string
+          owner_id?: string
+        }
+        Relationships: []
+      }
       voice_commands: {
         Row: {
           action_taken: string | null
@@ -788,6 +898,91 @@ export type Database = {
           language?: string
           success?: boolean | null
           user_id?: string
+        }
+        Relationships: []
+      }
+      warranty_claims: {
+        Row: {
+          claim_data: Json | null
+          claim_status: string
+          claim_type: string
+          created_at: string
+          customer_id: string | null
+          id: string
+          product_id: string
+          receipt_id: string
+        }
+        Insert: {
+          claim_data?: Json | null
+          claim_status?: string
+          claim_type: string
+          created_at?: string
+          customer_id?: string | null
+          id?: string
+          product_id: string
+          receipt_id: string
+        }
+        Update: {
+          claim_data?: Json | null
+          claim_status?: string
+          claim_type?: string
+          created_at?: string
+          customer_id?: string | null
+          id?: string
+          product_id?: string
+          receipt_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "warranty_claims_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "warranty_claims_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "warranty_claims_receipt_id_fkey"
+            columns: ["receipt_id"]
+            isOneToOne: false
+            referencedRelation: "smart_receipts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      whatsapp_messages: {
+        Row: {
+          created_at: string
+          id: string
+          message: string
+          message_type: string
+          owner_id: string
+          phone_number: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message: string
+          message_type?: string
+          owner_id: string
+          phone_number: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string
+          message_type?: string
+          owner_id?: string
+          phone_number?: string
+          status?: string
         }
         Relationships: []
       }
