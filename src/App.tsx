@@ -23,6 +23,14 @@ import { ReceiptViewPage } from "./pages/ReceiptViewPage";
 import { BusinessIntelligencePage } from "./pages/BusinessIntelligencePage";
 import { CreditManagementPage } from "./pages/CreditManagementPage";
 import { MarketplacePage } from "./pages/MarketplacePage";
+import { WhatsAppPage } from "./pages/WhatsAppPage";
+import { ARScannerPage } from "./pages/ARScannerPage";
+import { SocialCommercePage } from "./pages/SocialCommercePage";
+import { VoicePOSPage } from "./pages/VoicePOSPage";
+import { CustomerLoyaltyPage } from "./pages/CustomerLoyaltyPage";
+import { PaymentGatewayPage } from "./pages/PaymentGatewayPage";
+import { InventoryAutomationPage } from "./pages/InventoryAutomationPage";
+import { PWAInstallerPage } from "./pages/PWAInstallerPage";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { MobileLayout } from "./components/MobileLayout";
 
@@ -81,6 +89,13 @@ const App = () => (
                 </MobileLayout>
               </ProtectedRoute>
             } />
+            <Route path="/ar-scanner" element={
+              <ProtectedRoute>
+                <MobileLayout>
+                  <ARScannerPage />
+                </MobileLayout>
+              </ProtectedRoute>
+            } />
             <Route path="/sales" element={
               <ProtectedRoute>
                 <MobileLayout>
@@ -113,6 +128,55 @@ const App = () => (
               <ProtectedRoute>
                 <MobileLayout>
                   <MarketplacePage />
+                </MobileLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/whatsapp" element={
+              <ProtectedRoute>
+                <MobileLayout>
+                  <WhatsAppPage />
+                </MobileLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/social-commerce" element={
+              <ProtectedRoute>
+                <MobileLayout>
+                  <SocialCommercePage />
+                </MobileLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/voice-pos" element={
+              <ProtectedRoute>
+                <MobileLayout>
+                  <VoicePOSPage />
+                </MobileLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/customer-loyalty" element={
+              <ProtectedRoute>
+                <MobileLayout>
+                  <CustomerLoyaltyPage />
+                </MobileLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/payment-gateway" element={
+              <ProtectedRoute>
+                <MobileLayout>
+                  <PaymentGatewayPage />
+                </MobileLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/inventory-automation" element={
+              <ProtectedRoute>
+                <MobileLayout>
+                  <InventoryAutomationPage />
+                </MobileLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/mobile-app" element={
+              <ProtectedRoute>
+                <MobileLayout>
+                  <PWAInstallerPage />
                 </MobileLayout>
               </ProtectedRoute>
             } />
