@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -19,7 +18,9 @@ import {
   CheckCircle,
   Clock,
   Calculator,
-  Users
+  Users,
+  Star,
+  DollarSign
 } from 'lucide-react';
 
 interface LoanApplication {
@@ -68,8 +69,6 @@ export const MicroLoanIntegration = () => {
     if (!user) return;
 
     try {
-      // Simulate loan applications using existing tables
-      // In real implementation, this would use the loan_applications table
       const storedApplications = localStorage.getItem(`loan_applications_${user.id}`);
       if (storedApplications) {
         setApplications(JSON.parse(storedApplications));
@@ -83,41 +82,34 @@ export const MicroLoanIntegration = () => {
     if (!user) return;
 
     try {
-      // Get sales data for revenue calculation
       const { data: salesData } = await supabase
         .from('sales')
         .select('total_amount, created_at')
         .eq('owner_id', user.id)
         .gte('created_at', new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString());
 
-      // Get credit payment history
       const { data: creditData } = await supabase
         .from('customer_credit')
         .select('payment_history, credit_score')
         .eq('owner_id', user.id);
 
-      // Get business profile
       const { data: profile } = await supabase
         .from('profiles')
         .select('created_at')
         .eq('id', user.id)
         .single();
 
-      // Calculate metrics
       const monthlyRevenue = salesData?.reduce((sum, sale) => sum + Number(sale.total_amount), 0) / 3 || 0;
       const businessAge = profile ? Math.floor((Date.now() - new Date(profile.created_at).getTime()) / (30 * 24 * 60 * 60 * 1000)) : 0;
       
-      // Calculate average credit score
       const avgCreditScore = creditData?.length ? 
         creditData.reduce((sum, record) => sum + (record.credit_score || 50), 0) / creditData.length : 50;
 
-      // Calculate payment history score
       const paymentHistory = creditData?.reduce((sum, record) => {
         const history = Array.isArray(record.payment_history) ? record.payment_history : [];
         return sum + history.filter((p: any) => p.type === 'payment').length;
       }, 0) || 0;
 
-      // Determine risk level
       let riskLevel: 'low' | 'medium' | 'high' = 'high';
       if (avgCreditScore >= 70 && monthlyRevenue >= 50000 && businessAge >= 6) {
         riskLevel = 'low';
@@ -173,10 +165,8 @@ export const MicroLoanIntegration = () => {
         updated_at: new Date().toISOString()
       };
 
-      // Simulate instant approval/rejection based on credit profile
       const autoDecision = await processLoanDecision(newApplication);
       
-      // Store in localStorage (in real implementation, this would go to the database)
       const existingApplications = JSON.parse(localStorage.getItem(`loan_applications_${user.id}`) || '[]');
       existingApplications.unshift(newApplication);
       localStorage.setItem(`loan_applications_${user.id}`, JSON.stringify(existingApplications));
@@ -184,8 +174,8 @@ export const MicroLoanIntegration = () => {
       toast({
         title: 'Ombi Limewasilishwa',
         description: autoDecision.approved ? 
-          `Hongera! Mkopo wako wa TZS ${autoDecision.approvedAmount?.toLocaleString()} umeidhinishwa` :
-          'Ombi lako limepokewa na litakaguliwa',
+          `Mkopo wa TZS ${autoDecision.approvedAmount?.toLocaleString()} umeidhinishwa` :
+          'Ombi litakaguliwa',
       });
 
       setCurrentApplication({
@@ -210,20 +200,19 @@ export const MicroLoanIntegration = () => {
   const processLoanDecision = async (application: LoanApplication) => {
     if (!creditProfile) return { approved: false };
 
-    // Simple auto-approval algorithm
     const { creditScore, monthlyRevenue, businessAge, riskLevel } = creditProfile;
     
     let maxLoanAmount = 0;
-    let interestRate = 15; // Default 15% per annum
+    let interestRate = 15;
     
     if (riskLevel === 'low') {
-      maxLoanAmount = monthlyRevenue * 6; // 6 months revenue
+      maxLoanAmount = monthlyRevenue * 6;
       interestRate = 8;
     } else if (riskLevel === 'medium') {
-      maxLoanAmount = monthlyRevenue * 3; // 3 months revenue
+      maxLoanAmount = monthlyRevenue * 3;
       interestRate = 12;
     } else {
-      maxLoanAmount = monthlyRevenue * 1; // 1 month revenue
+      maxLoanAmount = monthlyRevenue * 1;
       interestRate = 18;
     }
 
@@ -232,7 +221,6 @@ export const MicroLoanIntegration = () => {
     const approvedAmount = approved ? Math.min(requestedAmount, maxLoanAmount) : 0;
 
     if (approved) {
-      // Update application with approval in localStorage
       application.status = 'approved';
       application.approved_amount = approvedAmount;
       application.interest_rate = interestRate;
@@ -255,10 +243,10 @@ export const MicroLoanIntegration = () => {
 
   const getLoanTypeName = (type: string) => {
     switch (type) {
-      case 'business_expansion': return 'Upanuzi wa Biashara';
-      case 'inventory': return 'Stock za Bidhaa';
-      case 'equipment': return 'Vifaa vya Biashara';
-      case 'emergency': return 'Mkopo wa Dharura';
+      case 'business_expansion': return 'Upanuzi';
+      case 'inventory': return 'Stock';
+      case 'equipment': return 'Vifaa';
+      case 'emergency': return 'Dharura';
       default: return type;
     }
   };
@@ -266,17 +254,17 @@ export const MicroLoanIntegration = () => {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'pending':
-        return <Badge variant="secondary"><Clock className="h-3 w-3 mr-1" />Inasubiri</Badge>;
+        return <Badge variant="secondary" className="text-xs"><Clock className="h-3 w-3 mr-1" />Inasubiri</Badge>;
       case 'approved':
-        return <Badge variant="default"><CheckCircle className="h-3 w-3 mr-1" />Imeidhinishwa</Badge>;
+        return <Badge variant="default" className="text-xs"><CheckCircle className="h-3 w-3 mr-1" />Imeidhinishwa</Badge>;
       case 'rejected':
-        return <Badge variant="destructive">Imekataliwa</Badge>;
+        return <Badge variant="destructive" className="text-xs">Imekataliwa</Badge>;
       case 'disbursed':
-        return <Badge className="bg-green-500"><CheckCircle className="h-3 w-3 mr-1" />Imepewa</Badge>;
+        return <Badge className="bg-green-500 text-xs"><CheckCircle className="h-3 w-3 mr-1" />Imepewa</Badge>;
       case 'paid':
-        return <Badge className="bg-blue-500">Imelipwa</Badge>;
+        return <Badge className="bg-blue-500 text-xs">Imelipwa</Badge>;
       default:
-        return <Badge variant="outline">{status}</Badge>;
+        return <Badge variant="outline" className="text-xs">{status}</Badge>;
     }
   };
 
@@ -287,44 +275,46 @@ export const MicroLoanIntegration = () => {
     return emi;
   };
 
+  const getRiskBadgeColor = (risk: string) => {
+    switch (risk) {
+      case 'low': return 'bg-green-100 text-green-800';
+      case 'medium': return 'bg-yellow-100 text-yellow-800';
+      case 'high': return 'bg-red-100 text-red-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
   return (
-    <div className="p-4 space-y-6">
-      {/* Credit Profile */}
+    <div className="p-3 space-y-4">
+      {/* Credit Profile - Compact */}
       {creditProfile && (
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <Calculator className="h-5 w-5" />
-              <span>Wasifu wa Mkopo</span>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg flex items-center space-x-2">
+              <Star className="h-5 w-5" />
+              <span>Wasifu Wako</span>
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="text-center">
-                <p className="text-2xl font-bold text-blue-600">{creditProfile.creditScore}</p>
-                <p className="text-sm text-gray-600">Alama za Mkopo</p>
-                <Progress value={creditProfile.creditScore} className="mt-2" />
+          <CardContent className="space-y-3">
+            <div className="grid grid-cols-3 gap-3 text-center">
+              <div>
+                <p className="text-xl font-bold text-blue-600">{creditProfile.creditScore}</p>
+                <p className="text-xs text-gray-600">Alama</p>
               </div>
-              
-              <div className="text-center">
-                <p className="text-lg font-bold text-green-600">
-                  TZS {creditProfile.monthlyRevenue.toLocaleString()}
+              <div>
+                <p className="text-sm font-bold text-green-600">
+                  {(creditProfile.monthlyRevenue / 1000).toFixed(0)}K
                 </p>
-                <p className="text-sm text-gray-600">Mapato ya Kila Mwezi</p>
+                <p className="text-xs text-gray-600">Mapato</p>
               </div>
-              
-              <div className="text-center">
-                <p className="text-lg font-bold text-purple-600">{creditProfile.businessAge} miezi</p>
-                <p className="text-sm text-gray-600">Umri wa Biashara</p>
+              <div>
+                <p className="text-sm font-bold text-purple-600">{creditProfile.businessAge}M</p>
+                <p className="text-xs text-gray-600">Umri</p>
               </div>
             </div>
             
             <div className="flex justify-center">
-              <Badge 
-                variant={creditProfile.riskLevel === 'low' ? 'default' : 
-                        creditProfile.riskLevel === 'medium' ? 'secondary' : 'destructive'}
-                className="text-sm"
-              >
+              <Badge className={`text-xs ${getRiskBadgeColor(creditProfile.riskLevel)}`}>
                 Hatari: {creditProfile.riskLevel === 'low' ? 'Chini' : 
                          creditProfile.riskLevel === 'medium' ? 'Wastani' : 'Juu'}
               </Badge>
@@ -333,85 +323,79 @@ export const MicroLoanIntegration = () => {
         </Card>
       )}
 
-      {/* Loan Products */}
+      {/* Loan Products - Grid */}
       <Card>
-        <CardHeader>
-          <CardTitle>Bidhaa za Mikopo</CardTitle>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-lg">Aina za Mikopo</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Card className="p-4 cursor-pointer hover:shadow-md" 
+          <div className="grid grid-cols-2 gap-2">
+            <Card className="p-3 cursor-pointer hover:shadow-md" 
                   onClick={() => {
                     setCurrentApplication({...currentApplication, loan_type: 'business_expansion'});
                     setShowApplication(true);
                   }}>
-              <div className="flex items-center space-x-3">
-                <TrendingUp className="h-8 w-8 text-blue-500" />
-                <div>
-                  <h3 className="font-semibold">Upanuzi wa Biashara</h3>
-                  <p className="text-sm text-gray-600">Hadi TZS 5,000,000</p>
-                  <p className="text-sm text-gray-600">Riba 8-15% kwa mwaka</p>
-                </div>
+              <div className="text-center">
+                <TrendingUp className="h-6 w-6 text-blue-500 mx-auto mb-1" />
+                <h4 className="text-sm font-semibold">Upanuzi</h4>
+                <p className="text-xs text-gray-600">Hadi 5M</p>
+                <p className="text-xs text-gray-600">8-15%</p>
               </div>
             </Card>
 
-            <Card className="p-4 cursor-pointer hover:shadow-md"
+            <Card className="p-3 cursor-pointer hover:shadow-md"
                   onClick={() => {
                     setCurrentApplication({...currentApplication, loan_type: 'inventory'});
                     setShowApplication(true);
                   }}>
-              <div className="flex items-center space-x-3">
-                <Package className="h-8 w-8 text-green-500" />
-                <div>
-                  <h3 className="font-semibold">Stock za Bidhaa</h3>
-                  <p className="text-sm text-gray-600">Hadi TZS 3,000,000</p>
-                  <p className="text-sm text-gray-600">Riba 10-18% kwa mwaka</p>
-                </div>
+              <div className="text-center">
+                <Package className="h-6 w-6 text-green-500 mx-auto mb-1" />
+                <h4 className="text-sm font-semibold">Stock</h4>
+                <p className="text-xs text-gray-600">Hadi 3M</p>
+                <p className="text-xs text-gray-600">10-18%</p>
               </div>
             </Card>
 
-            <Card className="p-4 cursor-pointer hover:shadow-md"
+            <Card className="p-3 cursor-pointer hover:shadow-md"
                   onClick={() => {
                     setCurrentApplication({...currentApplication, loan_type: 'equipment'});
                     setShowApplication(true);
                   }}>
-              <div className="flex items-center space-x-3">
-                <Wrench className="h-8 w-8 text-purple-500" />
-                <div>
-                  <h3 className="font-semibold">Vifaa vya Biashara</h3>
-                  <p className="text-sm text-gray-600">Hadi TZS 2,000,000</p>
-                  <p className="text-sm text-gray-600">Riba 12-20% kwa mwaka</p>
-                </div>
+              <div className="text-center">
+                <Wrench className="h-6 w-6 text-purple-500 mx-auto mb-1" />
+                <h4 className="text-sm font-semibold">Vifaa</h4>
+                <p className="text-xs text-gray-600">Hadi 2M</p>
+                <p className="text-xs text-gray-600">12-20%</p>
               </div>
             </Card>
 
-            <Card className="p-4 cursor-pointer hover:shadow-md"
+            <Card className="p-3 cursor-pointer hover:shadow-md"
                   onClick={() => {
                     setCurrentApplication({...currentApplication, loan_type: 'emergency'});
                     setShowApplication(true);
                   }}>
-              <div className="flex items-center space-x-3">
-                <AlertTriangle className="h-8 w-8 text-red-500" />
-                <div>
-                  <h3 className="font-semibold">Mkopo wa Dharura</h3>
-                  <p className="text-sm text-gray-600">Hadi TZS 500,000</p>
-                  <p className="text-sm text-gray-600">Riba 15-25% kwa mwaka</p>
-                </div>
+              <div className="text-center">
+                <AlertTriangle className="h-6 w-6 text-red-500 mx-auto mb-1" />
+                <h4 className="text-sm font-semibold">Dharura</h4>
+                <p className="text-xs text-gray-600">Hadi 500K</p>
+                <p className="text-xs text-gray-600">15-25%</p>
               </div>
             </Card>
           </div>
         </CardContent>
       </Card>
 
-      {/* Loan Application Form */}
+      {/* Application Form - Simplified */}
       {showApplication && (
         <Card>
-          <CardHeader>
-            <CardTitle>Ombi la Mkopo - {getLoanTypeName(currentApplication.loan_type || '')}</CardTitle>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg flex items-center space-x-2">
+              {getLoanTypeIcon(currentApplication.loan_type || '')}
+              <span>Ombi la {getLoanTypeName(currentApplication.loan_type || '')}</span>
+            </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-3">
             <div>
-              <label className="text-sm font-medium">Kiasi unachokitaka (TZS)</label>
               <Input
                 type="number"
                 value={currentApplication.requested_amount}
@@ -419,13 +403,13 @@ export const MicroLoanIntegration = () => {
                   ...currentApplication,
                   requested_amount: Number(e.target.value)
                 })}
+                placeholder="Kiasi (TZS)"
               />
             </div>
 
             <div>
-              <label className="text-sm font-medium">Maelezo ya Biashara</label>
               <Textarea
-                placeholder="Eleza biashara yako..."
+                placeholder="Maelezo ya biashara..."
                 value={currentApplication.application_data?.business_description || ''}
                 onChange={(e) => setCurrentApplication({
                   ...currentApplication,
@@ -434,13 +418,13 @@ export const MicroLoanIntegration = () => {
                     business_description: e.target.value
                   }
                 })}
+                rows={2}
               />
             </div>
 
             <div>
-              <label className="text-sm font-medium">Madhumuni ya Mkopo</label>
               <Textarea
-                placeholder="Utakitumia vipi mkopo huu..."
+                placeholder="Utakitumia vipi mkopo..."
                 value={currentApplication.application_data?.loan_purpose || ''}
                 onChange={(e) => setCurrentApplication({
                   ...currentApplication,
@@ -449,40 +433,24 @@ export const MicroLoanIntegration = () => {
                     loan_purpose: e.target.value
                   }
                 })}
+                rows={2}
               />
             </div>
 
-            <div>
-              <label className="text-sm font-medium">Gharama za Kila Mwezi (TZS)</label>
-              <Input
-                type="number"
-                placeholder="Gharama za kawaida za kila mwezi"
-                value={currentApplication.application_data?.monthly_expenses || ''}
-                onChange={(e) => setCurrentApplication({
-                  ...currentApplication,
-                  application_data: {
-                    ...currentApplication.application_data,
-                    monthly_expenses: Number(e.target.value)
-                  }
-                })}
-              />
-            </div>
-
-            {/* EMI Calculator */}
+            {/* EMI Calculator - Compact */}
             {currentApplication.requested_amount && creditProfile && (
-              <div className="bg-blue-50 p-4 rounded-lg">
-                <h4 className="font-semibold mb-2">Hesabu ya Malipo</h4>
-                <div className="grid grid-cols-2 gap-4 text-sm">
+              <div className="bg-blue-50 p-3 rounded-lg">
+                <div className="flex justify-between text-sm">
                   <div>
-                    <p>Malipo ya kila mwezi (EMI):</p>
+                    <p className="text-xs text-gray-600">Malipo ya mwezi:</p>
                     <p className="font-bold text-blue-600">
-                      TZS {calculateEMI(currentApplication.requested_amount, 12, 12).toLocaleString()}
+                      {(calculateEMI(currentApplication.requested_amount, 12, 12) / 1000).toFixed(0)}K
                     </p>
                   </div>
                   <div>
-                    <p>Jumla ya malipo:</p>
+                    <p className="text-xs text-gray-600">Jumla:</p>
                     <p className="font-bold">
-                      TZS {(calculateEMI(currentApplication.requested_amount, 12, 12) * 12).toLocaleString()}
+                      {((calculateEMI(currentApplication.requested_amount, 12, 12) * 12) / 1000).toFixed(0)}K
                     </p>
                   </div>
                 </div>
@@ -495,7 +463,7 @@ export const MicroLoanIntegration = () => {
                 disabled={loading}
                 className="flex-1"
               >
-                {loading ? 'Inawasilisha...' : 'Wasilisha Ombi'}
+                {loading ? 'Inawasilisha...' : 'Wasilisha'}
               </Button>
               <Button
                 onClick={() => setShowApplication(false)}
@@ -508,85 +476,34 @@ export const MicroLoanIntegration = () => {
         </Card>
       )}
 
-      {/* Loan Applications History */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Historia ya Maombi</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {applications.length === 0 ? (
-            <p className="text-center text-gray-600 py-8">Hakuna maombi ya mikopo</p>
-          ) : (
-            <div className="space-y-4">
-              {applications.map((app) => (
-                <div key={app.id} className="border p-4 rounded-lg">
-                  <div className="flex justify-between items-start mb-2">
+      {/* Applications History - Compact */}
+      {applications.length > 0 && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg">Historia</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {applications.slice(0, 3).map((app) => (
+                <div key={app.id} className="border p-2 rounded-lg">
+                  <div className="flex justify-between items-center">
                     <div className="flex items-center space-x-2">
                       {getLoanTypeIcon(app.loan_type)}
                       <div>
-                        <p className="font-semibold">{getLoanTypeName(app.loan_type)}</p>
-                        <p className="text-sm text-gray-600">
-                          {new Date(app.created_at).toLocaleDateString()}
+                        <p className="text-sm font-semibold">{getLoanTypeName(app.loan_type)}</p>
+                        <p className="text-xs text-gray-600">
+                          {app.requested_amount.toLocaleString()}
                         </p>
                       </div>
                     </div>
                     {getStatusBadge(app.status)}
                   </div>
-                  
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <p>Kiasi kilichoombwa:</p>
-                      <p className="font-semibold">TZS {app.requested_amount.toLocaleString()}</p>
-                    </div>
-                    {app.approved_amount && (
-                      <div>
-                        <p>Kiasi kilichoidhinishwa:</p>
-                        <p className="font-semibold text-green-600">
-                          TZS {app.approved_amount.toLocaleString()}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                  
-                  {app.interest_rate && (
-                    <div className="mt-2 text-sm">
-                      <p>Riba: {app.interest_rate}% kwa mwaka</p>
-                      {app.loan_term_months && (
-                        <p>Muda: miezi {app.loan_term_months}</p>
-                      )}
-                    </div>
-                  )}
                 </div>
               ))}
             </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Partner SACCOs */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <Users className="h-5 w-5" />
-            <span>Washirika wa Mikopo</span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="border p-3 rounded-lg">
-              <h4 className="font-semibold">SACCO ya Wafanyabiashara</h4>
-              <p className="text-sm text-gray-600">Riba 8-12% kwa mwaka</p>
-              <p className="text-sm text-gray-600">Mikopo hadi TZS 10,000,000</p>
-            </div>
-            
-            <div className="border p-3 rounded-lg">
-              <h4 className="font-semibold">Benki ya Maendeleo</h4>
-              <p className="text-sm text-gray-600">Riba 10-15% kwa mwaka</p>
-              <p className="text-sm text-gray-600">Mikopo hadi TZS 5,000,000</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };

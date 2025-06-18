@@ -35,6 +35,7 @@ import { MobileLayout } from "./components/MobileLayout";
 import { NotificationSettingsPage } from '@/pages/NotificationSettingsPage';
 import { ThemeProvider } from 'next-themes';
 import { LanguageProvider } from '@/contexts/LanguageContext';
+import { MicroLoanPage } from "./pages/MicroLoanPage";
 
 const queryClient = new QueryClient();
 
@@ -126,6 +127,13 @@ function App() {
                     <ProtectedRoute>
                       <MobileLayout>
                         <CreditManagementPage />
+                      </MobileLayout>
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/micro-loans" element={
+                    <ProtectedRoute>
+                      <MobileLayout>
+                        <MicroLoanPage />
                       </MobileLayout>
                     </ProtectedRoute>
                   } />

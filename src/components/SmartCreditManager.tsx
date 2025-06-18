@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -14,7 +13,9 @@ import {
   AlertTriangle,
   CheckCircle,
   Phone,
-  MessageSquare
+  MessageSquare,
+  Users,
+  Plus
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
@@ -110,7 +111,7 @@ export const SmartCreditManager = () => {
 
       toast({
         title: 'Malipo Yamerekodiwa',
-        description: `Malipo ya TZS ${amount.toLocaleString()} yamerekodiwa kwa ${customer.customer_name}`,
+        description: `TZS ${amount.toLocaleString()} - ${customer.customer_name}`,
       });
 
       fetchCreditCustomers();
@@ -180,7 +181,7 @@ export const SmartCreditManager = () => {
 
       toast({
         title: 'Ukumbusho Umetumwa',
-        description: `Ukumbusho umetumwa kwa ${customer.customer_name} kupitia ${method === 'sms' ? 'SMS' : 'WhatsApp'}`,
+        description: `${customer.customer_name} - ${method.toUpperCase()}`,
       });
     } catch (error) {
       console.error('Error sending reminder:', error);
@@ -198,131 +199,148 @@ export const SmartCreditManager = () => {
     return 'text-red-600';
   };
 
-  const getCreditScoreLabel = (score: number) => {
-    if (score >= 80) return 'Nzuri Sana';
-    if (score >= 60) return 'Wastani';
-    return 'Hatari';
+  const getCreditScoreIcon = (score: number) => {
+    if (score >= 80) return <TrendingUp className="h-4 w-4 text-green-600" />;
+    if (score >= 60) return <TrendingUp className="h-4 w-4 text-yellow-600" />;
+    return <TrendingDown className="h-4 w-4 text-red-600" />;
   };
 
   if (loading) {
     return (
-      <div className="p-4 space-y-4">
+      <div className="p-3 space-y-3">
         {[...Array(3)].map((_, i) => (
-          <div key={i} className="h-20 bg-gray-200 rounded-lg animate-pulse" />
+          <div key={i} className="h-16 bg-gray-200 rounded-lg animate-pulse" />
         ))}
       </div>
     );
   }
 
   return (
-    <div className="p-4 space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">Msimamizi wa Mikopo</h2>
-        <Badge variant="outline">
-          {creditCustomers.length} wateja
+    <div className="p-3 space-y-4">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-2">
+          <CreditCard className="h-6 w-6 text-purple-600" />
+          <h2 className="text-xl font-bold">Mikopo</h2>
+        </div>
+        <Badge variant="outline" className="flex items-center space-x-1">
+          <Users className="h-3 w-3" />
+          <span>{creditCustomers.length}</span>
         </Badge>
       </div>
 
-      <div className="grid gap-4">
-        {creditCustomers.map((customer) => (
-          <Card key={customer.id} className="border-l-4 border-l-purple-500">
-            <CardHeader className="pb-3">
-              <div className="flex justify-between items-start">
-                <div>
-                  <CardTitle className="text-lg">{customer.customer_name}</CardTitle>
-                  <p className="text-sm text-gray-600">{customer.customer_phone}</p>
+      {/* Empty State */}
+      {creditCustomers.length === 0 ? (
+        <Card className="text-center py-8">
+          <CardContent>
+            <Users className="h-12 w-12 text-gray-400 mx-auto mb-3" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Hakuna Wateja wa Mikopo</h3>
+            <p className="text-gray-600 mb-4">Ongeza wateja kwenye mfumo wa mikopo</p>
+            <Button size="sm" className="flex items-center space-x-2">
+              <Plus className="h-4 w-4" />
+              <span>Ongeza Mteja</span>
+            </Button>
+          </CardContent>
+        </Card>
+      ) : (
+        /* Customer List */
+        <div className="space-y-3">
+          {creditCustomers.map((customer) => (
+            <Card key={customer.id} className="border-l-4 border-l-purple-500">
+              <CardContent className="p-3">
+                <div className="flex justify-between items-start mb-3">
+                  <div>
+                    <h3 className="font-semibold text-sm">{customer.customer_name}</h3>
+                    <p className="text-xs text-gray-600">{customer.customer_phone}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-lg font-bold text-red-600">
+                      {customer.current_balance.toLocaleString()}
+                    </p>
+                    <p className="text-xs text-gray-600">
+                      /{customer.credit_limit.toLocaleString()}
+                    </p>
+                  </div>
                 </div>
-                <div className="text-right">
-                  <p className="text-2xl font-bold text-red-600">
-                    TZS {customer.current_balance.toLocaleString()}
-                  </p>
-                  <p className="text-sm text-gray-600">
-                    Kikomo: TZS {customer.credit_limit.toLocaleString()}
-                  </p>
+
+                <div className="space-y-2">
+                  <Progress 
+                    value={(customer.current_balance / customer.credit_limit) * 100} 
+                    className="h-1"
+                  />
+
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center space-x-1">
+                      {getCreditScoreIcon(customer.credit_score)}
+                      <span className="text-xs font-medium">{customer.credit_score}%</span>
+                    </div>
+                    
+                    {customer.last_payment_date && (
+                      <span className="text-xs text-gray-600">
+                        {new Date(customer.last_payment_date).toLocaleDateString()}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="flex space-x-1">
+                    <Button
+                      onClick={() => setSelectedCustomer(customer)}
+                      size="sm"
+                      variant="outline"
+                      className="flex-1 h-8 text-xs"
+                    >
+                      <CreditCard className="h-3 w-3 mr-1" />
+                      Malipo
+                    </Button>
+                    
+                    <Button
+                      onClick={() => sendPaymentReminder(customer, 'sms')}
+                      size="sm"
+                      variant="outline"
+                      className="h-8 px-2"
+                    >
+                      <Phone className="h-3 w-3" />
+                    </Button>
+                    
+                    <Button
+                      onClick={() => sendPaymentReminder(customer, 'whatsapp')}
+                      size="sm"
+                      variant="outline"
+                      className="h-8 px-2"
+                    >
+                      <MessageSquare className="h-3 w-3" />
+                    </Button>
+                  </div>
                 </div>
-              </div>
-            </CardHeader>
-            
-            <CardContent className="space-y-4">
-              <div className="flex justify-between items-center">
-                <span className="text-sm">Matumizi ya Mkopo</span>
-                <span className="text-sm font-medium">
-                  {((customer.current_balance / customer.credit_limit) * 100).toFixed(1)}%
-                </span>
-              </div>
-              <Progress 
-                value={(customer.current_balance / customer.credit_limit) * 100} 
-                className="h-2"
-              />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
 
-              <div className="flex justify-between items-center">
-                <div className="flex items-center space-x-2">
-                  <span className="text-sm">Kiwango cha Uaminifu:</span>
-                  <Badge 
-                    variant="outline" 
-                    className={getCreditScoreColor(customer.credit_score)}
-                  >
-                    {customer.credit_score}% - {getCreditScoreLabel(customer.credit_score)}
-                  </Badge>
-                </div>
-                
-                {customer.last_payment_date && (
-                  <span className="text-xs text-gray-600">
-                    Malipo ya mwisho: {new Date(customer.last_payment_date).toLocaleDateString()}
-                  </span>
-                )}
-              </div>
-
-              <div className="flex space-x-2">
-                <Button
-                  onClick={() => setSelectedCustomer(customer)}
-                  size="sm"
-                  variant="outline"
-                >
-                  <CreditCard className="h-4 w-4 mr-2" />
-                  Rekodi Malipo
-                </Button>
-                
-                <Button
-                  onClick={() => sendPaymentReminder(customer, 'sms')}
-                  size="sm"
-                  variant="outline"
-                >
-                  <Phone className="h-4 w-4 mr-2" />
-                  SMS
-                </Button>
-                
-                <Button
-                  onClick={() => sendPaymentReminder(customer, 'whatsapp')}
-                  size="sm"
-                  variant="outline"
-                >
-                  <MessageSquare className="h-4 w-4 mr-2" />
-                  WhatsApp
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
+      {/* Payment Modal */}
       {selectedCustomer && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <Card className="w-full max-w-md">
-            <CardHeader>
-              <CardTitle>Rekodi Malipo - {selectedCustomer.customer_name}</CardTitle>
+          <Card className="w-full max-w-sm">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg flex items-center space-x-2">
+                <CheckCircle className="h-5 w-5" />
+                <span>Rekodi Malipo</span>
+              </CardTitle>
               <p className="text-sm text-gray-600">
-                Deni la sasa: TZS {selectedCustomer.current_balance.toLocaleString()}
+                {selectedCustomer.customer_name}
+              </p>
+              <p className="text-sm font-medium">
+                Deni: TZS {selectedCustomer.current_balance.toLocaleString()}
               </p>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <label className="text-sm font-medium">Kiasi cha Malipo</label>
                 <Input
                   type="number"
                   value={newPayment}
                   onChange={(e) => setNewPayment(e.target.value)}
-                  placeholder="Weka kiasi"
+                  placeholder="Kiasi cha malipo"
                 />
               </div>
               
@@ -332,7 +350,6 @@ export const SmartCreditManager = () => {
                   disabled={!newPayment || Number(newPayment) <= 0}
                   className="flex-1"
                 >
-                  <CheckCircle className="h-4 w-4 mr-2" />
                   Rekodi
                 </Button>
                 <Button
@@ -341,7 +358,6 @@ export const SmartCreditManager = () => {
                     setNewPayment('');
                   }}
                   variant="outline"
-                  className="flex-1"
                 >
                   Ghairi
                 </Button>
