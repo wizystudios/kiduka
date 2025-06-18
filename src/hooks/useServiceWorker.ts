@@ -53,14 +53,11 @@ export const useServiceWorker = () => {
             toast({
               title: 'Sasisha Linaloweza',
               description: 'Toleo jipya la programu linaloweza. Bonyeza kubadilisha.',
-              action: (
-                <button
-                  onClick={updateServiceWorker}
-                  className="bg-blue-500 text-white px-3 py-1 rounded text-sm"
-                >
-                  Sasisha
-                </button>
-              )
+              action: {
+                altText: 'Sasisha',
+                onClick: updateServiceWorker,
+                children: 'Sasisha'
+              }
             });
           }
         });
