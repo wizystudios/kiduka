@@ -34,9 +34,10 @@ interface SmartReceipt {
   qr_code: string;
   warranty_info: any;
   created_at: string;
-  sale: {
+  sales: {
     total_amount: number;
     created_at: string;
+    owner_id: string;
   };
 }
 
@@ -274,18 +275,18 @@ export const WarrantyManager = () => {
                 </div>
                 <div>
                   <span className="text-gray-600">Kiasi:</span>
-                  <span className="ml-2 font-medium">TZS {selectedReceipt.sale.total_amount.toLocaleString()}</span>
+                  <span className="ml-2 font-medium">TZS {selectedReceipt.sales.total_amount.toLocaleString()}</span>
                 </div>
                 <div>
                   <span className="text-gray-600">Tarehe:</span>
                   <span className="ml-2 font-medium">
-                    {new Date(selectedReceipt.sale.created_at).toLocaleDateString('sw-TZ')}
+                    {new Date(selectedReceipt.sales.created_at).toLocaleDateString('sw-TZ')}
                   </span>
                 </div>
                 <div>
                   <span className="text-gray-600">Warranty:</span>
-                  <Badge variant={isWarrantyActive(selectedReceipt.sale.created_at) ? 'default' : 'destructive'}>
-                    {isWarrantyActive(selectedReceipt.sale.created_at) ? 'Inatumika' : 'Imeisha'}
+                  <Badge variant={isWarrantyActive(selectedReceipt.sales.created_at) ? 'default' : 'destructive'}>
+                    {isWarrantyActive(selectedReceipt.sales.created_at) ? 'Inatumika' : 'Imeisha'}
                   </Badge>
                 </div>
               </div>
@@ -419,13 +420,13 @@ export const WarrantyManager = () => {
                 <div>
                   <p className="font-medium">QR: {receipt.qr_code}</p>
                   <p className="text-sm text-gray-600">
-                    TZS {receipt.sale.total_amount.toLocaleString()} • 
-                    {new Date(receipt.sale.created_at).toLocaleDateString('sw-TZ')}
+                    TZS {receipt.sales.total_amount.toLocaleString()} • 
+                    {new Date(receipt.sales.created_at).toLocaleDateString('sw-TZ')}
                   </p>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <Badge variant={isWarrantyActive(receipt.sale.created_at) ? 'default' : 'destructive'}>
-                    {isWarrantyActive(receipt.sale.created_at) ? 'Warranty Inatumika' : 'Warranty Imeisha'}
+                  <Badge variant={isWarrantyActive(receipt.sales.created_at) ? 'default' : 'destructive'}>
+                    {isWarrantyActive(receipt.sales.created_at) ? 'Warranty Inatumika' : 'Warranty Imeisha'}
                   </Badge>
                   <Button 
                     size="sm" 
