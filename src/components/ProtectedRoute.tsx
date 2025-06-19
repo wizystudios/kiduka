@@ -19,6 +19,11 @@ export const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) 
     return <Navigate to="/auth" replace />;
   }
 
+  // Check if email is confirmed
+  if (!user.email_confirmed_at) {
+    return <Navigate to="/auth" replace />;
+  }
+
   if (requiredRole && userProfile?.role !== requiredRole) {
     return <Navigate to="/" replace />;
   }

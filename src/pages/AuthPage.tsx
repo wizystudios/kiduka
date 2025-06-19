@@ -8,12 +8,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { KidukaLogo } from '@/components/KidukaLogo';
-import { Mail, Lock, User, Building } from 'lucide-react';
+import { Mail, Lock, User, Building, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
 export const AuthPage = () => {
   const { user, signIn, signUp } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [showConfirmation, setShowConfirmation] = useState(false);
 
   // Form states
   const [email, setEmail] = useState('');
@@ -21,8 +22,8 @@ export const AuthPage = () => {
   const [fullName, setFullName] = useState('');
   const [businessName, setBusinessName] = useState('');
 
-  if (user) {
-    return <Navigate to="/" replace />;
+  if (user?.email_confirmed_at) {
+    return <Navigate to="/dashboard" replace />;
   }
 
   const handleSignIn = async (e: React.FormEvent) => {
@@ -43,13 +44,61 @@ export const AuthPage = () => {
     setLoading(true);
     try {
       await signUp(email, password, fullName, businessName);
-      toast.success('Account created! Please check your email to verify.');
     } catch (error: any) {
-      toast.error(error.message);
+      if (error.message === 'CONFIRMATION_REQUIRED') {
+        setShowConfirmation(true);
+        toast.success('Account created! Please check your email to verify your account.');
+      } else {
+        toast.error(error.message);
+      }
     } finally {
       setLoading(false);
     }
   };
+
+  const handleResendEmail = async () => {
+    try {
+      await signUp(email, password, fullName, businessName);
+    } catch (error: any) {
+      if (error.message === 'CONFIRMATION_REQUIRED') {
+        toast.success('Verification email sent! Please check your inbox.');
+      } else {
+        toast.error('Failed to resend email: ' + error.message);
+      }
+    }
+  };
+
+  if (showConfirmation) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-50 flex items-center justify-center p-4">
+        <Card className="w-full max-w-md shadow-xl border-0">
+          <CardHeader className="text-center">
+            <div className="flex justify-center mb-4">
+              <CheckCircle className="h-16 w-16 text-green-600" />
+            </div>
+            <CardTitle className="text-2xl font-bold text-gray-900">Check Your Email</CardTitle>
+            <p className="text-gray-600">We've sent a verification link to {email}</p>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="text-center space-y-4">
+              <p className="text-sm text-gray-600">
+                Click the link in your email to verify your account and complete the registration.
+              </p>
+              <div className="space-y-2">
+                <Button onClick={handleResendEmail} variant="outline" className="w-full">
+                  <Mail className="h-4 w-4 mr-2" />
+                  Resend Email
+                </Button>
+                <Button onClick={() => setShowConfirmation(false)} variant="ghost" className="w-full">
+                  Back to Sign Up
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-50 flex items-center justify-center p-4">

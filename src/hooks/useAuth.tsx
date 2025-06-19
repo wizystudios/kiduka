@@ -38,11 +38,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log('Auth state changed:', event, session?.user?.email_confirmed_at);
         setSession(session);
         setUser(session?.user ?? null);
         
-        if (session?.user) {
-          // Defer profile fetching to avoid deadlocks
+        if (session?.user && session.user.email_confirmed_at) {
+          // Only fetch profile for confirmed users
           setTimeout(() => {
             fetchUserProfile(session.user.id);
           }, 0);
@@ -57,7 +58,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
-      if (session?.user) {
+      if (session?.user && session.user.email_confirmed_at) {
         setTimeout(() => {
           fetchUserProfile(session.user.id);
         }, 0);
@@ -69,15 +70,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
+    
     if (error) throw error;
+    
+    // Check if email is confirmed
+    if (data.user && !data.user.email_confirmed_at) {
+      throw new Error('Please verify your email before logging in. Check your inbox for the verification link.');
+    }
   };
 
   const signUp = async (email: string, password: string, fullName: string, businessName?: string) => {
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -85,9 +92,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           full_name: fullName,
           business_name: businessName,
         },
+        emailRedirectTo: `${window.location.origin}/verify-email`
       },
     });
+    
     if (error) throw error;
+    
+    if (data.user && !data.user.email_confirmed_at) {
+      throw new Error('CONFIRMATION_REQUIRED');
+    }
   };
 
   const signOut = async () => {

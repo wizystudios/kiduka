@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import Index from "./pages/Index";
 import { AuthPage } from "./pages/AuthPage";
+import { EmailVerificationPage } from "./pages/EmailVerificationPage";
 import { Dashboard } from "./pages/Dashboard";
 import { ProductsPage } from "./pages/ProductsPage";
 import { AddProductPage } from "./pages/AddProductPage";
@@ -52,6 +53,7 @@ function App() {
                 <Routes>
                   <Route path="/" element={<Index />} />
                   <Route path="/auth" element={<AuthPage />} />
+                  <Route path="/verify-email" element={<EmailVerificationPage />} />
                   <Route path="/receipt/:transactionId" element={<ReceiptViewPage />} />
                   <Route path="/dashboard" element={
                     <ProtectedRoute>
