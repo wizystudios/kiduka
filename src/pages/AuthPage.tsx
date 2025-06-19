@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { Navigate } from 'react-router-dom';
@@ -84,14 +85,6 @@ export const AuthPage = () => {
           <p className="text-gray-600">Suluhisho Lako la POS</p>
         </CardHeader>
         <CardContent>
-          {/* Show info about email confirmation */}
-          <Alert className="mb-4 border-blue-200 bg-blue-50">
-            <AlertCircle className="h-4 w-4 text-blue-600" />
-            <AlertDescription className="text-blue-800">
-              Baada ya kusajili, utapokea barua pepe ya uthibitisho. Ni lazima uthimbishe barua pepe yako kabla ya kuingia.
-            </AlertDescription>
-          </Alert>
-
           <Tabs defaultValue="signin" className="w-full">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="signin">Ingia</TabsTrigger>
@@ -99,6 +92,14 @@ export const AuthPage = () => {
             </TabsList>
             
             <TabsContent value="signin">
+              {/* Show info about email confirmation for sign in */}
+              <Alert className="mb-4 border-blue-200 bg-blue-50">
+                <AlertCircle className="h-4 w-4 text-blue-600" />
+                <AlertDescription className="text-blue-800">
+                  Ni lazima uthimbishe barua pepe yako kabla ya kuingia.
+                </AlertDescription>
+              </Alert>
+
               <form onSubmit={handleSignIn} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="signin-email">Barua Pepe</Label>
@@ -137,6 +138,14 @@ export const AuthPage = () => {
             </TabsContent>
             
             <TabsContent value="signup">
+              {/* Show info about email confirmation for sign up */}
+              <Alert className="mb-4 border-blue-200 bg-blue-50">
+                <AlertCircle className="h-4 w-4 text-blue-600" />
+                <AlertDescription className="text-blue-800">
+                  Baada ya kusajili, utapokea barua pepe ya uthibitisho. Ni lazima uthimbishe barua pepe yako kabla ya kuingia.
+                </AlertDescription>
+              </Alert>
+
               <form onSubmit={handleSignUp} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="signup-name">Jina Kamili</Label>
