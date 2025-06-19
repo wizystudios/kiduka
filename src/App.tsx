@@ -37,6 +37,7 @@ import { NotificationSettingsPage } from '@/pages/NotificationSettingsPage';
 import { ThemeProvider } from 'next-themes';
 import { LanguageProvider } from '@/contexts/LanguageContext';
 import { MicroLoanPage } from "./pages/MicroLoanPage";
+import { SuperAdminPage } from "./pages/SuperAdminPage";
 
 const queryClient = new QueryClient();
 
@@ -55,6 +56,11 @@ function App() {
                   <Route path="/auth" element={<AuthPage />} />
                   <Route path="/verify-email" element={<EmailVerificationPage />} />
                   <Route path="/receipt/:transactionId" element={<ReceiptViewPage />} />
+                  <Route path="/super-admin" element={
+                    <ProtectedRoute requiredRole="super_admin">
+                      <SuperAdminPage />
+                    </ProtectedRoute>
+                  } />
                   <Route path="/dashboard" element={
                     <ProtectedRoute>
                       <MobileLayout>

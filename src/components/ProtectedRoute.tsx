@@ -5,11 +5,11 @@ import { LoadingScreen } from './LoadingScreen';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
-  requiredRole?: 'owner' | 'assistant';
+  requiredRole?: 'owner' | 'assistant' | 'super_admin';
 }
 
 export const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) => {
-  const { user, userProfile, loading } = useAuth();
+  const {  user, userProfile, loading } = useAuth();
 
   if (loading) {
     return <LoadingScreen onComplete={() => {}} />;
