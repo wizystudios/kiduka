@@ -75,11 +75,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       password,
     });
     
-    if (error) throw error;
+    if (error) {
+      // Provide more specific error messages
+      if (error.message.includes('Invalid login credentials')) {
+        throw new Error('Barua pepe au nywila si sahihi. Tafadhali jaribu tena.');
+      } else if (error.message.includes('Email not confirmed')) {
+        throw new Error('Barua pepe yako haijathibitishwa bado. Tafadhali kagua barua pepe yako na ubonyeze kiungo cha uthibitisho.');
+      } else {
+        throw new Error(error.message);
+      }
+    }
     
-    // Check if email is confirmed
+    // Check if email is confirmed after successful login attempt
     if (data.user && !data.user.email_confirmed_at) {
-      throw new Error('Please verify your email before logging in. Check your inbox for the verification link.');
+      // Sign out the user since they're not confirmed
+      await supabase.auth.signOut();
+      throw new Error('Barua pepe yako haijathibitishwa bado. Tafadhali kagua barua pepe yako na ubonyeze kiungo cha uthibitisho kabla ya kuingia.');
     }
   };
 
@@ -96,7 +107,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       },
     });
     
-    if (error) throw error;
+    if (error) {
+      if (error.message.includes('User already registered')) {
+        throw new Error('Barua pepe hii tayari imesajiliwa. Tafadhali jaribu kuingia au tumia barua pepe nyingine.');
+      } else {
+        throw new Error(error.message);
+      }
+    }
     
     if (data.user && !data.user.email_confirmed_at) {
       throw new Error('CONFIRMATION_REQUIRED');

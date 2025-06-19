@@ -9,7 +9,7 @@ interface ProtectedRouteProps {
 }
 
 export const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) => {
-  const {  user, userProfile, loading } = useAuth();
+  const { user, userProfile, loading } = useAuth();
 
   if (loading) {
     return <LoadingScreen onComplete={() => {}} />;
@@ -19,8 +19,9 @@ export const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) 
     return <Navigate to="/auth" replace />;
   }
 
-  // Check if email is confirmed
+  // Check if email is confirmed - this is the key fix
   if (!user.email_confirmed_at) {
+    console.log('User email not confirmed, redirecting to auth');
     return <Navigate to="/auth" replace />;
   }
 

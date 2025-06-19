@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { Navigate } from 'react-router-dom';
@@ -8,9 +7,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { KidukaLogo } from '@/components/KidukaLogo';
-import { Mail, Lock, User, Building } from 'lucide-react';
+import { Mail, Lock, User, Building, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { EmailConfirmationPage } from '@/components/EmailConfirmationPage';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 export const AuthPage = () => {
   const { user, signIn, signUp } = useAuth();
@@ -35,6 +35,7 @@ export const AuthPage = () => {
       await signIn(email, password);
       toast.success('Karibu tena Kiduka!');
     } catch (error: any) {
+      console.error('Sign in error:', error);
       toast.error(error.message);
     } finally {
       setLoading(false);
@@ -47,6 +48,7 @@ export const AuthPage = () => {
     try {
       await signUp(email, password, fullName, businessName);
     } catch (error: any) {
+      console.error('Sign up error:', error);
       if (error.message === 'CONFIRMATION_REQUIRED') {
         setRegisteredEmail(email);
         setShowConfirmation(true);
@@ -82,6 +84,14 @@ export const AuthPage = () => {
           <p className="text-gray-600">Suluhisho Lako la POS</p>
         </CardHeader>
         <CardContent>
+          {/* Show info about email confirmation */}
+          <Alert className="mb-4 border-blue-200 bg-blue-50">
+            <AlertCircle className="h-4 w-4 text-blue-600" />
+            <AlertDescription className="text-blue-800">
+              Baada ya kusajili, utapokea barua pepe ya uthibitisho. Ni lazima uthimbishe barua pepe yako kabla ya kuingia.
+            </AlertDescription>
+          </Alert>
+
           <Tabs defaultValue="signin" className="w-full">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="signin">Ingia</TabsTrigger>
