@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -35,8 +34,10 @@ interface PaymentData {
 }
 
 export const ScannerPage = () => {
-  const [manualBarcode, setManualBarcode] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchType, setSearchType] = useState<'barcode' | 'name'>('barcode');
   const [scannedProduct, setScannedProduct] = useState<Product | null>(null);
+  const [searchResults, setSearchResults] = useState<Product[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [showPayment, setShowPayment] = useState(false);
@@ -55,32 +56,68 @@ export const ScannerPage = () => {
   const { toast } = useToast();
   const { userProfile } = useAuth();
 
-  const handleSearchProduct = async (barcode: string) => {
-    if (!barcode.trim()) return;
+  const handleSearchProduct = async (query: string) => {
+    if (!query.trim()) {
+      setSearchResults([]);
+      return;
+    }
     
     setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('products')
-        .select('*')
-        .eq('barcode', barcode.trim())
-        .single();
-
-      if (error) {
-        toast({
-          title: 'Product Not Found',
-          description: 'No product found with this barcode',
-          variant: 'destructive'
-        });
-        setScannedProduct(null);
-        return;
+      let searchQuery;
+      
+      if (searchType === 'barcode') {
+        searchQuery = supabase
+          .from('products')
+          .select('*')
+          .eq('barcode', query.trim())
+          .eq('owner_id', userProfile?.id);
+      } else {
+        searchQuery = supabase
+          .from('products')
+          .select('*')
+          .ilike('name', `%${query.trim()}%`)
+          .eq('owner_id', userProfile?.id)
+          .limit(10);
       }
 
-      setScannedProduct(data);
-      toast({
-        title: 'Product Found!',
-        description: `${data.name} - TZS ${data.price.toLocaleString()}`
-      });
+      const { data, error } = await searchQuery;
+
+      if (error) throw error;
+
+      if (searchType === 'barcode') {
+        if (data && data.length > 0) {
+          setScannedProduct(data[0]);
+          setSearchResults([]);
+          toast({
+            title: 'Product Found!',
+            description: `${data[0].name} - TZS ${data[0].price.toLocaleString()}`
+          });
+        } else {
+          toast({
+            title: 'Product Not Found',
+            description: 'No product found with this barcode',
+            variant: 'destructive'
+          });
+          setScannedProduct(null);
+          setSearchResults([]);
+        }
+      } else {
+        setSearchResults(data || []);
+        setScannedProduct(null);
+        if (data && data.length > 0) {
+          toast({
+            title: 'Products Found',
+            description: `${data.length} product(s) found`
+          });
+        } else {
+          toast({
+            title: 'No Products Found',
+            description: 'No products match your search',
+            variant: 'destructive'
+          });
+        }
+      }
     } catch (error) {
       console.error('Error searching product:', error);
       toast({
@@ -94,9 +131,16 @@ export const ScannerPage = () => {
   };
 
   const handleCameraScan = (barcode: string) => {
-    setManualBarcode(barcode);
+    setSearchQuery(barcode);
+    setSearchType('barcode');
     setShowCamera(false);
     handleSearchProduct(barcode);
+  };
+
+  const selectProduct = (product: Product) => {
+    setScannedProduct(product);
+    setSearchResults([]);
+    setSearchQuery('');
   };
 
   const addToCart = (product: Product) => {
@@ -218,7 +262,8 @@ export const ScannerPage = () => {
       setShowReceipt(true);
       setCart([]);
       setScannedProduct(null);
-      setManualBarcode('');
+      setSearchQuery('');
+      setSearchResults([]);
     } catch (error) {
       console.error('Error completing sale:', error);
       toast({
@@ -244,8 +289,8 @@ export const ScannerPage = () => {
   return (
     <div className="p-4 space-y-6">
       <div>
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Barcode Scanner</h2>
-        <p className="text-gray-600">Scan or search products to add to sale</p>
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Product Scanner</h2>
+        <p className="text-gray-600">Search products by barcode or name</p>
       </div>
 
       {/* Camera Scanner Component */}
@@ -313,43 +358,97 @@ export const ScannerPage = () => {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center">
-                <Camera className="h-5 w-5 mr-2" />
-                Product Scanner
+                <Search className="h-5 w-5 mr-2" />
+                Product Search
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
+              {/* Search Type Toggle */}
+              <div className="flex space-x-2">
+                <Button
+                  variant={searchType === "barcode" ? "default" : "outline"}
+                  onClick={() => setSearchType("barcode")}
+                  className="flex-1"
+                >
+                  Barcode
+                </Button>
+                <Button
+                  variant={searchType === "name" ? "default" : "outline"}
+                  onClick={() => setSearchType("name")}
+                  className="flex-1"
+                >
+                  Name
+                </Button>
+              </div>
+
               <div className="space-y-3">
                 <Input
-                  placeholder="Enter barcode manually..."
-                  value={manualBarcode}
-                  onChange={(e) => setManualBarcode(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && handleSearchProduct(manualBarcode)}
+                  placeholder={searchType === 'barcode' ? "Enter barcode..." : "Enter product name..."}
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && handleSearchProduct(searchQuery)}
                 />
                 <div className="flex gap-2">
                   <Button 
-                    onClick={() => handleSearchProduct(manualBarcode)}
+                    onClick={() => handleSearchProduct(searchQuery)}
                     className="flex-1"
-                    disabled={!manualBarcode || loading}
+                    disabled={!searchQuery || loading}
                   >
                     <Search className="h-4 w-4 mr-2" />
                     {loading ? 'Searching...' : 'Search Product'}
                   </Button>
-                  <Button 
-                    onClick={() => setShowCamera(true)}
-                    variant="outline"
-                  >
-                    <Camera className="h-4 w-4" />
-                  </Button>
+                  {searchType === 'barcode' && (
+                    <Button 
+                      onClick={() => setShowCamera(true)}
+                      variant="outline"
+                    >
+                      <Camera className="h-4 w-4" />
+                    </Button>
+                  )}
                 </div>
               </div>
             </CardContent>
           </Card>
 
+          {/* Search Results for Name Search */}
+          {searchResults.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-blue-800">Search Results</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {searchResults.map((product) => (
+                  <div key={product.id} className="p-3 bg-blue-50 rounded-lg">
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1">
+                        <h3 className="font-semibold">{product.name}</h3>
+                        <p className="text-blue-600 font-bold">TZS {product.price.toLocaleString()}</p>
+                        <p className="text-sm text-gray-600">{product.category}</p>
+                      </div>
+                      <div className="text-right">
+                        <Badge variant="outline" className="text-blue-600 mb-2">
+                          Stock: {product.stock_quantity}
+                        </Badge>
+                        <Button 
+                          onClick={() => selectProduct(product)}
+                          size="sm"
+                          className="bg-blue-600 hover:bg-blue-700"
+                        >
+                          Select
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          )}
+
           {/* Scanned Product */}
           {scannedProduct && (
             <Card className="border-green-200 bg-green-50">
               <CardHeader>
-                <CardTitle className="text-green-800">Product Found</CardTitle>
+                <CardTitle className="text-green-800">Product Selected</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
@@ -389,7 +488,7 @@ export const ScannerPage = () => {
               <div className="text-center py-8">
                 <ShoppingCart className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                 <p className="text-gray-600">Cart is empty</p>
-                <p className="text-sm text-gray-500">Scan products to add them</p>
+                <p className="text-sm text-gray-500">Search products to add them</p>
               </div>
             ) : (
               <div className="space-y-4">

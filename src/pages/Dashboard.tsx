@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -18,7 +19,8 @@ import {
   Brain,
   MessageCircle,
   CreditCard,
-  Store
+  Store,
+  Scan
 } from 'lucide-react';
 
 export const Dashboard = () => {
@@ -104,28 +106,28 @@ export const Dashboard = () => {
 
   const dashboardMetrics = [
     {
-      title: "Today's Sales",
-      value: `TZS ${metrics.todaysSales.toLocaleString()}`,
+      title: "Leo",
+      value: `${metrics.todaysSales.toLocaleString()}`,
       icon: DollarSign,
       color: "text-green-600",
       bgColor: "bg-green-50"
     },
     {
-      title: "Total Products",
+      title: "Bidhaa",
       value: metrics.totalProducts.toString(),
       icon: Package,
       color: "text-purple-600",
       bgColor: "bg-purple-50"
     },
     {
-      title: "Transactions Today",
+      title: "Miamala",
       value: metrics.todaysTransactions.toString(),
       icon: ShoppingCart,
       color: "text-blue-600",
       bgColor: "bg-blue-50"
     },
     {
-      title: "Low Stock Alert",
+      title: "Onyo",
       value: metrics.lowStockItems.toString(),
       icon: AlertTriangle,
       color: "text-orange-600",
@@ -147,21 +149,13 @@ export const Dashboard = () => {
             </Avatar>
             <div className="flex-1">
               <h2 className="text-xl font-bold text-gray-900">
-                Karibu, {userProfile?.full_name || 'User'}!
+                Karibu, {userProfile?.full_name?.split(' ')[0] || 'User'}!
               </h2>
               <div className="flex items-center space-x-2 mt-1">
                 <Badge variant="outline" className="text-purple-600 border-purple-200">
                   {userProfile?.role || 'owner'}
                 </Badge>
-                {userProfile?.business_name && (
-                  <span className="text-sm text-gray-600">
-                    • {userProfile.business_name}
-                  </span>
-                )}
               </div>
-              <p className="text-gray-600 text-sm mt-1">
-                Hapa kuna kilichoendelea leo katika duka lako.
-              </p>
             </div>
           </div>
         </CardContent>
@@ -195,7 +189,7 @@ export const Dashboard = () => {
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center text-purple-700">
             <Brain className="h-5 w-5 mr-2" />
-            Vitendo vya Akili Bandia
+            AI Actions
           </CardTitle>
         </CardHeader>
         <CardContent className="grid grid-cols-2 gap-3">
@@ -204,10 +198,9 @@ export const Dashboard = () => {
             className="p-4 bg-white rounded-lg text-left hover:bg-gray-50 transition-colors h-auto justify-start"
             variant="ghost"
           >
-            <div>
-              <MessageCircle className="h-6 w-6 text-purple-600 mb-2" />
-              <p className="font-medium text-gray-900">Mshauri wa AI</p>
-              <p className="text-sm text-gray-600">Uliza swali</p>
+            <div className="text-center">
+              <MessageCircle className="h-6 w-6 text-purple-600 mx-auto mb-2" />
+              <p className="font-medium text-gray-900">Mshauri</p>
             </div>
           </Button>
           <Button 
@@ -215,10 +208,9 @@ export const Dashboard = () => {
             className="p-4 bg-white rounded-lg text-left hover:bg-gray-50 transition-colors h-auto justify-start"
             variant="ghost"
           >
-            <div>
-              <TrendingUp className="h-6 w-6 text-green-600 mb-2" />
-              <p className="font-medium text-gray-900">Takwimu za AI</p>
-              <p className="text-sm text-gray-600">Ona uchambuzi</p>
+            <div className="text-center">
+              <TrendingUp className="h-6 w-6 text-green-600 mx-auto mb-2" />
+              <p className="font-medium text-gray-900">Takwimu</p>
             </div>
           </Button>
         </CardContent>
@@ -230,7 +222,7 @@ export const Dashboard = () => {
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center text-orange-700">
               <AlertTriangle className="h-5 w-5 mr-2" />
-              Bidhaa Zinazokaribia Kuisha
+              Stock Ndogo
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -241,7 +233,7 @@ export const Dashboard = () => {
                   <p className="text-sm text-gray-600">{product.category}</p>
                 </div>
                 <Badge variant="outline" className="text-orange-600 border-orange-200">
-                  {product.stock_quantity} zimebaki
+                  {product.stock_quantity}
                 </Badge>
               </div>
             ))}
@@ -252,7 +244,7 @@ export const Dashboard = () => {
       {/* Quick Actions */}
       <Card>
         <CardHeader>
-          <CardTitle>Vitendo vya Haraka</CardTitle>
+          <CardTitle>Haraka</CardTitle>
         </CardHeader>
         <CardContent className="grid grid-cols-2 gap-3">
           <Button 
@@ -260,10 +252,9 @@ export const Dashboard = () => {
             className="p-4 bg-purple-50 rounded-lg text-left hover:bg-purple-100 transition-colors h-auto justify-start"
             variant="ghost"
           >
-            <div>
-              <Package className="h-6 w-6 text-purple-600 mb-2" />
-              <p className="font-medium text-gray-900">Ongeza Bidhaa</p>
-              <p className="text-sm text-gray-600">Ongeza stock mpya</p>
+            <div className="text-center">
+              <Plus className="h-6 w-6 text-purple-600 mx-auto mb-2" />
+              <p className="font-medium text-gray-900">Bidhaa</p>
             </div>
           </Button>
           <Button 
@@ -271,19 +262,18 @@ export const Dashboard = () => {
             className="p-4 bg-blue-50 rounded-lg text-left hover:bg-blue-100 transition-colors h-auto justify-start"
             variant="ghost"
           >
-            <div>
-              <ShoppingCart className="h-6 w-6 text-blue-600 mb-2" />
-              <p className="font-medium text-gray-900">Muuzo Mpya</p>
-              <p className="text-sm text-gray-600">Scan kuuza</p>
+            <div className="text-center">
+              <Scan className="h-6 w-6 text-blue-600 mx-auto mb-2" />
+              <p className="font-medium text-gray-900">Muuzo</p>
             </div>
           </Button>
         </CardContent>
       </Card>
 
-      {/* New Advanced Features */}
+      {/* Advanced Features */}
       <Card>
         <CardHeader>
-          <CardTitle>Vipengele vya Hali ya Juu</CardTitle>
+          <CardTitle>Zaidi</CardTitle>
         </CardHeader>
         <CardContent className="grid grid-cols-2 gap-3">
           <Button 
@@ -291,10 +281,9 @@ export const Dashboard = () => {
             className="p-4 bg-green-50 rounded-lg text-left hover:bg-green-100 transition-colors h-auto justify-start"
             variant="ghost"
           >
-            <div>
-              <CreditCard className="h-6 w-6 text-green-600 mb-2" />
+            <div className="text-center">
+              <CreditCard className="h-6 w-6 text-green-600 mx-auto mb-2" />
               <p className="font-medium text-gray-900">Mikopo</p>
-              <p className="text-sm text-gray-600">Simamia mikopo</p>
             </div>
           </Button>
           <Button 
@@ -302,10 +291,9 @@ export const Dashboard = () => {
             className="p-4 bg-orange-50 rounded-lg text-left hover:bg-orange-100 transition-colors h-auto justify-start"
             variant="ghost"
           >
-            <div>
-              <Store className="h-6 w-6 text-orange-600 mb-2" />
-              <p className="font-medium text-gray-900">Soko la Jamii</p>
-              <p className="text-sm text-gray-600">Uza na ununue</p>
+            <div className="text-center">
+              <Store className="h-6 w-6 text-orange-600 mx-auto mb-2" />
+              <p className="font-medium text-gray-900">Soko</p>
             </div>
           </Button>
         </CardContent>

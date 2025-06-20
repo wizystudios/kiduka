@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -17,7 +16,11 @@ import {
   UserCheck,
   Percent,
   Wifi,
-  WifiOff
+  WifiOff,
+  CreditCard,
+  Store,
+  Brain,
+  TrendingUp
 } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
@@ -50,9 +53,16 @@ export const MobileLayout = ({ children }: MobileLayoutProps) => {
     { id: 'sales', label: 'Sales', icon: ShoppingCart, href: '/sales' },
     { id: 'customers', label: 'Customers', icon: Users, href: '/customers' },
     { id: 'discounts', label: 'Discounts', icon: Percent, href: '/discounts' },
+    { id: 'mikopo', label: 'Mikopo', icon: CreditCard, href: '/credit-management' },
+    { id: 'marketplace', label: 'Soko la Jamii', icon: Store, href: '/marketplace' },
+    { id: 'ai-advisor', label: 'Mshauri wa AI', icon: Brain, href: '/ai-advisor' },
+    { id: 'business-intelligence', label: 'Takwimu za AI', icon: TrendingUp, href: '/business-intelligence' },
     { id: 'reports', label: 'Reports', icon: BarChart3, href: '/reports' },
     ...(userProfile?.role === 'owner' ? [
       { id: 'users', label: 'Users', icon: UserCheck, href: '/users' }
+    ] : []),
+    ...(userProfile?.role === 'super_admin' ? [
+      { id: 'super-admin', label: 'Super Admin', icon: Settings, href: '/super-admin' }
     ] : []),
     { id: 'settings', label: 'Settings', icon: Settings, href: '/settings' },
   ];
