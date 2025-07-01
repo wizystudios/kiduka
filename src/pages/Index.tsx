@@ -6,27 +6,39 @@ import { OnboardingPages } from "@/components/OnboardingPages";
 
 const Index = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
-  const [showOnboarding, setShowOnboarding] = useState(true);
+  const { user, loading } = useAuth();
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
   useEffect(() => {
-    if (user) {
-      navigate('/dashboard');
+    if (loading) return;
+    
+    if (user && user.email_confirmed_at) {
+      console.log('User is authenticated and confirmed, redirecting to dashboard');
+      navigate('/dashboard', { replace: true });
+    } else if (!user) {
+      // Check if user has seen onboarding before
+      const hasSeenOnboarding = localStorage.getItem('kiduka_onboarding_seen');
+      if (!hasSeenOnboarding) {
+        setShowOnboarding(true);
+      }
     }
-  }, [user, navigate]);
-
-  useEffect(() => {
-    // Check if user has seen onboarding before
-    const hasSeenOnboarding = localStorage.getItem('kiduka_onboarding_seen');
-    if (hasSeenOnboarding) {
-      setShowOnboarding(false);
-    }
-  }, []);
+  }, [user, loading, navigate]);
 
   const handleOnboardingComplete = () => {
     localStorage.setItem('kiduka_onboarding_seen', 'true');
     setShowOnboarding(false);
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-blue-50 to-purple-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Inapakia...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (showOnboarding) {
     return <OnboardingPages onComplete={handleOnboardingComplete} />;

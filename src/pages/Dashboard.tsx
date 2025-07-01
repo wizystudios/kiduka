@@ -24,7 +24,7 @@ import {
 } from 'lucide-react';
 
 export const Dashboard = () => {
-  const { userProfile, loading: authLoading } = useAuth();
+  const { user, userProfile, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [metrics, setMetrics] = useState({
     todaysSales: 0,
@@ -37,14 +37,15 @@ export const Dashboard = () => {
   const [showAIChat, setShowAIChat] = useState(false);
 
   useEffect(() => {
-    if (userProfile && !authLoading) {
+    if (user && !authLoading) {
+      console.log('User loaded, fetching dashboard data:', user.id);
       fetchDashboardData();
     }
-  }, [userProfile, authLoading]);
+  }, [user, authLoading]);
 
   const fetchDashboardData = async () => {
     try {
-      console.log('Fetching dashboard data for user:', userProfile?.id);
+      console.log('Fetching dashboard data for user:', user?.id);
       
       // Get today's date range
       const today = new Date();
@@ -55,7 +56,7 @@ export const Dashboard = () => {
       const { data: todaysSales, error: salesError } = await supabase
         .from('sales')
         .select('total_amount')
-        .eq('owner_id', userProfile.id)
+        .eq('owner_id', user?.id)
         .gte('created_at', startOfDay.toISOString())
         .lt('created_at', endOfDay.toISOString());
 
@@ -67,10 +68,12 @@ export const Dashboard = () => {
       const { data: products, error: productsError } = await supabase
         .from('products')
         .select('*')
-        .eq('owner_id', userProfile.id);
+        .eq('owner_id', user?.id);
 
       if (productsError) {
         console.error('Error fetching products:', productsError);
+      } else {
+        console.log('Products fetched:', products?.length || 0);
       }
 
       // Calculate metrics
@@ -109,12 +112,20 @@ export const Dashboard = () => {
   if (authLoading || loading) {
     return (
       <div className="p-4 space-y-4">
+        <div className="text-center py-8">
+          <p className="text-gray-600">Inapakia data yako...</p>
+        </div>
         {[...Array(4)].map((_, i) => (
           <div key={i} className="h-20 bg-gray-200 rounded-lg animate-pulse" />
         ))}
       </div>
     );
   }
+
+  // Get display name from user or profile
+  const displayName = userProfile?.full_name || user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Mtumiaji';
+  const businessName = userProfile?.business_name || user?.user_metadata?.business_name;
+  const userRole = userProfile?.role || 'owner';
 
   const dashboardMetrics = [
     {
@@ -156,22 +167,23 @@ export const Dashboard = () => {
             <Avatar className="h-12 w-12">
               <AvatarImage src={userProfile?.avatar_url} />
               <AvatarFallback className="bg-gradient-to-br from-emerald-500 via-blue-500 to-purple-600 text-white">
-                {userProfile?.full_name ? getInitials(userProfile.full_name) : 'U'}
+                {getInitials(displayName)}
               </AvatarFallback>
             </Avatar>
             <div className="flex-1">
               <h2 className="text-xl font-bold text-gray-900">
-                Karibu, {userProfile?.full_name?.split(' ')[0] || 'Mtumiaji'}!
+                Karibu, {displayName.split(' ')[0]}!
               </h2>
               <div className="flex items-center space-x-2 mt-1">
                 <Badge variant="outline" className="text-purple-600 border-purple-200">
-                  {userProfile?.role === 'owner' ? 'Mmiliki' : 
-                   userProfile?.role === 'assistant' ? 'Msaidizi' : 
-                   userProfile?.role || 'Mtumiaji'}
+                  {userRole === 'owner' ? 'Mmiliki' : 
+                   userRole === 'assistant' ? 'Msaidizi' : 
+                   userRole === 'super_admin' ? 'Msimamizi Mkuu' :
+                   'Mtumiaji'}
                 </Badge>
-                {userProfile?.business_name && (
+                {businessName && (
                   <Badge variant="outline" className="text-blue-600 border-blue-200">
-                    {userProfile.business_name}
+                    {businessName}
                   </Badge>
                 )}
               </div>
