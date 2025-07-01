@@ -23,14 +23,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const fetchUserProfile = async (userId: string) => {
     try {
-      const { data: profile } = await supabase
+      console.log('Fetching profile for user:', userId);
+      const { data: profile, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
         .single();
+      
+      if (error) {
+        console.error('Error fetching profile:', error);
+        return;
+      }
+      
+      console.log('Profile fetched successfully:', profile);
       setUserProfile(profile);
     } catch (error) {
-      console.error('Error fetching profile:', error);
+      console.error('Error in fetchUserProfile:', error);
     }
   };
 
@@ -38,15 +46,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('Auth state changed:', event, session?.user?.email_confirmed_at);
+        console.log('Auth state changed:', event, session?.user?.email);
         setSession(session);
         setUser(session?.user ?? null);
         
         if (session?.user && session.user.email_confirmed_at) {
-          // Only fetch profile for confirmed users
+          // Only fetch profile for confirmed users, with a small delay to avoid deadlocks
           setTimeout(() => {
             fetchUserProfile(session.user.id);
-          }, 0);
+          }, 100);
         } else {
           setUserProfile(null);
         }
@@ -56,12 +64,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     // Check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
+      console.log('Initial session check:', session?.user?.email);
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user && session.user.email_confirmed_at) {
         setTimeout(() => {
           fetchUserProfile(session.user.id);
-        }, 0);
+        }, 100);
       }
       if (!session) setLoading(false);
     });
@@ -123,6 +132,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const signOut = async () => {
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
+    
+    // Clear user profile on sign out
+    setUserProfile(null);
   };
 
   return (
