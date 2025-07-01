@@ -24,7 +24,7 @@ import {
 } from 'lucide-react';
 
 export const Dashboard = () => {
-  const { userProfile, loading: authLoading } = useAuth();
+  const { userProfile } = useAuth();
   const navigate = useNavigate();
   const [metrics, setMetrics] = useState({
     todaysSales: 0,
@@ -37,41 +37,31 @@ export const Dashboard = () => {
   const [showAIChat, setShowAIChat] = useState(false);
 
   useEffect(() => {
-    if (userProfile && !authLoading) {
-      fetchDashboardData();
-    }
-  }, [userProfile, authLoading]);
+    fetchDashboardData();
+  }, [userProfile]);
 
   const fetchDashboardData = async () => {
+    if (!userProfile) return;
+
     try {
-      console.log('Fetching dashboard data for user:', userProfile?.id);
-      
       // Get today's date range
       const today = new Date();
       const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
       const endOfDay = new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000);
 
       // Fetch today's sales
-      const { data: todaysSales, error: salesError } = await supabase
+      const { data: todaysSales } = await supabase
         .from('sales')
         .select('total_amount')
         .eq('owner_id', userProfile.id)
         .gte('created_at', startOfDay.toISOString())
         .lt('created_at', endOfDay.toISOString());
 
-      if (salesError) {
-        console.error('Error fetching sales:', salesError);
-      }
-
       // Fetch total products
-      const { data: products, error: productsError } = await supabase
+      const { data: products } = await supabase
         .from('products')
         .select('*')
         .eq('owner_id', userProfile.id);
-
-      if (productsError) {
-        console.error('Error fetching products:', productsError);
-      }
 
       // Calculate metrics
       const totalSales = todaysSales?.reduce((sum, sale) => sum + Number(sale.total_amount), 0) || 0;
@@ -79,7 +69,7 @@ export const Dashboard = () => {
       const transactionCount = todaysSales?.length || 0;
       
       // Find low stock items
-      const lowStock = products?.filter(p => p.stock_quantity <= (p.low_stock_threshold || 10)) || [];
+      const lowStock = products?.filter(p => p.stock_quantity <= p.low_stock_threshold) || [];
 
       setMetrics({
         todaysSales: totalSales,
@@ -89,7 +79,6 @@ export const Dashboard = () => {
       });
 
       setLowStockProducts(lowStock.slice(0, 5));
-      console.log('Dashboard data loaded successfully');
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
     } finally {
@@ -98,7 +87,6 @@ export const Dashboard = () => {
   };
 
   const getInitials = (name: string) => {
-    if (!name) return 'U';
     return name
       .split(' ')
       .map(word => word.charAt(0).toUpperCase())
@@ -106,7 +94,7 @@ export const Dashboard = () => {
       .slice(0, 2);
   };
 
-  if (authLoading || loading) {
+  if (loading) {
     return (
       <div className="p-4 space-y-4">
         {[...Array(4)].map((_, i) => (
@@ -156,24 +144,17 @@ export const Dashboard = () => {
             <Avatar className="h-12 w-12">
               <AvatarImage src={userProfile?.avatar_url} />
               <AvatarFallback className="bg-gradient-to-br from-emerald-500 via-blue-500 to-purple-600 text-white">
-                {userProfile?.full_name ? getInitials(userProfile.full_name) : 'U'}
+                {userProfile?.full_name ? getInitials(userProfile.full_name) : <User className="h-6 w-6" />}
               </AvatarFallback>
             </Avatar>
             <div className="flex-1">
               <h2 className="text-xl font-bold text-gray-900">
-                Karibu, {userProfile?.full_name?.split(' ')[0] || 'Mtumiaji'}!
+                Karibu, {userProfile?.full_name?.split(' ')[0] || 'User'}!
               </h2>
               <div className="flex items-center space-x-2 mt-1">
                 <Badge variant="outline" className="text-purple-600 border-purple-200">
-                  {userProfile?.role === 'owner' ? 'Mmiliki' : 
-                   userProfile?.role === 'assistant' ? 'Msaidizi' : 
-                   userProfile?.role || 'Mtumiaji'}
+                  {userProfile?.role || 'owner'}
                 </Badge>
-                {userProfile?.business_name && (
-                  <Badge variant="outline" className="text-blue-600 border-blue-200">
-                    {userProfile.business_name}
-                  </Badge>
-                )}
               </div>
             </div>
           </div>
@@ -249,7 +230,7 @@ export const Dashboard = () => {
               <div key={product.id} className="flex justify-between items-center p-3 bg-orange-50 rounded-lg">
                 <div>
                   <p className="font-medium text-gray-900">{product.name}</p>
-                  <p className="text-sm text-gray-600">{product.category || 'Bila kategoria'}</p>
+                  <p className="text-sm text-gray-600">{product.category}</p>
                 </div>
                 <Badge variant="outline" className="text-orange-600 border-orange-200">
                   {product.stock_quantity}
