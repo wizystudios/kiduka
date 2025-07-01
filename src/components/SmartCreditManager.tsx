@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -11,6 +10,7 @@ import { Plus, DollarSign, Users, TrendingUp, CheckCircle, XCircle, Edit, Trash2
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
+import type { Json } from '@/integrations/supabase/types';
 
 interface Customer {
   id: string;
@@ -25,7 +25,7 @@ interface CreditRecord {
   credit_limit: number;
   current_balance: number;
   credit_score: number;
-  payment_history: any[];
+  payment_history: Json;
   last_payment_date: string;
   customer: Customer;
 }
@@ -130,7 +130,7 @@ export const SmartCreditManager = () => {
   };
 
   const handleAddCredit = async () => {
-    if (!newCredit.customer_id ||!newCredit.credit_limit) {
+    if (!newCredit.customer_id || !newCredit.credit_limit) {
       toast({
         title: 'Hitilafu',
         description: 'Tafadhali chagua mteja na weka kikomo cha mkopo',
@@ -185,11 +185,16 @@ export const SmartCreditManager = () => {
         balance_after: newBalance
       };
 
+      // Handle payment_history as Json type
+      const currentHistory = Array.isArray(record.payment_history) 
+        ? record.payment_history 
+        : (record.payment_history as any) || [];
+
       const { error } = await supabase
         .from('customer_credit')
         .update({
           current_balance: newBalance,
-          payment_history: [...(record.payment_history || []), paymentRecord],
+          payment_history: [...currentHistory, paymentRecord] as Json,
           last_payment_date: new Date().toISOString()
         })
         .eq('id', paymentDialogId);

@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -5,7 +6,6 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
@@ -30,6 +30,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import type { Json } from '@/integrations/supabase/types';
 
 interface AdminStats {
   totalUsers: number;
@@ -63,7 +64,7 @@ interface CreditCustomer {
   owner: {
     full_name: string;
     email: string;
-  };
+  } | null;
 }
 
 export const SuperAdminDashboard = () => {
@@ -110,16 +111,36 @@ export const SuperAdminDashboard = () => {
 
       if (salesError) throw salesError;
 
-      // Fetch credit customers with related data
+      // Fetch credit customers with related data - fix the query
       const { data: creditData, error: creditError } = await supabase
         .from('customer_credit')
         .select(`
-          *,
-          customer:customers!customer_id(name, phone, email),
-          owner:profiles!owner_id(full_name, email)
+          id,
+          customer_id,
+          owner_id,
+          credit_limit,
+          current_balance,
+          credit_score,
+          customer:customers!customer_id(name, phone, email)
         `);
 
       if (creditError) throw creditError;
+
+      // Manually fetch owner data for each credit record
+      const creditWithOwners = await Promise.all(
+        (creditData || []).map(async (credit) => {
+          const { data: ownerData } = await supabase
+            .from('profiles')
+            .select('full_name, email')
+            .eq('id', credit.owner_id)
+            .single();
+
+          return {
+            ...credit,
+            owner: ownerData
+          };
+        })
+      );
 
       const totalUsers = profiles?.length || 0;
       const activeUsers = profiles?.filter(p => p.role !== 'super_admin').length || 0;
@@ -133,7 +154,7 @@ export const SuperAdminDashboard = () => {
       });
 
       setUsers(profiles || []);
-      setCreditCustomers(creditData || []);
+      setCreditCustomers(creditWithOwners || []);
 
     } catch (error) {
       console.error('Error fetching admin data:', error);
@@ -583,7 +604,9 @@ export const SuperAdminDashboard = () => {
                       <div>
                         <h4 className="font-semibold">{credit.customer?.name}</h4>
                         <p className="text-sm text-gray-600">{credit.customer?.phone}</p>
-                        <p className="text-xs text-gray-500">Mmiliki: {credit.owner?.full_name}</p>
+                        <p className="text-xs text-gray-500">
+                          Mmiliki: {credit.owner?.full_name || 'Hakuna taarifa'}
+                        </p>
                         <p className="text-sm">
                           Deni: <span className="font-semibold text-red-600">
                             TSh {credit.current_balance.toLocaleString()}
@@ -710,4 +733,154 @@ export const SuperAdminDashboard = () => {
       </AlertDialog>
     </div>
   );
+
+  async function handleCreateUser() {
+    if (!newUser.email || !newUser.full_name) {
+      toast({
+        title: 'Hitilafu',
+        description: 'Tafadhali jaza sehemu zote zinazohitajika',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    try {
+      // Generate temporary password
+      const tempPassword = Math.random().toString(36).slice(-8);
+
+      // Create auth user
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: newUser.email,
+        password: tempPassword,
+        options: {
+          data: {
+            full_name: newUser.full_name,
+            business_name: newUser.business_name,
+          }
+        }
+      });
+
+      if (authError) throw authError;
+
+      // Create profile manually
+      if (authData.user) {
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .upsert({
+            id: authData.user.id,
+            email: newUser.email,
+            full_name: newUser.full_name,
+            business_name: newUser.business_name,
+            role: newUser.role
+          });
+
+        if (profileError) throw profileError;
+
+        // Log admin action
+        await supabase.from('user_admin_actions').insert({
+          admin_id: (await supabase.auth.getUser()).data.user?.id,
+          target_user_id: authData.user.id,
+          action_type: 'CREATE_USER',
+          action_details: { email: newUser.email, role: newUser.role }
+        });
+      }
+
+      toast({
+        title: 'Mafanikio',
+        description: `Mtumiaji ameundwa. Nywila ya muda: ${tempPassword}`,
+        duration: 10000
+      });
+
+      setNewUser({ email: '', full_name: '', business_name: '', role: 'owner' });
+      setShowAddUserDialog(false);
+      fetchAdminData();
+    } catch (error: any) {
+      console.error('Error creating user:', error);
+      toast({
+        title: 'Hitilafu',
+        description: `Imeshindwa kuunda mtumiaji: ${error.message}`,
+        variant: 'destructive'
+      });
+    }
+  }
+
+  async function handleUpdateUser() {
+    if (!selectedUser) return;
+
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          full_name: selectedUser.full_name,
+          business_name: selectedUser.business_name,
+          role: selectedUser.role
+        })
+        .eq('id', selectedUser.id);
+
+      if (error) throw error;
+
+      // Log admin action
+      await supabase.from('user_admin_actions').insert({
+        admin_id: (await supabase.auth.getUser()).data.user?.id,
+        target_user_id: selectedUser.id,
+        action_type: 'UPDATE_USER',
+        action_details: { 
+          updated_fields: ['full_name', 'business_name', 'role'],
+          new_role: selectedUser.role
+        }
+      });
+
+      toast({
+        title: 'Mafanikio',
+        description: 'Mabadiliko yamehifadhiwa'
+      });
+
+      setShowEditUserDialog(false);
+      setSelectedUser(null);
+      fetchAdminData();
+    } catch (error: any) {
+      console.error('Error updating user:', error);
+      toast({
+        title: 'Hitilafu',
+        description: `Imeshindwa kubadilisha mtumiaji: ${error.message}`,
+        variant: 'destructive'
+      });
+    }
+  }
+
+  async function handleDeleteUser() {
+    if (!deleteUserId) return;
+
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .delete()
+        .eq('id', deleteUserId);
+
+      if (error) throw error;
+
+      // Log admin action
+      await supabase.from('user_admin_actions').insert({
+        admin_id: (await supabase.auth.getUser()).data.user?.id,
+        target_user_id: deleteUserId,
+        action_type: 'DELETE_USER',
+        action_details: { deleted_at: new Date().toISOString() }
+      });
+
+      toast({
+        title: 'Mafanikio',
+        description: 'Mtumiaji ameondolwa'
+      });
+
+      setDeleteUserId(null);
+      fetchAdminData();
+    } catch (error: any) {
+      console.error('Error deleting user:', error);
+      toast({
+        title: 'Hitilafu',
+        description: `Imeshindwa kumwondoa mtumiaji: ${error.message}`,
+        variant: 'destructive'
+      });
+    }
+  }
 };
