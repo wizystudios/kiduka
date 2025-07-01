@@ -28,39 +28,42 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         .from('profiles')
         .select('*')
         .eq('id', userId)
-        .single();
+        .maybeSingle();
       
-      if (error) {
+      if (error && error.code !== 'PGRST116') {
         console.error('Error fetching profile:', error);
-        // If profile doesn't exist, create one
-        if (error.code === 'PGRST116') {
-          console.log('Profile not found, creating new profile...');
-          const { data: newProfile, error: createError } = await supabase
-            .from('profiles')
-            .insert([
-              {
-                id: userId,
-                email: user?.email || '',
-                full_name: user?.user_metadata?.full_name || '',
-                business_name: user?.user_metadata?.business_name || '',
-                role: 'owner'
-              }
-            ])
-            .select()
-            .single();
-          
-          if (createError) {
-            console.error('Error creating profile:', createError);
-          } else {
-            console.log('Profile created successfully:', newProfile);
-            setUserProfile(newProfile);
-          }
-        }
         return;
       }
       
-      console.log('Profile fetched successfully:', profile);
-      setUserProfile(profile);
+      if (!profile) {
+        console.log('Profile not found, creating new profile...');
+        // Get user data from current session
+        const { data: { user: currentUser } } = await supabase.auth.getUser();
+        
+        const { data: newProfile, error: createError } = await supabase
+          .from('profiles')
+          .insert([
+            {
+              id: userId,
+              email: currentUser?.email || '',
+              full_name: currentUser?.user_metadata?.full_name || '',
+              business_name: currentUser?.user_metadata?.business_name || '',
+              role: 'owner'
+            }
+          ])
+          .select()
+          .single();
+        
+        if (createError) {
+          console.error('Error creating profile:', createError);
+        } else {
+          console.log('Profile created successfully:', newProfile);
+          setUserProfile(newProfile);
+        }
+      } else {
+        console.log('Profile fetched successfully:', profile);
+        setUserProfile(profile);
+      }
     } catch (error) {
       console.error('Error in fetchUserProfile:', error);
     }
@@ -75,7 +78,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setUser(session?.user ?? null);
         
         if (session?.user && session.user.email_confirmed_at) {
-          // Only fetch profile for confirmed users, with a small delay to avoid deadlocks
+          // Only fetch profile for confirmed users, with a delay to avoid deadlocks
           setTimeout(() => {
             fetchUserProfile(session.user.id);
           }, 100);
@@ -109,7 +112,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     });
     
     if (error) {
-      // Provide more specific error messages
       if (error.message.includes('Invalid login credentials')) {
         throw new Error('Barua pepe au nywila si sahihi. Tafadhali jaribu tena.');
       } else if (error.message.includes('Email not confirmed')) {
@@ -119,9 +121,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     }
     
-    // Check if email is confirmed after successful login attempt
     if (data.user && !data.user.email_confirmed_at) {
-      // Sign out the user since they're not confirmed
       await supabase.auth.signOut();
       throw new Error('Barua pepe yako haijathibitishwa bado. Tafadhali kagua barua pepe yako na ubonyeze kiungo cha uthibitisho kabla ya kuingia.');
     }
@@ -157,7 +157,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
     
-    // Clear user profile on sign out
     setUserProfile(null);
   };
 

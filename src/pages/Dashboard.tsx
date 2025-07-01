@@ -14,7 +14,6 @@ import {
   ShoppingCart, 
   DollarSign, 
   AlertTriangle,
-  User,
   Plus,
   Brain,
   MessageCircle,
@@ -37,17 +36,16 @@ export const Dashboard = () => {
   const [showAIChat, setShowAIChat] = useState(false);
 
   useEffect(() => {
-    if (user && !authLoading) {
-      console.log('User loaded, fetching dashboard data:', user.id);
+    if (user && userProfile && !authLoading) {
+      console.log('User and profile loaded, fetching dashboard data:', user.id);
       fetchDashboardData();
     }
-  }, [user, authLoading]);
+  }, [user, userProfile, authLoading]);
 
   const fetchDashboardData = async () => {
     try {
       console.log('Fetching dashboard data for user:', user?.id);
       
-      // Get today's date range
       const today = new Date();
       const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
       const endOfDay = new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000);
@@ -122,15 +120,18 @@ export const Dashboard = () => {
     );
   }
 
-  // Get display name from user or profile
-  const displayName = userProfile?.full_name || user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Mtumiaji';
+  // Get display name with proper fallbacks
+  const displayName = userProfile?.full_name || 
+                     user?.user_metadata?.full_name || 
+                     user?.email?.split('@')[0] || 
+                     'Mtumiaji';
   const businessName = userProfile?.business_name || user?.user_metadata?.business_name;
   const userRole = userProfile?.role || 'owner';
 
   const dashboardMetrics = [
     {
-      title: "Leo",
-      value: `${metrics.todaysSales.toLocaleString()}`,
+      title: "Mauzo ya Leo",
+      value: `TZS ${metrics.todaysSales.toLocaleString()}`,
       icon: DollarSign,
       color: "text-green-600",
       bgColor: "bg-green-50"
@@ -150,7 +151,7 @@ export const Dashboard = () => {
       bgColor: "bg-blue-50"
     },
     {
-      title: "Onyo",
+      title: "Stock Ndogo",
       value: metrics.lowStockItems.toString(),
       icon: AlertTriangle,
       color: "text-orange-600",
@@ -215,38 +216,6 @@ export const Dashboard = () => {
         ))}
       </div>
 
-      {/* AI Quick Actions */}
-      <Card className="border-purple-200 bg-gradient-to-r from-purple-50 to-blue-50">
-        <CardHeader className="pb-3">
-          <CardTitle className="flex items-center text-purple-700">
-            <Brain className="h-5 w-5 mr-2" />
-            AI Actions
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="grid grid-cols-2 gap-3">
-          <Button 
-            onClick={() => setShowAIChat(true)}
-            className="p-4 bg-white rounded-lg text-left hover:bg-gray-50 transition-colors h-auto justify-start"
-            variant="ghost"
-          >
-            <div className="text-center">
-              <MessageCircle className="h-6 w-6 text-purple-600 mx-auto mb-2" />
-              <p className="font-medium text-gray-900">Mshauri</p>
-            </div>
-          </Button>
-          <Button 
-            onClick={() => navigate('/business-intelligence')}
-            className="p-4 bg-white rounded-lg text-left hover:bg-gray-50 transition-colors h-auto justify-start"
-            variant="ghost"
-          >
-            <div className="text-center">
-              <TrendingUp className="h-6 w-6 text-green-600 mx-auto mb-2" />
-              <p className="font-medium text-gray-900">Takwimu</p>
-            </div>
-          </Button>
-        </CardContent>
-      </Card>
-
       {/* Low Stock Alert */}
       {lowStockProducts.length > 0 && (
         <Card className="border-orange-200">
@@ -296,35 +265,6 @@ export const Dashboard = () => {
             <div className="text-center">
               <Scan className="h-6 w-6 text-blue-600 mx-auto mb-2" />
               <p className="font-medium text-gray-900">Muuzo</p>
-            </div>
-          </Button>
-        </CardContent>
-      </Card>
-
-      {/* Advanced Features */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Zaidi</CardTitle>
-        </CardHeader>
-        <CardContent className="grid grid-cols-2 gap-3">
-          <Button 
-            onClick={() => navigate('/credit-management')}
-            className="p-4 bg-green-50 rounded-lg text-left hover:bg-green-100 transition-colors h-auto justify-start"
-            variant="ghost"
-          >
-            <div className="text-center">
-              <CreditCard className="h-6 w-6 text-green-600 mx-auto mb-2" />
-              <p className="font-medium text-gray-900">Mikopo</p>
-            </div>
-          </Button>
-          <Button 
-            onClick={() => navigate('/marketplace')}
-            className="p-4 bg-orange-50 rounded-lg text-left hover:bg-orange-100 transition-colors h-auto justify-start"
-            variant="ghost"
-          >
-            <div className="text-center">
-              <Store className="h-6 w-6 text-orange-600 mx-auto mb-2" />
-              <p className="font-medium text-gray-900">Soko</p>
             </div>
           </Button>
         </CardContent>

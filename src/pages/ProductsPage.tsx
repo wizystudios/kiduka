@@ -8,7 +8,7 @@ import { Plus, Search, Edit, Trash2, Package } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 
 interface Product {
   id: string;
@@ -26,36 +26,40 @@ export const ProductsPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
-  const { userProfile } = useAuth();
-  const { toast } = useToast();
+  const { user, userProfile } = useAuth();
 
   useEffect(() => {
-    fetchProducts();
-  }, []);
+    if (user && userProfile) {
+      fetchProducts();
+    }
+  }, [user, userProfile]);
 
   const fetchProducts = async () => {
     try {
+      console.log('Fetching products for user:', user?.id);
       const { data, error } = await supabase
         .from('products')
         .select('*')
+        .eq('owner_id', user?.id)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      setProducts(data || []);
+      if (error) {
+        console.error('Error fetching products:', error);
+        toast.error('Imeshindwa kupakia bidhaa');
+      } else {
+        console.log('Products loaded:', data?.length || 0);
+        setProducts(data || []);
+      }
     } catch (error) {
-      console.error('Error fetching products:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to load products',
-        variant: 'destructive'
-      });
+      console.error('Unexpected error fetching products:', error);
+      toast.error('Kosa la kutarajwa');
     } finally {
       setLoading(false);
     }
   };
 
   const handleDeleteProduct = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this product?')) return;
+    if (!confirm('Je, una uhakika unataka kufuta bidhaa hii?')) return;
 
     try {
       const { error } = await supabase
@@ -66,17 +70,10 @@ export const ProductsPage = () => {
       if (error) throw error;
 
       setProducts(products.filter(p => p.id !== id));
-      toast({
-        title: 'Success',
-        description: 'Product deleted successfully'
-      });
+      toast.success('Bidhaa imefutwa kwa mafanikio');
     } catch (error) {
       console.error('Error deleting product:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to delete product',
-        variant: 'destructive'
-      });
+      toast.error('Imeshindwa kufuta bidhaa');
     }
   };
 
@@ -87,14 +84,17 @@ export const ProductsPage = () => {
   );
 
   const getStockStatus = (stock: number, threshold: number) => {
-    if (stock <= threshold) return { color: 'bg-red-100 text-red-800', label: 'Low Stock' };
-    if (stock <= threshold * 2) return { color: 'bg-yellow-100 text-yellow-800', label: 'Medium' };
-    return { color: 'bg-green-100 text-green-800', label: 'In Stock' };
+    if (stock <= threshold) return { color: 'bg-red-100 text-red-800', label: 'Stock Ndogo' };
+    if (stock <= threshold * 2) return { color: 'bg-yellow-100 text-yellow-800', label: 'Wastani' };
+    return { color: 'bg-green-100 text-green-800', label: 'Ipo Stock' };
   };
 
   if (loading) {
     return (
       <div className="p-4 space-y-4">
+        <div className="text-center py-8">
+          <p className="text-gray-600">Inapakia bidhaa...</p>
+        </div>
         {[...Array(5)].map((_, i) => (
           <div key={i} className="h-32 bg-gray-200 rounded-lg animate-pulse" />
         ))}
@@ -107,8 +107,8 @@ export const ProductsPage = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Products</h2>
-          <p className="text-gray-600">{products.length} products in inventory</p>
+          <h2 className="text-2xl font-bold text-gray-900">Bidhaa</h2>
+          <p className="text-gray-600">{products.length} bidhaa katika hifadhi</p>
         </div>
         
         {userProfile?.role === 'owner' && (
@@ -117,7 +117,7 @@ export const ProductsPage = () => {
             className="bg-blue-600 hover:bg-blue-700 text-white"
           >
             <Plus className="h-4 w-4 mr-2" />
-            Add Product
+            Ongeza Bidhaa
           </Button>
         )}
       </div>
@@ -126,7 +126,7 @@ export const ProductsPage = () => {
       <div className="relative">
         <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
         <Input
-          placeholder="Search by name, barcode, or category..."
+          placeholder="Tafuta kwa jina, barcode, au kategoria..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="pl-10"
@@ -152,10 +152,10 @@ export const ProductsPage = () => {
                       <p className="text-sm text-gray-500 mb-1">Barcode: {product.barcode}</p>
                     )}
                     {product.category && (
-                      <p className="text-sm text-gray-500 mb-2">Category: {product.category}</p>
+                      <p className="text-sm text-gray-500 mb-2">Kategoria: {product.category}</p>
                     )}
                     <div className="flex justify-between items-center">
-                      <span className="text-2xl font-bold text-green-600">${product.price}</span>
+                      <span className="text-2xl font-bold text-green-600">TZS {product.price.toLocaleString()}</span>
                       <div className="flex items-center space-x-2">
                         <Package className="h-4 w-4 text-gray-500" />
                         <span className="text-sm text-gray-600">Stock: {product.stock_quantity}</span>
@@ -194,14 +194,14 @@ export const ProductsPage = () => {
         <Card className="text-center py-12">
           <CardContent>
             <Package className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">No products found</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Hakuna bidhaa zilizopatikana</h3>
             <p className="text-gray-600 mb-4">
-              {searchTerm ? "Try adjusting your search terms" : "Start by adding your first product"}
+              {searchTerm ? "Jaribu kubadilisha maneno ya utafutaji" : "Anza kwa kuongeza bidhaa yako ya kwanza"}
             </p>
             {userProfile?.role === 'owner' && !searchTerm && (
               <Button onClick={() => navigate('/products/add')}>
                 <Plus className="h-4 w-4 mr-2" />
-                Add Product
+                Ongeza Bidhaa
               </Button>
             )}
           </CardContent>
