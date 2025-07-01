@@ -6,9 +6,10 @@ import { LoadingScreen } from './LoadingScreen';
 interface ProtectedRouteProps {
   children: React.ReactNode;
   requiredRole?: 'owner' | 'assistant' | 'super_admin';
+  allowedRoles?: ('owner' | 'assistant' | 'super_admin')[];
 }
 
-export const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) => {
+export const ProtectedRoute = ({ children, requiredRole, allowedRoles }: ProtectedRouteProps) => {
   const { user, userProfile, loading } = useAuth();
 
   if (loading) {
@@ -25,7 +26,12 @@ export const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) 
     return <Navigate to="/auth" replace />;
   }
 
+  // Check role requirements
   if (requiredRole && userProfile?.role !== requiredRole) {
+    return <Navigate to="/" replace />;
+  }
+
+  if (allowedRoles && !allowedRoles.includes(userProfile?.role as any)) {
     return <Navigate to="/" replace />;
   }
 
