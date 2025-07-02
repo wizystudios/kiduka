@@ -12,7 +12,7 @@ interface AuthContextType {
   signUp: (email: string, password: string, fullName: string, businessName?: string) => Promise<void>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
-  updateProfile: (updates: any) => Promise<void>;
+  updateProfile: (updates: any) => Promise<any>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
