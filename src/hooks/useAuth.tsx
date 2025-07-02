@@ -24,6 +24,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const fetchUserProfile = async (userId: string) => {
     try {
       console.log('Fetching profile for user:', userId);
+      
+      // First try to get existing profile
       const { data: profile, error } = await supabase
         .from('profiles')
         .select('*')
@@ -37,28 +39,38 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       
       if (!profile) {
         console.log('Profile not found, creating new profile...');
+        
         // Get user data from current session
         const { data: { user: currentUser } } = await supabase.auth.getUser();
         
-        const { data: newProfile, error: createError } = await supabase
-          .from('profiles')
-          .insert([
-            {
+        if (currentUser) {
+          const { data: newProfile, error: createError } = await supabase
+            .from('profiles')
+            .insert([
+              {
+                id: userId,
+                email: currentUser.email || '',
+                full_name: currentUser.user_metadata?.full_name || currentUser.email?.split('@')[0] || '',
+                business_name: currentUser.user_metadata?.business_name || '',
+                role: 'owner'
+              }
+            ])
+            .select()
+            .single();
+          
+          if (createError) {
+            console.error('Error creating profile:', createError);
+            // Even if profile creation fails, set basic user info
+            setUserProfile({
               id: userId,
-              email: currentUser?.email || '',
-              full_name: currentUser?.user_metadata?.full_name || '',
-              business_name: currentUser?.user_metadata?.business_name || '',
+              email: currentUser.email,
+              full_name: currentUser.user_metadata?.full_name || currentUser.email?.split('@')[0] || 'User',
               role: 'owner'
-            }
-          ])
-          .select()
-          .single();
-        
-        if (createError) {
-          console.error('Error creating profile:', createError);
-        } else {
-          console.log('Profile created successfully:', newProfile);
-          setUserProfile(newProfile);
+            });
+          } else {
+            console.log('Profile created successfully:', newProfile);
+            setUserProfile(newProfile);
+          }
         }
       } else {
         console.log('Profile fetched successfully:', profile);
@@ -66,6 +78,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     } catch (error) {
       console.error('Error in fetchUserProfile:', error);
+      // Set fallback profile data
+      if (user) {
+        setUserProfile({
+          id: userId,
+          email: user.email,
+          full_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
+          role: 'owner'
+        });
+      }
     }
   };
 
@@ -78,7 +99,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setUser(session?.user ?? null);
         
         if (session?.user && session.user.email_confirmed_at) {
-          // Only fetch profile for confirmed users, with a delay to avoid deadlocks
+          // Fetch profile with a small delay to avoid race conditions
           setTimeout(() => {
             fetchUserProfile(session.user.id);
           }, 100);

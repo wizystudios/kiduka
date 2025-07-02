@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,7 +10,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Plus, DollarSign, Users, TrendingUp, CheckCircle, XCircle, Edit, Trash2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import type { Json } from '@/integrations/supabase/types';
 
 interface Customer {
@@ -31,7 +32,7 @@ interface CreditRecord {
 }
 
 export const SmartCreditManager = () => {
-  const [creditRecords, setCreditRecords] = useState<CreditRecord[]>([]);
+  const [creditRecords,setCreditRecords] = useState<CreditRecord[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddDialog, setShowAddDialog] = useState(false);
@@ -39,6 +40,7 @@ export const SmartCreditManager = () => {
   const [paymentDialogId, setPaymentDialogId] = useState<string | null>(null);
   const [paymentAmount, setPaymentAmount] = useState('');
   const [deleteRecordId, setDeleteRecordId] = useState<string | null>(null);
+  const [deleteCustomerId, setDeleteCustomerId] = useState<string | null>(null);
   const [newCredit, setNewCredit] = useState({
     customer_id: '',
     credit_limit: '',
@@ -50,21 +52,30 @@ export const SmartCreditManager = () => {
     email: ''
   });
   const { userProfile } = useAuth();
-  const { toast } = useToast();
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [userProfile]);
 
   const fetchData = async () => {
+    if (!userProfile?.id) return;
+    
     try {
+      console.log('Fetching credit data for user:', userProfile.id);
+      
       // Fetch customers
       const { data: customersData, error: customersError } = await supabase
         .from('customers')
         .select('*')
         .order('name');
 
-      if (customersError) throw customersError;
+      if (customersError) {
+        console.error('Error fetching customers:', customersError);
+        toast.error('Imeshindwa kupakia wateja');
+      } else {
+        console.log('Customers loaded:', customersData?.length || 0);
+        setCustomers(customersData || []);
+      }
 
       // Fetch credit records with customer info
       const { data: creditData, error: creditError } = await supabase
@@ -73,20 +84,19 @@ export const SmartCreditManager = () => {
           *,
           customer:customers!customer_id(*)
         `)
-        .eq('owner_id', userProfile?.id)
+        .eq('owner_id', userProfile.id)
         .order('created_at', { ascending: false });
 
-      if (creditError) throw creditError;
-
-      setCustomers(customersData || []);
-      setCreditRecords(creditData || []);
+      if (creditError) {
+        console.error('Error fetching credit records:', creditError);
+        toast.error('Imeshindwa kupakia rekodi za mikopo');
+      } else {
+        console.log('Credit records loaded:', creditData?.length || 0);
+        setCreditRecords(creditData || []);
+      }
     } catch (error) {
       console.error('Error fetching data:', error);
-      toast({
-        title: 'Hitilafu',
-        description: 'Imeshindwa kupakia data ya mikopo',
-        variant: 'destructive'
-      });
+      toast.error('Hitilafu katika kupakia data');
     } finally {
       setLoading(false);
     }
@@ -94,11 +104,7 @@ export const SmartCreditManager = () => {
 
   const handleAddCustomer = async () => {
     if (!newCustomer.name || !newCustomer.phone) {
-      toast({
-        title: 'Hitilafu',
-        description: 'Tafadhali jaza jina na nambari ya simu',
-        variant: 'destructive'
-      });
+      toast.error('Tafadhali jaza jina na nambari ya simu');
       return;
     }
 
@@ -111,31 +117,52 @@ export const SmartCreditManager = () => {
 
       if (error) throw error;
 
-      toast({
-        title: 'Mafanikio',
-        description: 'Mteja ameongezwa kikamilifu'
-      });
-
+      toast.success('Mteja ameongezwa kikamilifu');
       setNewCustomer({ name: '', phone: '', email: '' });
       setShowAddCustomerDialog(false);
       fetchData();
     } catch (error: any) {
       console.error('Error adding customer:', error);
-      toast({
-        title: 'Hitilafu',
-        description: `Imeshindwa kuongeza mteja: ${error.message}`,
-        variant: 'destructive'
-      });
+      toast.error(`Imeshindwa kuongeza mteja: ${error.message}`);
+    }
+  };
+
+  const handleDeleteCustomer = async () => {
+    if (!deleteCustomerId) return;
+
+    try {
+      // First check if customer has credit records
+      const { data: creditCheck } = await supabase
+        .from('customer_credit')
+        .select('id')
+        .eq('customer_id', deleteCustomerId)
+        .limit(1);
+
+      if (creditCheck && creditCheck.length > 0) {
+        toast.error('Huwezi kufuta mteja aliye na rekodi za mkopo');
+        setDeleteCustomerId(null);
+        return;
+      }
+
+      const { error } = await supabase
+        .from('customers')
+        .delete()
+        .eq('id', deleteCustomerId);
+
+      if (error) throw error;
+
+      toast.success('Mteja amefutwa kikamilifu');
+      setDeleteCustomerId(null);
+      fetchData();
+    } catch (error: any) {
+      console.error('Error deleting customer:', error);
+      toast.error(`Imeshindwa kufuta mteja: ${error.message}`);
     }
   };
 
   const handleAddCredit = async () => {
-    if (!newCredit.customer_id || !newCredit.credit_limit) {
-      toast({
-        title: 'Hitilafu',
-        description: 'Tafadhali chagua mteja na weka kikomo cha mkopo',
-        variant: 'destructive'
-      });
+    if (!newCredit.customer_id || !newCredit.credit_limit || !userProfile?.id) {
+      toast.error('Tafadhali chagua mteja na weka kikomo cha mkopo');
       return;
     }
 
@@ -144,7 +171,7 @@ export const SmartCreditManager = () => {
         .from('customer_credit')
         .insert([{
           ...newCredit,
-          owner_id: userProfile?.id,
+          owner_id: userProfile.id,
           credit_limit: parseFloat(newCredit.credit_limit),
           credit_score: parseInt(newCredit.credit_score),
           current_balance: 0
@@ -152,21 +179,13 @@ export const SmartCreditManager = () => {
 
       if (error) throw error;
 
-      toast({
-        title: 'Mafanikio',
-        description: 'Mkopo umeongezwa kikamilifu'
-      });
-
+      toast.success('Mkopo umeongezwa kikamilifu');
       setNewCredit({ customer_id: '', credit_limit: '', credit_score: '50' });
       setShowAddDialog(false);
       fetchData();
     } catch (error: any) {
       console.error('Error adding credit:', error);
-      toast({
-        title: 'Hitilafu',
-        description: `Imeshindwa kuongeza mkopo: ${error.message}`,
-        variant: 'destructive'
-      });
+      toast.error(`Imeshindwa kuongeza mkopo: ${error.message}`);
     }
   };
 
@@ -201,21 +220,13 @@ export const SmartCreditManager = () => {
 
       if (error) throw error;
 
-      toast({
-        title: 'Mafanikio',
-        description: 'Malipo yamehifadhiwa'
-      });
-
+      toast.success('Malipo yamehifadhiwa');
       setPaymentDialogId(null);
       setPaymentAmount('');
       fetchData();
     } catch (error: any) {
       console.error('Error processing payment:', error);
-      toast({
-        title: 'Hitilafu',
-        description: `Imeshindwa kuhifadhi malipo: ${error.message}`,
-        variant: 'destructive'
-      });
+      toast.error(`Imeshindwa kuhifadhi malipo: ${error.message}`);
     }
   };
 
@@ -230,20 +241,12 @@ export const SmartCreditManager = () => {
 
       if (error) throw error;
 
-      toast({
-        title: 'Mafanikio',
-        description: 'Rekodi ya mkopo imefutwa'
-      });
-
+      toast.success('Rekodi ya mkopo imefutwa');
       setDeleteRecordId(null);
       fetchData();
     } catch (error: any) {
       console.error('Error deleting record:', error);
-      toast({
-        title: 'Hitilafu',
-        description: `Imeshindwa kufuta rekodi: ${error.message}`,
-        variant: 'destructive'
-      });
+      toast.error(`Imeshindwa kufuta rekodi: ${error.message}`);
     }
   };
 
@@ -254,6 +257,9 @@ export const SmartCreditManager = () => {
   if (loading) {
     return (
       <div className="p-4 space-y-4">
+        <div className="text-center py-8">
+          <p className="text-gray-600">Inapakia data ya mikopo...</p>
+        </div>
         {[...Array(3)].map((_, i) => (
           <div key={i} className="h-24 bg-gray-200 rounded-lg animate-pulse" />
         ))}
@@ -408,6 +414,44 @@ export const SmartCreditManager = () => {
         </Dialog>
       </div>
 
+      {/* Customers List */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Wateja wa Mkopo</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {customers.map((customer) => (
+              <div key={customer.id} className="flex items-center justify-between p-4 border rounded-lg">
+                <div className="flex-1">
+                  <h4 className="font-semibold">{customer.name}</h4>
+                  <p className="text-sm text-gray-600">{customer.phone}</p>
+                  {customer.email && (
+                    <p className="text-sm text-gray-500">{customer.email}</p>
+                  )}
+                </div>
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  onClick={() => setDeleteCustomerId(customer.id)}
+                  className="text-red-600 hover:text-red-700"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            ))}
+            
+            {customers.length === 0 && (
+              <div className="text-center py-8">
+                <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-600">Hakuna wateja wa mkopo</p>
+                <p className="text-sm text-gray-500">Ongeza mteja wa kwanza ili kuanza</p>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Credit Records */}
       <Card>
         <CardHeader>
@@ -491,7 +535,7 @@ export const SmartCreditManager = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirmation Dialog */}
+      {/* Delete Record Confirmation Dialog */}
       <AlertDialog open={!!deleteRecordId} onOpenChange={() => setDeleteRecordId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -503,6 +547,24 @@ export const SmartCreditManager = () => {
           <AlertDialogFooter>
             <AlertDialogCancel>Ghairi</AlertDialogCancel>
             <AlertDialogAction onClick={handleDeleteRecord} className="bg-red-600 hover:bg-red-700">
+              Futa
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete Customer Confirmation Dialog */}
+      <AlertDialog open={!!deleteCustomerId} onOpenChange={() => setDeleteCustomerId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Una uhakika?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Hatua hii haiwezi kubatilishwa. Hii itafuta mteja kabisa.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Ghairi</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteCustomer} className="bg-red-600 hover:bg-red-700">
               Futa
             </AlertDialogAction>
           </AlertDialogFooter>

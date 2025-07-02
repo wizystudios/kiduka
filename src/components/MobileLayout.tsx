@@ -36,7 +36,7 @@ export const MobileLayout = ({ children }: MobileLayoutProps) => {
   const [syncStatus, setSyncStatus] = useState(syncService.getSyncStatus());
   const navigate = useNavigate();
   const location = useLocation();
-  const { signOut, userProfile } = useAuth();
+  const { signOut, userProfile, user } = useAuth();
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -89,13 +89,27 @@ export const MobileLayout = ({ children }: MobileLayoutProps) => {
   };
 
   const getUserInitials = () => {
-    if (userProfile?.full_name) {
-      return userProfile.full_name.split(' ').map(n => n[0]).join('').toUpperCase();
-    }
-    if (userProfile?.email) {
-      return userProfile.email.substring(0, 2).toUpperCase();
-    }
-    return 'U';
+    const displayName = userProfile?.full_name || 
+                       user?.user_metadata?.full_name || 
+                       user?.email?.split('@')[0] || 
+                       'User';
+    
+    return displayName
+      .split(' ')
+      .map(n => n.charAt(0).toUpperCase())
+      .join('')
+      .slice(0, 2);
+  };
+
+  const getDisplayName = () => {
+    return userProfile?.full_name || 
+           user?.user_metadata?.full_name || 
+           user?.email?.split('@')[0] || 
+           'User';
+  };
+
+  const getUserRole = () => {
+    return userProfile?.role || 'owner';
   };
 
   return (
@@ -139,10 +153,10 @@ export const MobileLayout = ({ children }: MobileLayoutProps) => {
             </Avatar>
             <div className="hidden sm:block">
               <span className="text-sm font-medium text-gray-700">
-                {userProfile?.full_name || userProfile?.email}
+                {getDisplayName()}
               </span>
               <Badge variant="outline" className="text-xs ml-2">
-                {userProfile?.role}
+                {getUserRole()}
               </Badge>
             </div>
           </div>
@@ -167,10 +181,10 @@ export const MobileLayout = ({ children }: MobileLayoutProps) => {
                 </Avatar>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-gray-900 truncate">
-                    {userProfile?.full_name || userProfile?.email}
+                    {getDisplayName()}
                   </p>
                   <p className="text-xs text-gray-500 truncate">
-                    {userProfile?.role}
+                    {getUserRole()}
                   </p>
                 </div>
               </div>
