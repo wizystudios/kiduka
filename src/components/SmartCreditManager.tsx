@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { CreditCard, Plus, User, Phone, Mail, DollarSign, Calendar, Search } from 'lucide-react';
+import { CreditCard, Plus, User, Phone, Mail, DollarSign, Calendar, Search, Trash2, Edit } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
@@ -25,10 +25,13 @@ interface Customer {
 interface CustomerCredit {
   id: string;
   customer_id: string;
+  owner_id: string;
   credit_limit: number;
   current_balance: number;
   credit_score: number;
   last_payment_date?: string;
+  created_at: string;
+  updated_at: string;
   customer?: Customer;
 }
 
@@ -38,6 +41,7 @@ export const SmartCreditManager = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const { user } = useAuth();
 
   const [newCredit, setNewCredit] = useState({
@@ -53,13 +57,12 @@ export const SmartCreditManager = () => {
     address: ''
   });
 
-  useEffect(() => {
-    if (user) {
-      fetchData();
+  const fetchData = useCallback(async () => {
+    if (!user?.id) {
+      setLoading(false);
+      return;
     }
-  }, [user]);
 
-  const fetchData = async () => {
     try {
       console.log('Fetching credit data...');
       
@@ -83,7 +86,7 @@ export const SmartCreditManager = () => {
           *,
           customer:customers (*)
         `)
-        .eq('owner_id', user?.id)
+        .eq('owner_id', user.id)
         .order('created_at', { ascending: false });
 
       if (creditsError) {
@@ -98,8 +101,20 @@ export const SmartCreditManager = () => {
       toast.error('Kosa la kutarajwa');
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
-  };
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (user) {
+      fetchData();
+    }
+  }, [user, fetchData]);
+
+  const handleRefresh = useCallback(() => {
+    setRefreshing(true);
+    fetchData();
+  }, [fetchData]);
 
   const handleCreateCustomer = async () => {
     if (!newCustomer.name.trim()) {
@@ -147,6 +162,13 @@ export const SmartCreditManager = () => {
       return;
     }
 
+    // Check if customer already has credit
+    const existingCredit = credits.find(credit => credit.customer_id === newCredit.customer_id);
+    if (existingCredit) {
+      toast.error('Mteja huyu tayari ana mkopo. Hariri mkopo uliopo badala yake.');
+      return;
+    }
+
     try {
       const { data, error } = await supabase
         .from('customer_credit')
@@ -178,31 +200,64 @@ export const SmartCreditManager = () => {
     }
   };
 
-  const getScoreColor = (score: number) => {
+  const handleDeleteCredit = async (creditId: string, customerName: string) => {
+    if (!confirm(`Je, una uhakika unataka kufuta mkopo wa ${customerName}? Hii haitaweza kubadilishwa.`)) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('customer_credit')
+        .delete()
+        .eq('id', creditId)
+        .eq('owner_id', user?.id);
+
+      if (error) throw error;
+
+      setCredits(prev => prev.filter(credit => credit.id !== creditId));
+      toast.success('Mkopo umefutwa kwa mafanikio');
+    } catch (error) {
+      console.error('Error deleting credit:', error);
+      toast.error('Imeshindwa kufuta mkopo');
+    }
+  };
+
+  const getScoreColor = useCallback((score: number) => {
     if (score >= 80) return 'bg-green-100 text-green-800';
     if (score >= 60) return 'bg-yellow-100 text-yellow-800';
     return 'bg-red-100 text-red-800';
-  };
+  }, []);
 
-  const getScoreLabel = (score: number) => {
+  const getScoreLabel = useCallback((score: number) => {
     if (score >= 80) return 'Nzuri';
     if (score >= 60) return 'Wastani';
     return 'Hatari';
-  };
+  }, []);
 
-  const filteredCredits = credits.filter(credit => {
-    const customer = credit.customer as Customer;
-    return (
-      customer?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      customer?.phone?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      customer?.email?.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-  });
+  const filteredCredits = useMemo(() => {
+    if (!searchTerm.trim()) return credits;
+    
+    const searchLower = searchTerm.toLowerCase();
+    return credits.filter(credit => {
+      const customer = credit.customer as Customer;
+      return (
+        customer?.name?.toLowerCase().includes(searchLower) ||
+        customer?.phone?.toLowerCase().includes(searchLower) ||
+        customer?.email?.toLowerCase().includes(searchLower)
+      );
+    });
+  }, [credits, searchTerm]);
+
+  const availableCustomers = useMemo(() => {
+    const existingCustomerIds = credits.map(credit => credit.customer_id);
+    return customers.filter(customer => !existingCustomerIds.includes(customer.id));
+  }, [customers, credits]);
 
   if (loading) {
     return (
       <div className="p-4 space-y-4">
         <div className="text-center py-8">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
           <p className="text-gray-600">Inapakia data ya mikopo...</p>
         </div>
       </div>
@@ -215,102 +270,130 @@ export const SmartCreditManager = () => {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h2 className="text-2xl font-bold text-gray-900">Usimamizi wa Mikopo</h2>
-          <p className="text-gray-600">{credits.length} mikopo katika mfumo</p>
+          <div className="flex items-center gap-2">
+            <p className="text-gray-600">{credits.length} mikopo katika mfumo</p>
+            {refreshing && (
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+            )}
+          </div>
         </div>
         
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="bg-blue-600 hover:bg-blue-700 text-white">
-              <Plus className="h-4 w-4 mr-2" />
-              Ongeza Mkopo Mpya
-            </Button>  
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>Ongeza Mkopo Mpya</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="customer">Chagua Mteja *</Label>
-                <Select value={newCredit.customer_id} onValueChange={(value) => setNewCredit({...newCredit, customer_id: value})}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Chagua mteja..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {customers.map((customer) => (
-                      <SelectItem key={customer.id} value={customer.id}>
-                        {customer.name} {customer.phone && `(${customer.phone})`}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {customers.length === 0 && (
-                  <p className="text-xs text-gray-500 mt-1">Hakuna wateja. Ongeza mteja wa kwanza hapo chini.</p>
-                )}
-              </div>
-
-              <div>
-                <Label htmlFor="credit_limit">Kikomo cha Mkopo (TZS) *</Label>
-                <Input
-                  id="credit_limit"
-                  type="number"
-                  value={newCredit.credit_limit}
-                  onChange={(e) => setNewCredit({...newCredit, credit_limit: e.target.value})}
-                  placeholder="100000"
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="notes">Maelezo</Label>
-                <Textarea
-                  id="notes"
-                  value={newCredit.notes}
-                  onChange={(e) => setNewCredit({...newCredit, notes: e.target.value})}
-                  placeholder="Maelezo ya ziada..."
-                  rows={2}
-                />
-              </div>
-
-              <Button 
-                onClick={handleCreateCredit}
-                className="w-full bg-blue-600 hover:bg-blue-700"
-                disabled={!newCredit.customer_id || !newCredit.credit_limit}
-              >
-                Ongeza Mkopo
-              </Button>
-
-              <div className="border-t pt-4">
-                <h4 className="font-medium mb-3">Au ongeza mteja mpya:</h4>
-                <div className="space-y-3">
-                  <Input
-                    placeholder="Jina la mteja *"
-                    value={newCustomer.name}
-                    onChange={(e) => setNewCustomer({...newCustomer, name: e.target.value})}
-                  />
-                  <Input
-                    placeholder="Nambari ya simu"
-                    value={newCustomer.phone}
-                    onChange={(e) => setNewCustomer({...newCustomer, phone: e.target.value})}
-                  />
-                  <Input
-                    placeholder="Barua pepe"
-                    value={newCustomer.email}
-                    onChange={(e) => setNewCustomer({...newCustomer, email: e.target.value})}
-                  />
-                  <Button 
-                    onClick={handleCreateCustomer}
-                    variant="outline" 
-                    className="w-full"
-                    disabled={!newCustomer.name.trim()}
+        <div className="flex gap-2">
+          <Button 
+            onClick={handleRefresh}
+            variant="outline"
+            disabled={refreshing}
+            className="text-blue-600 border-blue-600 hover:bg-blue-50"
+          >
+            Sasisha
+          </Button>
+          
+          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+            <DialogTrigger asChild>
+              <Button className="bg-blue-600 hover:bg-blue-700 text-white">
+                <Plus className="h-4 w-4 mr-2" />
+                Ongeza Mkopo Mpya
+              </Button>  
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>Ongeza Mkopo Mpya</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="customer">Chagua Mteja *</Label>
+                  <Select 
+                    value={newCredit.customer_id} 
+                    onValueChange={(value) => setNewCredit({...newCredit, customer_id: value})}
                   >
-                    <User className="h-4 w-4 mr-2" />
-                    Ongeza Mteja
-                  </Button>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Chagua mteja..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableCustomers.map((customer) => (
+                        <SelectItem key={customer.id} value={customer.id}>
+                          {customer.name} {customer.phone && `(${customer.phone})`}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {availableCustomers.length === 0 && (
+                    <p className="text-xs text-red-500 mt-1">
+                      Wateja wote tayari wana mikopo. Ongeza mteja mpya hapo chini.
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <Label htmlFor="credit_limit">Kikomo cha Mkopo (TZS) *</Label>
+                  <Input
+                    id="credit_limit"
+                    type="number"
+                    value={newCredit.credit_limit}
+                    onChange={(e) => setNewCredit({...newCredit, credit_limit: e.target.value})}
+                    placeholder="100000"
+                    min="1"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="notes">Maelezo</Label>
+                  <Textarea
+                    id="notes"
+                    value={newCredit.notes}
+                    onChange={(e) => setNewCredit({...newCredit, notes: e.target.value})}
+                    placeholder="Maelezo ya ziada..."
+                    rows={2}
+                  />
+                </div>
+
+                <Button 
+                  onClick={handleCreateCredit}
+                  className="w-full bg-blue-600 hover:bg-blue-700"
+                  disabled={!newCredit.customer_id || !newCredit.credit_limit}
+                >
+                  Ongeza Mkopo
+                </Button>
+
+                <div className="border-t pt-4">
+                  <h4 className="font-medium mb-3">Au ongeza mteja mpya:</h4>
+                  <div className="space-y-3">
+                    <Input
+                      placeholder="Jina la mteja *"
+                      value={newCustomer.name}
+                      onChange={(e) => setNewCustomer({...newCustomer, name: e.target.value})}
+                    />
+                    <Input
+                      placeholder="Nambari ya simu"
+                      value={newCustomer.phone}
+                      onChange={(e) => setNewCustomer({...newCustomer, phone: e.target.value})}
+                    />
+                    <Input
+                      placeholder="Barua pepe"
+                      type="email"
+                      value={newCustomer.email}
+                      onChange={(e) => setNewCustomer({...newCustomer, email: e.target.value})}
+                    />
+                    <Input
+                      placeholder="Anwani"
+                      value={newCustomer.address}
+                      onChange={(e) => setNewCustomer({...newCustomer, address: e.target.value})}
+                    />
+                    <Button 
+                      onClick={handleCreateCustomer}
+                      variant="outline" 
+                      className="w-full"
+                      disabled={!newCustomer.name.trim()}
+                    >
+                      <User className="h-4 w-4 mr-2" />
+                      Ongeza Mteja
+                    </Button>
+                  </div>
                 </div>
               </div>
-            </div>
-          </DialogContent>
-        </Dialog>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
       {/* Search */}
@@ -328,6 +411,10 @@ export const SmartCreditManager = () => {
       <div className="space-y-4">
         {filteredCredits.map((credit) => {
           const customer = credit.customer as Customer;
+          const utilizationRate = credit.credit_limit > 0 
+            ? (credit.current_balance / credit.credit_limit) * 100 
+            : 0;
+          
           return (
             <Card key={credit.id} className="hover:shadow-lg transition-all duration-300">
               <CardContent className="p-4">
@@ -337,6 +424,16 @@ export const SmartCreditManager = () => {
                       <h3 className="font-semibold text-lg">{customer?.name || 'Jina Halijulikani'}</h3>
                       <Badge className={getScoreColor(credit.credit_score || 50)}>
                         {getScoreLabel(credit.credit_score || 50)}
+                      </Badge>
+                      <Badge 
+                        variant="outline" 
+                        className={`${
+                          utilizationRate > 80 ? 'border-red-300 text-red-600' :
+                          utilizationRate > 50 ? 'border-yellow-300 text-yellow-600' :
+                          'border-green-300 text-green-600'
+                        }`}
+                      >
+                        {utilizationRate.toFixed(1)}% imetumiwa
                       </Badge>
                     </div>
                     
@@ -388,6 +485,26 @@ export const SmartCreditManager = () => {
                       </div>
                     )}
                   </div>
+
+                  <div className="flex space-x-1 ml-4">
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="h-8 w-8 p-0 hover:bg-blue-50"
+                      title="Hariri mkopo"
+                    >
+                      <Edit className="h-4 w-4 text-blue-600" />
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => handleDeleteCredit(credit.id, customer?.name || 'Mteja')}
+                      className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                      title="Futa mkopo"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -399,9 +516,14 @@ export const SmartCreditManager = () => {
         <Card className="text-center py-12">
           <CardContent>
             <CreditCard className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Hakuna mikopo iliyopatikana</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              {searchTerm ? 'Hakuna mikopo iliyopatikana' : 'Hakuna mikopo bado'}
+            </h3>
             <p className="text-gray-600 mb-4">
-              {searchTerm ? "Jaribu kubadilisha maneno ya utafutaji" : "Anza kwa kuongeza mkopo wa kwanza"}
+              {searchTerm 
+                ? `Hakuna mikopo inayofanana na "${searchTerm}". Jaribu maneno mengine ya utafutaji.`
+                : "Anza kwa kuongeza mkopo wa kwanza"
+              }
             </p>
             {!searchTerm && (
               <Button onClick={() => setDialogOpen(true)}>
