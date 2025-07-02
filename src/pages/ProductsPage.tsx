@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -29,8 +29,9 @@ export const ProductsPage = () => {
   const navigate = useNavigate();
   const { user, userProfile } = useAuth();
 
-  const fetchProducts = useCallback(async () => {
+  const fetchProducts = async () => {
     if (!user?.id) {
+      console.log('No user ID available');
       setLoading(false);
       return;
     }
@@ -60,18 +61,32 @@ export const ProductsPage = () => {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [user?.id]);
+  };
 
   useEffect(() => {
-    if (user && userProfile) {
-      fetchProducts();
+    let mounted = true;
+    
+    if (user?.id && userProfile) {
+      console.log('Starting product fetch...');
+      fetchProducts().then(() => {
+        if (mounted) {
+          console.log('Product fetch completed');
+        }
+      });
+    } else if (!user) {
+      console.log('No user found, stopping loading');
+      setLoading(false);
     }
-  }, [user, userProfile, fetchProducts]);
 
-  const handleRefresh = useCallback(() => {
+    return () => {
+      mounted = false;
+    };
+  }, [user?.id, userProfile?.id]); // Simplified dependencies
+
+  const handleRefresh = () => {
     setRefreshing(true);
     fetchProducts();
-  }, [fetchProducts]);
+  };
 
   const handleDeleteProduct = async (id: string, productName: string) => {
     if (!confirm(`Je, una uhakika unataka kufuta bidhaa "${productName}"? Hii haitaweza kubadilishwa.`)) return;
@@ -104,14 +119,27 @@ export const ProductsPage = () => {
     );
   }, [products, searchTerm]);
 
-  const getStockStatus = useCallback((stock: number, threshold: number) => {
+  const getStockStatus = (stock: number, threshold: number) => {
     if (stock <= 0) return { color: 'bg-red-100 text-red-800', label: 'Hazipatikani' };
     if (stock <= threshold) return { color: 'bg-red-100 text-red-800', label: 'Stock Ndogo' };
     if (stock <= threshold * 2) return { color: 'bg-yellow-100 text-yellow-800', label: 'Wastani' };
     return { color: 'bg-green-100 text-green-800', label: 'Ipo Stock' };
-  }, []);
+  };
 
-  if (loading) {
+  // Show loading only for initial load
+  if (loading && !user) {
+    return (
+      <div className="p-4 space-y-4">
+        <div className="text-center py-8">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Inapakia...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show loading for products only if we have a user but products are still loading
+  if (loading && user && products.length === 0) {
     return (
       <div className="p-4 space-y-4">
         <div className="text-center py-8">
@@ -238,7 +266,8 @@ export const ProductsPage = () => {
         })}
       </div>
 
-      {filteredProducts.length === 0 && (
+      {/* Empty State */}
+      {filteredProducts.length === 0 && !loading && (
         <Card className="text-center py-12">
           <CardContent>
             <Package className="h-12 w-12 text-gray-400 mx-auto mb-4" />
