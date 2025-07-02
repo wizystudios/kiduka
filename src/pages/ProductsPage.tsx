@@ -51,7 +51,7 @@ export const ProductsPage = () => {
       if (error) {
         console.error('Error fetching products:', error);
         toast.error('Imeshindwa kupakia bidhaa');
-        setProducts([]); // Set empty array on error
+        setProducts([]);
       } else {
         console.log('Products loaded:', data?.length || 0);
         setProducts(data || []);
@@ -59,20 +59,21 @@ export const ProductsPage = () => {
     } catch (error) {
       console.error('Unexpected error fetching products:', error);
       toast.error('Kosa la kutarajwa');
-      setProducts([]); // Set empty array on error
+      setProducts([]);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleDeleteProduct = async (id: string) => {
-    if (!confirm('Je, una uhakika unataka kufuta bidhaa hii?')) return;
+  const handleDeleteProduct = async (id: string, productName: string) => {
+    if (!confirm(`Je, una uhakika unataka kufuta bidhaa "${productName}"?`)) return;
 
     try {
       const { error } = await supabase
         .from('products')
         .delete()
-        .eq('id', id);
+        .eq('id', id)
+        .eq('owner_id', user?.id);
 
       if (error) throw error;
 
@@ -181,14 +182,16 @@ export const ProductsPage = () => {
                         size="sm" 
                         onClick={() => navigate(`/products/edit/${product.id}`)}
                         className="h-8 w-8 p-0"
+                        title="Hariri bidhaa"
                       >
                         <Edit className="h-4 w-4" />
                       </Button>
                       <Button 
                         variant="ghost" 
                         size="sm" 
-                        onClick={() => handleDeleteProduct(product.id)}
+                        onClick={() => handleDeleteProduct(product.id, product.name)}
                         className="h-8 w-8 p-0 text-red-500 hover:text-red-700"
+                        title="Futa bidhaa"
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>

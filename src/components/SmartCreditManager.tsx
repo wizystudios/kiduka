@@ -5,254 +5,199 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Plus, DollarSign, Users, TrendingUp, CheckCircle, XCircle, Edit, Trash2 } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import { CreditCard, Plus, User, Phone, Mail, DollarSign, Calendar, Search } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
-import type { Json } from '@/integrations/supabase/types';
 
 interface Customer {
   id: string;
   name: string;
-  phone: string;
-  email: string;
+  phone?: string;
+  email?: string;
+  address?: string;
+  created_at: string;
 }
 
-interface CreditRecord {
+interface CustomerCredit {
   id: string;
   customer_id: string;
   credit_limit: number;
   current_balance: number;
   credit_score: number;
-  payment_history: Json;
-  last_payment_date: string;
-  customer: Customer;
+  last_payment_date?: string;
+  customer?: Customer;
 }
 
 export const SmartCreditManager = () => {
-  const [creditRecords,setCreditRecords] = useState<CreditRecord[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
+  const [credits, setCredits] = useState<CustomerCredit[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showAddDialog, setShowAddDialog] = useState(false);
-  const [showAddCustomerDialog, setShowAddCustomerDialog] = useState(false);
-  const [paymentDialogId, setPaymentDialogId] = useState<string | null>(null);
-  const [paymentAmount, setPaymentAmount] = useState('');
-  const [deleteRecordId, setDeleteRecordId] = useState<string | null>(null);
-  const [deleteCustomerId, setDeleteCustomerId] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const { user } = useAuth();
+
   const [newCredit, setNewCredit] = useState({
     customer_id: '',
     credit_limit: '',
-    credit_score: '50'
+    notes: ''
   });
+
   const [newCustomer, setNewCustomer] = useState({
     name: '',
     phone: '',
-    email: ''
+    email: '',
+    address: ''
   });
-  const { userProfile } = useAuth();
 
   useEffect(() => {
-    fetchData();
-  }, [userProfile]);
+    if (user) {
+      fetchData();
+    }
+  }, [user]);
 
   const fetchData = async () => {
-    if (!userProfile?.id) return;
-    
     try {
-      console.log('Fetching credit data for user:', userProfile.id);
+      console.log('Fetching credit data...');
       
       // Fetch customers
       const { data: customersData, error: customersError } = await supabase
         .from('customers')
         .select('*')
-        .order('name');
+        .order('created_at', { ascending: false });
 
       if (customersError) {
         console.error('Error fetching customers:', customersError);
         toast.error('Imeshindwa kupakia wateja');
       } else {
-        console.log('Customers loaded:', customersData?.length || 0);
         setCustomers(customersData || []);
       }
 
-      // Fetch credit records with customer info
-      const { data: creditData, error: creditError } = await supabase
+      // Fetch customer credits with customer details
+      const { data: creditsData, error: creditsError } = await supabase
         .from('customer_credit')
         .select(`
           *,
-          customer:customers!customer_id(*)
+          customers (*)
         `)
-        .eq('owner_id', userProfile.id)
+        .eq('owner_id', user?.id)
         .order('created_at', { ascending: false });
 
-      if (creditError) {
-        console.error('Error fetching credit records:', creditError);
-        toast.error('Imeshindwa kupakia rekodi za mikopo');
+      if (creditsError) {
+        console.error('Error fetching credits:', creditsError);
+        toast.error('Imeshindwa kupakia data ya mikopo');
       } else {
-        console.log('Credit records loaded:', creditData?.length || 0);
-        setCreditRecords(creditData || []);
+        console.log('Credits loaded:', creditsData?.length || 0);
+        setCredits(creditsData || []);
       }
     } catch (error) {
-      console.error('Error fetching data:', error);
-      toast.error('Hitilafu katika kupakia data');
+      console.error('Unexpected error fetching data:', error);
+      toast.error('Kosa la kutarajwa');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleAddCustomer = async () => {
-    if (!newCustomer.name || !newCustomer.phone) {
-      toast.error('Tafadhali jaza jina na nambari ya simu');
+  const handleCreateCustomer = async () => {
+    if (!newCustomer.name.trim()) {
+      toast.error('Jina la mteja ni lazima');
       return;
     }
 
     try {
       const { data, error } = await supabase
         .from('customers')
-        .insert([newCustomer])
+        .insert([{
+          name: newCustomer.name.trim(),
+          phone: newCustomer.phone.trim() || null,
+          email: newCustomer.email.trim() || null,
+          address: newCustomer.address.trim() || null
+        }])
         .select()
         .single();
 
-      if (error) throw error;
-
-      toast.success('Mteja ameongezwa kikamilifu');
-      setNewCustomer({ name: '', phone: '', email: '' });
-      setShowAddCustomerDialog(false);
-      fetchData();
-    } catch (error: any) {
-      console.error('Error adding customer:', error);
-      toast.error(`Imeshindwa kuongeza mteja: ${error.message}`);
-    }
-  };
-
-  const handleDeleteCustomer = async () => {
-    if (!deleteCustomerId) return;
-
-    try {
-      // First check if customer has credit records
-      const { data: creditCheck } = await supabase
-        .from('customer_credit')
-        .select('id')
-        .eq('customer_id', deleteCustomerId)
-        .limit(1);
-
-      if (creditCheck && creditCheck.length > 0) {
-        toast.error('Huwezi kufuta mteja aliye na rekodi za mkopo');
-        setDeleteCustomerId(null);
-        return;
+      if (error) {
+        console.error('Error creating customer:', error);
+        throw error;
       }
 
-      const { error } = await supabase
-        .from('customers')
-        .delete()
-        .eq('id', deleteCustomerId);
-
-      if (error) throw error;
-
-      toast.success('Mteja amefutwa kikamilifu');
-      setDeleteCustomerId(null);
-      fetchData();
-    } catch (error: any) {
-      console.error('Error deleting customer:', error);
-      toast.error(`Imeshindwa kufuta mteja: ${error.message}`);
+      setCustomers([data, ...customers]);
+      setNewCustomer({ name: '', phone: '', email: '', address: '' });
+      toast.success('Mteja ameongezwa kwa mafanikio');
+      return data;
+    } catch (error) {
+      console.error('Error creating customer:', error);
+      toast.error('Imeshindwa kuongeza mteja');
+      return null;
     }
   };
 
-  const handleAddCredit = async () => {
-    if (!newCredit.customer_id || !newCredit.credit_limit || !userProfile?.id) {
+  const handleCreateCredit = async () => {
+    if (!newCredit.customer_id || !newCredit.credit_limit) {
       toast.error('Tafadhali chagua mteja na weka kikomo cha mkopo');
       return;
     }
 
+    const creditLimit = parseFloat(newCredit.credit_limit);
+    if (isNaN(creditLimit) || creditLimit <= 0) {
+      toast.error('Kikomo cha mkopo lazima kiwe nambari kubwa kuliko sifuri');
+      return;
+    }
+
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('customer_credit')
         .insert([{
-          ...newCredit,
-          owner_id: userProfile.id,
-          credit_limit: parseFloat(newCredit.credit_limit),
-          credit_score: parseInt(newCredit.credit_score),
-          current_balance: 0
-        }]);
+          customer_id: newCredit.customer_id,
+          owner_id: user?.id,
+          credit_limit: creditLimit,
+          current_balance: 0,
+          credit_score: 50
+        }])
+        .select(`
+          *,
+          customers (*)
+        `)
+        .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error creating credit:', error);
+        throw error;
+      }
 
-      toast.success('Mkopo umeongezwa kikamilifu');
-      setNewCredit({ customer_id: '', credit_limit: '', credit_score: '50' });
-      setShowAddDialog(false);
-      fetchData();
-    } catch (error: any) {
-      console.error('Error adding credit:', error);
-      toast.error(`Imeshindwa kuongeza mkopo: ${error.message}`);
+      setCredits([data, ...credits]);
+      setNewCredit({ customer_id: '', credit_limit: '', notes: '' });
+      setDialogOpen(false);
+      toast.success('Mkopo umeongezwa kwa mafanikio');
+    } catch (error) {
+      console.error('Error creating credit:', error);
+      toast.error('Imeshindwa kuongeza mkopo');
     }
   };
 
-  const handlePayment = async () => {
-    if (!paymentDialogId || !paymentAmount) return;
-
-    try {
-      const amount = parseFloat(paymentAmount);
-      const record = creditRecords.find(r => r.id === paymentDialogId);
-      if (!record) return;
-
-      const newBalance = Math.max(0, record.current_balance - amount);
-      const paymentRecord = {
-        amount,
-        date: new Date().toISOString(),
-        balance_after: newBalance
-      };
-
-      // Handle payment_history as Json type
-      const currentHistory = Array.isArray(record.payment_history) 
-        ? record.payment_history 
-        : (record.payment_history as any) || [];
-
-      const { error } = await supabase
-        .from('customer_credit')
-        .update({
-          current_balance: newBalance,
-          payment_history: [...currentHistory, paymentRecord] as Json,
-          last_payment_date: new Date().toISOString()
-        })
-        .eq('id', paymentDialogId);
-
-      if (error) throw error;
-
-      toast.success('Malipo yamehifadhiwa');
-      setPaymentDialogId(null);
-      setPaymentAmount('');
-      fetchData();
-    } catch (error: any) {
-      console.error('Error processing payment:', error);
-      toast.error(`Imeshindwa kuhifadhi malipo: ${error.message}`);
-    }
+  const getScoreColor = (score: number) => {
+    if (score >= 80) return 'bg-green-100 text-green-800';
+    if (score >= 60) return 'bg-yellow-100 text-yellow-800';
+    return 'bg-red-100 text-red-800';
   };
 
-  const handleDeleteRecord = async () => {
-    if (!deleteRecordId) return;
-
-    try {
-      const { error } = await supabase
-        .from('customer_credit')
-        .delete()
-        .eq('id', deleteRecordId);
-
-      if (error) throw error;
-
-      toast.success('Rekodi ya mkopo imefutwa');
-      setDeleteRecordId(null);
-      fetchData();
-    } catch (error: any) {
-      console.error('Error deleting record:', error);
-      toast.error(`Imeshindwa kufuta rekodi: ${error.message}`);
-    }
+  const getScoreLabel = (score: number) => {
+    if (score >= 80) return 'Nzuri';
+    if (score >= 60) return 'Wastani';
+    return 'Hatari';
   };
 
-  const totalCredit = creditRecords.reduce((sum, record) => sum + record.credit_limit, 0);
-  const totalDebt = creditRecords.reduce((sum, record) => sum + record.current_balance, 0);
-  const activeCustomers = creditRecords.length;
+  const filteredCredits = credits.filter(credit => {
+    const customer = credit.customers as Customer;
+    return (
+      customer?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      customer?.phone?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      customer?.email?.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  });
 
   if (loading) {
     return (
@@ -260,316 +205,213 @@ export const SmartCreditManager = () => {
         <div className="text-center py-8">
           <p className="text-gray-600">Inapakia data ya mikopo...</p>
         </div>
-        {[...Array(3)].map((_, i) => (
-          <div key={i} className="h-24 bg-gray-200 rounded-lg animate-pulse" />
-        ))}
       </div>
     );
   }
 
   return (
     <div className="p-4 space-y-6">
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Jumla ya Mkopo</p>
-                <p className="text-2xl font-bold">TSh {totalCredit.toLocaleString()}</p>
-              </div>
-              <DollarSign className="h-8 w-8 text-blue-600" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Madeni</p>
-                <p className="text-2xl font-bold text-red-600">TSh {totalDebt.toLocaleString()}</p>
-              </div>
-              <TrendingUp className="h-8 w-8 text-red-600" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Wateja wa Mkopo</p>
-                <p className="text-2xl font-bold">{activeCustomers}</p>
-              </div>
-              <Users className="h-8 w-8 text-green-600" />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Action Buttons */}
-      <div className="flex flex-col sm:flex-row gap-4">
-        <Dialog open={showAddCustomerDialog} onOpenChange={setShowAddCustomerDialog}>
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900">Usimamizi wa Mikopo</h2>
+          <p className="text-gray-600">{credits.length} mikopo katika mfumo</p>
+        </div>
+        
+        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
-            <Button className="bg-green-600 hover:bg-green-700">
+            <Button className="bg-blue-600 hover:bg-blue-700 text-white">
               <Plus className="h-4 w-4 mr-2" />
-              Ongeza Mteja wa Mkopo
+              Ongeza Mkopo Mpya
             </Button>
           </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Ongeza Mteja Mpya wa Mkopo</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="customer_name">Jina la Mteja *</Label>
-                <Input
-                  id="customer_name"
-                  value={newCustomer.name}
-                  onChange={(e) => setNewCustomer({...newCustomer, name: e.target.value})}
-                  placeholder="Juma Mwangi"
-                />
-              </div>
-              <div>
-                <Label htmlFor="customer_phone">Nambari ya Simu *</Label>
-                <Input
-                  id="customer_phone"
-                  value={newCustomer.phone}
-                  onChange={(e) => setNewCustomer({...newCustomer, phone: e.target.value})}
-                  placeholder="+255712345678"
-                />
-              </div>
-              <div>
-                <Label htmlFor="customer_email">Barua Pepe</Label>
-                <Input
-                  id="customer_email"
-                  type="email"
-                  value={newCustomer.email}
-                  onChange={(e) => setNewCustomer({...newCustomer, email: e.target.value})}
-                  placeholder="mtumiaji@mfano.com"
-                />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button onClick={handleAddCustomer}>Ongeza Mteja</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              Ongeza Mkopo
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="sm:max-w-md">
             <DialogHeader>
               <DialogTitle>Ongeza Mkopo Mpya</DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
               <div>
-                <Label htmlFor="customer_select">Chagua Mteja *</Label>
-                <select
-                  id="customer_select"
-                  value={newCredit.customer_id}
-                  onChange={(e) => setNewCredit({...newCredit, customer_id: e.target.value})}
-                  className="w-full p-2 border border-gray-300 rounded-md"
-                >
-                  <option value="">Chagua mteja...</option>
-                  {customers.map((customer) => (
-                    <option key={customer.id} value={customer.id}>
-                      {customer.name} ({customer.phone})
-                    </option>
-                  ))}
-                </select>
+                <Label htmlFor="customer">Chagua Mteja *</Label>
+                <Select value={newCredit.customer_id} onValueChange={(value) => setNewCredit({...newCredit, customer_id: value})}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Chagua mteja..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {customers.map((customer) => (
+                      <SelectItem key={customer.id} value={customer.id}>
+                        {customer.name} {customer.phone && `(${customer.phone})`}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {customers.length === 0 && (
+                  <p className="text-xs text-gray-500 mt-1">Hakuna wateja. Ongeza mteja wa kwanza hapo chini.</p>
+                )}
               </div>
+
               <div>
-                <Label htmlFor="credit_limit">Kikomo cha Mkopo (TSh) *</Label>
+                <Label htmlFor="credit_limit">Kikomo cha Mkopo (TZS) *</Label>
                 <Input
                   id="credit_limit"
                   type="number"
                   value={newCredit.credit_limit}
                   onChange={(e) => setNewCredit({...newCredit, credit_limit: e.target.value})}
-                  placeholder="50000"
+                  placeholder="100000"
                 />
               </div>
+
               <div>
-                <Label htmlFor="credit_score">Alama ya Mkopo (1-100)</Label>
-                <Input
-                  id="credit_score"
-                  type="number"
-                  min="1"
-                  max="100"
-                  value={newCredit.credit_score}
-                  onChange={(e) => setNewCredit({...newCredit, credit_score: e.target.value})}
+                <Label htmlFor="notes">Maelezo</Label>
+                <Textarea
+                  id="notes"
+                  value={newCredit.notes}
+                  onChange={(e) => setNewCredit({...newCredit, notes: e.target.value})}
+                  placeholder="Maelezo ya ziada..."
+                  rows={2}
                 />
+              </div>
+
+              <Button 
+                onClick={handleCreateCredit} 
+                className="w-full bg-blue-600 hover:bg-blue-700"
+                disabled={!newCredit.customer_id || !newCredit.credit_limit}
+              >
+                Ongeza Mkopo
+              </Button>
+
+              <div className="border-t pt-4">
+                <h4 className="font-medium mb-3">Au ongeza mteja mpya:</h4>
+                <div className="space-y-3">
+                  <Input
+                    placeholder="Jina la mteja *"
+                    value={newCustomer.name}
+                    onChange={(e) => setNewCustomer({...newCustomer, name: e.target.value})}
+                  />
+                  <Input
+                    placeholder="Nambari ya simu"
+                    value={newCustomer.phone}
+                    onChange={(e) => setNewCustomer({...newCustomer, phone: e.target.value})}
+                  />
+                  <Input
+                    placeholder="Barua pepe"
+                    value={newCustomer.email}
+                    onChange={(e) => setNewCustomer({...newCustomer, email: e.target.value})}
+                  />
+                  <Button 
+                    onClick={handleCreateCustomer}
+                    variant="outline" 
+                    className="w-full"
+                    disabled={!newCustomer.name.trim()}
+                  >
+                    <User className="h-4 w-4 mr-2" />
+                    Ongeza Mteja
+                  </Button>
+                </div>
               </div>
             </div>
-            <DialogFooter>
-              <Button onClick={handleAddCredit}>Ongeza Mkopo</Button>
-            </DialogFooter>
           </DialogContent>
         </Dialog>
       </div>
 
-      {/* Customers List */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Wateja wa Mkopo</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {customers.map((customer) => (
-              <div key={customer.id} className="flex items-center justify-between p-4 border rounded-lg">
-                <div className="flex-1">
-                  <h4 className="font-semibold">{customer.name}</h4>
-                  <p className="text-sm text-gray-600">{customer.phone}</p>
-                  {customer.email && (
-                    <p className="text-sm text-gray-500">{customer.email}</p>
-                  )}
-                </div>
-                <Button 
-                  size="sm" 
-                  variant="outline"
-                  onClick={() => setDeleteCustomerId(customer.id)}
-                  className="text-red-600 hover:text-red-700"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
-            ))}
-            
-            {customers.length === 0 && (
-              <div className="text-center py-8">
-                <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-600">Hakuna wateja wa mkopo</p>
-                <p className="text-sm text-gray-500">Ongeza mteja wa kwanza ili kuanza</p>
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+      {/* Search */}
+      <div className="relative">
+        <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+        <Input
+          placeholder="Tafuta kwa jina, simu, au barua pepe..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="pl-10"
+        />
+      </div>
 
-      {/* Credit Records */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Rekodi za Mikopo</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {creditRecords.map((record) => (
-              <div key={record.id} className="flex items-center justify-between p-4 border rounded-lg">
-                <div className="flex-1">
-                  <h4 className="font-semibold">{record.customer?.name}</h4>
-                  <p className="text-sm text-gray-600">{record.customer?.phone}</p>
-                  <div className="flex items-center space-x-4 mt-2">
-                    <span className="text-sm">
-                      Kikomo: <strong>TSh {record.credit_limit.toLocaleString()}</strong>
-                    </span>
-                    <span className="text-sm">
-                      Deni: <strong className="text-red-600">TSh {record.current_balance.toLocaleString()}</strong>
-                    </span>
-                    <Badge className={record.current_balance === 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}>
-                      {record.current_balance === 0 ? 'Amelipa' : 'Ana Deni'}
-                    </Badge>
+      {/* Credits List */}
+      <div className="space-y-4">
+        {filteredCredits.map((credit) => {
+          const customer = credit.customers as Customer;
+          return (
+            <Card key={credit.id} className="hover:shadow-lg transition-all duration-300">
+              <CardContent className="p-4">
+                <div className="flex justify-between items-start">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-2">
+                      <h3 className="font-semibold text-lg">{customer?.name || 'Jina Halijulikani'}</h3>
+                      <Badge className={getScoreColor(credit.credit_score || 50)}>
+                        {getScoreLabel(credit.credit_score || 50)}
+                      </Badge>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-3">
+                      <div className="flex items-center space-x-2">
+                        <DollarSign className="h-4 w-4 text-green-600" />
+                        <div>
+                          <p className="text-xs text-gray-500">Kikomo</p>
+                          <p className="font-medium">TZS {credit.credit_limit?.toLocaleString() || '0'}</p>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center space-x-2">
+                        <CreditCard className="h-4 w-4 text-blue-600" />
+                        <div>
+                          <p className="text-xs text-gray-500">Deni la Sasa</p>
+                          <p className="font-medium">TZS {credit.current_balance?.toLocaleString() || '0'}</p>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center space-x-2">
+                        <Calendar className="h-4 w-4 text-orange-600" />
+                        <div>
+                          <p className="text-xs text-gray-500">Malipo ya Mwisho</p>
+                          <p className="font-medium">
+                            {credit.last_payment_date ? 
+                              new Date(credit.last_payment_date).toLocaleDateString() : 
+                              'Hakuna'
+                            }
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {customer && (
+                      <div className="flex items-center gap-4 text-sm text-gray-600">
+                        {customer.phone && (
+                          <div className="flex items-center gap-1">
+                            <Phone className="h-3 w-3" />
+                            <span>{customer.phone}</span>
+                          </div>
+                        )}
+                        {customer.email && (
+                          <div className="flex items-center gap-1">
+                            <Mail className="h-3 w-3" />
+                            <span>{customer.email}</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
-                
-                <div className="flex items-center space-x-2">
-                  {record.current_balance > 0 && (
-                    <Button 
-                      size="sm" 
-                      onClick={() => setPaymentDialogId(record.id)}
-                      className="bg-green-600 hover:bg-green-700"
-                    >
-                      <CheckCircle className="h-4 w-4 mr-1" />
-                      Lipa
-                    </Button>
-                  )}
-                  <Button 
-                    size="sm" 
-                    variant="outline"
-                    onClick={() => setDeleteRecordId(record.id)}
-                    className="text-red-600 hover:text-red-700"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            ))}
-            
-            {creditRecords.length === 0 && (
-              <div className="text-center py-8">
-                <DollarSign className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-600">Hakuna rekodi za mikopo</p>
-                <p className="text-sm text-gray-500">Ongeza mkopo wa kwanza ili kuanza</p>
-              </div>
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
+
+      {filteredCredits.length === 0 && (
+        <Card className="text-center py-12">
+          <CardContent>
+            <CreditCard className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Hakuna mikopo iliyopatikana</h3>
+            <p className="text-gray-600 mb-4">
+              {searchTerm ? "Jaribu kubadilisha maneno ya utafutaji" : "Anza kwa kuongeza mkopo wa kwanza"}
+            </p>
+            {!searchTerm && (
+              <Button onClick={() => setDialogOpen(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                Ongeza Mkopo
+              </Button>
             )}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Payment Dialog */}
-      <Dialog open={!!paymentDialogId} onOpenChange={() => setPaymentDialogId(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Rekodi Malipo</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="payment_amount">Kiasi cha Malipo (TSh)</Label>
-              <Input
-                id="payment_amount"
-                type="number"
-                value={paymentAmount}
-                onChange={(e) => setPaymentAmount(e.target.value)}
-                placeholder="10000"
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button onClick={handlePayment}>Hifadhi Malipo</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Delete Record Confirmation Dialog */}
-      <AlertDialog open={!!deleteRecordId} onOpenChange={() => setDeleteRecordId(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Una uhakika?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Hatua hii haiwezi kubatilishwa. Hii itafuta rekodi ya mkopo kabisa.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Ghairi</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteRecord} className="bg-red-600 hover:bg-red-700">
-              Futa
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* Delete Customer Confirmation Dialog */}
-      <AlertDialog open={!!deleteCustomerId} onOpenChange={() => setDeleteCustomerId(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Una uhakika?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Hatua hii haiwezi kubatilishwa. Hii itafuta mteja kabisa.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Ghairi</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteCustomer} className="bg-red-600 hover:bg-red-700">
-              Futa
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };

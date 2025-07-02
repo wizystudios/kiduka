@@ -6,14 +6,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { User, Building, Mail, Lock, Download, Upload, Save } from 'lucide-react';
+import { User, Building, Mail, Lock, Download, Save } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 
 export const SettingsPage = () => {
-  const { userProfile, user } = useAuth();
-  const { toast } = useToast();
+  const { userProfile, user, refreshProfile } = useAuth();
   const [loading, setLoading] = useState(false);
   const [profileData, setProfileData] = useState({
     full_name: '',
@@ -31,12 +30,13 @@ export const SettingsPage = () => {
       setProfileData({
         full_name: userProfile.full_name || '',
         business_name: userProfile.business_name || '',
-        email: userProfile.email || ''
+        email: userProfile.email || user?.email || ''
       });
     }
-  }, [userProfile]);
+  }, [userProfile, user]);
 
   const getInitials = (name: string) => {
+    if (!name) return 'U';
     return name
       .split(' ')
       .map(word => word.charAt(0).toUpperCase())
@@ -45,30 +45,32 @@ export const SettingsPage = () => {
   };
 
   const handleProfileUpdate = async () => {
+    if (!userProfile?.id) {
+      toast.error('Kosa la mtumiaji');
+      return;
+    }
+
     setLoading(true);
     try {
       const { error } = await supabase
         .from('profiles')
         .update({
-          full_name: profileData.full_name,
-          business_name: profileData.business_name,
+          full_name: profileData.full_name.trim() || null,
+          business_name: profileData.business_name.trim() || null,
           updated_at: new Date().toISOString()
         })
-        .eq('id', userProfile?.id);
+        .eq('id', userProfile.id);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Profile update error:', error);
+        throw error;
+      }
 
-      toast({
-        title: 'Success',
-        description: 'Profile updated successfully'
-      });
+      await refreshProfile();
+      toast.success('Maelezo yamebadilishwa kwa mafanikio');
     } catch (error) {
       console.error('Error updating profile:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to update profile',
-        variant: 'destructive'
-      });
+      toast.error('Imeshindwa kubadilisha maelezo');
     } finally {
       setLoading(false);
     }
@@ -76,11 +78,12 @@ export const SettingsPage = () => {
 
   const handlePasswordUpdate = async () => {
     if (passwordData.newPassword !== passwordData.confirmPassword) {
-      toast({
-        title: 'Error',
-        description: 'New passwords do not match',
-        variant: 'destructive'
-      });
+      toast.error('Nywila mpya hazilingani');
+      return;
+    }
+
+    if (passwordData.newPassword.length < 6) {
+      toast.error('Nywila lazima iwe na angalau herufi 6');
       return;
     }
 
@@ -92,10 +95,7 @@ export const SettingsPage = () => {
 
       if (error) throw error;
 
-      toast({
-        title: 'Success',
-        description: 'Password updated successfully'
-      });
+      toast.success('Nywila imebadilishwa kwa mafanikio');
       
       setPasswordData({
         currentPassword: '',
@@ -104,11 +104,7 @@ export const SettingsPage = () => {
       });
     } catch (error) {
       console.error('Error updating password:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to update password',
-        variant: 'destructive'
-      });
+      toast.error('Imeshindwa kubadilisha nywila');
     } finally {
       setLoading(false);
     }
@@ -140,31 +136,28 @@ export const SettingsPage = () => {
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `smartshop-data-${new Date().toISOString().split('T')[0]}.json`;
+      link.download = `kiduka-data-${new Date().toISOString().split('T')[0]}.json`;
       link.click();
       
       URL.revokeObjectURL(url);
 
-      toast({
-        title: 'Success',
-        description: 'Data exported successfully'
-      });
+      toast.success('Data imehamishwa kwa mafanikio');
     } catch (error) {
       console.error('Error exporting data:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to export data',
-        variant: 'destructive'
-      });
+      toast.error('Imeshindwa kuhamisha data');
     }
   };
+
+  const displayName = profileData.full_name || 'Mtumiaji';
+  const businessName = profileData.business_name;
+  const userRole = userProfile?.role || 'owner';
 
   return (
     <div className="p-4 space-y-6">
       {/* Header */}
       <div>
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Settings</h2>
-        <p className="text-gray-600">Manage your account and business settings</p>
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Mipangilio</h2>
+        <p className="text-gray-600">Simamia akaunti na mipangilio ya biashara yako</p>
       </div>
 
       {/* Profile Information */}
@@ -172,7 +165,7 @@ export const SettingsPage = () => {
         <CardHeader>
           <CardTitle className="flex items-center">
             <User className="h-5 w-5 mr-2" />
-            Profile Information
+            Maelezo ya Mtumiaji
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -181,19 +174,21 @@ export const SettingsPage = () => {
             <Avatar className="h-16 w-16">
               <AvatarImage src={userProfile?.avatar_url} />
               <AvatarFallback className="bg-blue-100 text-blue-600 text-lg">
-                {profileData.full_name ? getInitials(profileData.full_name) : <User className="h-8 w-8" />}
+                {getInitials(displayName)}
               </AvatarFallback>
             </Avatar>
             <div>
               <h3 className="text-lg font-medium text-gray-900">
-                {profileData.full_name || 'Add your name'}
+                {displayName}
               </h3>
               <p className="text-sm text-gray-500 capitalize">
-                {userProfile?.role || 'owner'}
+                {userRole === 'owner' ? 'Mmiliki' : userRole}
               </p>
-              <p className="text-sm text-gray-500">
-                {profileData.business_name || 'Add your business name'}
-              </p>
+              {businessName && (
+                <p className="text-sm text-gray-500">
+                  {businessName}
+                </p>
+              )}
             </div>
           </div>
 
@@ -202,27 +197,27 @@ export const SettingsPage = () => {
           {/* Profile Form */}
           <div className="space-y-4">
             <div>
-              <Label htmlFor="full_name">Full Name</Label>
+              <Label htmlFor="full_name">Jina Kamili</Label>
               <Input
                 id="full_name"
                 value={profileData.full_name}
                 onChange={(e) => setProfileData({...profileData, full_name: e.target.value})}
-                placeholder="Enter your full name"
+                placeholder="Weka jina lako kamili"
               />
             </div>
 
             <div>
-              <Label htmlFor="business_name">Business Name</Label>
+              <Label htmlFor="business_name">Jina la Biashara</Label>
               <Input
                 id="business_name"
                 value={profileData.business_name}
                 onChange={(e) => setProfileData({...profileData, business_name: e.target.value})}
-                placeholder="Enter your business name"
+                placeholder="Weka jina la biashara yako"
               />
             </div>
 
             <div>
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">Barua Pepe</Label>
               <Input
                 id="email"
                 type="email"
@@ -230,7 +225,7 @@ export const SettingsPage = () => {
                 disabled
                 className="bg-gray-50"
               />
-              <p className="text-xs text-gray-500 mt-1">Email cannot be changed</p>
+              <p className="text-xs text-gray-500 mt-1">Barua pepe haiwezi kubadilishwa</p>
             </div>
 
             <Button 
@@ -239,7 +234,7 @@ export const SettingsPage = () => {
               className="w-full"
             >
               <Save className="h-4 w-4 mr-2" />
-              {loading ? 'Updating...' : 'Update Profile'}
+              {loading ? 'Inabadilisha...' : 'Badilisha Maelezo'}
             </Button>
           </div>
         </CardContent>
@@ -250,29 +245,29 @@ export const SettingsPage = () => {
         <CardHeader>
           <CardTitle className="flex items-center">
             <Lock className="h-5 w-5 mr-2" />
-            Security
+            Usalama
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
-            <Label htmlFor="new_password">New Password</Label>
+            <Label htmlFor="new_password">Nywila Mpya</Label>
             <Input
               id="new_password"
               type="password"
               value={passwordData.newPassword}
               onChange={(e) => setPasswordData({...passwordData, newPassword: e.target.value})}
-              placeholder="Enter new password"
+              placeholder="Weka nywila mpya"
             />
           </div>
 
           <div>
-            <Label htmlFor="confirm_password">Confirm New Password</Label>
+            <Label htmlFor="confirm_password">Thibitisha Nywila Mpya</Label>
             <Input
               id="confirm_password"
               type="password"
               value={passwordData.confirmPassword}
               onChange={(e) => setPasswordData({...passwordData, confirmPassword: e.target.value})}
-              placeholder="Confirm new password"
+              placeholder="Thibitisha nywila mpya"
             />
           </div>
 
@@ -282,7 +277,7 @@ export const SettingsPage = () => {
             className="w-full"
           >
             <Lock className="h-4 w-4 mr-2" />
-            {loading ? 'Updating...' : 'Update Password'}
+            {loading ? 'Inabadilisha...' : 'Badilisha Nywila'}
           </Button>
         </CardContent>
       </Card>
@@ -292,7 +287,7 @@ export const SettingsPage = () => {
         <CardHeader>
           <CardTitle className="flex items-center">
             <Building className="h-5 w-5 mr-2" />
-            Data Management
+            Usimamizi wa Data
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -302,12 +297,12 @@ export const SettingsPage = () => {
             className="w-full"
           >
             <Download className="h-4 w-4 mr-2" />
-            Export All Data
+            Hamisha Data Zote
           </Button>
           
           <div className="text-sm text-gray-500">
-            <p>• Export includes all products, sales, and business data</p>
-            <p>• Data is exported in JSON format for backup purposes</p>
+            <p>• Uhamishaji unajumuisha bidhaa, mauzo, na data za biashara</p>
+            <p>• Data inahamishwa katika muundo wa JSON kwa kuhifadhi</p>
           </div>
         </CardContent>
       </Card>
@@ -315,21 +310,23 @@ export const SettingsPage = () => {
       {/* Business Information */}
       <Card>
         <CardHeader>
-          <CardTitle>Business Information</CardTitle>
+          <CardTitle>Maelezo ya Biashara</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="flex justify-between items-center">
-            <span className="text-sm text-gray-600">Role</span>
-            <span className="text-sm font-medium capitalize">{userProfile?.role}</span>
-          </div>
-          <div className="flex justify-between items-center">
-            <span className="text-sm text-gray-600">Member Since</span>
-            <span className="text-sm font-medium">
-              {userProfile?.created_at ? new Date(userProfile.created_at).toLocaleDateString() : 'N/A'}
+            <span className="text-sm text-gray-600">Jukumu</span>
+            <span className="text-sm font-medium capitalize">
+              {userRole === 'owner' ? 'Mmiliki' : userRole}
             </span>
           </div>
           <div className="flex justify-between items-center">
-            <span className="text-sm text-gray-600">User ID</span>
+            <span className="text-sm text-gray-600">Mwanachama Tangu</span>
+            <span className="text-sm font-medium">
+              {userProfile?.created_at ? new Date(userProfile.created_at).toLocaleDateString() : 'Sio Wazi'}
+            </span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-sm text-gray-600">Kitambulisho cha Mtumiaji</span>
             <span className="text-xs font-mono text-gray-500">{userProfile?.id?.slice(0, 8)}...</span>
           </div>
         </CardContent>

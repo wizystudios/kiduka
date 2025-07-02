@@ -5,193 +5,199 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Plus, Search, Edit, Trash2, Users, Mail, UserCheck, Copy } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Plus, Search, Edit, Trash2, Users as UsersIcon, Mail, Phone } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
+import { toast } from 'sonner';
 
-interface User {
+interface UserProfile {
   id: string;
   email: string;
   full_name: string;
+  business_name?: string;
   role: string;
   created_at: string;
 }
 
 export const UsersPage = () => {
-  const [users, setUsers] = useState<User[]>([]);
+  const [users, setUsers] = useState<UserProfile[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [inviteData, setInviteData] = useState({
+  const { userProfile } = useAuth();
+  
+  const [newUser, setNewUser] = useState({
     email: '',
-    fullName: '',
+    password: '',
+    full_name: '',
+    business_name: '',
     role: 'assistant'
   });
-  const [tempPassword, setTempPassword] = useState('');
-  const { toast } = useToast();
 
   useEffect(() => {
-    fetchUsers();
-  }, []);
+    if (userProfile?.role === 'owner') {
+      fetchUsers();
+    }
+  }, [userProfile]);
 
   const fetchUsers = async () => {
     try {
+      console.log('Fetching users...');
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      setUsers(data || []);
+      if (error) {
+        console.error('Error fetching users:', error);
+        toast.error('Imeshindwa kupakia watumiaji');
+        setUsers([]);
+      } else {
+        console.log('Users loaded:', data?.length || 0);
+        setUsers(data || []);
+      }
     } catch (error) {
-      console.error('Error fetching users:', error);
-      toast({
-        title: 'Hitilafu',
-        description: 'Imeshindwa kupakia watumiaji',
-        variant: 'destructive'
-      });
+      console.error('Unexpected error fetching users:', error);
+      toast.error('Kosa la kutarajwa');
+      setUsers([]);
     } finally {
       setLoading(false);
     }
   };
 
-  const generateTempPassword = () => {
-    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
-    let password = '';
-    for (let i = 0; i < 8; i++) {
-      password += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    return password;
-  };
-
-  const handleInviteUser = async () => {
-    if (!inviteData.email || !inviteData.fullName) {
-      toast({
-        title: 'Hitilafu',
-        description: 'Tafadhali jaza sehemu zote zinazohitajika',
-        variant: 'destructive'
-      });
+  const handleCreateUser = async () => {
+    if (!newUser.email || !newUser.password || !newUser.full_name) {
+      toast.error('Tafadhali jaza uga zote zinazohitajika');
       return;
     }
 
     try {
-      // Generate temporary password
-      const tempPass = generateTempPassword();
-      setTempPassword(tempPass);
-
-      // Create user account with email/password
-      const { data: authData, error: signUpError } = await supabase.auth.signUp({
-        email: inviteData.email,
-        password: tempPass,
+      // Create user with Supabase Auth
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: newUser.email,
+        password: newUser.password,
         options: {
           data: {
-            full_name: inviteData.fullName,
-            role: inviteData.role
-          },
-          emailRedirectTo: `${window.location.origin}/auth`
+            full_name: newUser.full_name,
+            business_name: newUser.business_name,
+            role: newUser.role
+          }
         }
       });
 
-      if (signUpError) {
-        console.error('SignUp error:', signUpError);
-        throw signUpError;
+      if (authError) {
+        console.error('Auth error:', authError);
+        throw authError;
       }
 
       if (authData.user) {
-        // Insert profile manually since the trigger might not work properly
+        // Create profile directly
         const { error: profileError } = await supabase
           .from('profiles')
-          .upsert({
-            id: authData.user.id,
-            email: inviteData.email,
-            full_name: inviteData.fullName,
-            role: inviteData.role
-          });
+          .insert([
+            {
+              id: authData.user.id,
+              email: newUser.email,
+              full_name: newUser.full_name,
+              business_name: newUser.business_name || null,
+              role: newUser.role
+            }
+          ]);
 
         if (profileError) {
-          console.error('Profile error:', profileError);
-          // Don't throw here, user was created successfully
+          console.error('Profile creation error:', profileError);
+          // Don't throw here, profile might be created by trigger
         }
       }
 
-      toast({
-        title: 'Mtumiaji Amealikwa',
-        description: `${inviteData.fullName} ameongezwa kama ${inviteData.role}. Nywila ni ya muda: ${tempPass}`,
-        duration: 10000
-      });
-      
-      setInviteData({ email: '', fullName: '', role: 'assistant' });
+      toast.success('Mtumiaji ameongezwa kwa mafanikio');
+      setNewUser({ email: '', password: '', full_name: '', business_name: '', role: 'assistant' });
+      setDialogOpen(false);
       fetchUsers();
     } catch (error: any) {
-      console.error('Error inviting user:', error);
-      if (error.message?.includes('already registered')) {
-        toast({
-          title: 'Hitilafu',
-          description: 'Mtumiaji wa barua pepe hii tayari yupo',
-          variant: 'destructive'
-        });
+      console.error('Error creating user:', error);
+      if (error.message.includes('User already registered')) {
+        toast.error('Barua pepe hii tayari imesajiliwa');
       } else {
-        toast({
-          title: 'Hitilafu',
-          description: `Imeshindwa kumwalika mtumiaji: ${error.message}`,
-          variant: 'destructive'
-        });
+        toast.error('Imeshindwa kuongeza mtumiaji');
       }
     }
   };
 
-  const copyPassword = () => {
-    navigator.clipboard.writeText(tempPassword);
-    toast({
-      title: 'Imenakiliwa',
-      description: 'Nywila imenakiliwa kwenye clipboard'
-    });
-  };
-
-  const handleDeleteUser = async (id: string) => {
-    if (!confirm('Una uhakika unataka kumwondoa mtumiaji huyu?')) return;
+  const handleDeleteUser = async (userId: string, userName: string) => {
+    if (!confirm(`Je, una uhakika unataka kumfuta "${userName}"?`)) return;
 
     try {
       const { error } = await supabase
         .from('profiles')
         .delete()
-        .eq('id', id);
+        .eq('id', userId);
 
       if (error) throw error;
 
-      setUsers(users.filter(u => u.id !== id));
-      toast({
-        title: 'Imefanikiwa',
-        description: 'Mtumiaji ameondolewa kikamilifu'
-      });
+      setUsers(users.filter(u => u.id !== userId));
+      toast.success('Mtumiaji amefutwa kwa mafanikio');
     } catch (error) {
       console.error('Error deleting user:', error);
-      toast({
-        title: 'Hitilafu',
-        description: 'Imeshindwa kumwondoa mtumiaji',
-        variant: 'destructive'
-      });
+      toast.error('Imeshindwa kumfuta mtumiaji');
     }
   };
 
   const filteredUsers = users.filter(user =>
+    user.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.full_name?.toLowerCase().includes(searchTerm.toLowerCase())
+    user.business_name?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const getRoleBadge = (role: string) => {
-    return role === 'owner' 
-      ? { color: 'bg-blue-100 text-blue-800', label: 'Mmiliki' }
-      : { color: 'bg-green-100 text-green-800', label: 'Msaidizi' };
+  const getInitials = (name: string) => {
+    if (!name) return 'U';
+    return name
+      .split(' ')
+      .map(word => word.charAt(0).toUpperCase())
+      .join('')
+      .slice(0, 2);
   };
+
+  const getRoleBadgeColor = (role: string) => {
+    switch (role) {
+      case 'owner': return 'bg-blue-100 text-blue-800';
+      case 'assistant': return 'bg-green-100 text-green-800';
+      case 'super_admin': return 'bg-purple-100 text-purple-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getRoleLabel = (role: string) => {
+    switch (role) {
+      case 'owner': return 'Mmiliki';
+      case 'assistant': return 'Msaidizi';
+      case 'super_admin': return 'Msimamizi Mkuu';
+      default: return role;
+    }
+  };
+
+  if (userProfile?.role !== 'owner') {
+    return (
+      <div className="p-4">
+        <Card className="text-center py-12">
+          <CardContent>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Hauruhusiwi</h3>
+            <p className="text-gray-600">Huna ruhusa ya kuona ukurasa huu</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
       <div className="p-4 space-y-4">
-        {[...Array(5)].map((_, i) => (
-          <div key={i} className="h-20 bg-gray-200 rounded-lg animate-pulse" />
-        ))}
+        <div className="text-center py-8">
+          <p className="text-gray-600">Inapakia watumiaji...</p>
+        </div>
       </div>
     );
   }
@@ -201,81 +207,74 @@ export const UsersPage = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Usimamizi wa Watumiaji</h2>
-          <p className="text-gray-600">Simamia wanatimu wako na ruhusa</p>
+          <h2 className="text-2xl font-bold text-gray-900">Watumiaji</h2>
+          <p className="text-gray-600">{users.length} watumiaji katika mfumo</p>
         </div>
         
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
             <Button className="bg-blue-600 hover:bg-blue-700 text-white">
               <Plus className="h-4 w-4 mr-2" />
-              Alika Mtumiaji
+              Ongeza Mtumiaji
             </Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
-              <DialogTitle>Alika Mtumiaji Mpya</DialogTitle>
+              <DialogTitle>Ongeza Mtumiaji Mpya</DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
-              {tempPassword && (
-                <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h4 className="font-medium text-yellow-800">Nywila ya Muda</h4>
-                      <p className="text-sm text-yellow-700 font-mono">{tempPassword}</p>
-                      <p className="text-xs text-yellow-600 mt-1">
-                        Mpe mtumiaji nywila hii ili aweze kuingia
-                      </p>
-                    </div>
-                    <Button 
-                      size="sm" 
-                      variant="outline" 
-                      onClick={copyPassword}
-                      className="border-yellow-300"
-                    >
-                      <Copy className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              )}
-              
               <div>
                 <Label htmlFor="email">Barua Pepe *</Label>
                 <Input
                   id="email"
                   type="email"
-                  value={inviteData.email}
-                  onChange={(e) => setInviteData({...inviteData, email: e.target.value})}
-                  placeholder="mtumiaji@mfano.com"
+                  value={newUser.email}
+                  onChange={(e) => setNewUser({...newUser, email: e.target.value})}
+                  placeholder="mtumiaji@email.com"
                 />
               </div>
               <div>
-                <Label htmlFor="fullName">Jina Kamili *</Label>
+                <Label htmlFor="password">Nywila *</Label>
                 <Input
-                  id="fullName"
-                  value={inviteData.fullName}
-                  onChange={(e) => setInviteData({...inviteData, fullName: e.target.value})}
-                  placeholder="Juma Mwangi"
+                  id="password"
+                  type="password"
+                  value={newUser.password}
+                  onChange={(e) => setNewUser({...newUser, password: e.target.value})}
+                  placeholder="Angalau herufi 6"
+                />
+              </div>
+              <div>
+                <Label htmlFor="full_name">Jina Kamili *</Label>
+                <Input
+                  id="full_name"
+                  value={newUser.full_name}
+                  onChange={(e) => setNewUser({...newUser, full_name: e.target.value})}
+                  placeholder="Jina la kwanza na la mwisho"
+                />
+              </div>
+              <div>
+                <Label htmlFor="business_name">Jina la Biashara</Label>
+                <Input
+                  id="business_name"
+                  value={newUser.business_name}
+                  onChange={(e) => setNewUser({...newUser, business_name: e.target.value})}
+                  placeholder="Jina la biashara (si lazima)"
                 />
               </div>
               <div>
                 <Label htmlFor="role">Jukumu</Label>
-                <select
-                  id="role"
-                  value={inviteData.role}
-                  onChange={(e) => setInviteData({...inviteData, role: e.target.value})}
-                  className="w-full p-2 border border-gray-300 rounded-md"
-                >
-                  <option value="assistant">Msaidizi</option>
-                  <option value="owner">Mmiliki</option>
-                </select>
+                <Select value={newUser.role} onValueChange={(value) => setNewUser({...newUser, role: value})}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="assistant">Msaidizi</SelectItem>
+                    <SelectItem value="owner">Mmiliki</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-              <Button 
-                onClick={handleInviteUser} 
-                className="w-full bg-blue-600 hover:bg-blue-700"
-                disabled={!inviteData.email || !inviteData.fullName}
-              >
-                Tuma Mwaliko
+              <Button onClick={handleCreateUser} className="w-full bg-blue-600 hover:bg-blue-700">
+                Ongeza Mtumiaji
               </Button>
             </div>
           </DialogContent>
@@ -286,7 +285,7 @@ export const UsersPage = () => {
       <div className="relative">
         <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
         <Input
-          placeholder="Tafuta watumiaji kwa jina au barua pepe..."
+          placeholder="Tafuta kwa jina, barua pepe, au biashara..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="pl-10"
@@ -295,68 +294,76 @@ export const UsersPage = () => {
 
       {/* Users List */}
       <div className="space-y-4">
-        {filteredUsers.map((user) => {
-          const roleBadge = getRoleBadge(user.role);
-          return (
-            <Card key={user.id} className="hover:shadow-lg transition-all duration-300">
-              <CardContent className="p-4">
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center space-x-4">
-                    <div className="bg-gray-100 p-3 rounded-full">
-                      <UserCheck className="h-6 w-6 text-gray-600" />
+        {filteredUsers.map((user) => (
+          <Card key={user.id} className="hover:shadow-lg transition-all duration-300">
+            <CardContent className="p-4">
+              <div className="flex justify-between items-start">
+                <div className="flex items-center space-x-4 flex-1">
+                  <Avatar className="h-12 w-12">
+                    <AvatarImage src="" />
+                    <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white">
+                      {getInitials(user.full_name)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-1">
+                      <h3 className="font-semibold text-lg">{user.full_name}</h3>
+                      <Badge className={getRoleBadgeColor(user.role)}>
+                        {getRoleLabel(user.role)}
+                      </Badge>
                     </div>
-                    <div>
-                      <h3 className="font-semibold text-lg">{user.full_name || 'Mtumiaji Asiyejulikana'}</h3>
-                      <div className="flex items-center space-x-2 text-sm text-gray-600">
-                        <Mail className="h-4 w-4" />
-                        <span>{user.email}</span>
-                      </div>
-                      <p className="text-xs text-gray-500 mt-1">
-                        Alijiunga: {new Date(user.created_at).toLocaleDateString('sw')}
-                      </p>
+                    <div className="flex items-center gap-2 text-sm text-gray-600 mb-1">
+                      <Mail className="h-4 w-4" />
+                      <span>{user.email}</span>
                     </div>
-                  </div>
-                  
-                  <div className="flex items-center space-x-3">
-                    <Badge className={roleBadge.color}>
-                      {roleBadge.label}
-                    </Badge>
-                    
-                    <div className="flex space-x-1">
-                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      {user.role !== 'owner' && (
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          className="h-8 w-8 p-0 text-red-500 hover:text-red-700"
-                          onClick={() => handleDeleteUser(user.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      )}
-                    </div>
+                    {user.business_name && (
+                      <p className="text-sm text-gray-500">Biashara: {user.business_name}</p>
+                    )}
+                    <p className="text-xs text-gray-400">
+                      Amesajiliwa: {new Date(user.created_at).toLocaleDateString()}
+                    </p>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-          );
-        })}
+                
+                <div className="flex space-x-1 ml-4">
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="h-8 w-8 p-0"
+                    title="Hariri mtumiaji"
+                  >
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                  {user.role !== 'owner' && (
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => handleDeleteUser(user.id, user.full_name)}
+                      className="h-8 w-8 p-0 text-red-500 hover:text-red-700"
+                      title="Futa mtumiaji"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
       {filteredUsers.length === 0 && (
         <Card className="text-center py-12">
           <CardContent>
-            <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <UsersIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
             <h3 className="text-lg font-semibold text-gray-900 mb-2">Hakuna watumiaji waliopatikana</h3>
             <p className="text-gray-600 mb-4">
-              {searchTerm ? "Jaribu kubadilisha maneno yako ya utafutaji" : "Anza kwa kumwalika mwanatimu wako wa kwanza"}
+              {searchTerm ? "Jaribu kubadilisha maneno ya utafutaji" : "Anza kwa kumwalika mwanatimu wako wa kwanza"}
             </p>
             {!searchTerm && (
               <Button onClick={() => setDialogOpen(true)}>
                 <Plus className="h-4 w-4 mr-2" />
-                Alika Mtumiaji
+                Ongeza Mtumiaji
               </Button>
             )}
           </CardContent>
