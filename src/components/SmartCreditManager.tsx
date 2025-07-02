@@ -81,7 +81,7 @@ export const SmartCreditManager = () => {
         .from('customer_credit')
         .select(`
           *,
-          customers (*)
+          customer:customers (*)
         `)
         .eq('owner_id', user?.id)
         .order('created_at', { ascending: false });
@@ -113,7 +113,7 @@ export const SmartCreditManager = () => {
         .insert([{
           name: newCustomer.name.trim(),
           phone: newCustomer.phone.trim() || null,
-          email: newCustomer.email.trim() || null,
+          email: newCustomer.email.trim() || null,  
           address: newCustomer.address.trim() || null
         }])
         .select()
@@ -159,7 +159,7 @@ export const SmartCreditManager = () => {
         }])
         .select(`
           *,
-          customers (*)
+          customer:customers (*)
         `)
         .single();
 
@@ -191,7 +191,7 @@ export const SmartCreditManager = () => {
   };
 
   const filteredCredits = credits.filter(credit => {
-    const customer = credit.customers as Customer;
+    const customer = credit.customer as Customer;
     return (
       customer?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       customer?.phone?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -223,7 +223,7 @@ export const SmartCreditManager = () => {
             <Button className="bg-blue-600 hover:bg-blue-700 text-white">
               <Plus className="h-4 w-4 mr-2" />
               Ongeza Mkopo Mpya
-            </Button>
+            </Button>  
           </DialogTrigger>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
@@ -272,7 +272,7 @@ export const SmartCreditManager = () => {
               </div>
 
               <Button 
-                onClick={handleCreateCredit} 
+                onClick={handleCreateCredit}
                 className="w-full bg-blue-600 hover:bg-blue-700"
                 disabled={!newCredit.customer_id || !newCredit.credit_limit}
               >
@@ -327,7 +327,7 @@ export const SmartCreditManager = () => {
       {/* Credits List */}
       <div className="space-y-4">
         {filteredCredits.map((credit) => {
-          const customer = credit.customers as Customer;
+          const customer = credit.customer as Customer;
           return (
             <Card key={credit.id} className="hover:shadow-lg transition-all duration-300">
               <CardContent className="p-4">
