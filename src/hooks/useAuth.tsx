@@ -25,52 +25,56 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       console.log('Fetching profile for user:', userId);
       
-      // First try to get existing profile
       const { data: profile, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
         .maybeSingle();
       
-      if (error && error.code !== 'PGRST116') {
+      if (error) {
         console.error('Error fetching profile:', error);
+        // Create fallback profile
+        const fallbackProfile = {
+          id: userId,
+          email: user?.email || '',
+          full_name: user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User',
+          business_name: user?.user_metadata?.business_name || '',
+          role: 'owner'
+        };
+        setUserProfile(fallbackProfile);
         return;
       }
       
       if (!profile) {
-        console.log('Profile not found, creating new profile...');
-        
-        // Get user data from current session
-        const { data: { user: currentUser } } = await supabase.auth.getUser();
-        
-        if (currentUser) {
-          const { data: newProfile, error: createError } = await supabase
-            .from('profiles')
-            .insert([
-              {
-                id: userId,
-                email: currentUser.email || '',
-                full_name: currentUser.user_metadata?.full_name || currentUser.email?.split('@')[0] || '',
-                business_name: currentUser.user_metadata?.business_name || '',
-                role: 'owner'
-              }
-            ])
-            .select()
-            .single();
-          
-          if (createError) {
-            console.error('Error creating profile:', createError);
-            // Even if profile creation fails, set basic user info
-            setUserProfile({
+        console.log('No profile found, creating one...');
+        const { data: newProfile, error: createError } = await supabase
+          .from('profiles')
+          .insert([
+            {
               id: userId,
-              email: currentUser.email,
-              full_name: currentUser.user_metadata?.full_name || currentUser.email?.split('@')[0] || 'User',
+              email: user?.email || '',
+              full_name: user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User',
+              business_name: user?.user_metadata?.business_name || '',
               role: 'owner'
-            });
-          } else {
-            console.log('Profile created successfully:', newProfile);
-            setUserProfile(newProfile);
-          }
+            }
+          ])
+          .select()
+          .maybeSingle();
+        
+        if (createError) {
+          console.error('Error creating profile:', createError);
+          // Use fallback profile
+          const fallbackProfile = {
+            id: userId,
+            email: user?.email || '',
+            full_name: user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User',
+            business_name: user?.user_metadata?.business_name || '',
+            role: 'owner'
+          };
+          setUserProfile(fallbackProfile);
+        } else {
+          console.log('Profile created successfully:', newProfile);
+          setUserProfile(newProfile);
         }
       } else {
         console.log('Profile fetched successfully:', profile);
@@ -79,29 +83,34 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     } catch (error) {
       console.error('Error in fetchUserProfile:', error);
       // Set fallback profile data
-      if (user) {
-        setUserProfile({
-          id: userId,
-          email: user.email,
-          full_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
-          role: 'owner'
-        });
-      }
+      const fallbackProfile = {
+        id: userId,
+        email: user?.email || '',
+        full_name: user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User',
+        business_name: user?.user_metadata?.business_name || '',
+        role: 'owner'
+      };
+      setUserProfile(fallbackProfile);
     }
   };
 
   useEffect(() => {
-    // Set up auth state listener
+    let mounted = true;
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        if (!mounted) return;
+        
         console.log('Auth state changed:', event, session?.user?.email);
         setSession(session);
         setUser(session?.user ?? null);
         
-        if (session?.user && session.user.email_confirmed_at) {
-          // Fetch profile with a small delay to avoid race conditions
+        if (session?.user) {
+          // Use timeout to prevent deadlocks
           setTimeout(() => {
-            fetchUserProfile(session.user.id);
+            if (mounted) {
+              fetchUserProfile(session.user.id);
+            }
           }, 100);
         } else {
           setUserProfile(null);
@@ -112,18 +121,27 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     // Check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!mounted) return;
+      
       console.log('Initial session check:', session?.user?.email);
       setSession(session);
       setUser(session?.user ?? null);
-      if (session?.user && session.user.email_confirmed_at) {
+      
+      if (session?.user) {
         setTimeout(() => {
-          fetchUserProfile(session.user.id);
+          if (mounted) {
+            fetchUserProfile(session.user.id);
+          }
         }, 100);
+      } else {
+        setLoading(false);
       }
-      if (!session) setLoading(false);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signIn = async (email: string, password: string) => {
@@ -141,11 +159,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         throw new Error(error.message);
       }
     }
-    
-    if (data.user && !data.user.email_confirmed_at) {
-      await supabase.auth.signOut();
-      throw new Error('Barua pepe yako haijathibitishwa bado. Tafadhali kagua barua pepe yako na ubonyeze kiungo cha uthibitisho kabla ya kuingia.');
-    }
   };
 
   const signUp = async (email: string, password: string, fullName: string, businessName?: string) => {
@@ -157,7 +170,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           full_name: fullName,
           business_name: businessName,
         },
-        emailRedirectTo: `${window.location.origin}/verify-email`
+        emailRedirectTo: `${window.location.origin}/`
       },
     });
     

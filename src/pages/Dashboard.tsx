@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
-import { AIChatAssistant } from '@/components/AIChatAssistant';
 import { 
   TrendingUp, 
   Package, 
@@ -15,10 +14,6 @@ import {
   DollarSign, 
   AlertTriangle,
   Plus,
-  Brain,
-  MessageCircle,
-  CreditCard,
-  Store,
   Scan
 } from 'lucide-react';
 
@@ -33,7 +28,6 @@ export const Dashboard = () => {
   });
   const [lowStockProducts, setLowStockProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showAIChat, setShowAIChat] = useState(false);
 
   useEffect(() => {
     if (user && userProfile && !authLoading) {
@@ -43,8 +37,13 @@ export const Dashboard = () => {
   }, [user, userProfile, authLoading]);
 
   const fetchDashboardData = async () => {
+    if (!user?.id) {
+      setLoading(false);
+      return;
+    }
+
     try {
-      console.log('Fetching dashboard data for user:', user?.id);
+      console.log('Fetching dashboard data for user:', user.id);
       
       const today = new Date();
       const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
@@ -54,7 +53,7 @@ export const Dashboard = () => {
       const { data: todaysSales, error: salesError } = await supabase
         .from('sales')
         .select('total_amount')
-        .eq('owner_id', user?.id)
+        .eq('owner_id', user.id)
         .gte('created_at', startOfDay.toISOString())
         .lt('created_at', endOfDay.toISOString());
 
@@ -66,21 +65,21 @@ export const Dashboard = () => {
       const { data: products, error: productsError } = await supabase
         .from('products')
         .select('*')
-        .eq('owner_id', user?.id);
+        .eq('owner_id', user.id);
 
       if (productsError) {
         console.error('Error fetching products:', productsError);
-      } else {
-        console.log('Products fetched:', products?.length || 0);
       }
 
-      // Calculate metrics
-      const totalSales = todaysSales?.reduce((sum, sale) => sum + Number(sale.total_amount), 0) || 0;
+      // Calculate metrics with proper fallbacks
+      const totalSales = todaysSales?.reduce((sum, sale) => sum + Number(sale.total_amount || 0), 0) || 0;
       const totalProducts = products?.length || 0;
       const transactionCount = todaysSales?.length || 0;
       
       // Find low stock items
-      const lowStock = products?.filter(p => p.stock_quantity <= (p.low_stock_threshold || 10)) || [];
+      const lowStock = products?.filter(p => 
+        (p.stock_quantity || 0) <= (p.low_stock_threshold || 10)
+      ) || [];
 
       setMetrics({
         todaysSales: totalSales,
@@ -93,6 +92,13 @@ export const Dashboard = () => {
       console.log('Dashboard data loaded successfully');
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
+      // Set default values on error
+      setMetrics({
+        todaysSales: 0,
+        totalProducts: 0,
+        todaysTransactions: 0,
+        lowStockItems: 0
+      });
     } finally {
       setLoading(false);
     }
@@ -107,15 +113,12 @@ export const Dashboard = () => {
       .slice(0, 2);
   };
 
-  if (authLoading || loading) {
+  if (authLoading) {
     return (
       <div className="p-4 space-y-4">
         <div className="text-center py-8">
-          <p className="text-gray-600">Inapakia data yako...</p>
+          <p className="text-gray-600">Inapakia...</p>
         </div>
-        {[...Array(4)].map((_, i) => (
-          <div key={i} className="h-20 bg-gray-200 rounded-lg animate-pulse" />
-        ))}
       </div>
     );
   }
@@ -233,7 +236,7 @@ export const Dashboard = () => {
                   <p className="text-sm text-gray-600">{product.category || 'Bila kategoria'}</p>
                 </div>
                 <Badge variant="outline" className="text-orange-600 border-orange-200">
-                  {product.stock_quantity}
+                  {product.stock_quantity || 0}
                 </Badge>
               </div>
             ))}
@@ -269,22 +272,6 @@ export const Dashboard = () => {
           </Button>
         </CardContent>
       </Card>
-
-      {/* AI Chat Modal */}
-      {showAIChat && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="w-full max-w-md">
-            <AIChatAssistant />
-            <Button 
-              onClick={() => setShowAIChat(false)}
-              variant="outline"
-              className="w-full mt-4"
-            >
-              Funga
-            </Button>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

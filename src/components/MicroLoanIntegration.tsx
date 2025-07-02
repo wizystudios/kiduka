@@ -1,26 +1,23 @@
+
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
-import { Progress } from '@/components/ui/progress';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { 
   CreditCard, 
   TrendingUp, 
-  Building, 
   Package, 
   Wrench, 
   AlertTriangle,
   CheckCircle,
   Clock,
-  Calculator,
-  Users,
   Star,
-  DollarSign
+  Calculator
 } from 'lucide-react';
 
 interface LoanApplication {
@@ -58,28 +55,49 @@ export const MicroLoanIntegration = () => {
   });
   const [creditProfile, setCreditProfile] = useState<CreditProfile | null>(null);
   const [loading, setLoading] = useState(false);
+  const [dataLoading, setDataLoading] = useState(true);
   const [showApplication, setShowApplication] = useState(false);
 
   useEffect(() => {
-    fetchLoanApplications();
-    calculateCreditProfile();
+    if (user?.id) {
+      fetchLoanApplications();
+      calculateCreditProfile();
+    }
   }, [user]);
 
   const fetchLoanApplications = async () => {
-    if (!user) return;
+    if (!user?.id) {
+      setDataLoading(false);
+      return;
+    }
 
     try {
-      const storedApplications = localStorage.getItem(`loan_applications_${user.id}`);
-      if (storedApplications) {
-        setApplications(JSON.parse(storedApplications));
+      const { data, error } = await supabase
+        .from('loan_applications')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching loan applications:', error);
+        // Fallback to localStorage
+        const storedApplications = localStorage.getItem(`loan_applications_${user.id}`);
+        if (storedApplications) {
+          setApplications(JSON.parse(storedApplications));
+        }
+      } else {
+        setApplications(data || []);
       }
     } catch (error) {
       console.error('Error fetching loan applications:', error);
+      setApplications([]);
+    } finally {
+      setDataLoading(false);
     }
   };
 
   const calculateCreditProfile = async () => {
-    if (!user) return;
+    if (!user?.id) return;
 
     try {
       const { data: salesData } = await supabase
@@ -99,7 +117,7 @@ export const MicroLoanIntegration = () => {
         .eq('id', user.id)
         .single();
 
-      const monthlyRevenue = salesData?.reduce((sum, sale) => sum + Number(sale.total_amount), 0) / 3 || 0;
+      const monthlyRevenue = salesData?.reduce((sum, sale) => sum + Number(sale.total_amount || 0), 0) / 3 || 0;
       const businessAge = profile ? Math.floor((Date.now() - new Date(profile.created_at).getTime()) / (30 * 24 * 60 * 60 * 1000)) : 0;
       
       const avgCreditScore = creditData?.length ? 
@@ -126,6 +144,14 @@ export const MicroLoanIntegration = () => {
       });
     } catch (error) {
       console.error('Error calculating credit profile:', error);
+      // Set default profile
+      setCreditProfile({
+        creditScore: 50,
+        monthlyRevenue: 0,
+        businessAge: 0,
+        paymentHistory: 0,
+        riskLevel: 'high'
+      });
     }
   };
 
@@ -165,17 +191,36 @@ export const MicroLoanIntegration = () => {
         updated_at: new Date().toISOString()
       };
 
-      const autoDecision = await processLoanDecision(newApplication);
-      
-      const existingApplications = JSON.parse(localStorage.getItem(`loan_applications_${user.id}`) || '[]');
-      existingApplications.unshift(newApplication);
-      localStorage.setItem(`loan_applications_${user.id}`, JSON.stringify(existingApplications));
-      
+      // Try to save to database first
+      try {
+        const { error } = await supabase
+          .from('loan_applications')
+          .insert([{
+            user_id: user.id,
+            loan_type: newApplication.loan_type,
+            requested_amount: newApplication.requested_amount,
+            application_data: newApplication.application_data,
+            status: newApplication.status
+          }]);
+
+        if (error) {
+          console.error('Database insert failed:', error);
+          // Fall back to localStorage
+          const existingApplications = JSON.parse(localStorage.getItem(`loan_applications_${user.id}`) || '[]');
+          existingApplications.unshift(newApplication);
+          localStorage.setItem(`loan_applications_${user.id}`, JSON.stringify(existingApplications));
+        }
+      } catch (dbError) {
+        console.error('Database error:', dbError);
+        // Fall back to localStorage
+        const existingApplications = JSON.parse(localStorage.getItem(`loan_applications_${user.id}`) || '[]');
+        existingApplications.unshift(newApplication);
+        localStorage.setItem(`loan_applications_${user.id}`, JSON.stringify(existingApplications));
+      }
+
       toast({
         title: 'Ombi Limewasilishwa',
-        description: autoDecision.approved ? 
-          `Mkopo wa TZS ${autoDecision.approvedAmount?.toLocaleString()} umeidhinishwa` :
-          'Ombi litakaguliwa',
+        description: 'Ombi lako la mkopo limewasilishwa kwa mafanikio',
       });
 
       setCurrentApplication({
@@ -283,6 +328,16 @@ export const MicroLoanIntegration = () => {
       default: return 'bg-gray-100 text-gray-800';
     }
   };
+
+  if (dataLoading) {
+    return (
+      <div className="p-3 space-y-4">
+        <div className="text-center py-8">
+          <p className="text-gray-600">Inapakia data ya mikopo...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-3 space-y-4">

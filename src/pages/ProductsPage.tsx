@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -13,11 +13,11 @@ import { toast } from 'sonner';
 interface Product {
   id: string;
   name: string;
-  barcode: string;
+  barcode?: string;
   price: number;
   stock_quantity: number;
-  category: string;
-  description: string;
+  category?: string;
+  description?: string;
   low_stock_threshold: number;
 }
 
@@ -35,17 +35,23 @@ export const ProductsPage = () => {
   }, [user, userProfile]);
 
   const fetchProducts = async () => {
+    if (!user?.id) {
+      setLoading(false);
+      return;
+    }
+
     try {
-      console.log('Fetching products for user:', user?.id);
+      console.log('Fetching products for user:', user.id);
       const { data, error } = await supabase
         .from('products')
         .select('*')
-        .eq('owner_id', user?.id)
+        .eq('owner_id', user.id)
         .order('created_at', { ascending: false });
 
       if (error) {
         console.error('Error fetching products:', error);
         toast.error('Imeshindwa kupakia bidhaa');
+        setProducts([]); // Set empty array on error
       } else {
         console.log('Products loaded:', data?.length || 0);
         setProducts(data || []);
@@ -53,6 +59,7 @@ export const ProductsPage = () => {
     } catch (error) {
       console.error('Unexpected error fetching products:', error);
       toast.error('Kosa la kutarajwa');
+      setProducts([]); // Set empty array on error
     } finally {
       setLoading(false);
     }
@@ -78,7 +85,7 @@ export const ProductsPage = () => {
   };
 
   const filteredProducts = products.filter(product =>
-    product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    product.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     product.barcode?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     product.category?.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -95,9 +102,6 @@ export const ProductsPage = () => {
         <div className="text-center py-8">
           <p className="text-gray-600">Inapakia bidhaa...</p>
         </div>
-        {[...Array(5)].map((_, i) => (
-          <div key={i} className="h-32 bg-gray-200 rounded-lg animate-pulse" />
-        ))}
       </div>
     );
   }
@@ -136,7 +140,10 @@ export const ProductsPage = () => {
       {/* Products List */}
       <div className="space-y-4">
         {filteredProducts.map((product) => {
-          const stockStatus = getStockStatus(product.stock_quantity, product.low_stock_threshold);
+          const stockStatus = getStockStatus(
+            product.stock_quantity || 0, 
+            product.low_stock_threshold || 10
+          );
           return (
             <Card key={product.id} className="hover:shadow-lg transition-all duration-300">
               <CardContent className="p-4">
@@ -155,10 +162,14 @@ export const ProductsPage = () => {
                       <p className="text-sm text-gray-500 mb-2">Kategoria: {product.category}</p>
                     )}
                     <div className="flex justify-between items-center">
-                      <span className="text-2xl font-bold text-green-600">TZS {product.price.toLocaleString()}</span>
+                      <span className="text-2xl font-bold text-green-600">
+                        TZS {(product.price || 0).toLocaleString()}
+                      </span>
                       <div className="flex items-center space-x-2">
                         <Package className="h-4 w-4 text-gray-500" />
-                        <span className="text-sm text-gray-600">Stock: {product.stock_quantity}</span>
+                        <span className="text-sm text-gray-600">
+                          Stock: {product.stock_quantity || 0}
+                        </span>
                       </div>
                     </div>
                   </div>
