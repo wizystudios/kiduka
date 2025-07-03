@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -26,6 +25,7 @@ export const ProductsPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [fetchComplete, setFetchComplete] = useState(false);
   const navigate = useNavigate();
   const { user, userProfile } = useAuth();
 
@@ -33,6 +33,7 @@ export const ProductsPage = () => {
     if (!user?.id) {
       console.log('No user ID available');
       setLoading(false);
+      setFetchComplete(true);
       return;
     }
 
@@ -60,28 +61,22 @@ export const ProductsPage = () => {
     } finally {
       setLoading(false);
       setRefreshing(false);
+      setFetchComplete(true);
     }
   };
 
   useEffect(() => {
-    let mounted = true;
-    
     if (user?.id && userProfile) {
       console.log('Starting product fetch...');
-      fetchProducts().then(() => {
-        if (mounted) {
-          console.log('Product fetch completed');
-        }
-      });
-    } else if (!user) {
+      fetchProducts();
+    } else if (user === null) {
+      // User is definitely not logged in
       console.log('No user found, stopping loading');
       setLoading(false);
+      setFetchComplete(true);
     }
-
-    return () => {
-      mounted = false;
-    };
-  }, [user?.id, userProfile?.id]); // Simplified dependencies
+    // If user is undefined, keep loading (still checking auth state)
+  }, [user?.id, userProfile?.id]);
 
   const handleRefresh = () => {
     setRefreshing(true);
@@ -126,25 +121,15 @@ export const ProductsPage = () => {
     return { color: 'bg-green-100 text-green-800', label: 'Ipo Stock' };
   };
 
-  // Show loading only for initial load
-  if (loading && !user) {
+  // Show loading only while checking authentication or fetching products
+  if (loading && !fetchComplete) {
     return (
       <div className="p-4 space-y-4">
         <div className="text-center py-8">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Inapakia...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Show loading for products only if we have a user but products are still loading
-  if (loading && user && products.length === 0) {
-    return (
-      <div className="p-4 space-y-4">
-        <div className="text-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Inapakia bidhaa...</p>
+          <p className="text-gray-600">
+            {user ? 'Inapakia bidhaa...' : 'Inapakia...'}
+          </p>
         </div>
       </div>
     );
@@ -267,7 +252,7 @@ export const ProductsPage = () => {
       </div>
 
       {/* Empty State */}
-      {filteredProducts.length === 0 && !loading && (
+      {filteredProducts.length === 0 && fetchComplete && (
         <Card className="text-center py-12">
           <CardContent>
             <Package className="h-12 w-12 text-gray-400 mx-auto mb-4" />
