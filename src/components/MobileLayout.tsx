@@ -69,7 +69,7 @@ export const MobileLayout = ({ children }: MobileLayoutProps) => {
     { id: 'business-intelligence', label: 'Takwimu za AI', icon: TrendingUp, href: '/business-intelligence' },
     { id: 'reports', label: 'Reports', icon: BarChart3, href: '/reports' },
     ...(userProfile?.role === 'owner' ? [
-      { id: 'users', label: 'Users', icon: UserCheck, href: '/users' }
+      { id: 'users', label: 'Watumiaji', icon: UserCheck, href: '/users' } // Fixed: Ensure users item is shown
     ] : []),
     ...(userProfile?.role === 'super_admin' ? [
       { id: 'super-admin', label: 'Super Admin', icon: Settings, href: '/super-admin' }
@@ -203,6 +203,14 @@ export const MobileLayout = ({ children }: MobileLayoutProps) => {
                 Scanner
               </DropdownMenuItem>
               
+              {/* Users menu for owners */}
+              {userProfile?.role === 'owner' && (
+                <DropdownMenuItem onClick={() => navigate('/users')}>
+                  <UserCheck className="mr-2 h-4 w-4" />
+                  Watumiaji
+                </DropdownMenuItem>
+              )}
+              
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleSignOut}>
                 <LogOut className="mr-2 h-4 w-4" />
@@ -219,7 +227,7 @@ export const MobileLayout = ({ children }: MobileLayoutProps) => {
           fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200 transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0
           ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
         `}>
-          <div className="flex flex-col h-full pt-16 lg:pt-0 overflow-y-auto">
+          <div className="flex flex-col h-full pt-16 lg:pt-0">
             {/* User Profile in Sidebar */}
             <div className="p-4 border-b border-gray-200 flex-shrink-0">
               <div className="flex items-center space-x-3">
@@ -240,24 +248,27 @@ export const MobileLayout = ({ children }: MobileLayoutProps) => {
               </div>
             </div>
 
-            <nav className="flex-1 px-4 py-4 space-y-1 overflow-y-auto">
-              {navigationItems.map((item) => {
-                const Icon = item.icon;
-                return (
-                  <Button
-                    key={item.id}
-                    variant={isActive(item.href) ? "default" : "ghost"}
-                    className={`w-full justify-start text-sm h-10 ${
-                      isActive(item.href) ? 'bg-blue-600 text-white' : 'text-gray-700 hover:bg-gray-100'
-                    }`}
-                    onClick={() => handleNavigation(item.href)}
-                  >
-                    <Icon className="h-4 w-4 mr-3 flex-shrink-0" />
-                    <span className="truncate">{item.label}</span>
-                  </Button>
-                );
-              })}
-            </nav>
+            {/* Navigation - with proper scrolling */}
+            <div className="flex-1 overflow-y-auto">
+              <nav className="px-4 py-4 space-y-1">
+                {navigationItems.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <Button
+                      key={item.id}
+                      variant={isActive(item.href) ? "default" : "ghost"}
+                      className={`w-full justify-start text-sm h-10 ${
+                        isActive(item.href) ? 'bg-blue-600 text-white' : 'text-gray-700 hover:bg-gray-100'
+                      }`}
+                      onClick={() => handleNavigation(item.href)}
+                    >
+                      <Icon className="h-4 w-4 mr-3 flex-shrink-0" />
+                      <span className="truncate">{item.label}</span>
+                    </Button>
+                  );
+                })}
+              </nav>
+            </div>
             
             {/* Sync Status Footer */}
             {!syncStatus.isOnline && (
@@ -278,6 +289,7 @@ export const MobileLayout = ({ children }: MobileLayoutProps) => {
               </div>
             )}
             
+            {/* Sign Out Button */}
             <div className="p-4 border-t flex-shrink-0">
               <Button 
                 variant="outline" 

@@ -54,7 +54,7 @@ export const ScannerPage = () => {
     businessName: string;
   } | null>(null);
   const { toast } = useToast();
-  const { userProfile } = useAuth();
+  const { user, userProfile } = useAuth();
 
   const handleSearchProduct = async (query: string) => {
     if (!query.trim()) {
@@ -62,8 +62,18 @@ export const ScannerPage = () => {
       return;
     }
     
+    if (!user?.id) {
+      toast({
+        title: 'Error',
+        description: 'User not authenticated',
+        variant: 'destructive'
+      });
+      return;
+    }
+    
     setLoading(true);
     try {
+      console.log('Searching for products with user ID:', user.id);
       let searchQuery;
       
       if (searchType === 'barcode') {
@@ -71,19 +81,24 @@ export const ScannerPage = () => {
           .from('products')
           .select('*')
           .eq('barcode', query.trim())
-          .eq('owner_id', userProfile?.id);
+          .eq('owner_id', user.id); // Fixed: using user.id instead of userProfile?.id
       } else {
         searchQuery = supabase
           .from('products')
           .select('*')
           .ilike('name', `%${query.trim()}%`)
-          .eq('owner_id', userProfile?.id)
+          .eq('owner_id', user.id) // Fixed: using user.id instead of userProfile?.id
           .limit(10);
       }
 
       const { data, error } = await searchQuery;
 
-      if (error) throw error;
+      if (error) {
+        console.error('Search error:', error);
+        throw error;
+      }
+
+      console.log('Search results:', data);
 
       if (searchType === 'barcode') {
         if (data && data.length > 0) {
@@ -122,7 +137,7 @@ export const ScannerPage = () => {
       console.error('Error searching product:', error);
       toast({
         title: 'Error',
-        description: 'Failed to search product',
+        description: 'Failed to search product. Please try again.',
         variant: 'destructive'
       });
     } finally {
@@ -212,8 +227,8 @@ export const ScannerPage = () => {
       const { data: sale, error: saleError } = await supabase
         .from('sales')
         .insert({
-          owner_id: userProfile?.id,
-          cashier_id: userProfile?.id,
+          owner_id: user?.id, // Fixed: using user.id
+          cashier_id: user?.id, // Fixed: using user.id
           total_amount: getTotalAmount(),
           payment_method: paymentData.method
         })
