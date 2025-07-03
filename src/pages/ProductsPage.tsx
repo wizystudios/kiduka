@@ -48,6 +48,7 @@ export const ProductsPage = () => {
       if (error) {
         console.error('Error fetching products:', error);
         toast.error('Imeshindwa kupakia bidhaa');
+        setProducts([]);
       } else {
         console.log('Products loaded successfully:', data?.length || 0);
         setProducts(data || []);
@@ -55,6 +56,7 @@ export const ProductsPage = () => {
     } catch (error) {
       console.error('Unexpected error fetching products:', error);
       toast.error('Kosa la kutarajwa');
+      setProducts([]);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -64,12 +66,12 @@ export const ProductsPage = () => {
   useEffect(() => {
     if (user?.id) {
       console.log('User available, fetching products...');
+      setLoading(true);
       fetchProducts();
     } else if (user === null) {
       console.log('No user logged in');
       setLoading(false);
     }
-    // Only depend on user?.id, not userProfile
   }, [user?.id]);
 
   const handleRefresh = () => {
@@ -117,8 +119,8 @@ export const ProductsPage = () => {
 
   if (loading) {
     return (
-      <div className="p-4 space-y-4">
-        <div className="text-center py-8">
+      <div className="flex items-center justify-center min-h-[50vh]">
+        <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
           <p className="text-gray-600">Inapakia bidhaa...</p>
         </div>
@@ -127,7 +129,7 @@ export const ProductsPage = () => {
   }
 
   return (
-    <div className="p-4 space-y-6">
+    <div className="p-4 space-y-6 pb-20">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
@@ -142,7 +144,10 @@ export const ProductsPage = () => {
         
         <div className="flex gap-2">
           <Button 
-            onClick={handleRefresh}
+            onClick={() => {
+              setRefreshing(true);
+              fetchProducts();
+            }}
             variant="outline"
             disabled={refreshing}
             className="text-blue-600 border-blue-600 hover:bg-blue-50"
