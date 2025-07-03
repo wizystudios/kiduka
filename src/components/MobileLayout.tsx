@@ -68,8 +68,9 @@ export const MobileLayout = ({ children }: MobileLayoutProps) => {
     { id: 'ai-advisor', label: 'Mshauri wa AI', icon: Brain, href: '/ai-advisor' },
     { id: 'business-intelligence', label: 'Takwimu za AI', icon: TrendingUp, href: '/business-intelligence' },
     { id: 'reports', label: 'Reports', icon: BarChart3, href: '/reports' },
+    // Add Users menu item for owners
     ...(userProfile?.role === 'owner' ? [
-      { id: 'users', label: 'Watumiaji', icon: UserCheck, href: '/users' } // Fixed: Ensure users item is shown
+      { id: 'users', label: 'Watumiaji', icon: UserCheck, href: '/users' }
     ] : []),
     ...(userProfile?.role === 'super_admin' ? [
       { id: 'super-admin', label: 'Super Admin', icon: Settings, href: '/super-admin' }
@@ -203,7 +204,7 @@ export const MobileLayout = ({ children }: MobileLayoutProps) => {
                 Scanner
               </DropdownMenuItem>
               
-              {/* Users menu for owners */}
+              {/* Users menu for owners - This was missing! */}
               {userProfile?.role === 'owner' && (
                 <DropdownMenuItem onClick={() => navigate('/users')}>
                   <UserCheck className="mr-2 h-4 w-4" />
