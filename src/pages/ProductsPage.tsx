@@ -82,6 +82,11 @@ export const ProductsPage = () => {
     fetchProducts();
   };
 
+  const handleAddProduct = () => {
+    console.log('Navigating to add product page...');
+    navigate('/products/add');
+  };
+
   const handleDeleteProduct = async (id: string, productName: string) => {
     if (!confirm(`Je, una uhakika unataka kufuta bidhaa "${productName}"? Hii haitaweza kubadilishwa.`)) return;
 
@@ -124,24 +129,27 @@ export const ProductsPage = () => {
     return (
       <div className="flex items-center justify-center min-h-[40vh]">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto mb-3"></div>
-          <p className="text-sm text-gray-600">Inapakia bidhaa...</p>
+          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto mb-2"></div>
+          <p className="text-xs text-gray-600">Inapakia bidhaa...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="p-3 space-y-3 pb-20">
+    <div className="p-2 space-y-2 pb-16">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-        <div>
-          <h2 className="text-lg font-bold text-gray-900">Bidhaa</h2>
-          <div className="flex items-center gap-2">
-            <p className="text-sm text-gray-600">{products.length} bidhaa katika hifadhi</p>
-            {refreshing && (
-              <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-600"></div>
-            )}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+        <div className="flex items-center gap-2">
+          <Package className="h-5 w-5 text-blue-600" />
+          <div>
+            <h2 className="text-base font-bold text-gray-900">Bidhaa</h2>
+            <div className="flex items-center gap-2">
+              <p className="text-xs text-gray-600">{products.length} bidhaa</p>
+              {refreshing && (
+                <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-600"></div>
+              )}
+            </div>
           </div>
         </div>
         
@@ -150,97 +158,92 @@ export const ProductsPage = () => {
             onClick={handleRefresh}
             variant="outline"
             disabled={refreshing}
-            className="text-blue-600 border-blue-600 hover:bg-blue-50 text-sm px-3 py-2 h-8 flex-1 sm:flex-none"
+            className="text-blue-600 border-blue-600 hover:bg-blue-50 text-xs px-2 py-1 h-7 flex-1 sm:flex-none"
           >
             Sasisha
           </Button>
-          
+
           <Button 
-            onClick={() => {
-              console.log('Add product button clicked');
-              navigate('/products/add');
-            }}
-            className="bg-blue-600 hover:bg-blue-700 text-white text-sm px-3 py-2 h-8 flex-1 sm:flex-none font-semibold"
+            onClick={handleAddProduct}
+            className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-2 py-1 h-7 flex-1 sm:flex-none font-semibold shadow-lg"
           >
-            <Plus className="h-4 w-4 mr-1" />
-            Ongeza Bidhaa
+            <Plus className="h-3 w-3 mr-1" />
+            Ongeza
           </Button>
         </div>
       </div>
 
       {/* Search */}
       <div className="relative">
-        <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+        <Search className="absolute left-2 top-2 h-3 w-3 text-gray-400" />
         <Input
-          placeholder="Tafuta kwa jina, barcode, au kategoria..."
+          placeholder="Tafuta bidhaa..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="pl-10 text-sm h-10"
+          className="pl-7 text-xs h-8"
         />
       </div>
 
       {/* Products List */}
-      <div className="space-y-3">
+      <div className="space-y-2">
         {filteredProducts.map((product) => {
           const stockStatus = getStockStatus(
             product.stock_quantity || 0, 
             product.low_stock_threshold || 10
           );
           return (
-            <Card key={product.id} className="hover:shadow-lg transition-all duration-300">
-              <CardContent className="p-3">
+            <Card key={product.id} className="hover:shadow-md transition-all duration-200 border-l-4 border-l-blue-500">
+              <CardContent className="p-2">
                 <div className="flex justify-between items-start">
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-2">
-                      <h3 className="font-semibold text-sm truncate">{product.name}</h3>
-                      <Badge className={`${stockStatus.color} text-xs px-2 py-0.5 flex-shrink-0`}>
+                    <div className="flex items-center gap-2 mb-1">
+                      <h3 className="font-semibold text-xs truncate">{product.name}</h3>
+                      <Badge className={`${stockStatus.color} text-xs px-1 py-0.5 flex-shrink-0`}>
                         {stockStatus.label}
                       </Badge>
                     </div>
                     {product.barcode && (
-                      <p className="text-sm text-gray-500 mb-1">Barcode: {product.barcode}</p>
+                      <p className="text-xs text-gray-500 mb-1">#{product.barcode}</p>
                     )}
                     {product.category && (
-                      <p className="text-sm text-gray-500 mb-1">Kategoria: {product.category}</p>
+                      <p className="text-xs text-gray-500 mb-1">{product.category}</p>
                     )}
                     {product.description && (
-                      <p className="text-sm text-gray-600 mb-2 truncate">{product.description}</p>
+                      <p className="text-xs text-gray-600 mb-1 truncate">{product.description}</p>
                     )}
                     <div className="flex justify-between items-center">
-                      <span className="text-base font-bold text-green-600">
+                      <span className="text-sm font-bold text-green-600">
                         TZS {(product.price || 0).toLocaleString()}
                       </span>
                       <div className="flex items-center space-x-1">
-                        <Package className="h-4 w-4 text-gray-500" />
-                        <span className="text-sm text-gray-600">
-                          Stock: {product.stock_quantity || 0}
+                        <Package className="h-3 w-3 text-gray-500" />
+                        <span className="text-xs text-gray-600">
+                          {product.stock_quantity || 0}
                         </span>
                       </div>
                     </div>
                   </div>
                   
-                  {userProfile?.role === 'owner' && (
-                    <div className="flex space-x-1 ml-3 flex-shrink-0">
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        onClick={() => navigate(`/products/edit/${product.id}`)}
-                        className="h-8 w-8 p-0 hover:bg-blue-50"
-                        title="Hariri bidhaa"
-                      >
-                        <Edit className="h-4 w-4 text-blue-600" />
-                      </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        onClick={() => handleDeleteProduct(product.id, product.name)}
-                        className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
-                        title="Futa bidhaa"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  )}
+                  <div className="flex space-x-1 ml-2 flex-shrink-0">
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => navigate(`/products/edit/${product.id}`)}
+                      className="h-6 w-6 p-0 hover:bg-blue-50"
+                      title="Hariri"
+                    >
+                      <Edit className="h-3 w-3 text-blue-600" />
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => handleDeleteProduct(product.id, product.name)}
+                      className="h-6 w-6 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                      title="Futa"
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -250,24 +253,24 @@ export const ProductsPage = () => {
 
       {/* Empty State */}
       {filteredProducts.length === 0 && !loading && (
-        <Card className="text-center py-8">
+        <Card className="text-center py-6 border-2 border-dashed border-gray-200">
           <CardContent>
-            <Package className="h-12 w-12 text-gray-400 mx-auto mb-3" />
+            <Package className="h-8 w-8 text-gray-400 mx-auto mb-2" />
             <h3 className="text-sm font-semibold text-gray-900 mb-2">
               {searchTerm ? 'Hakuna bidhaa zilizopatikana' : 'Hakuna bidhaa bado'}
             </h3>
-            <p className="text-sm text-gray-600 mb-4">
+            <p className="text-xs text-gray-600 mb-3">
               {searchTerm 
-                ? `Hakuna bidhaa zinazofanana na "${searchTerm}". Jaribu maneno mengine ya utafutaji.`
+                ? `Hakuna bidhaa zinazofanana na "${searchTerm}"`
                 : "Anza kwa kuongeza bidhaa yako ya kwanza"
               }
             </p>
             {!searchTerm && (
               <Button 
-                onClick={() => navigate('/products/add')} 
-                className="bg-blue-600 hover:bg-blue-700 text-white text-sm px-4 py-2"
+                onClick={handleAddProduct} 
+                className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1 shadow-lg"
               >
-                <Plus className="h-4 w-4 mr-2" />
+                <Plus className="h-3 w-3 mr-1" />
                 Ongeza Bidhaa
               </Button>
             )}

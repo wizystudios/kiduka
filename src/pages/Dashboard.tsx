@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -13,7 +14,9 @@ import {
   DollarSign, 
   AlertTriangle,
   Plus,
-  Scan
+  Scan,
+  BarChart3,
+  Users
 } from 'lucide-react';
 
 export const Dashboard = () => {
@@ -87,7 +90,7 @@ export const Dashboard = () => {
         lowStockItems: lowStock.length
       });
 
-      setLowStockProducts(lowStock.slice(0, 5));
+      setLowStockProducts(lowStock.slice(0, 3));
       console.log('Dashboard data loaded successfully');
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
@@ -116,8 +119,8 @@ export const Dashboard = () => {
     return (
       <div className="flex items-center justify-center min-h-[40vh]">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto mb-3"></div>
-          <p className="text-sm text-gray-600">Inapakia...</p>
+          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto mb-2"></div>
+          <p className="text-xs text-gray-600">Inapakia...</p>
         </div>
       </div>
     );
@@ -133,61 +136,108 @@ export const Dashboard = () => {
 
   const dashboardMetrics = [
     {
-      title: "Mauzo ya Leo",
-      value: `TZS ${metrics.todaysSales.toLocaleString()}`,
+      title: "Mauzo Leo",
+      value: `${(metrics.todaysSales / 1000).toFixed(0)}K`,
+      fullValue: `TZS ${metrics.todaysSales.toLocaleString()}`,
       icon: DollarSign,
       color: "text-green-600",
-      bgColor: "bg-green-50"
+      bgColor: "bg-green-50",
+      borderColor: "border-l-green-500"
     },
     {
       title: "Bidhaa",
       value: metrics.totalProducts.toString(),
+      fullValue: `${metrics.totalProducts} bidhaa`,
       icon: Package,
       color: "text-purple-600",
-      bgColor: "bg-purple-50"
+      bgColor: "bg-purple-50",
+      borderColor: "border-l-purple-500"
     },
     {
       title: "Miamala",
       value: metrics.todaysTransactions.toString(),
+      fullValue: `${metrics.todaysTransactions} miamala leo`,
       icon: ShoppingCart,
       color: "text-blue-600",
-      bgColor: "bg-blue-50"
+      bgColor: "bg-blue-50",
+      borderColor: "border-l-blue-500"
     },
     {
       title: "Stock Ndogo",
       value: metrics.lowStockItems.toString(),
+      fullValue: `${metrics.lowStockItems} bidhaa`,
       icon: AlertTriangle,
       color: "text-orange-600",
-      bgColor: "bg-orange-50"
+      bgColor: "bg-orange-50",
+      borderColor: "border-l-orange-500"
+    }
+  ];
+
+  const quickActions = [
+    {
+      title: "Bidhaa",
+      description: "Ongeza bidhaa mpya",
+      icon: Plus,
+      color: "text-blue-600",
+      bgColor: "bg-blue-50",
+      borderColor: "border-blue-200",
+      action: () => navigate('/products/add')
+    },
+    {
+      title: "Scan",
+      description: "Muuzo haraka",
+      icon: Scan,
+      color: "text-green-600",
+      bgColor: "bg-green-50", 
+      borderColor: "border-green-200",
+      action: () => navigate('/scanner')
+    },
+    {
+      title: "Ripoti",
+      description: "Ona takwimu",
+      icon: BarChart3,
+      color: "text-purple-600",
+      bgColor: "bg-purple-50",
+      borderColor: "border-purple-200", 
+      action: () => navigate('/reports')
+    },
+    {
+      title: "Wateja",
+      description: "Simamia wateja",
+      icon: Users,
+      color: "text-indigo-600",
+      bgColor: "bg-indigo-50",
+      borderColor: "border-indigo-200",
+      action: () => navigate('/customers')
     }
   ];
 
   return (
-    <div className="p-3 space-y-4 pb-20">
+    <div className="p-2 space-y-3 pb-16">
       {/* Welcome Message with Profile */}
-      <Card className="bg-gradient-to-r from-emerald-50 via-blue-50 to-purple-50 border-purple-200">
-        <CardContent className="p-3">
-          <div className="flex items-center space-x-3">
-            <Avatar className="h-8 w-8 flex-shrink-0">
+      <Card className="bg-gradient-to-r from-emerald-50 via-blue-50 to-purple-50 border-purple-200 shadow-sm">
+        <CardContent className="p-2">
+          <div className="flex items-center space-x-2">
+            <Avatar className="h-7 w-7 flex-shrink-0 shadow-lg">
               <AvatarImage src={userProfile?.avatar_url} />
               <AvatarFallback className="bg-gradient-to-br from-emerald-500 via-blue-500 to-purple-600 text-white text-xs">
                 {getInitials(displayName)}
               </AvatarFallback>
             </Avatar>
             <div className="flex-1 min-w-0">
-              <h2 className="text-base font-bold text-gray-900 truncate">
-                Karibu, {displayName.split(' ')[0]}!
+              <h2 className="text-sm font-bold text-gray-900 truncate">
+                Karibu, {displayName.split(' ')[0]}! 👋
               </h2>
               <div className="flex flex-wrap items-center gap-1 mt-0.5">
-                <Badge variant="outline" className="text-purple-600 border-purple-200 text-xs px-1.5 py-0.5">
-                  {userRole === 'owner' ? 'Mmiliki' : 
-                   userRole === 'assistant' ? 'Msaidizi' : 
-                   userRole === 'super_admin' ? 'Msimamizi Mkuu' :
-                   'Mtumiaji'}
+                <Badge variant="outline" className="text-purple-600 border-purple-200 text-xs px-1 py-0">
+                  {userRole === 'owner' ? '👑 Mmiliki' : 
+                   userRole === 'assistant' ? '🤝 Msaidizi' : 
+                   userRole === 'super_admin' ? '⚡ Msimamizi' :
+                   '👤 Mtumiaji'}
                 </Badge>
                 {businessName && (
-                  <Badge variant="outline" className="text-blue-600 border-blue-200 text-xs px-1.5 py-0.5">
-                    {businessName}
+                  <Badge variant="outline" className="text-blue-600 border-blue-200 text-xs px-1 py-0">
+                    🏪 {businessName}
                   </Badge>
                 )}
               </div>
@@ -199,18 +249,18 @@ export const Dashboard = () => {
       {/* Metrics Grid */}
       <div className="grid grid-cols-2 gap-2">
         {dashboardMetrics.map((metric, index) => (
-          <Card key={index} className="border-0 shadow-sm">
-            <CardContent className="p-2.5">
+          <Card key={index} className={`border-0 shadow-sm border-l-4 ${metric.borderColor} hover:shadow-md transition-shadow`}>
+            <CardContent className="p-2">
               <div className="flex items-center justify-between">
                 <div className="flex-1 min-w-0">
                   <p className="text-xs text-gray-600 mb-0.5 truncate">
                     {metric.title}
                   </p>
-                  <p className="text-sm font-bold text-gray-900 truncate">
+                  <p className="text-sm font-bold text-gray-900 truncate" title={metric.fullValue}>
                     {metric.value}
                   </p>
                 </div>
-                <div className={`p-1.5 rounded-full ${metric.bgColor} flex-shrink-0`}>
+                <div className={`p-1.5 rounded-full ${metric.bgColor} flex-shrink-0 shadow-sm`}>
                   <metric.icon className={`h-3 w-3 ${metric.color}`} />
                 </div>
               </div>
@@ -221,21 +271,21 @@ export const Dashboard = () => {
 
       {/* Low Stock Alert */}
       {lowStockProducts.length > 0 && (
-        <Card className="border-orange-200">
-          <CardHeader className="pb-2">
-            <CardTitle className="flex items-center text-orange-700 text-sm">
+        <Card className="border-orange-200 shadow-sm">
+          <CardHeader className="pb-1">
+            <CardTitle className="flex items-center text-orange-700 text-xs">
               <AlertTriangle className="h-3 w-3 mr-1 flex-shrink-0" />
-              Stock Ndogo
+              ⚠️ Stock Ndogo ({lowStockProducts.length})
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-1.5">
+          <CardContent className="space-y-1">
             {lowStockProducts.map((product) => (
-              <div key={product.id} className="flex justify-between items-center p-2 bg-orange-50 rounded-lg">
+              <div key={product.id} className="flex justify-between items-center p-1.5 bg-orange-50 rounded-md border-l-2 border-l-orange-400">
                 <div className="flex-1 min-w-0">
-                  <p className="font-medium text-gray-900 text-xs truncate">{product.name}</p>
+                  <p className="font-medium text-gray-900 text-xs truncate">📦 {product.name}</p>
                   <p className="text-xs text-gray-600 truncate">{product.category || 'Bila kategoria'}</p>
                 </div>
-                <Badge variant="outline" className="text-orange-600 border-orange-200 text-xs px-1.5 py-0.5 flex-shrink-0">
+                <Badge variant="outline" className="text-orange-600 border-orange-200 text-xs px-1 py-0 flex-shrink-0">
                   {product.stock_quantity || 0}
                 </Badge>
               </div>
@@ -245,31 +295,27 @@ export const Dashboard = () => {
       )}
 
       {/* Quick Actions */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm">Haraka</CardTitle>
+      <Card className="shadow-sm">
+        <CardHeader className="pb-1">
+          <CardTitle className="text-xs flex items-center">
+            ⚡ Vitendo vya Haraka
+          </CardTitle>
         </CardHeader>
         <CardContent className="grid grid-cols-2 gap-2">
-          <Button 
-            onClick={() => navigate('/products/add')}
-            className="p-2 h-auto bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200"
-            variant="outline"
-          >
-            <div className="text-center">
-              <Plus className="h-4 w-4 mx-auto mb-1" />
-              <p className="text-xs font-medium">Bidhaa</p>
-            </div>
-          </Button>
-          <Button 
-            onClick={() => navigate('/scanner')}
-            className="p-2 h-auto bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200"
-            variant="outline"
-          >
-            <div className="text-center">
-              <Scan className="h-4 w-4 mx-auto mb-1" />
-              <p className="text-xs font-medium">Muuzo</p>
-            </div>
-          </Button>
+          {quickActions.map((action, index) => (
+            <Button 
+              key={index}
+              onClick={action.action}
+              className={`p-2 h-auto ${action.bgColor} hover:opacity-80 ${action.color} border ${action.borderColor} shadow-sm`}
+              variant="outline"
+            >
+              <div className="text-center">
+                <action.icon className="h-4 w-4 mx-auto mb-1" />
+                <p className="text-xs font-medium">{action.title}</p>
+                <p className="text-xs opacity-75 truncate">{action.description}</p>
+              </div>
+            </Button>
+          ))}
         </CardContent>
       </Card>
     </div>

@@ -1,3 +1,4 @@
+
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from '@/hooks/useAuth';
@@ -11,6 +12,7 @@ import { AuthPage } from '@/pages/AuthPage';
 import { EmailVerificationStatus } from '@/components/EmailVerificationStatus';
 import { Dashboard } from '@/pages/Dashboard';
 import { ProductsPage } from '@/pages/ProductsPage';
+import { AddProductPage } from '@/pages/AddProductPage';
 import { ScannerPage } from '@/pages/ScannerPage';
 import { SalesPage } from '@/pages/SalesPage';
 import { CustomersPage } from '@/pages/CustomersPage';
@@ -57,10 +59,18 @@ function App() {
                 </ProtectedRoute>
               } />
               
-              <Route path="/products/*" element={
+              <Route path="/products" element={
                 <ProtectedRoute>
                   <MobileLayout>
                     <ProductsPage />
+                  </MobileLayout>
+                </ProtectedRoute>
+              } />
+              
+              <Route path="/products/add" element={
+                <ProtectedRoute>
+                  <MobileLayout>
+                    <AddProductPage />
                   </MobileLayout>
                 </ProtectedRoute>
               } />
