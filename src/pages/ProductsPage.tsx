@@ -4,7 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Search, Edit, Trash2, Package } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, Package, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -27,10 +27,7 @@ export const ProductsPage = () => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const navigate = useNavigate();
-  const { user, userProfile } = useAuth();
-
-  console.log('User profile:', userProfile);
-  console.log('User role:', userProfile?.role);
+  const { user } = useAuth();
 
   const fetchProducts = async () => {
     if (!user?.id) {
@@ -129,7 +126,7 @@ export const ProductsPage = () => {
     return (
       <div className="flex items-center justify-center min-h-[40vh]">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto mb-2"></div>
+          <Loader2 className="h-6 w-6 animate-spin text-blue-600 mx-auto mb-2" />
           <p className="text-xs text-gray-600">Inapakia bidhaa...</p>
         </div>
       </div>
@@ -147,7 +144,7 @@ export const ProductsPage = () => {
             <div className="flex items-center gap-2">
               <p className="text-xs text-gray-600">{products.length} bidhaa</p>
               {refreshing && (
-                <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-600"></div>
+                <Loader2 className="h-3 w-3 animate-spin text-blue-600" />
               )}
             </div>
           </div>
@@ -160,6 +157,9 @@ export const ProductsPage = () => {
             disabled={refreshing}
             className="text-blue-600 border-blue-600 hover:bg-blue-50 text-xs px-2 py-1 h-7 flex-1 sm:flex-none"
           >
+            {refreshing ? (
+              <Loader2 className="h-3 w-3 animate-spin mr-1" />
+            ) : null}
             Sasisha
           </Button>
 
