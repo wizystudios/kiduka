@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -115,10 +114,10 @@ export const Dashboard = () => {
 
   if (authLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[50vh]">
+      <div className="flex items-center justify-center min-h-[40vh]">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Inapakia...</p>
+          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto mb-3"></div>
+          <p className="text-sm text-gray-600">Inapakia...</p>
         </div>
       </div>
     );
@@ -164,30 +163,30 @@ export const Dashboard = () => {
   ];
 
   return (
-    <div className="p-4 space-y-6 pb-20">
+    <div className="p-3 space-y-4 pb-20">
       {/* Welcome Message with Profile */}
       <Card className="bg-gradient-to-r from-emerald-50 via-blue-50 to-purple-50 border-purple-200">
-        <CardContent className="p-4">
-          <div className="flex items-center space-x-4">
-            <Avatar className="h-12 w-12 flex-shrink-0">
+        <CardContent className="p-3">
+          <div className="flex items-center space-x-3">
+            <Avatar className="h-8 w-8 flex-shrink-0">
               <AvatarImage src={userProfile?.avatar_url} />
-              <AvatarFallback className="bg-gradient-to-br from-emerald-500 via-blue-500 to-purple-600 text-white">
+              <AvatarFallback className="bg-gradient-to-br from-emerald-500 via-blue-500 to-purple-600 text-white text-xs">
                 {getInitials(displayName)}
               </AvatarFallback>
             </Avatar>
             <div className="flex-1 min-w-0">
-              <h2 className="text-xl font-bold text-gray-900 truncate">
+              <h2 className="text-base font-bold text-gray-900 truncate">
                 Karibu, {displayName.split(' ')[0]}!
               </h2>
-              <div className="flex flex-wrap items-center gap-2 mt-1">
-                <Badge variant="outline" className="text-purple-600 border-purple-200 text-xs">
+              <div className="flex flex-wrap items-center gap-1 mt-0.5">
+                <Badge variant="outline" className="text-purple-600 border-purple-200 text-xs px-1.5 py-0.5">
                   {userRole === 'owner' ? 'Mmiliki' : 
                    userRole === 'assistant' ? 'Msaidizi' : 
                    userRole === 'super_admin' ? 'Msimamizi Mkuu' :
                    'Mtumiaji'}
                 </Badge>
                 {businessName && (
-                  <Badge variant="outline" className="text-blue-600 border-blue-200 text-xs">
+                  <Badge variant="outline" className="text-blue-600 border-blue-200 text-xs px-1.5 py-0.5">
                     {businessName}
                   </Badge>
                 )}
@@ -198,21 +197,21 @@ export const Dashboard = () => {
       </Card>
 
       {/* Metrics Grid */}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 gap-2">
         {dashboardMetrics.map((metric, index) => (
           <Card key={index} className="border-0 shadow-sm">
-            <CardContent className="p-3">
+            <CardContent className="p-2.5">
               <div className="flex items-center justify-between">
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs font-medium text-gray-600 mb-1 truncate">
+                  <p className="text-xs text-gray-600 mb-0.5 truncate">
                     {metric.title}
                   </p>
-                  <p className="text-lg font-bold text-gray-900 truncate">
+                  <p className="text-sm font-bold text-gray-900 truncate">
                     {metric.value}
                   </p>
                 </div>
-                <div className={`p-2 rounded-full ${metric.bgColor} flex-shrink-0`}>
-                  <metric.icon className={`h-4 w-4 ${metric.color}`} />
+                <div className={`p-1.5 rounded-full ${metric.bgColor} flex-shrink-0`}>
+                  <metric.icon className={`h-3 w-3 ${metric.color}`} />
                 </div>
               </div>
             </CardContent>
@@ -223,20 +222,20 @@ export const Dashboard = () => {
       {/* Low Stock Alert */}
       {lowStockProducts.length > 0 && (
         <Card className="border-orange-200">
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center text-orange-700 text-base">
-              <AlertTriangle className="h-4 w-4 mr-2 flex-shrink-0" />
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center text-orange-700 text-sm">
+              <AlertTriangle className="h-3 w-3 mr-1 flex-shrink-0" />
               Stock Ndogo
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-2">
+          <CardContent className="space-y-1.5">
             {lowStockProducts.map((product) => (
               <div key={product.id} className="flex justify-between items-center p-2 bg-orange-50 rounded-lg">
                 <div className="flex-1 min-w-0">
-                  <p className="font-medium text-gray-900 text-sm truncate">{product.name}</p>
+                  <p className="font-medium text-gray-900 text-xs truncate">{product.name}</p>
                   <p className="text-xs text-gray-600 truncate">{product.category || 'Bila kategoria'}</p>
                 </div>
-                <Badge variant="outline" className="text-orange-600 border-orange-200 text-xs flex-shrink-0">
+                <Badge variant="outline" className="text-orange-600 border-orange-200 text-xs px-1.5 py-0.5 flex-shrink-0">
                   {product.stock_quantity || 0}
                 </Badge>
               </div>
@@ -247,27 +246,27 @@ export const Dashboard = () => {
 
       {/* Quick Actions */}
       <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Haraka</CardTitle>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm">Haraka</CardTitle>
         </CardHeader>
-        <CardContent className="grid grid-cols-2 gap-3">
+        <CardContent className="grid grid-cols-2 gap-2">
           <Button 
             onClick={() => navigate('/products/add')}
-            className="p-3 h-auto bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200"
+            className="p-2 h-auto bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200"
             variant="outline"
           >
             <div className="text-center">
-              <Plus className="h-5 w-5 mx-auto mb-1" />
+              <Plus className="h-4 w-4 mx-auto mb-1" />
               <p className="text-xs font-medium">Bidhaa</p>
             </div>
           </Button>
           <Button 
             onClick={() => navigate('/scanner')}
-            className="p-3 h-auto bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200"
+            className="p-2 h-auto bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200"
             variant="outline"
           >
             <div className="text-center">
-              <Scan className="h-5 w-5 mx-auto mb-1" />
+              <Scan className="h-4 w-4 mx-auto mb-1" />
               <p className="text-xs font-medium">Muuzo</p>
             </div>
           </Button>

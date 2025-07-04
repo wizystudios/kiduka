@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -33,8 +32,8 @@ const Index = () => {
     return (
       <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-blue-50 to-purple-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Inapakia...</p>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto"></div>
+          <p className="mt-3 text-sm text-gray-600">Inapakia...</p>
         </div>
       </div>
     );
@@ -47,25 +46,25 @@ const Index = () => {
   // Main landing page after onboarding
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-blue-50 to-purple-50 flex items-center justify-center p-4">
-      <div className="max-w-md w-full text-center space-y-8">
-        <div className="space-y-4">
-          <h1 className="text-4xl font-bold text-gray-900">Kiduka POS</h1>
-          <p className="text-xl text-gray-600">
+      <div className="max-w-sm w-full text-center space-y-6">
+        <div className="space-y-3">
+          <h1 className="text-2xl font-bold text-gray-900">Kiduka POS</h1>
+          <p className="text-base text-gray-600">
             Mfumo wa kisasa wa usimamizi wa biashara
           </p>
         </div>
         
-        <div className="space-y-4">
+        <div className="space-y-3">
           <button
             onClick={() => navigate('/auth')}
-            className="w-full bg-gradient-to-r from-emerald-600 to-blue-600 text-white py-4 px-6 rounded-lg text-lg font-semibold hover:from-emerald-700 hover:to-blue-700 transition-all"
+            className="w-full bg-gradient-to-r from-emerald-600 to-blue-600 text-white py-3 px-6 rounded-lg text-base font-semibold hover:from-emerald-700 hover:to-blue-700 transition-all"
           >
             Anza Kutumia Kiduka
           </button>
           
           <button
             onClick={() => setShowOnboarding(true)}
-            className="w-full border-2 border-gray-300 text-gray-700 py-3 px-6 rounded-lg font-medium hover:bg-gray-50 transition-all"
+            className="w-full border-2 border-gray-300 text-gray-700 py-2.5 px-6 rounded-lg text-sm font-medium hover:bg-gray-50 transition-all"
           >
             Ona Mwongozo Tena
           </button>
