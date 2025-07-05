@@ -20,6 +20,8 @@ import { DiscountsPage } from '@/pages/DiscountsPage';
 import { ReportsPage } from '@/pages/ReportsPage';
 import { SettingsPage } from '@/pages/SettingsPage';
 import { UsersPage } from '@/pages/UsersPage';
+import { SubscriptionPage } from '@/pages/SubscriptionPage';
+import { SubscriptionGuard } from '@/components/SubscriptionGuard';
 
 // AI and Business Intelligence Pages
 import { BusinessIntelligencePage } from '@/pages/BusinessIntelligencePage';
@@ -53,17 +55,21 @@ function App() {
               {/* Protected Routes */}
               <Route path="/dashboard" element={
                 <ProtectedRoute>
-                  <MobileLayout>
-                    <Dashboard />
-                  </MobileLayout>
+                  <SubscriptionGuard>
+                    <MobileLayout>
+                      <Dashboard />
+                    </MobileLayout>
+                  </SubscriptionGuard>
                 </ProtectedRoute>
               } />
               
               <Route path="/products" element={
                 <ProtectedRoute>
-                  <MobileLayout>
-                    <ProductsPage />
-                  </MobileLayout>
+                  <SubscriptionGuard>
+                    <MobileLayout>
+                      <ProductsPage />
+                    </MobileLayout>
+                  </SubscriptionGuard>
                 </ProtectedRoute>
               } />
               
@@ -185,6 +191,31 @@ function App() {
                   <MobileLayout>
                     <SuperAdminPage />
                   </MobileLayout>
+                </ProtectedRoute>
+              } />
+              
+              {/* Subscription */}
+              <Route path="/subscription" element={
+                <ProtectedRoute>
+                  <SubscriptionPage />
+                </ProtectedRoute>
+              } />
+              
+              <Route path="/subscription-success" element={
+                <ProtectedRoute>
+                  <div className="min-h-screen flex items-center justify-center bg-green-50">
+                    <div className="text-center p-8">
+                      <div className="text-6xl mb-4">🎉</div>
+                      <h1 className="text-3xl font-bold text-green-800 mb-4">Malipo Yamekamilika!</h1>
+                      <p className="text-green-600 mb-6">Akaunti yako sasa ni hai. Karibu Kiduka POS!</p>
+                      <button 
+                        onClick={() => window.location.href = '/dashboard'}
+                        className="bg-green-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-green-700"
+                      >
+                        Enda Dashboard
+                      </button>
+                    </div>
+                  </div>
                 </ProtectedRoute>
               } />
               

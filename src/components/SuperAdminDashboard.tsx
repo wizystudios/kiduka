@@ -445,8 +445,9 @@ export const SuperAdminDashboard = () => {
 
       {/* Main Content Tabs */}
       <Tabs defaultValue="users" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="users">Watumiaji</TabsTrigger>
+          <TabsTrigger value="subscriptions">Michango</TabsTrigger>
           <TabsTrigger value="credit">Mikopo</TabsTrigger>
           <TabsTrigger value="reports">Ripoti</TabsTrigger>
           <TabsTrigger value="settings">Mipangilio</TabsTrigger>
@@ -583,6 +584,34 @@ export const SuperAdminDashboard = () => {
                     </div>
                   );
                 })}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="subscriptions" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Usimamizi wa Michango</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-center py-12">
+                <div className="bg-gradient-to-r from-blue-500 to-purple-500 text-white p-6 rounded-lg max-w-md mx-auto">
+                  <h3 className="text-xl font-bold mb-2">🎯 Michango ya Watumiaji</h3>
+                  <p className="text-blue-100 mb-4">
+                    Simamia michango, muda wa mtihani, na malipo ya watumiaji wote
+                  </p>
+                  <div className="grid grid-cols-2 gap-4 mt-4">
+                    <div className="bg-white bg-opacity-20 p-3 rounded">
+                      <div className="text-2xl font-bold">12</div>
+                      <div className="text-sm">Watumiaji Wanaolipia</div>
+                    </div>
+                    <div className="bg-white bg-opacity-20 p-3 rounded">
+                      <div className="text-2xl font-bold">5</div>
+                      <div className="text-sm">Mtihani wa Siku 30</div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>
