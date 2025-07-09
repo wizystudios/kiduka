@@ -3,7 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from '@/hooks/useAuth';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
-import { MobileLayout } from '@/components/MobileLayout';
+import { AppLayout } from '@/components/AppLayout';
 import { Toaster } from '@/components/ui/toaster';
 
 // Pages
@@ -38,7 +38,16 @@ import { SuperAdminPage } from '@/pages/SuperAdminPage';
 // Voice POS Pages
 import { VoicePOSPage } from '@/pages/VoicePOSPage';
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      gcTime: 10 * 60 * 1000, // 10 minutes
+      refetchOnWindowFocus: false,
+      retry: 1,
+    },
+  },
+});
 
 function App() {
   return (
@@ -56,9 +65,9 @@ function App() {
               <Route path="/dashboard" element={
                 <ProtectedRoute>
                   <SubscriptionGuard>
-                    <MobileLayout>
+                    <AppLayout>
                       <Dashboard />
-                    </MobileLayout>
+                    </AppLayout>
                   </SubscriptionGuard>
                 </ProtectedRoute>
               } />
@@ -66,131 +75,131 @@ function App() {
               <Route path="/products" element={
                 <ProtectedRoute>
                   <SubscriptionGuard>
-                    <MobileLayout>
+                    <AppLayout>
                       <ProductsPage />
-                    </MobileLayout>
+                    </AppLayout>
                   </SubscriptionGuard>
                 </ProtectedRoute>
               } />
               
               <Route path="/products/add" element={
                 <ProtectedRoute>
-                  <MobileLayout>
+                  <AppLayout>
                     <AddProductPage />
-                  </MobileLayout>
+                  </AppLayout>
                 </ProtectedRoute>
               } />
               
               <Route path="/scanner" element={
                 <ProtectedRoute>
-                  <MobileLayout>
+                  <AppLayout>
                     <ScannerPage />
-                  </MobileLayout>
+                  </AppLayout>
                 </ProtectedRoute>
               } />
               
               <Route path="/sales" element={
                 <ProtectedRoute>
-                  <MobileLayout>
+                  <AppLayout>
                     <SalesPage />
-                  </MobileLayout>
+                  </AppLayout>
                 </ProtectedRoute>
               } />
               
               <Route path="/customers" element={
                 <ProtectedRoute>
-                  <MobileLayout>
+                  <AppLayout>
                     <CustomersPage />
-                  </MobileLayout>
+                  </AppLayout>
                 </ProtectedRoute>
               } />
               
               <Route path="/discounts" element={
                 <ProtectedRoute>
-                  <MobileLayout>
+                  <AppLayout>
                     <DiscountsPage />
-                  </MobileLayout>
+                  </AppLayout>
                 </ProtectedRoute>
               } />
               
               <Route path="/reports" element={
                 <ProtectedRoute>
-                  <MobileLayout>
+                  <AppLayout>
                     <ReportsPage />
-                  </MobileLayout>
+                  </AppLayout>
                 </ProtectedRoute>
               } />
               
               <Route path="/settings" element={
                 <ProtectedRoute>
-                  <MobileLayout>
+                  <AppLayout>
                     <SettingsPage />
-                  </MobileLayout>
+                  </AppLayout>
                 </ProtectedRoute>
               } />
               
               <Route path="/users" element={
                 <ProtectedRoute allowedRoles={['owner']}>
-                  <MobileLayout>
+                  <AppLayout>
                     <UsersPage />
-                  </MobileLayout>
+                  </AppLayout>
                 </ProtectedRoute>
               } />
               
               {/* AI and Business Intelligence */}
               <Route path="/business-intelligence" element={
                 <ProtectedRoute>
-                  <MobileLayout>
+                  <AppLayout>
                     <BusinessIntelligencePage />
-                  </MobileLayout>
+                  </AppLayout>
                 </ProtectedRoute>
               } />
               <Route path="/ai-advisor" element={
                 <ProtectedRoute>
-                  <MobileLayout>
+                  <AppLayout>
                     <AIAdvisorPage />
-                  </MobileLayout>
+                  </AppLayout>
                 </ProtectedRoute>
               } />
               
               {/* Credit Management and Marketplace */}
               <Route path="/credit-management" element={
                 <ProtectedRoute>
-                  <MobileLayout>
+                  <AppLayout>
                     <CreditManagementPage />
-                  </MobileLayout>
+                  </AppLayout>
                 </ProtectedRoute>
               } />
               <Route path="/marketplace" element={
                 <ProtectedRoute>
-                  <MobileLayout>
+                  <AppLayout>
                     <MarketplacePage />
-                  </MobileLayout>
+                  </AppLayout>
                 </ProtectedRoute>
               } />
               <Route path="/micro-loans" element={
                 <ProtectedRoute>
-                  <MobileLayout>
+                  <AppLayout>
                     <MicroLoanPage />
-                  </MobileLayout>
+                  </AppLayout>
                 </ProtectedRoute>
               } />
               
               {/* Voice POS */}
               <Route path="/voice-pos" element={
                 <ProtectedRoute>
-                  <MobileLayout>
+                  <AppLayout>
                     <VoicePOSPage />
-                  </MobileLayout>
+                  </AppLayout>
                 </ProtectedRoute>
               } />
               
               {/* Super Admin */}
               <Route path="/super-admin" element={
                 <ProtectedRoute allowedRoles={['super_admin']}>
-                  <MobileLayout>
+                  <AppLayout>
                     <SuperAdminPage />
-                  </MobileLayout>
+                  </AppLayout>
                 </ProtectedRoute>
               } />
               
