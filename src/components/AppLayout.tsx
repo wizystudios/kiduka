@@ -17,6 +17,8 @@ import {
   Menu,
   Bell
 } from 'lucide-react';
+import { KidukaLogo } from '@/components/KidukaLogo';
+import { NotificationCenter } from '@/components/NotificationCenter';
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -28,9 +30,10 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
   const isMobile = useIsMobile();
 
   useEffect(() => {
+    // Reduce sync check frequency to improve performance
     const interval = setInterval(() => {
       setSyncStatus(syncService.getSyncStatus());
-    }, 5000);
+    }, 30000); // Check every 30 seconds instead of 5
 
     return () => clearInterval(interval);
   }, []);
@@ -51,9 +54,7 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
                   <>
                     <SidebarTrigger className="h-7 w-7" />
                     <div className="flex items-center gap-2">
-                      <h1 className="text-lg font-semibold text-foreground">
-                        Kiduka POS
-                      </h1>
+                      <KidukaLogo size="sm" showText={true} />
                       {userProfile?.business_name && (
                         <Badge variant="outline" className="text-xs">
                           {userProfile.business_name}
@@ -90,9 +91,7 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
                 </div>
 
                 {/* Notifications */}
-                <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                  <Bell className="h-4 w-4" />
-                </Button>
+                <NotificationCenter />
               </div>
             </div>
           </header>

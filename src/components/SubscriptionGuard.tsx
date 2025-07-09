@@ -26,7 +26,7 @@ export const SubscriptionGuard = ({ children }: SubscriptionGuardProps) => {
   useEffect(() => {
     if (user && userProfile?.role !== 'super_admin') {
       checkSubscriptionStatus();
-    } else {
+    } else if (userProfile?.role === 'super_admin' || user) {
       setLoading(false);
     }
   }, [user, userProfile]);
@@ -43,11 +43,11 @@ export const SubscriptionGuard = ({ children }: SubscriptionGuardProps) => {
       if (data && data.length > 0) {
         setSubscriptionStatus(data[0]);
       } else {
-        // No subscription found, create trial
+        // No subscription found - user needs to subscribe immediately after trial
         setSubscriptionStatus({
-          is_active: true,
-          status: 'trial',
-          days_remaining: 30
+          is_active: false,
+          status: 'expired',
+          days_remaining: 0
         });
       }
     } catch (error) {
@@ -109,9 +109,37 @@ export const SubscriptionGuard = ({ children }: SubscriptionGuardProps) => {
               Chagua Mpango wa Malipo
             </Button>
             
-            <p className="text-xs text-gray-600 text-center">
-              Kwa msaada, wasiliana nasi kupitia barua pepe au simu
-            </p>
+            <div className="space-y-3">
+              <p className="text-sm font-medium text-gray-800 text-center">
+                Kwa msaada, wasiliana nasi:
+              </p>
+              
+              <div className="flex flex-col gap-2">
+                <Button 
+                  variant="outline" 
+                  className="w-full"
+                  onClick={() => window.open('mailto:smartshoppos795@gmail.com', '_blank')}
+                >
+                  📧 smartshoppos795@gmail.com
+                </Button>
+                
+                <Button 
+                  variant="outline" 
+                  className="w-full"
+                  onClick={() => window.open('https://wa.me/255784813540', '_blank')}
+                >
+                  📱 WhatsApp: +255 784 813 540
+                </Button>
+                
+                <Button 
+                  variant="outline" 
+                  className="w-full"
+                  onClick={() => window.open('tel:+255784813540', '_blank')}
+                >
+                  📞 Piga Simu: +255 784 813 540
+                </Button>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>

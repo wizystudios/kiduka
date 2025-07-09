@@ -41,10 +41,11 @@ import { VoicePOSPage } from '@/pages/VoicePOSPage';
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 5 * 60 * 1000, // 5 minutes
-      gcTime: 10 * 60 * 1000, // 10 minutes
+      staleTime: 15 * 60 * 1000, // 15 minutes to reduce loading
+      gcTime: 30 * 60 * 1000, // 30 minutes cache
       refetchOnWindowFocus: false,
-      retry: 1,
+      retry: false, // Disable automatic retries
+      refetchOnMount: false, // Don't refetch on mount
     },
   },
 });
