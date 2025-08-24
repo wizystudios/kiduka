@@ -32,11 +32,12 @@ import { CreditManagementPage } from '@/pages/CreditManagementPage';
 import { MarketplacePage } from '@/pages/MarketplacePage';
 import { MicroLoanPage } from '@/pages/MicroLoanPage';
 
-// Super Admin Pages
-import { SuperAdminPage } from '@/pages/SuperAdminPage';
-
 // Voice POS Pages
 import { VoicePOSPage } from '@/pages/VoicePOSPage';
+
+// Super Admin Pages
+import { SuperAdminPage } from '@/pages/SuperAdminPage';
+import { WhatsAppPage } from '@/pages/WhatsAppPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {

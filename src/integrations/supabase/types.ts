@@ -7,10 +7,10 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "12.2.3 (519615d)"
+    PostgrestVersion: "13.0.4"
   }
   public: {
     Tables: {
@@ -936,6 +936,33 @@ export type Database = {
         }
         Relationships: []
       }
+      system_settings: {
+        Row: {
+          created_at: string | null
+          id: string
+          setting_key: string
+          setting_value: Json
+          updated_at: string | null
+          updated_by: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          setting_key: string
+          setting_value: Json
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          setting_key?: string
+          setting_value?: Json
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       user_admin_actions: {
         Row: {
           action_details: Json | null
@@ -977,6 +1004,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      user_subscription_controls: {
+        Row: {
+          admin_controlled: boolean | null
+          created_at: string | null
+          created_by: string | null
+          force_payment: boolean | null
+          id: string
+          subscription_override: Json | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          admin_controlled?: boolean | null
+          created_at?: string | null
+          created_by?: string | null
+          force_payment?: boolean | null
+          id?: string
+          subscription_override?: Json | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          admin_controlled?: boolean | null
+          created_at?: string | null
+          created_by?: string | null
+          force_payment?: boolean | null
+          id?: string
+          subscription_override?: Json | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
       }
       user_subscriptions: {
         Row: {
@@ -1151,9 +1211,9 @@ export type Database = {
       check_subscription_status: {
         Args: { user_uuid: string }
         Returns: {
+          days_remaining: number
           is_active: boolean
           status: string
-          days_remaining: number
         }[]
       }
       generate_barcode_number: {

@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { KidukaLogo } from '@/components/KidukaLogo';
 import { NotificationCenter } from '@/components/NotificationCenter';
+import { AdminNotifications } from '@/components/AdminNotifications';
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -91,6 +92,7 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
                 </div>
 
                 {/* Notifications */}
+                <AdminNotifications />
                 <NotificationCenter />
               </div>
             </div>

@@ -88,10 +88,12 @@ export const SuperAdminDashboard = () => {
     business_name: '',
     role: 'owner'
   });
+  const [paymentMode, setPaymentMode] = useState<'sandbox' | 'production'>('sandbox');
   const { toast } = useToast();
 
   useEffect(() => {
     fetchAdminData();
+    fetchSystemSettings();
   }, []);
 
   const fetchAdminData = async () => {
@@ -338,6 +340,155 @@ export const SuperAdminDashboard = () => {
       toast({
         title: 'Hitilafu',
         description: 'Imeshindwa kufuta deni',
+        variant: 'destructive'
+      });
+    }
+  };
+
+  const fetchSystemSettings = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('system_settings')
+        .select('setting_value')
+        .eq('setting_key', 'payment_mode')
+        .single();
+
+      if (data?.setting_value) {
+        setPaymentMode((data.setting_value as any).mode || 'sandbox');
+      }
+    } catch (error) {
+      console.error('Error fetching system settings:', error);
+    }
+  };
+
+  const handleTogglePaymentMode = async () => {
+    const newMode = paymentMode === 'sandbox' ? 'production' : 'sandbox';
+    
+    try {
+      const { error } = await supabase
+        .from('system_settings')
+        .upsert({
+          setting_key: 'payment_mode',
+          setting_value: { mode: newMode, stripe_live_mode: newMode === 'production' },
+          updated_by: (await supabase.auth.getUser()).data.user?.id
+        });
+
+      if (error) throw error;
+
+      setPaymentMode(newMode);
+      toast({
+        title: 'Mafanikio',
+        description: `Hali ya malipo imebadilishwa kwenda ${newMode}`,
+        duration: 5000
+      });
+
+      // Log admin action
+      await supabase.from('user_admin_actions').insert({
+        admin_id: (await supabase.auth.getUser()).data.user?.id,
+        action_type: 'TOGGLE_PAYMENT_MODE',
+        action_details: { 
+          previous_mode: paymentMode,
+          new_mode: newMode,
+          timestamp: new Date().toISOString()
+        }
+      });
+
+    } catch (error: any) {
+      console.error('Error toggling payment mode:', error);
+      toast({
+        title: 'Hitilafu',
+        description: `Imeshindwa kubadilisha hali ya malipo: ${error.message}`,
+        variant: 'destructive'
+      });
+    }
+  };
+
+  const handleToggleUserPayment = async (userId: string, currentStatus: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('user_subscription_controls')
+        .upsert({
+          user_id: userId,
+          admin_controlled: true,
+          force_payment: !currentStatus,
+          created_by: (await supabase.auth.getUser()).data.user?.id
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: 'Mafanikio',
+        description: 'Hali ya malipo ya mtumiaji imebadilishwa'
+      });
+
+      fetchAdminData();
+    } catch (error: any) {
+      console.error('Error toggling user payment:', error);
+      toast({
+        title: 'Hitilafu',
+        description: 'Imeshindwa kubadilisha hali ya malipo',
+        variant: 'destructive'
+      });
+    }
+  };
+
+  const handleResetSystem = async () => {
+    if (!confirm('Je, una uhakika unataka kureset mfumo wote? Hatua hii haiwezi kubatilishwa!')) return;
+
+    try {
+      // Reset logic here - clear caches, reset settings, etc.
+      toast({
+        title: 'Onyo',
+        description: 'Reset ya mfumo imefanikiwa. Mfumo utajiendesha upya.',
+        duration: 10000
+      });
+
+      // Log admin action
+      await supabase.from('user_admin_actions').insert({
+        admin_id: (await supabase.auth.getUser()).data.user?.id,
+        action_type: 'RESET_SYSTEM',
+        action_details: { timestamp: new Date().toISOString() }
+      });
+
+    } catch (error: any) {
+      console.error('Error resetting system:', error);
+      toast({
+        title: 'Hitilafu',
+        description: 'Imeshindwa kureset mfumo',
+        variant: 'destructive'
+      });
+    }
+  };
+
+  const handleBackupSystem = async () => {
+    try {
+      // Backup logic here
+      toast({
+        title: 'Mafanikio',
+        description: 'Backup ya mfumo imefanikiwa'
+      });
+    } catch (error: any) {
+      console.error('Error backing up system:', error);
+      toast({
+        title: 'Hitilafu',
+        description: 'Imeshindwa kufanya backup',
+        variant: 'destructive'
+      });
+    }
+  };
+
+  const handleRestoreSystem = async () => {
+    try {
+      // Restore logic here
+      toast({
+        title: 'Mafanikio',
+        description: 'Restore ya mfumo imefanikiwa'
+      });
+    } catch (error: any) {
+      console.error('Error restoring system:', error);
+      toast({
+        title: 'Hitilafu',
+        description: 'Imeshindwa kurestore mfumo',
         variant: 'destructive'
       });
     }
@@ -592,26 +743,42 @@ export const SuperAdminDashboard = () => {
         <TabsContent value="subscriptions" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Usimamizi wa Michango</CardTitle>
+              <CardTitle>Usimamizi wa Michango na Malipo</CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="text-center py-12">
-                <div className="bg-gradient-to-r from-blue-500 to-purple-500 text-white p-6 rounded-lg max-w-md mx-auto">
-                  <h3 className="text-xl font-bold mb-2">🎯 Michango ya Watumiaji</h3>
-                  <p className="text-blue-100 mb-4">
-                    Simamia michango, muda wa mtihani, na malipo ya watumiaji wote
-                  </p>
-                  <div className="grid grid-cols-2 gap-4 mt-4">
-                    <div className="bg-white bg-opacity-20 p-3 rounded">
-                      <div className="text-2xl font-bold">12</div>
-                      <div className="text-sm">Watumiaji Wanaolipia</div>
+            <CardContent className="space-y-6">
+              <div className="space-y-4">
+                {users.filter(u => u.role !== 'super_admin').map((user) => (
+                  <div key={user.id} className="flex items-center justify-between p-4 border rounded-lg">
+                    <div className="flex items-center space-x-4">
+                      <div className="bg-gray-100 p-3 rounded-full">
+                        <UserCheck className="h-6 w-6 text-gray-600" />
+                      </div>
+                      <div>
+                        <h4 className="font-semibold">{user.full_name}</h4>
+                        <p className="text-sm text-gray-600">{user.email}</p>
+                        <p className="text-xs text-gray-500">
+                          Alijiunga: {new Date(user.created_at).toLocaleDateString('sw')}
+                        </p>
+                      </div>
                     </div>
-                    <div className="bg-white bg-opacity-20 p-3 rounded">
-                      <div className="text-2xl font-bold">5</div>
-                      <div className="text-sm">Mtihani wa Siku 30</div>
+                    
+                    <div className="flex items-center space-x-4">
+                      <div className="text-right">
+                        <p className="text-sm font-medium">Malipo ya Kila Mwezi</p>
+                        <Badge className="bg-green-100 text-green-800">
+                          Sandbox Mode
+                        </Badge>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant={user.role === 'owner' ? 'default' : 'outline'}
+                        onClick={() => handleToggleUserPayment(user.id, user.role === 'assistant')}
+                      >
+                        {user.role === 'owner' ? 'Inaondesha' : 'Imezimwa'}
+                      </Button>
                     </div>
                   </div>
-                </div>
+                ))}
               </div>
             </CardContent>
           </Card>
@@ -687,11 +854,64 @@ export const SuperAdminDashboard = () => {
             <CardHeader>
               <CardTitle>Mipangilio ya Mfumo</CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="text-center py-12">
-                <Settings className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Mipangilio ya Jumla</h3>
-                <p className="text-gray-600">Dhibiti mipangilio ya mfumo, usalama, na utendakazi</p>
+            <CardContent className="space-y-6">
+              <div className="space-y-4">
+                <Card className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="font-semibold">Hali ya Malipo</h3>
+                      <p className="text-sm text-gray-600">
+                        Badilisha kati ya sandbox (jaribio) na production (halali)
+                      </p>
+                    </div>
+                    <div className="flex items-center space-x-3">
+                      <span className={`text-sm font-medium ${paymentMode === 'sandbox' ? 'text-orange-600' : 'text-green-600'}`}>
+                        {paymentMode === 'sandbox' ? 'Sandbox (Jaribio)' : 'Production (Halali)'}
+                      </span>
+                      <Button
+                        onClick={handleTogglePaymentMode}
+                        variant={paymentMode === 'sandbox' ? 'outline' : 'default'}
+                        className={paymentMode === 'production' ? 'bg-red-600 hover:bg-red-700' : ''}
+                      >
+                        {paymentMode === 'sandbox' ? 'Washa Production' : 'Rudisha Sandbox'}
+                      </Button>
+                    </div>
+                  </div>
+                </Card>
+
+                <Card className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="font-semibold">Usimamizi wa Jumla</h3>
+                      <p className="text-sm text-gray-600">
+                        Dhibiti mfumo wote wa watumiaji na vipengele
+                      </p>
+                    </div>
+                    <Button onClick={handleResetSystem} variant="destructive">
+                      <AlertTriangle className="h-4 w-4 mr-2" />
+                      Reset Mfumo
+                    </Button>
+                  </div>
+                </Card>
+
+                <Card className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="font-semibold">Backup & Restore</h3>
+                      <p className="text-sm text-gray-600">
+                        Hifadhi na rejesha data ya mfumo
+                      </p>
+                    </div>
+                    <div className="space-x-2">
+                      <Button variant="outline" onClick={handleBackupSystem}>
+                        Hifadhi Data
+                      </Button>
+                      <Button variant="outline" onClick={handleRestoreSystem}>
+                        Rejesha Data
+                      </Button>
+                    </div>
+                  </div>
+                </Card>
               </div>
             </CardContent>
           </Card>

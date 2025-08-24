@@ -19,6 +19,7 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar';
 import {
+  Shield,
   Home,
   Package,
   QrCode,
@@ -33,8 +34,7 @@ import {
   Brain,
   TrendingUp,
   LogOut,
-  Crown,
-  CreditCardIcon
+  Crown
 } from 'lucide-react';
 
 const navigationItems = [
@@ -57,6 +57,21 @@ export function AppSidebar() {
   const location = useLocation();
   const { state } = useSidebar();
   const collapsed = state === 'collapsed';
+
+  if (!userProfile) return null;
+
+  // Add Super Admin route
+  const superAdminRoutes = userProfile.role === 'super_admin' ? [
+    {
+      id: "super-admin",
+      label: "Super Admin",
+      icon: Shield,
+      href: "/super-admin"
+    }
+  ] : [];
+
+  // Business management routes
+  const businessRoutes = navigationItems;
 
   const handleSignOut = async () => {
     try {
@@ -104,17 +119,7 @@ export function AppSidebar() {
     return location.pathname.startsWith(href);
   };
 
-  // Add role-specific items
-  const allNavigationItems = [
-    ...navigationItems,
-    ...(userProfile?.role === 'owner' ? [
-      { id: 'users', label: 'Watumiaji', icon: UserCheck, href: '/users' }
-    ] : []),
-    ...(userProfile?.role === 'super_admin' ? [
-      { id: 'super-admin', label: 'Super Admin', icon: Settings, href: '/super-admin' }
-    ] : []),
-    { id: 'settings', label: 'Mipangilio', icon: Settings, href: '/settings' },
-  ];
+  // Add role-specific items - REMOVED as we now handle this inline
 
   return (
     <Sidebar className="border-r border-border/40 bg-background">
@@ -137,7 +142,7 @@ export function AppSidebar() {
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {allNavigationItems.map((item) => (
+              {[...superAdminRoutes, ...businessRoutes].map((item) => (
                 <SidebarMenuItem key={item.id}>
                   <SidebarMenuButton asChild isActive={isActive(item.href)}>
                     <NavLink 
@@ -150,6 +155,30 @@ export function AppSidebar() {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
+              {userProfile?.role === 'owner' && (
+                <SidebarMenuItem key="users">
+                  <SidebarMenuButton asChild isActive={isActive('/users')}>
+                    <NavLink 
+                      to="/users"
+                      className="flex items-center gap-3 px-3 py-2 rounded-lg transition-colors"
+                    >
+                      <UserCheck className="h-4 w-4" />
+                      {!collapsed && <span>Watumiaji</span>}
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
+              <SidebarMenuItem key="settings">
+                <SidebarMenuButton asChild isActive={isActive('/settings')}>
+                  <NavLink 
+                    to="/settings"
+                    className="flex items-center gap-3 px-3 py-2 rounded-lg transition-colors"
+                  >
+                    <Settings className="h-4 w-4" />
+                    {!collapsed && <span>Mipangilio</span>}
+                  </NavLink>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
