@@ -24,76 +24,80 @@ export const SubscriptionGuard = ({ children }: SubscriptionGuardProps) => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!user || !userProfile) return; // wait until both are available
+    // Only run once when both user and userProfile are available
+    if (!user || !userProfile || subscriptionStatus !== null) return;
 
     if (userProfile.role === 'super_admin') {
       setLoading(false);
+      setSubscriptionStatus({ is_active: true, status: 'admin', days_remaining: 999 });
       return;
     }
 
     checkSubscriptionStatus();
-  }, [user, userProfile]);
+  }, [user?.id, userProfile?.role]); // More specific dependencies
 
   const checkSubscriptionStatus = async () => {
-    if (!user || !userProfile) return;
+    if (!user || !userProfile || subscriptionStatus !== null) return;
 
-    setLoading(true);
     try {
-      // 1) Check if admin enforced payment for this user
-      const { data: control } = await supabase
-        .from('user_subscription_controls')
-        .select('force_payment, admin_controlled')
-        .eq('user_id', user.id)
-        .maybeSingle();
-
-      // 2) Calculate trial days remaining from profile.created_at (30-day trial)
-      let daysRemaining = 0;
+      // For performance, start with trial calculation - no DB calls needed
+      let daysRemaining = 30;
       try {
         if (userProfile?.created_at) {
           const createdAt = new Date(userProfile.created_at as string);
           const diffDays = Math.floor((Date.now() - createdAt.getTime()) / (1000 * 60 * 60 * 24));
           daysRemaining = Math.max(0, 30 - diffDays);
-        } else {
-          // Fallback: assume full trial if created_at missing
-          daysRemaining = 30;
         }
       } catch {
         daysRemaining = 30;
       }
 
-      const mustEnforcePayment = (control?.force_payment === true) || daysRemaining === 0;
+      // Check admin controls in background - non-blocking
+      const checkAdminControls = async () => {
+        try {
+          const { data: control } = await supabase
+            .from('user_subscription_controls')
+            .select('force_payment, admin_controlled')
+            .eq('user_id', user.id)
+            .maybeSingle();
 
-      if (!mustEnforcePayment) {
-        setSubscriptionStatus({
-          is_active: true,
-          status: 'trial',
-          days_remaining: daysRemaining,
-        });
-        return;
-      }
+          // Only block if payment is specifically enforced AND trial is over
+          if (control?.force_payment === true && daysRemaining === 0) {
+            // Check actual subscription
+            const { data } = await supabase
+              .rpc('check_subscription_status', { user_uuid: user.id });
 
-      // 3) When payment is enforced or trial expired, check actual subscription
-      const { data, error } = await supabase
-        .rpc('check_subscription_status', { user_uuid: user.id });
+            if (!data || data.length === 0 || !data[0]?.is_active) {
+              setSubscriptionStatus({
+                is_active: false,
+                status: 'expired',
+                days_remaining: 0,
+              });
+              return;
+            }
+          }
+        } catch (error) {
+          console.error('Error checking admin controls:', error);
+        }
+      };
 
-      if (error) throw error;
-
-      if (data && data.length > 0) {
-        setSubscriptionStatus(data[0]);
-      } else {
-        setSubscriptionStatus({
-          is_active: false,
-          status: 'expired',
-          days_remaining: 0,
-        });
-      }
-    } catch (error) {
-      console.error('Error checking subscription:', error);
-      // Fail-open for safety during sandbox: show trial access
+      // Set trial status immediately (non-blocking)
       setSubscriptionStatus({
         is_active: true,
         status: 'trial',
-        days_remaining: 7,
+        days_remaining: daysRemaining,
+      });
+
+      // Check admin controls in background
+      checkAdminControls();
+
+    } catch (error) {
+      console.error('Error checking subscription:', error);
+      // Fail-open: allow access
+      setSubscriptionStatus({
+        is_active: true,
+        status: 'trial',
+        days_remaining: 30,
       });
     } finally {
       setLoading(false);
