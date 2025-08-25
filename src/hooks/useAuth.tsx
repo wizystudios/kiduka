@@ -23,6 +23,26 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [userProfile, setUserProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
+  // Clean-up any stale Supabase auth state to prevent limbo sessions
+  const cleanupAuthState = () => {
+    try {
+      Object.keys(localStorage).forEach((key) => {
+        if (key.startsWith('supabase.auth.') || key.includes('sb-')) {
+          localStorage.removeItem(key);
+        }
+      });
+      if (typeof sessionStorage !== 'undefined') {
+        Object.keys(sessionStorage).forEach((key) => {
+          if (key.startsWith('supabase.auth.') || key.includes('sb-')) {
+            sessionStorage.removeItem(key);
+          }
+        });
+      }
+    } catch (e) {
+      console.warn('Auth cleanup warning:', e);
+    }
+  };
+
   const createProfile = async (userId: string, email: string, fullName?: string, businessName?: string) => {
     try {
       console.log('Creating profile for user:', userId);
@@ -56,29 +76,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const fetchUserProfile = useCallback(async (userId: string) => {
     try {
       console.log('Fetching profile for user:', userId);
-      
       const { data: profile, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
-        .single();
-      
-      if (error && error.code !== 'PGRST116') {
+        .maybeSingle();
+      if (error) {
         console.error('Error fetching profile:', error);
         return null;
       }
-      
       if (!profile) {
         console.log('No profile found, creating one...');
         const newProfile = await createProfile(
-          userId, 
+          userId,
           user?.email || '',
           user?.user_metadata?.full_name,
           user?.user_metadata?.business_name
         );
         return newProfile;
       }
-      
       console.log('Profile fetched successfully:', profile);
       return profile;
     } catch (error) {
@@ -124,24 +140,27 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     let mounted = true;
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      (event, session) => {
         if (!mounted) return;
         
         console.log('Auth state changed:', event, session?.user?.email);
         setSession(session);
         setUser(session?.user ?? null);
         
-        if (session?.user && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED')) {
-          const profile = await fetchUserProfile(session.user.id);
-          if (mounted) {
-            setUserProfile(profile);
-          }
-        } else if (event === 'SIGNED_OUT') {
+        if (event === 'SIGNED_OUT') {
           setUserProfile(null);
+          setLoading(false);
+          return;
         }
         
-        if (mounted) {
-          setLoading(false);
+        if (session?.user && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED')) {
+          setTimeout(() => {
+            fetchUserProfile(session.user!.id)
+              .then((profile) => { if (mounted) setUserProfile(profile); })
+              .finally(() => { if (mounted) setLoading(false); });
+          }, 0);
+        } else {
+          if (mounted) setLoading(false);
         }
       }
     );
@@ -173,19 +192,34 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, [fetchUserProfile]);
 
   const signIn = async (email: string, password: string) => {
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    
-    if (error) {
-      if (error.message.includes('Invalid login credentials')) {
-        throw new Error('Barua pepe au nywila si sahihi. Tafadhali jaribu tena.');
-      } else if (error.message.includes('Email not confirmed')) {
-        throw new Error('Barua pepe yako haijathibitishwa bado. Tafadhali kagua barua pepe yako na ubonyeze kiungo cha uthibitisho.');
-      } else {
-        throw new Error(error.message);
+    try {
+      // Clean up any stale auth and attempt a global sign out to avoid limbo
+      cleanupAuthState();
+      try {
+        await supabase.auth.signOut({ scope: 'global' });
+      } catch (err) {
+        // ignore errors here
       }
+
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      
+      if (error) {
+        if (error.message.includes('Invalid login credentials')) {
+          throw new Error('Barua pepe au nywila si sahihi. Tafadhali jaribu tena.');
+        } else if (error.message.includes('Email not confirmed')) {
+          throw new Error('Barua pepe yako haijathibitishwa bado. Tafadhali kagua barua pepe yako na ubonyeze kiungo cha uthibitisho.');
+        } else {
+          throw new Error(error.message);
+        }
+      }
+
+      // Force a clean reload into the app after successful login
+      window.location.href = '/dashboard';
+    } catch (error: any) {
+      throw error;
     }
   };
 
@@ -216,10 +250,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signOut = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) throw error;
-    
-    setUserProfile(null);
+    try {
+      cleanupAuthState();
+      try {
+        await supabase.auth.signOut({ scope: 'global' });
+      } catch (err) {
+        // ignore
+      }
+    } finally {
+      setUserProfile(null);
+      window.location.href = '/auth';
+    }
   };
 
   return (
