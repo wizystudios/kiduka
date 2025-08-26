@@ -73,7 +73,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const fetchUserProfile = useCallback(async (userId: string) => {
+  const fetchUserProfile = async (userId: string) => {
     try {
       console.log('Fetching profile for user:', userId);
       const { data: profile, error } = await supabase
@@ -101,14 +101,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       console.error('Error in fetchUserProfile:', error);
       return null;
     }
-  }, [user]);
+  };
 
   const refreshProfile = useCallback(async () => {
     if (user?.id) {
       const profile = await fetchUserProfile(user.id);
       setUserProfile(profile);
     }
-  }, [user?.id, fetchUserProfile]);
+  }, [user?.id]);
 
   const updateProfile = useCallback(async (updates: any) => {
     if (!user?.id) {
@@ -138,58 +138,79 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     let mounted = true;
+    let isInitialized = false;
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        if (!mounted) return;
-        
-        console.log('Auth state changed:', event, session?.user?.email);
-        setSession(session);
-        setUser(session?.user ?? null);
-        
-        if (event === 'SIGNED_OUT') {
-          setUserProfile(null);
-          setLoading(false);
-          return;
-        }
-        
-        if (session?.user && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED')) {
-          setTimeout(() => {
-            fetchUserProfile(session.user!.id)
-              .then((profile) => { if (mounted) setUserProfile(profile); })
-              .finally(() => { if (mounted) setLoading(false); });
-          }, 0);
-        } else {
-          if (mounted) setLoading(false);
-        }
-      }
-    );
-
-    // Check for existing session
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
+    const handleAuthStateChange = (event: string, session: any) => {
       if (!mounted) return;
       
-      console.log('Initial session check:', session?.user?.email);
+      // Prevent infinite loops on INITIAL_SESSION
+      if (event === 'INITIAL_SESSION' && isInitialized) {
+        return;
+      }
+      
+      console.log('Auth state changed:', event, session?.user?.email);
       setSession(session);
       setUser(session?.user ?? null);
       
+      if (event === 'SIGNED_OUT') {
+        setUserProfile(null);
+        setLoading(false);
+        isInitialized = true;
+        return;
+      }
+      
       if (session?.user) {
-        const profile = await fetchUserProfile(session.user.id);
+        // Use a simple async function call instead of setTimeout
+        const loadProfile = async () => {
+          try {
+            const profile = await fetchUserProfile(session.user.id);
+            if (mounted) {
+              setUserProfile(profile);
+              setLoading(false);
+            }
+          } catch (error) {
+            console.error('Error loading profile:', error);
+            if (mounted) {
+              setLoading(false);
+            }
+          }
+        };
+        
+        loadProfile();
+      } else {
         if (mounted) {
-          setUserProfile(profile);
+          setLoading(false);
         }
       }
       
-      if (mounted) {
-        setLoading(false);
+      isInitialized = true;
+    };
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(handleAuthStateChange);
+
+    // Check for existing session only once
+    const initializeAuth = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (mounted && !isInitialized) {
+          handleAuthStateChange('INITIAL_SESSION', session);
+        }
+      } catch (error) {
+        console.error('Error getting session:', error);
+        if (mounted) {
+          setLoading(false);
+          isInitialized = true;
+        }
       }
-    });
+    };
+
+    initializeAuth();
 
     return () => {
       mounted = false;
       subscription.unsubscribe();
     };
-  }, [fetchUserProfile]);
+  }, []);
 
   const signIn = async (email: string, password: string) => {
     try {
