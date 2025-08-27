@@ -30,12 +30,14 @@ import {
   Brain,
   TrendingUp,
   LogOut,
-  User as UserIcon
+  User as UserIcon,
+  ArrowLeft
 } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { KidukaLogo } from '@/components/KidukaLogo';
 import { syncService } from '@/utils/syncService';
+import { BackButton } from '@/components/BackButton';
 
 interface MobileLayoutProps {
   children: React.ReactNode;
@@ -57,25 +59,25 @@ export const MobileLayout = ({ children }: MobileLayoutProps) => {
   }, []);
 
   const navigationItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: Home, href: '/' },
-    { id: 'products', label: 'Products', icon: Package, href: '/products' },
-    { id: 'scanner', label: 'Scanner', icon: QrCode, href: '/scanner' },
-    { id: 'sales', label: 'Sales', icon: ShoppingCart, href: '/sales' },
-    { id: 'customers', label: 'Customers', icon: Users, href: '/customers' },
-    { id: 'discounts', label: 'Discounts', icon: Percent, href: '/discounts' },
-    { id: 'mikopo', label: 'Mikopo', icon: CreditCard, href: '/credit-management' },
-    { id: 'marketplace', label: 'Soko la Jamii', icon: Store, href: '/marketplace' },
-    { id: 'ai-advisor', label: 'Mshauri wa AI', icon: Brain, href: '/ai-advisor' },
-    { id: 'business-intelligence', label: 'Takwimu za AI', icon: TrendingUp, href: '/business-intelligence' },
-    { id: 'reports', label: 'Reports', icon: BarChart3, href: '/reports' },
+    { id: 'dashboard', label: 'Dashboard', icon: Home, href: '/', shortLabel: 'Home' },
+    { id: 'products', label: 'Bidhaa', icon: Package, href: '/products', shortLabel: 'Bidhaa' },
+    { id: 'scanner', label: 'Scanner', icon: QrCode, href: '/scanner', shortLabel: 'Scan' },
+    { id: 'sales', label: 'Mauzo', icon: ShoppingCart, href: '/sales', shortLabel: 'Sales' },
+    { id: 'customers', label: 'Wateja', icon: Users, href: '/customers', shortLabel: 'Wateja' },
+    { id: 'discounts', label: 'Punguzo', icon: Percent, href: '/discounts', shortLabel: 'Disco' },
+    { id: 'mikopo', label: 'Mikopo', icon: CreditCard, href: '/credit-management', shortLabel: 'Credit' },
+    { id: 'marketplace', label: 'Soko', icon: Store, href: '/marketplace', shortLabel: 'Soko' },
+    { id: 'ai-advisor', label: 'AI Mshauri', icon: Brain, href: '/ai-advisor', shortLabel: 'AI' },
+    { id: 'business-intelligence', label: 'Analytics', icon: TrendingUp, href: '/business-intelligence', shortLabel: 'Stats' },
+    { id: 'reports', label: 'Ripoti', icon: BarChart3, href: '/reports', shortLabel: 'Ripoti' },
     // Add Users menu item for owners
     ...(userProfile?.role === 'owner' ? [
-      { id: 'users', label: 'Watumiaji', icon: UserCheck, href: '/users' }
+      { id: 'users', label: 'Watumiaji', icon: UserCheck, href: '/users', shortLabel: 'Users' }
     ] : []),
     ...(userProfile?.role === 'super_admin' ? [
-      { id: 'super-admin', label: 'Super Admin', icon: Settings, href: '/super-admin' }
+      { id: 'super-admin', label: 'Super Admin', icon: Settings, href: '/super-admin', shortLabel: 'Admin' }
     ] : []),
-    { id: 'settings', label: 'Settings', icon: Settings, href: '/settings' },
+    { id: 'settings', label: 'Mipangilio', icon: Settings, href: '/settings', shortLabel: 'Settings' },
   ];
 
   const handleNavigation = (href: string) => {
@@ -129,23 +131,39 @@ export const MobileLayout = ({ children }: MobileLayoutProps) => {
     }
   };
 
+  const shouldShowBackButton = () => {
+    const nonBackButtonRoutes = ['/', '/dashboard'];
+    return !nonBackButtonRoutes.includes(location.pathname);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between shadow-sm fixed top-0 left-0 right-0 z-40">
-        <div className="flex items-center space-x-3">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="lg:hidden"
-          >
-            {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-          </Button>
-          <KidukaLogo size="sm" showText={true} />
+      <header className="bg-white border-b border-gray-200 px-2 sm:px-4 py-3 flex items-center justify-between shadow-sm fixed top-0 left-0 right-0 z-40">
+        <div className="flex items-center space-x-2 sm:space-x-3 min-w-0 flex-1">
+          {shouldShowBackButton() ? (
+            <BackButton className="flex-shrink-0" />
+          ) : (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              className="lg:hidden flex-shrink-0 h-8 w-8 p-0"
+            >
+              {sidebarOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+            </Button>
+          )}
+          <div className="flex items-center space-x-2 min-w-0 flex-1">
+            <div className="flex-shrink-0">
+              <KidukaLogo size="sm" showText={false} />
+            </div>
+            <div className="hidden sm:block">
+              <KidukaLogo size="sm" showText={true} />
+            </div>
+          </div>
         </div>
         
-        <div className="flex items-center space-x-3">
+        <div className="flex items-center space-x-2 sm:space-x-3 flex-shrink-0">
           {/* Network Status */}
           <div className="flex items-center space-x-1">
             {syncStatus.isOnline ? (
@@ -155,7 +173,7 @@ export const MobileLayout = ({ children }: MobileLayoutProps) => {
             )}
             {!syncStatus.isOnline && syncStatus.summary.unsyncedSalesCount > 0 && (
               <Badge variant="destructive" className="text-xs">
-                {syncStatus.summary.unsyncedSalesCount} pending
+                {syncStatus.summary.unsyncedSalesCount}
               </Badge>
             )}
           </div>
@@ -163,10 +181,10 @@ export const MobileLayout = ({ children }: MobileLayoutProps) => {
           {/* User Profile Dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="relative h-10 w-10 rounded-full">
-                <Avatar className="h-10 w-10">
+              <Button variant="ghost" className="relative h-8 w-8 sm:h-10 sm:w-10 rounded-full p-0">
+                <Avatar className="h-8 w-8 sm:h-10 sm:w-10">
                   <AvatarImage src={userProfile?.avatar_url} />
-                  <AvatarFallback className="bg-gradient-to-br from-emerald-500 to-blue-600 text-white text-sm">
+                  <AvatarFallback className="bg-gradient-to-br from-emerald-500 to-blue-600 text-white text-xs sm:text-sm">
                     {getUserInitials()}
                   </AvatarFallback>
                 </Avatar>
@@ -255,16 +273,17 @@ export const MobileLayout = ({ children }: MobileLayoutProps) => {
                 {navigationItems.map((item) => {
                   const Icon = item.icon;
                   return (
-                    <Button
+                     <Button
                       key={item.id}
                       variant={isActive(item.href) ? "default" : "ghost"}
-                      className={`w-full justify-start text-sm h-10 ${
+                      className={`w-full justify-start text-xs sm:text-sm h-8 sm:h-10 ${
                         isActive(item.href) ? 'bg-blue-600 text-white' : 'text-gray-700 hover:bg-gray-100'
                       }`}
                       onClick={() => handleNavigation(item.href)}
                     >
-                      <Icon className="h-4 w-4 mr-3 flex-shrink-0" />
-                      <span className="truncate">{item.label}</span>
+                      <Icon className="h-3 w-3 sm:h-4 sm:w-4 mr-2 sm:mr-3 flex-shrink-0" />
+                      <span className="truncate hidden sm:inline">{item.label}</span>
+                      <span className="truncate sm:hidden">{item.shortLabel}</span>
                     </Button>
                   );
                 })}

@@ -30,6 +30,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { BackButton } from '@/components/BackButton';
 import type { Json } from '@/integrations/supabase/types';
 
 interface AdminStats {
@@ -530,16 +531,18 @@ export const SuperAdminDashboard = () => {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-4 sm:p-6 space-y-6">
+      <BackButton to="/" className="mb-4" />
+      
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Super Admin Dashboard</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Super Admin Dashboard</h1>
           <p className="text-gray-600">Simamia mfumo wote wa Kiduka</p>
         </div>
-        <Badge className="bg-red-100 text-red-800 px-4 py-2">
+        <Badge className="bg-red-100 text-red-800 px-2 sm:px-4 py-2">
           <Shield className="h-4 w-4 mr-2" />
-          Super Admin
+          <span className="hidden sm:inline">Super Admin</span>
         </Badge>
       </div>
 
@@ -596,13 +599,15 @@ export const SuperAdminDashboard = () => {
 
       {/* Main Content Tabs */}
       <Tabs defaultValue="users" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="users">Watumiaji</TabsTrigger>
-          <TabsTrigger value="subscriptions">Michango</TabsTrigger>
-          <TabsTrigger value="credit">Mikopo</TabsTrigger>
-          <TabsTrigger value="reports">Ripoti</TabsTrigger>
-          <TabsTrigger value="settings">Mipangilio</TabsTrigger>
-        </TabsList>
+        <div className="overflow-x-auto">
+          <TabsList className="grid w-full grid-cols-5 min-w-max">
+            <TabsTrigger value="users" className="text-xs sm:text-sm">Watumiaji</TabsTrigger>
+            <TabsTrigger value="subscriptions" className="text-xs sm:text-sm">Michango</TabsTrigger>
+            <TabsTrigger value="credit" className="text-xs sm:text-sm">Mikopo</TabsTrigger>
+            <TabsTrigger value="reports" className="text-xs sm:text-sm">Ripoti</TabsTrigger>
+            <TabsTrigger value="settings" className="text-xs sm:text-sm">Mipangilio</TabsTrigger>
+          </TabsList>
+        </div>
 
         <TabsContent value="users" className="space-y-6">
           <Card>

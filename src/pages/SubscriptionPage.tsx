@@ -17,6 +17,7 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
+import { BackButton } from '@/components/BackButton';
 
 interface SubscriptionPlan {
   id: string;
@@ -184,12 +185,13 @@ export const SubscriptionPage = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 p-4">
       <div className="max-w-6xl mx-auto space-y-8">
+        <BackButton to="/" className="mb-4" />
         {/* Header */}
         <div className="text-center space-y-4">
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+          <h1 className="text-2xl md:text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
             Chagua Mpango Wako
           </h1>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+          <p className="text-lg md:text-xl text-gray-600 max-w-2xl mx-auto px-4">
             Pata ufikiaji kamili wa Kiduka POS kwa bei nafuu. Anza na mtihani wa siku 30 bila malipo!
           </p>
         </div>

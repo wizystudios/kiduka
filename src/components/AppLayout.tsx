@@ -8,6 +8,7 @@ import {
 } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/AppSidebar';
 import { MobileNavigationMenu } from '@/components/MobileNavigationMenu';
+import { PWAInstaller } from '@/components/PWAInstaller';
 import { useAuth } from '@/hooks/useAuth';
 import { syncService } from '@/utils/syncService';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -15,7 +16,8 @@ import {
   Wifi,
   WifiOff,
   Menu,
-  Bell
+  Bell,
+  Download
 } from 'lucide-react';
 import { KidukaLogo } from '@/components/KidukaLogo';
 import { NotificationCenter } from '@/components/NotificationCenter';
@@ -27,16 +29,27 @@ interface AppLayoutProps {
 
 export const AppLayout = ({ children }: AppLayoutProps) => {
   const [syncStatus, setSyncStatus] = useState(syncService.getSyncStatus());
+  const [showPWAInstaller, setShowPWAInstaller] = useState(false);
   const { userProfile } = useAuth();
   const isMobile = useIsMobile();
 
   useEffect(() => {
+    // Register PWA installer
+    const handleBeforeInstallPrompt = () => {
+      setShowPWAInstaller(true);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
     // Reduce sync check frequency to improve performance
     const interval = setInterval(() => {
       setSyncStatus(syncService.getSyncStatus());
     }, 30000); // Check every 30 seconds instead of 5
 
-    return () => clearInterval(interval);
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      clearInterval(interval);
+    };
   }, []);
 
   return (
@@ -66,35 +79,48 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
                 )}
               </div>
               
-              <div className="flex items-center gap-3">
-                {/* Network Status */}
-                <div className="flex items-center gap-2">
-                  {syncStatus.isOnline ? (
-                    <div className="flex items-center gap-1">
-                      <Wifi className="h-4 w-4 text-green-600" />
-                      <span className="text-xs text-green-600 hidden sm:inline">
-                        Mtandaoni
-                      </span>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-1">
-                      <WifiOff className="h-4 w-4 text-red-600" />
-                      <span className="text-xs text-red-600 hidden sm:inline">
-                        Nje ya mtandao
-                      </span>
-                      {syncStatus.summary.unsyncedSalesCount > 0 && (
-                        <Badge variant="destructive" className="text-xs">
-                          {syncStatus.summary.unsyncedSalesCount}
-                        </Badge>
-                      )}
-                    </div>
-                  )}
-                </div>
+               <div className="flex items-center gap-3">
+                 {/* PWA Install Button */}
+                 {showPWAInstaller && (
+                   <Button
+                     size="sm"
+                     variant="outline"
+                     onClick={() => setShowPWAInstaller(false)}
+                     className="hidden sm:flex"
+                   >
+                     <Download className="h-4 w-4 mr-2" />
+                     Install App
+                   </Button>
+                 )}
 
-                {/* Notifications */}
-                <AdminNotifications />
-                <NotificationCenter />
-              </div>
+                 {/* Network Status */}
+                 <div className="flex items-center gap-2">
+                   {syncStatus.isOnline ? (
+                     <div className="flex items-center gap-1">
+                       <Wifi className="h-4 w-4 text-green-600" />
+                       <span className="text-xs text-green-600 hidden sm:inline">
+                         Mtandaoni
+                       </span>
+                     </div>
+                   ) : (
+                     <div className="flex items-center gap-1">
+                       <WifiOff className="h-4 w-4 text-red-600" />
+                       <span className="text-xs text-red-600 hidden sm:inline">
+                         Nje ya mtandao
+                       </span>
+                       {syncStatus.summary.unsyncedSalesCount > 0 && (
+                         <Badge variant="destructive" className="text-xs">
+                           {syncStatus.summary.unsyncedSalesCount}
+                         </Badge>
+                       )}
+                     </div>
+                   )}
+                 </div>
+
+                 {/* Notifications */}
+                 <AdminNotifications />
+                 <NotificationCenter />
+               </div>
             </div>
           </header>
 
