@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/popover';
 import { Bell, Check, X } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 
 interface Notification {
   id: string;
@@ -26,36 +27,71 @@ export const NotificationCenter = () => {
   const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
-    // Mock notifications for demo - replace with real API
-    const mockNotifications: Notification[] = [
-      {
-        id: '1',
-        title: 'Mauzo Mapya',
-        message: 'Umeongeza bidhaa 5 za TZS 45,000',
-        type: 'success',
-        isRead: false,
-        timestamp: new Date(Date.now() - 5 * 60 * 1000) // 5 minutes ago
-      },
-      {
-        id: '2',
-        title: 'Stock Ndogo',
-        message: 'Bidhaa 3 zimebaki na wingi mdogo',
-        type: 'warning',
-        isRead: false,
-        timestamp: new Date(Date.now() - 30 * 60 * 1000) // 30 minutes ago
-      },
-      {
-        id: '3',
-        title: 'Akaunti ya Kiduka',
-        message: 'Karibu kwenye Kiduka POS! Tumefurahi kuwa pamoja nawe.',
-        type: 'info',
-        isRead: true,
-        timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000) // 1 day ago
+    const fetchRealNotifications = async () => {
+      if (!userProfile?.id) return;
+
+      try {
+        // Get recent sales for success notifications
+        const { data: recentSales } = await supabase
+          .from('sales')
+          .select('id, total_amount, created_at')
+          .eq('owner_id', userProfile.id)
+          .order('created_at', { ascending: false })
+          .limit(3);
+
+        // Get low stock products for warnings
+        const { data: lowStockProducts } = await supabase
+          .from('products')
+          .select('id, name, stock_quantity, low_stock_threshold')
+          .eq('owner_id', userProfile.id)
+          .lte('stock_quantity', 10);
+
+        const realNotifications: Notification[] = [];
+
+        // Add recent sales notifications
+        recentSales?.forEach((sale, index) => {
+          realNotifications.push({
+            id: `sale-${sale.id}`,
+            title: 'Muuzo Umekamilika',
+            message: `Umeuza bidhaa kwa TZS ${Number(sale.total_amount).toLocaleString()}`,
+            type: 'success',
+            isRead: index > 0, // Only first one unread
+            timestamp: new Date(sale.created_at)
+          });
+        });
+
+        // Add low stock warnings
+        if (lowStockProducts && lowStockProducts.length > 0) {
+          realNotifications.push({
+            id: 'low-stock-warning',
+            title: 'Stock Ndogo',
+            message: `Bidhaa ${lowStockProducts.length} zimebaki na wingi mdogo`,
+            type: 'warning',
+            isRead: false,
+            timestamp: new Date(Date.now() - 30 * 60 * 1000)
+          });
+        }
+
+        // Add welcome notification if no other notifications
+        if (realNotifications.length === 0) {
+          realNotifications.push({
+            id: 'welcome',
+            title: 'Akaunti ya Kiduka',
+            message: 'Karibu kwenye Kiduka POS! Tumefurahi kuwa pamoja nawe.',
+            type: 'info',
+            isRead: true,
+            timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000)
+          });
+        }
+
+        setNotifications(realNotifications);
+      } catch (error) {
+        console.error('Error fetching notifications:', error);
       }
-    ];
-    
-    setNotifications(mockNotifications);
-  }, []);
+    };
+
+    fetchRealNotifications();
+  }, [userProfile?.id]);
 
   const unreadCount = notifications.filter(n => !n.isRead).length;
 

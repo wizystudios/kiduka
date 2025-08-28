@@ -229,7 +229,7 @@ export const ScannerPage = () => {
         .insert({
           owner_id: user?.id, // Fixed: using user.id
           cashier_id: user?.id, // Fixed: using user.id
-          total_amount: getTotalAmount(),
+          total_amount: getSubtotal(), // Remove VAT from total
           payment_method: paymentData.method
         })
         .select()
@@ -251,6 +251,18 @@ export const ScannerPage = () => {
 
       if (itemsError) throw itemsError;
 
+      // Update product stock quantities
+      for (const item of cart) {
+        const { error: stockError } = await supabase
+          .from('products')
+          .update({ stock_quantity: item.stock_quantity - item.quantity })
+          .eq('id', item.id);
+        
+        if (stockError) {
+          console.error('Error updating stock for product:', item.id, stockError);
+        }
+      }
+
       const receiptItems = cart.map(item => ({
         name: item.name,
         quantity: item.quantity,
@@ -262,15 +274,15 @@ export const ScannerPage = () => {
         id: sale.id.slice(0, 8),
         items: receiptItems,
         subtotal: getSubtotal(),
-        vatAmount: getVatAmount(),
-        total: getTotalAmount(),
+        vatAmount: 0, // Remove VAT
+        total: getSubtotal(), // Remove VAT from total
         paymentData,
         businessName: userProfile?.business_name || 'KIDUKA STORE'
       });
 
       toast({
         title: 'Sale Completed!',
-        description: `Total: TZS ${getTotalAmount().toLocaleString()}`
+        description: `Total: TZS ${getSubtotal().toLocaleString()}`
       });
       
       setShowPayment(false);
@@ -319,7 +331,7 @@ export const ScannerPage = () => {
       <PaymentMethodDialog
         open={showPayment}
         onOpenChange={setShowPayment}
-        totalAmount={getTotalAmount()}
+        totalAmount={getSubtotal()} 
         onPaymentComplete={handlePaymentComplete}
       />
 
@@ -549,17 +561,9 @@ export const ScannerPage = () => {
                 
                 <div className="border-t pt-4">
                   <div className="space-y-2 mb-4">
-                    <div className="flex justify-between text-sm">
-                      <span>Subtotal:</span>
-                      <span>TZS {getSubtotal().toLocaleString()}</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span>VAT (18%):</span>
-                      <span>TZS {getVatAmount().toLocaleString()}</span>
-                    </div>
                     <div className="flex justify-between items-center border-t pt-2">
                       <span className="text-xl font-bold">Total:</span>
-                      <span className="text-2xl font-bold text-green-600">TZS {getTotalAmount().toLocaleString()}</span>
+                      <span className="text-2xl font-bold text-green-600">TZS {getSubtotal().toLocaleString()}</span>
                     </div>
                   </div>
                   <Button 

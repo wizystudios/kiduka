@@ -141,14 +141,6 @@ export const EnhancedReceiptPrinter = ({
           
           <!-- Totals -->
           <div style="position: relative; z-index: 1;">
-            <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
-              <span style="font-size: 13px; color: #374151;">Subtotal:</span>
-              <span style="font-size: 13px; color: #1f2937;">TZS ${subtotal.toLocaleString()}</span>
-            </div>
-            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-              <span style="font-size: 13px; color: #374151;">VAT (18%):</span>
-              <span style="font-size: 13px; color: #1f2937;">TZS ${vatAmount.toLocaleString()}</span>
-            </div>
             <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 16px; margin-top: 10px; padding-top: 10px; border-top: 2px solid #0284c7;">
               <span style="color: #1f2937;">TOTAL:</span>
               <span style="color: #0284c7;">TZS ${total.toLocaleString()}</span>
