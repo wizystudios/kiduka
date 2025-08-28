@@ -129,7 +129,6 @@ export function AppSidebar() {
           {!collapsed && (
             <div className="flex flex-col">
               <span className="text-sm font-semibold text-foreground">Kiduka POS</span>
-              <span className="text-xs text-muted-foreground">Professional</span>
             </div>
           )}
         </div>

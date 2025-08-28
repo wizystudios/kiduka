@@ -28,64 +28,31 @@ export const AdminNotifications = () => {
   }, [userProfile]);
 
   const fetchNotifications = async () => {
-    // This would fetch from a real notifications table in production
-    // For now, we'll simulate admin notifications
-    const mockNotifications = [
-      {
-        id: '1',
-        type: 'warning' as const,
-        title: 'Mfumo wa Malipo',
-        message: 'Mfumo upo katika hali ya sandbox. Hakikisha kubadilisha hadi production wakati unapokuwa tayari.',
-        created_at: new Date().toISOString(),
-        read: false
-      },
-      {
-        id: '2', 
-        type: 'info' as const,
-        title: 'Watumiaji Wapya',
-        message: '3 watumiaji wapya wamejiunga leo.',
-        created_at: new Date().toISOString(),
-        read: false
-      },
-      {
-        id: '3',
-        type: 'success' as const,
-        title: 'Backup Imefanikiwa',
-        message: 'Backup ya mfumo imefanikiwa kutengenezwa.',
-        created_at: new Date().toISOString(),
-        read: false
+    // Load real system notifications
+    try {
+      const storedNotifications = localStorage.getItem('admin-notifications');
+      if (storedNotifications) {
+        const parsed = JSON.parse(storedNotifications);
+        setNotifications(parsed);
       }
-    ];
-
-    setNotifications(mockNotifications);
+    } catch (error) {
+      console.error('Error loading stored notifications:', error);
+    }
   };
 
   const generateSystemNotifications = async () => {
+    // Remove hardcoded admin notifications - only generate real system alerts when needed
     try {
-      // Check system status and generate notifications
-      const { data: users, error } = await supabase
+      // Check for critical system issues only
+      const { data: profiles, error } = await supabase
         .from('profiles')
-        .select('*');
+        .select('id')
+        .eq('role', 'super_admin');
 
-      if (users) {
-        const totalUsers = users.length;
-        if (totalUsers > 100) {
-          // Add notification for high user count
-          setNotifications(prev => [
-            ...prev,
-            {
-              id: 'high-users',
-              type: 'info',
-              title: 'Watumiaji Wengi',
-              message: `Mfumo una watumiaji ${totalUsers}. Zingatia kuboresha huduma.`,
-              created_at: new Date().toISOString(),
-              read: false
-            }
-          ]);
-        }
-      }
+      // Only add real critical system notifications if needed
+      // This function can be used for actual system monitoring
     } catch (error) {
-      console.error('Error generating system notifications:', error);
+      console.error('Error checking system status:', error);
     }
   };
 

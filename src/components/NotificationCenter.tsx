@@ -31,6 +31,18 @@ export const NotificationCenter = () => {
       if (!userProfile?.id) return;
 
       try {
+        // Load persisted notification state
+        const storedNotifications = localStorage.getItem('user-notifications');
+        let persistedNotifications: Notification[] = [];
+        
+        if (storedNotifications) {
+          try {
+            persistedNotifications = JSON.parse(storedNotifications);
+          } catch (e) {
+            console.error('Error parsing stored notifications:', e);
+          }
+        }
+
         // Get recent sales for success notifications
         const { data: recentSales } = await supabase
           .from('sales')
@@ -50,41 +62,53 @@ export const NotificationCenter = () => {
 
         // Add recent sales notifications
         recentSales?.forEach((sale, index) => {
+          const notificationId = `sale-${sale.id}`;
+          const existingNotification = persistedNotifications.find(n => n.id === notificationId);
+          
           realNotifications.push({
-            id: `sale-${sale.id}`,
+            id: notificationId,
             title: 'Muuzo Umekamilika',
             message: `Umeuza bidhaa kwa TZS ${Number(sale.total_amount).toLocaleString()}`,
             type: 'success',
-            isRead: index > 0, // Only first one unread
+            isRead: existingNotification ? existingNotification.isRead : (index > 0),
             timestamp: new Date(sale.created_at)
           });
         });
 
         // Add low stock warnings
         if (lowStockProducts && lowStockProducts.length > 0) {
+          const notificationId = 'low-stock-warning';
+          const existingNotification = persistedNotifications.find(n => n.id === notificationId);
+          
           realNotifications.push({
-            id: 'low-stock-warning',
+            id: notificationId,
             title: 'Stock Ndogo',
             message: `Bidhaa ${lowStockProducts.length} zimebaki na wingi mdogo`,
             type: 'warning',
-            isRead: false,
+            isRead: existingNotification ? existingNotification.isRead : false,
             timestamp: new Date(Date.now() - 30 * 60 * 1000)
           });
         }
 
         // Add welcome notification if no other notifications
         if (realNotifications.length === 0) {
+          const notificationId = 'welcome';
+          const existingNotification = persistedNotifications.find(n => n.id === notificationId);
+          
           realNotifications.push({
-            id: 'welcome',
+            id: notificationId,
             title: 'Akaunti ya Kiduka',
             message: 'Karibu kwenye Kiduka POS! Tumefurahi kuwa pamoja nawe.',
             type: 'info',
-            isRead: true,
+            isRead: existingNotification ? existingNotification.isRead : true,
             timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000)
           });
         }
 
         setNotifications(realNotifications);
+        
+        // Update localStorage with current notifications
+        localStorage.setItem('user-notifications', JSON.stringify(realNotifications));
       } catch (error) {
         console.error('Error fetching notifications:', error);
       }
@@ -96,15 +120,20 @@ export const NotificationCenter = () => {
   const unreadCount = notifications.filter(n => !n.isRead).length;
 
   const markAsRead = (id: string) => {
-    setNotifications(prev => 
-      prev.map(n => n.id === id ? { ...n, isRead: true } : n)
-    );
+    setNotifications(prev => {
+      const updated = prev.map(n => n.id === id ? { ...n, isRead: true } : n);
+      // Persist to localStorage
+      localStorage.setItem('user-notifications', JSON.stringify(updated));
+      return updated;
+    });
   };
 
   const markAllAsRead = () => {
-    setNotifications(prev => 
-      prev.map(n => ({ ...n, isRead: true }))
-    );
+    setNotifications(prev => {
+      const updated = prev.map(n => ({ ...n, isRead: true }));
+      localStorage.setItem('user-notifications', JSON.stringify(updated));
+      return updated;
+    });
   };
 
   const removeNotification = (id: string) => {

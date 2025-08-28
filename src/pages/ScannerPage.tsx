@@ -10,6 +10,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { CameraScanner } from '@/components/CameraScanner';
 import { PaymentMethodDialog } from '@/components/PaymentMethodDialog';
 import { EnhancedReceiptPrinter } from '@/components/EnhancedReceiptPrinter';
+import { WeightSelector } from '@/components/WeightSelector';
 import { DigitalReceiptService } from '@/components/DigitalReceiptService';
 
 interface Product {
@@ -23,6 +24,7 @@ interface Product {
 
 interface CartItem extends Product {
   quantity: number;
+  weightInfo?: { weight: number; unit: string; totalPrice: number };
 }
 
 interface PaymentData {
@@ -44,6 +46,8 @@ export const ScannerPage = () => {
   const [showReceipt, setShowReceipt] = useState(false);
   const [showDigitalReceipt, setShowDigitalReceipt] = useState(false);
   const [showCamera, setShowCamera] = useState(false);
+  const [showWeightSelector, setShowWeightSelector] = useState(false);
+  const [selectedProductForWeight, setSelectedProductForWeight] = useState<Product | null>(null);
   const [completedSale, setCompletedSale] = useState<{
     id: string;
     items: any[];
@@ -81,13 +85,13 @@ export const ScannerPage = () => {
           .from('products')
           .select('*')
           .eq('barcode', query.trim())
-          .eq('owner_id', user.id); // Fixed: using user.id instead of userProfile?.id
+          .eq('owner_id', user.id);
       } else {
         searchQuery = supabase
           .from('products')
           .select('*')
           .ilike('name', `%${query.trim()}%`)
-          .eq('owner_id', user.id) // Fixed: using user.id instead of userProfile?.id
+          .eq('owner_id', user.id)
           .limit(10);
       }
 
@@ -159,6 +163,24 @@ export const ScannerPage = () => {
   };
 
   const addToCart = (product: Product) => {
+    // Check if this is a weight-based product (typically food items)
+    const weightBasedCategories = ['chakula', 'food', 'vyakula', 'mazao'];
+    const isWeightBased = weightBasedCategories.some(category => 
+      product.category?.toLowerCase().includes(category.toLowerCase()) ||
+      product.name.toLowerCase().includes('sugar') ||
+      product.name.toLowerCase().includes('sukari') ||
+      product.name.toLowerCase().includes('salt') ||
+      product.name.toLowerCase().includes('chumvi') ||
+      product.name.toLowerCase().includes('flour') ||
+      product.name.toLowerCase().includes('unga')
+    );
+
+    if (isWeightBased) {
+      setSelectedProductForWeight(product);
+      setShowWeightSelector(true);
+      return;
+    }
+
     if (product.stock_quantity <= 0) {
       toast({
         title: 'Out of Stock',
@@ -193,6 +215,22 @@ export const ScannerPage = () => {
     });
   };
 
+  const handleWeightBasedAddToCart = (product: Product, weightData: { weight: number; unit: string; totalPrice: number }) => {
+    const cartItem = {
+      ...product,
+      quantity: weightData.weight,
+      price: weightData.totalPrice / weightData.weight,
+      weightInfo: weightData
+    };
+
+    setCart(prev => [...prev, cartItem]);
+    
+    toast({
+      title: 'Added to Cart',
+      description: `${weightData.weight}${weightData.unit} ${product.name} - TZS ${weightData.totalPrice.toLocaleString()}`
+    });
+  };
+
   const updateQuantity = (id: string, change: number) => {
     setCart(cart.map(item => {
       if (item.id === id) {
@@ -211,12 +249,8 @@ export const ScannerPage = () => {
     return cart.reduce((total, item) => total + (item.price * item.quantity), 0);
   };
 
-  const getVatAmount = () => {
-    return getSubtotal() * 0.18;
-  };
-
   const getTotalAmount = () => {
-    return getSubtotal() + getVatAmount();
+    return getSubtotal();
   };
 
   const handlePaymentComplete = async (paymentData: PaymentData) => {
@@ -227,9 +261,9 @@ export const ScannerPage = () => {
       const { data: sale, error: saleError } = await supabase
         .from('sales')
         .insert({
-          owner_id: user?.id, // Fixed: using user.id
-          cashier_id: user?.id, // Fixed: using user.id
-          total_amount: getSubtotal(), // Remove VAT from total
+          owner_id: user?.id,
+          cashier_id: user?.id,
+          total_amount: getSubtotal(),
           payment_method: paymentData.method
         })
         .select()
@@ -251,11 +285,25 @@ export const ScannerPage = () => {
 
       if (itemsError) throw itemsError;
 
-      // Update product stock quantities
+      // Update product stock quantities - fetch current stock first
       for (const item of cart) {
+        // Get current stock from database
+        const { data: currentProduct, error: fetchError } = await supabase
+          .from('products')
+          .select('stock_quantity')
+          .eq('id', item.id)
+          .single();
+
+        if (fetchError) {
+          console.error('Error fetching current stock for product:', item.id, fetchError);
+          continue;
+        }
+
+        // Update with correct stock calculation
+        const newStock = currentProduct.stock_quantity - item.quantity;
         const { error: stockError } = await supabase
           .from('products')
-          .update({ stock_quantity: item.stock_quantity - item.quantity })
+          .update({ stock_quantity: newStock })
           .eq('id', item.id);
         
         if (stockError) {
@@ -274,8 +322,8 @@ export const ScannerPage = () => {
         id: sale.id.slice(0, 8),
         items: receiptItems,
         subtotal: getSubtotal(),
-        vatAmount: 0, // Remove VAT
-        total: getSubtotal(), // Remove VAT from total
+        vatAmount: 0,
+        total: getSubtotal(),
         paymentData,
         businessName: userProfile?.business_name || 'KIDUKA STORE'
       });
@@ -326,6 +374,20 @@ export const ScannerPage = () => {
         onScan={handleCameraScan}
         onClose={() => setShowCamera(false)}
       />
+
+      {/* Weight Selector Modal */}
+      {showWeightSelector && selectedProductForWeight && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <WeightSelector
+            product={selectedProductForWeight}
+            onAddToCart={handleWeightBasedAddToCart}
+            onClose={() => {
+              setShowWeightSelector(false);
+              setSelectedProductForWeight(null);
+            }}
+          />
+        </div>
+      )}
 
       {/* Payment Modal */}
       <PaymentMethodDialog
@@ -523,28 +585,35 @@ export const ScannerPage = () => {
                   <div key={item.id} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
                     <div className="flex-1">
                       <h4 className="font-medium">{item.name}</h4>
-                      <p className="text-sm text-gray-600">TZS {item.price.toLocaleString()} each</p>
+                      <p className="text-sm text-gray-600">
+                        TZS {item.price.toLocaleString()} {item.weightInfo ? `per ${item.weightInfo.unit}` : 'each'}
+                      </p>
+                      {item.weightInfo && (
+                        <p className="text-xs text-blue-600">Weight: {item.weightInfo.weight}{item.weightInfo.unit}</p>
+                      )}
                     </div>
-                    <div className="flex items-center space-x-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => updateQuantity(item.id, -1)}
-                        className="h-8 w-8 p-0"
-                      >
-                        <Minus className="h-3 w-3" />
-                      </Button>
-                      <span className="w-8 text-center font-medium">{item.quantity}</span>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => updateQuantity(item.id, 1)}
-                        className="h-8 w-8 p-0"
-                        disabled={item.quantity >= item.stock_quantity}
-                      >
-                        <Plus className="h-3 w-3" />
-                      </Button>
-                    </div>
+                    {!item.weightInfo && (
+                      <div className="flex items-center space-x-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => updateQuantity(item.id, -1)}
+                          className="h-8 w-8 p-0"
+                        >
+                          <Minus className="h-3 w-3" />
+                        </Button>
+                        <span className="w-8 text-center font-medium">{item.quantity}</span>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => updateQuantity(item.id, 1)}
+                          className="h-8 w-8 p-0"
+                          disabled={item.quantity >= item.stock_quantity}
+                        >
+                          <Plus className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    )}
                     <div className="text-right ml-4">
                       <p className="font-bold">TZS {(item.price * item.quantity).toLocaleString()}</p>
                       <Button
