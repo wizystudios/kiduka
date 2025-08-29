@@ -38,6 +38,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { KidukaLogo } from '@/components/KidukaLogo';
 import { syncService } from '@/utils/syncService';
 import { BackButton } from '@/components/BackButton';
+import { MobileBottomNav } from '@/components/MobileBottomNav';
 
 interface MobileLayoutProps {
   children: React.ReactNode;
@@ -333,11 +334,14 @@ export const MobileLayout = ({ children }: MobileLayoutProps) => {
 
         {/* Main content */}
         <main className="flex-1 lg:ml-0 min-h-screen">
-          <div className="h-full">
+          <div className="h-full pb-16 lg:pb-0">
             {children}
           </div>
         </main>
       </div>
+      
+      {/* Mobile Bottom Navigation */}
+      <MobileBottomNav />
     </div>
   );
 };

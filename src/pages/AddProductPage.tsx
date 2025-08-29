@@ -49,31 +49,63 @@ export const AddProductPage = () => {
     setLoading(true);
     try {
       console.log('Adding product for user:', user.id);
+      console.log('Product data:', formData);
       
-      const { error } = await supabase
+      // Generate barcode if none provided
+      let barcodeToUse = formData.barcode;
+      if (!barcodeToUse) {
+        barcodeToUse = '8' + Date.now().toString().slice(-11);
+      }
+      
+      const productData = {
+        name: formData.name.trim(),
+        barcode: barcodeToUse,
+        price: parseFloat(formData.price),
+        cost_price: parseFloat(formData.cost_price) || 0,
+        stock_quantity: parseInt(formData.stock_quantity),
+        category: formData.category?.trim() || null,
+        description: formData.description?.trim() || null,
+        low_stock_threshold: parseInt(formData.low_stock_threshold),
+        owner_id: user.id
+      };
+
+      console.log('Inserting product:', productData);
+      
+      const { data, error } = await supabase
         .from('products')
-        .insert({
-          name: formData.name,
-          barcode: formData.barcode || null,
-          price: parseFloat(formData.price),
-          cost_price: parseFloat(formData.cost_price) || 0,
-          stock_quantity: parseInt(formData.stock_quantity),
-          category: formData.category || null,
-          description: formData.description || null,
-          low_stock_threshold: parseInt(formData.low_stock_threshold),
-          owner_id: user.id
-        });
+        .insert(productData)
+        .select()
+        .single();
 
       if (error) {
         console.error('Error adding product:', error);
-        throw error;
+        if (error.code === '23505') {
+          toast.error('Barcode tayari imetumiwa. Tafadhali tumia barcode tofauti');
+        } else {
+          toast.error('Imeshindwa kuongeza bidhaa: ' + error.message);
+        }
+        return;
       }
 
+      console.log('Product added successfully:', data);
       toast.success('Bidhaa imeongezwa kwa mafanikio');
+      
+      // Clear form
+      setFormData({
+        name: '',
+        barcode: '',
+        price: '',
+        cost_price: '',
+        stock_quantity: '',
+        category: '',
+        description: '',
+        low_stock_threshold: '10'
+      });
+      
       navigate('/products');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error adding product:', error);
-      toast.error('Imeshindwa kuongeza bidhaa');
+      toast.error('Imeshindwa kuongeza bidhaa: ' + (error.message || 'Kosa la kutarajwa'));
     } finally {
       setLoading(false);
     }

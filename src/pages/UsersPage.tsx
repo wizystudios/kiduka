@@ -70,16 +70,36 @@ export const UsersPage = () => {
 
   const handleCreateUser = async () => {
     if (!newUser.email || !newUser.password || !newUser.full_name) {
-      toast.error('Tafadhali jaza uga zote zinazohitajika');
+      toast.error('Tafadhali jaza sehemu zote zinazohitajika');
+      return;
+    }
+
+    if (newUser.password.length < 6) {
+      toast.error('Nywila lazima iwe na angalau herufi 6');
       return;
     }
 
     try {
-      // Create user with Supabase Auth
+      console.log('Creating new user:', newUser.email);
+      
+      // First check if user already exists
+      const { data: existingUser } = await supabase
+        .from('profiles')
+        .select('email')
+        .eq('email', newUser.email)
+        .single();
+        
+      if (existingUser) {
+        toast.error('Barua pepe hii tayari imesajiliwa');
+        return;
+      }
+
+      // Create user with Supabase Auth - using admin method
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: newUser.email,
         password: newUser.password,
         options: {
+          emailRedirectTo: `${window.location.origin}/auth`,
           data: {
             full_name: newUser.full_name,
             business_name: newUser.business_name,
@@ -90,40 +110,79 @@ export const UsersPage = () => {
 
       if (authError) {
         console.error('Auth error:', authError);
-        throw authError;
-      }
-
-      if (authData.user) {
-        // Create profile directly
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .insert([
-            {
-              id: authData.user.id,
-              email: newUser.email,
-              full_name: newUser.full_name,
-              business_name: newUser.business_name || null,
-              role: newUser.role
-            }
-          ]);
-
-        if (profileError) {
-          console.error('Profile creation error:', profileError);
-          // Don't throw here, profile might be created by trigger
+        if (authError.message.includes('already registered')) {
+          toast.error('Barua pepe hii tayari imesajiliwa');
+        } else if (authError.message.includes('Invalid email')) {
+          toast.error('Barua pepe si sahihi');
+        } else if (authError.message.includes('Password')) {
+          toast.error('Nywila ni fupi sana');
+        } else {
+          toast.error('Imeshindwa kusajili: ' + authError.message);
         }
+        return;
       }
 
-      toast.success('Mtumiaji ameongezwa kwa mafanikio');
-      setNewUser({ email: '', password: '', full_name: '', business_name: '', role: 'assistant' });
-      setDialogOpen(false);
-      fetchUsers();
+      console.log('User created in auth:', authData.user?.id);
+
+      // Wait a bit for the trigger to create the profile
+      setTimeout(async () => {
+        try {
+          // Verify profile was created and update if needed
+          const { data: profile, error: profileFetchError } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', authData.user?.id)
+            .single();
+
+          if (profileFetchError) {
+            console.error('Profile not found, creating manually:', profileFetchError);
+            // Create profile manually if trigger failed
+            const { error: profileInsertError } = await supabase
+              .from('profiles')
+              .insert([
+                {
+                  id: authData.user?.id,
+                  email: newUser.email,
+                  full_name: newUser.full_name,
+                  business_name: newUser.business_name || null,
+                  role: newUser.role
+                }
+              ]);
+
+            if (profileInsertError) {
+              console.error('Manual profile creation error:', profileInsertError);
+            }
+          } else {
+            // Update profile with correct role if trigger used default
+            if (profile.role !== newUser.role) {
+              const { error: updateError } = await supabase
+                .from('profiles')
+                .update({
+                  role: newUser.role,
+                  business_name: newUser.business_name || null
+                })
+                .eq('id', authData.user?.id);
+
+              if (updateError) {
+                console.error('Profile update error:', updateError);
+              }
+            }
+          }
+
+          toast.success('Mtumiaji ameongezwa kwa mafanikio');
+          setNewUser({ email: '', password: '', full_name: '', business_name: '', role: 'assistant' });
+          setDialogOpen(false);
+          fetchUsers();
+        } catch (error) {
+          console.error('Profile creation/update error:', error);
+          toast.success('Mtumiaji amesajiliwa lakini kuna shida na profile. Angalia orodha ya watumiaji.');
+          fetchUsers();
+        }
+      }, 1000);
+
     } catch (error: any) {
       console.error('Error creating user:', error);
-      if (error.message.includes('User already registered')) {
-        toast.error('Barua pepe hii tayari imesajiliwa');
-      } else {
-        toast.error('Imeshindwa kuongeza mtumiaji');
-      }
+      toast.error('Imeshindwa kuongeza mtumiaji: ' + (error.message || 'Kosa la kutarajwa'));
     }
   };
 

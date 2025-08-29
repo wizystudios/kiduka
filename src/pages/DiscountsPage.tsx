@@ -40,12 +40,18 @@ export const DiscountsPage = () => {
 
   const fetchDiscounts = async () => {
     try {
+      console.log('Fetching discounts...');
       const { data, error } = await supabase
         .from('discounts')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching discounts:', error);
+        throw error;
+      }
+      
+      console.log('Discounts loaded:', data?.length || 0);
       
       // Type assertion to fix the type mismatch
       const typedDiscounts = (data || []).map(discount => ({
@@ -57,8 +63,8 @@ export const DiscountsPage = () => {
     } catch (error) {
       console.error('Error fetching discounts:', error);
       toast({
-        title: 'Error',
-        description: 'Failed to load discounts',
+        title: 'Hitilafu',
+        description: 'Imeshindwa kupakia punguzo',
         variant: 'destructive'
       });
     } finally {

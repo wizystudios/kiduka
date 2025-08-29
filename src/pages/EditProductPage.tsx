@@ -17,6 +17,7 @@ export const EditProductPage = () => {
     name: '',
     barcode: '',
     price: '',
+    cost_price: '',
     stock_quantity: '',
     category: '',
     description: '',
@@ -47,6 +48,7 @@ export const EditProductPage = () => {
         name: data.name || '',
         barcode: data.barcode || '',
         price: data.price?.toString() || '',
+        cost_price: data.cost_price?.toString() || '',
         stock_quantity: data.stock_quantity?.toString() || '',
         category: data.category || '',
         description: data.description || '',
@@ -70,8 +72,8 @@ export const EditProductPage = () => {
     
     if (!formData.name || !formData.price || !formData.stock_quantity) {
       toast({
-        title: 'Error',
-        description: 'Please fill in all required fields',
+        title: 'Hitilafu',
+        description: 'Tafadhali jaza sehemu zote muhimu',
         variant: 'destructive'
       });
       return;
@@ -79,33 +81,53 @@ export const EditProductPage = () => {
 
     setLoading(true);
     try {
-      const { error } = await supabase
+      console.log('Updating product:', id, formData);
+      
+      const updateData = {
+        name: formData.name.trim(),
+        barcode: formData.barcode?.trim() || null,
+        price: parseFloat(formData.price),
+        cost_price: parseFloat(formData.cost_price) || 0,
+        stock_quantity: parseInt(formData.stock_quantity),
+        category: formData.category?.trim() || null,
+        description: formData.description?.trim() || null,
+        low_stock_threshold: parseInt(formData.low_stock_threshold),
+        updated_at: new Date().toISOString()
+      };
+      
+      const { data, error } = await supabase
         .from('products')
-        .update({
-          name: formData.name,
-          barcode: formData.barcode || null,
-          price: parseFloat(formData.price),
-          stock_quantity: parseInt(formData.stock_quantity),
-          category: formData.category || null,
-          description: formData.description || null,
-          low_stock_threshold: parseInt(formData.low_stock_threshold),
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', id);
+        .update(updateData)
+        .eq('id', id)
+        .select()
+        .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error updating product:', error);
+        if (error.code === '23505') {
+          toast({
+            title: 'Hitilafu',
+            description: 'Barcode tayari imetumiwa. Tafadhali tumia barcode tofauti',
+            variant: 'destructive'
+          });
+        } else {
+          throw error;
+        }
+        return;
+      }
 
+      console.log('Product updated successfully:', data);
       toast({
-        title: 'Success',
-        description: 'Product updated successfully'
+        title: 'Mafanikio',
+        description: 'Bidhaa imesasishwa kwa mafanikio'
       });
       
       navigate('/products');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error updating product:', error);
       toast({
-        title: 'Error',
-        description: 'Failed to update product',
+        title: 'Hitilafu',
+        description: 'Imeshindwa kusasisha bidhaa: ' + (error.message || 'Kosa la kutarajwa'),
         variant: 'destructive'
       });
     } finally {
@@ -129,24 +151,24 @@ export const EditProductPage = () => {
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Edit Product</h2>
-          <p className="text-gray-600">Update product information</p>
+          <h2 className="text-2xl font-bold text-gray-900">Hariri Bidhaa</h2>
+          <p className="text-gray-600">Sasisha maelezo ya bidhaa</p>
         </div>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Product Information</CardTitle>
+          <CardTitle>Maelezo ya Bidhaa</CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <Label htmlFor="name">Product Name *</Label>
+              <Label htmlFor="name">Jina la Bidhaa *</Label>
               <Input
                 id="name"
                 value={formData.name}
                 onChange={(e) => setFormData({...formData, name: e.target.value})}
-                placeholder="Enter product name"
+                placeholder="Ingiza jina la bidhaa"
                 required
               />
             </div>
@@ -158,7 +180,7 @@ export const EditProductPage = () => {
                   id="barcode"
                   value={formData.barcode}
                   onChange={(e) => setFormData({...formData, barcode: e.target.value})}
-                  placeholder="Scan or enter barcode"
+                  placeholder="Ingiza au scan barcode"
                 />
                 <Button type="button" variant="outline">
                   <Scan className="h-4 w-4" />
@@ -168,7 +190,7 @@ export const EditProductPage = () => {
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="price">Price *</Label>
+                <Label htmlFor="price">Bei ya Mauzo *</Label>
                 <Input
                   id="price"
                   type="number"
@@ -180,7 +202,21 @@ export const EditProductPage = () => {
                 />
               </div>
               <div>
-                <Label htmlFor="stock">Stock Quantity *</Label>
+                <Label htmlFor="cost_price">Bei ya Ununuzi</Label>
+                <Input
+                  id="cost_price"
+                  type="number"
+                  step="0.01"
+                  value={formData.cost_price}
+                  onChange={(e) => setFormData({...formData, cost_price: e.target.value})}
+                  placeholder="0.00"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="stock">Idadi ya Stock *</Label>
                 <Input
                   id="stock"
                   type="number"
@@ -190,20 +226,8 @@ export const EditProductPage = () => {
                   required
                 />
               </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="category">Category</Label>
-                <Input
-                  id="category"
-                  value={formData.category}
-                  onChange={(e) => setFormData({...formData, category: e.target.value})}
-                  placeholder="Electronics, Food, etc."
-                />
-              </div>
-              <div>
-                <Label htmlFor="threshold">Low Stock Threshold</Label>
+                <Label htmlFor="threshold">Kiwango cha Stock Ndogo</Label>
                 <Input
                   id="threshold"
                   type="number"
@@ -215,12 +239,22 @@ export const EditProductPage = () => {
             </div>
 
             <div>
-              <Label htmlFor="description">Description</Label>
+              <Label htmlFor="category">Kategoria</Label>
+              <Input
+                id="category"
+                value={formData.category}
+                onChange={(e) => setFormData({...formData, category: e.target.value})}
+                placeholder="Elektroniki, Chakula, n.k."
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="description">Maelezo</Label>
               <Textarea
                 id="description"
                 value={formData.description}
                 onChange={(e) => setFormData({...formData, description: e.target.value})}
-                placeholder="Product description (optional)"
+                placeholder="Maelezo ya bidhaa (si lazima)"
                 rows={3}
               />
             </div>
@@ -232,7 +266,7 @@ export const EditProductPage = () => {
                 onClick={() => navigate('/products')}
                 className="flex-1"
               >
-                Cancel
+                Ghairi
               </Button>
               <Button
                 type="submit"
@@ -240,7 +274,7 @@ export const EditProductPage = () => {
                 className="flex-1 bg-blue-600 hover:bg-blue-700"
               >
                 <Save className="h-4 w-4 mr-2" />
-                {loading ? 'Updating...' : 'Update Product'}
+                {loading ? 'Inasasisha...' : 'Sasisha Bidhaa'}
               </Button>
             </div>
           </form>

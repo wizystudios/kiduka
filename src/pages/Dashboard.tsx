@@ -51,13 +51,19 @@ export const Dashboard = () => {
       const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
       const endOfDay = new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000);
 
-      // Fetch today's sales
+      // Fetch today's sales with proper date filtering
       const { data: todaysSales, error: salesError } = await supabase
         .from('sales')
-        .select('total_amount')
+        .select('total_amount, created_at, id')
         .eq('owner_id', user.id)
         .gte('created_at', startOfDay.toISOString())
         .lt('created_at', endOfDay.toISOString());
+
+      console.log('Today sales query result:', { 
+        count: todaysSales?.length || 0, 
+        sales: todaysSales,
+        dateRange: { start: startOfDay.toISOString(), end: endOfDay.toISOString() }
+      });
 
       if (salesError) {
         console.error('Error fetching sales:', salesError);

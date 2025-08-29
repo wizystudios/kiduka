@@ -41,18 +41,24 @@ export const CustomersPage = () => {
 
   const fetchCustomers = async () => {
     try {
+      console.log('Fetching customers...');
       const { data, error } = await supabase
         .from('customers')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching customers:', error);
+        throw error;
+      }
+      
+      console.log('Customers loaded:', data?.length || 0);
       setCustomers(data || []);
     } catch (error) {
       console.error('Error fetching customers:', error);
       toast({
-        title: 'Error',
-        description: 'Failed to load customers',
+        title: 'Hitilafu',
+        description: 'Imeshindwa kupakia wateja',
         variant: 'destructive'
       });
     } finally {
@@ -170,49 +176,43 @@ export const CustomersPage = () => {
     <div className="p-4 space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Customer Management</h2>
-          <p className="text-gray-600">Manage your customers and loyalty points</p>
+          <h2 className="text-2xl font-bold text-gray-900">Usimamizi wa Wateja</h2>
+          <p className="text-gray-600">Simamia wateja na pointi za utii</p>
         </div>
         
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
-            <Button 
-              className="bg-blue-600 hover:bg-blue-700 text-white"
-              onClick={() => {
-                setCustomerData({ name: '', email: '', phone: '', address: '', loyalty_points: 0 });
-                setEditingCustomer(null);
-              }}
-            >
+            <Button className="bg-blue-600 hover:bg-blue-700 text-white">
               <Plus className="h-4 w-4 mr-2" />
-              Add Customer
+              Ongeza Mteja
             </Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
-              <DialogTitle>{editingCustomer ? 'Edit Customer' : 'Add New Customer'}</DialogTitle>
+              <DialogTitle>{editingCustomer ? 'Hariri Mteja' : 'Ongeza Mteja Mpya'}</DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
               <div>
-                <Label htmlFor="name">Name *</Label>
+                <Label htmlFor="name">Jina *</Label>
                 <Input
                   id="name"
                   value={customerData.name}
                   onChange={(e) => setCustomerData({...customerData, name: e.target.value})}
-                  placeholder="Customer name"
+                  placeholder="Jina la mteja"
                 />
               </div>
               <div>
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email">Barua Pepe</Label>
                 <Input
                   id="email"
                   type="email"
                   value={customerData.email}
                   onChange={(e) => setCustomerData({...customerData, email: e.target.value})}
-                  placeholder="customer@example.com"
+                  placeholder="mteja@email.com"
                 />
               </div>
               <div>
-                <Label htmlFor="phone">Phone</Label>
+                <Label htmlFor="phone">Simu</Label>
                 <Input
                   id="phone"
                   value={customerData.phone}
@@ -221,16 +221,16 @@ export const CustomersPage = () => {
                 />
               </div>
               <div>
-                <Label htmlFor="address">Address</Label>
+                <Label htmlFor="address">Anwani</Label>
                 <Input
                   id="address"
                   value={customerData.address}
                   onChange={(e) => setCustomerData({...customerData, address: e.target.value})}
-                  placeholder="Customer address"
+                  placeholder="Anwani ya mteja"
                 />
               </div>
               <div>
-                <Label htmlFor="loyalty_points">Loyalty Points</Label>
+                <Label htmlFor="loyalty_points">Pointi za Utii</Label>
                 <Input
                   id="loyalty_points"
                   type="number"
@@ -240,7 +240,7 @@ export const CustomersPage = () => {
                 />
               </div>
               <Button onClick={handleSaveCustomer} className="w-full bg-blue-600 hover:bg-blue-700">
-                {editingCustomer ? 'Update Customer' : 'Add Customer'}
+                {editingCustomer ? 'Sasisha Mteja' : 'Ongeza Mteja'}
               </Button>
             </div>
           </DialogContent>
