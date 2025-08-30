@@ -30,6 +30,11 @@ interface CustomerCredit {
   current_balance: number;
   credit_score: number;
   last_payment_date?: string;
+  payment_history?: Array<{
+    amount: number;
+    date: string;
+    remaining_balance: number;
+  }>;
   created_at: string;
   updated_at: string;
   customer?: Customer;
@@ -50,11 +55,25 @@ export const SmartCreditManager = () => {
     notes: ''
   });
 
+  const [editingCredit, setEditingCredit] = useState<CustomerCredit | null>(null);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
+  const [selectedCredit, setSelectedCredit] = useState<CustomerCredit | null>(null);
+  const [paymentAmount, setPaymentAmount] = useState('');
+
   const [newCustomer, setNewCustomer] = useState({
     name: '',
     phone: '',
     email: '',
     address: ''
+  });
+
+  const convertToCustomerCredit = (data: any): CustomerCredit => ({
+    ...data,
+    payment_history: data.payment_history ? 
+      (Array.isArray(data.payment_history) ? 
+        data.payment_history as Array<{amount: number; date: string; remaining_balance: number}> : 
+        []) : []
   });
 
   const fetchData = useCallback(async () => {
@@ -94,7 +113,7 @@ export const SmartCreditManager = () => {
         toast.error('Imeshindwa kupakia data ya mikopo');
       } else {
         console.log('Credits loaded:', creditsData?.length || 0);
-        setCredits(creditsData || []);
+        setCredits((creditsData || []).map(convertToCustomerCredit));
       }
     } catch (error) {
       console.error('Unexpected error fetching data:', error);
@@ -190,13 +209,127 @@ export const SmartCreditManager = () => {
         throw error;
       }
 
-      setCredits([data, ...credits]);
+      setCredits([convertToCustomerCredit(data), ...credits]);
       setNewCredit({ customer_id: '', credit_limit: '', notes: '' });
       setDialogOpen(false);
       toast.success('Mkopo umeongezwa kwa mafanikio');
     } catch (error) {
       console.error('Error creating credit:', error);
       toast.error('Imeshindwa kuongeza mkopo');
+    }
+  };
+
+  const handleEditCredit = (credit: CustomerCredit) => {
+    setEditingCredit(credit);
+    setNewCredit({
+      customer_id: credit.customer_id,
+      credit_limit: credit.credit_limit.toString(),
+      notes: ''
+    });
+    setEditDialogOpen(true);
+  };
+
+  const handleUpdateCredit = async () => {
+    if (!editingCredit || !newCredit.credit_limit) {
+      toast.error('Tafadhali weka kikomo cha mkopo');
+      return;
+    }
+
+    const creditLimit = parseFloat(newCredit.credit_limit);
+    if (isNaN(creditLimit) || creditLimit <= 0) {
+      toast.error('Kikomo cha mkopo lazima kiwe nambari kubwa kuliko sifuri');
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('customer_credit')
+        .update({
+          credit_limit: creditLimit,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', editingCredit.id)
+        .eq('owner_id', user?.id)
+        .select(`
+          *,
+          customer:customers (*)
+        `)
+        .single();
+
+      if (error) throw error;
+
+      setCredits(prev => prev.map(credit => 
+        credit.id === editingCredit.id ? convertToCustomerCredit(data) : credit
+      ));
+      setEditDialogOpen(false);
+      setEditingCredit(null);
+      setNewCredit({ customer_id: '', credit_limit: '', notes: '' });
+      toast.success('Mkopo umesasishwa kwa mafanikio');
+    } catch (error) {
+      console.error('Error updating credit:', error);
+      toast.error('Imeshindwa kusasisha mkopo');
+    }
+  };
+
+  const handlePayment = (credit: CustomerCredit) => {
+    setSelectedCredit(credit);
+    setPaymentAmount('');
+    setPaymentDialogOpen(true);
+  };
+
+  const handleProcessPayment = async () => {
+    if (!selectedCredit || !paymentAmount) {
+      toast.error('Tafadhali weka kiasi cha malipo');
+      return;
+    }
+
+    const amount = parseFloat(paymentAmount);
+    if (isNaN(amount) || amount <= 0) {
+      toast.error('Kiasi cha malipo lazima kiwe nambari kubwa kuliko sifuri');
+      return;
+    }
+
+    if (amount > selectedCredit.current_balance) {
+      toast.error('Kiasi cha malipo hakiwezi kuwa kubwa kuliko deni');
+      return;
+    }
+
+    try {
+      const newBalance = selectedCredit.current_balance - amount;
+      const paymentHistory = selectedCredit.payment_history || [];
+      
+      const { data, error } = await supabase
+        .from('customer_credit')
+        .update({
+          current_balance: newBalance,
+          last_payment_date: new Date().toISOString(),
+          payment_history: [...paymentHistory, {
+            amount,
+            date: new Date().toISOString(),
+            remaining_balance: newBalance
+          }],
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', selectedCredit.id)
+        .eq('owner_id', user?.id)
+        .select(`
+          *,
+          customer:customers (*)
+        `)
+        .single();
+
+      if (error) throw error;
+
+      setCredits(prev => prev.map(credit => 
+        credit.id === selectedCredit.id ? convertToCustomerCredit(data) : credit
+      ));
+      setPaymentDialogOpen(false);
+      setSelectedCredit(null);
+      setPaymentAmount('');
+      toast.success(`Malipo ya TZS ${amount.toLocaleString()} yamepokewa`);
+    } catch (error) {
+      console.error('Error processing payment:', error);
+      toast.error('Imeshindwa kuchakata malipo');
     }
   };
 
@@ -393,6 +526,112 @@ export const SmartCreditManager = () => {
               </div>
             </DialogContent>
           </Dialog>
+
+          {/* Edit Credit Dialog */}
+          <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>Hariri Mkopo</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div>
+                  <Label>Mteja</Label>
+                  <Input
+                    value={editingCredit?.customer?.name || ''}
+                    disabled
+                    className="bg-gray-50"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="edit_credit_limit">Kikomo cha Mkopo (TZS) *</Label>
+                  <Input
+                    id="edit_credit_limit"
+                    type="number"
+                    value={newCredit.credit_limit}
+                    onChange={(e) => setNewCredit({...newCredit, credit_limit: e.target.value})}
+                    placeholder="100000"
+                    min="1"
+                  />
+                </div>
+
+                <div className="flex gap-2">
+                  <Button 
+                    variant="outline"
+                    onClick={() => setEditDialogOpen(false)}
+                    className="flex-1"
+                  >
+                    Ghairi
+                  </Button>
+                  <Button 
+                    onClick={handleUpdateCredit}
+                    className="flex-1 bg-blue-600 hover:bg-blue-700"
+                    disabled={!newCredit.credit_limit}
+                  >
+                    Sasisha
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          {/* Payment Dialog */}
+          <Dialog open={paymentDialogOpen} onOpenChange={setPaymentDialogOpen}>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>Pokea Malipo</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div>
+                  <Label>Mteja</Label>
+                  <Input
+                    value={selectedCredit?.customer?.name || ''}
+                    disabled
+                    className="bg-gray-50"
+                  />
+                </div>
+
+                <div>
+                  <Label>Deni la Sasa</Label>
+                  <Input
+                    value={`TZS ${selectedCredit?.current_balance?.toLocaleString() || '0'}`}
+                    disabled
+                    className="bg-gray-50"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="payment_amount">Kiasi cha Malipo (TZS) *</Label>
+                  <Input
+                    id="payment_amount"
+                    type="number"
+                    value={paymentAmount}
+                    onChange={(e) => setPaymentAmount(e.target.value)}
+                    placeholder="0"
+                    max={selectedCredit?.current_balance || 0}
+                    min="1"
+                  />
+                </div>
+
+                <div className="flex gap-2">
+                  <Button 
+                    variant="outline"
+                    onClick={() => setPaymentDialogOpen(false)}
+                    className="flex-1"
+                  >
+                    Ghairi
+                  </Button>
+                  <Button 
+                    onClick={handleProcessPayment}
+                    className="flex-1 bg-green-600 hover:bg-green-700"
+                    disabled={!paymentAmount}
+                  >
+                    Pokea Malipo
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
 
@@ -446,13 +685,23 @@ export const SmartCreditManager = () => {
                         </div>
                       </div>
                       
-                      <div className="flex items-center space-x-2">
-                        <CreditCard className="h-4 w-4 text-blue-600" />
-                        <div>
-                          <p className="text-xs text-gray-500">Deni la Sasa</p>
-                          <p className="font-medium">TZS {credit.current_balance?.toLocaleString() || '0'}</p>
-                        </div>
-                      </div>
+                       <div className="flex items-center space-x-2">
+                         <CreditCard className="h-4 w-4 text-blue-600" />
+                         <div>
+                           <p className="text-xs text-gray-500">Deni la Sasa</p>
+                           <p className="font-medium">TZS {credit.current_balance?.toLocaleString() || '0'}</p>
+                           {credit.current_balance > 0 && (
+                             <Button
+                               size="sm"
+                               variant="outline"
+                               onClick={() => handlePayment(credit)}
+                               className="text-xs mt-1 h-6"
+                             >
+                               Lipa Deni
+                             </Button>
+                           )}
+                         </div>
+                       </div>
                       
                       <div className="flex items-center space-x-2">
                         <Calendar className="h-4 w-4 text-orange-600" />
@@ -490,6 +739,7 @@ export const SmartCreditManager = () => {
                     <Button 
                       variant="ghost" 
                       size="sm" 
+                      onClick={() => handleEditCredit(credit)}
                       className="h-8 w-8 p-0 hover:bg-blue-50"
                       title="Hariri mkopo"
                     >

@@ -120,7 +120,7 @@ export const MobileBottomNav = () => {
   return (
     <>
       {/* Bottom Navigation Bar */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 lg:hidden">
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 md:hidden">
         <div className="grid grid-cols-5 h-16">
           {/* Main Navigation Items */}
           {mainNavItems.map((item) => {
