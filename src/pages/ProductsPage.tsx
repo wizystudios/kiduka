@@ -4,11 +4,12 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Search, Edit, Trash2, Package, Loader2 } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, Package, Loader2, Scale } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
+import { WeightQuantitySelector } from '@/components/WeightQuantitySelector';
 
 interface Product {
   id: string;
@@ -19,6 +20,9 @@ interface Product {
   category?: string;
   description?: string;
   low_stock_threshold: number;
+  is_weight_based?: boolean;
+  unit_type?: string;
+  min_quantity?: number;
 }
 
 export const ProductsPage = () => {
@@ -26,6 +30,7 @@ export const ProductsPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [selectedWeightProduct, setSelectedWeightProduct] = useState<Product | null>(null);
   const navigate = useNavigate();
   const { user } = useAuth();
 
@@ -102,6 +107,15 @@ export const ProductsPage = () => {
       console.error('Error deleting product:', error);
       toast.error('Imeshindwa kufuta bidhaa');
     }
+  };
+
+  const handleWeightProductSelect = (product: Product) => {
+    setSelectedWeightProduct(product);
+  };
+
+  const handleAddToCart = (product: Product, quantity: number) => {
+    // This would typically add to a cart/sale
+    toast.success(`Imeongezwa: ${quantity} ${product.unit_type} ya ${product.name}`);
   };
 
   const filteredProducts = useMemo(() => {
@@ -211,38 +225,56 @@ export const ProductsPage = () => {
                     {product.description && (
                       <p className="text-xs text-gray-600 mb-1 truncate">{product.description}</p>
                     )}
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm font-bold text-green-600">
-                        TZS {(product.price || 0).toLocaleString()}
-                      </span>
-                      <div className="flex items-center space-x-1">
-                        <Package className="h-3 w-3 text-gray-500" />
-                        <span className="text-xs text-gray-600">
-                          {product.stock_quantity || 0}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="flex space-x-1 ml-2 flex-shrink-0">
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      onClick={() => navigate(`/products/edit/${product.id}`)}
-                      className="h-6 w-6 p-0 hover:bg-blue-50"
-                      title="Hariri"
-                    >
-                      <Edit className="h-3 w-3 text-blue-600" />
-                    </Button>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      onClick={() => handleDeleteProduct(product.id, product.name)}
-                      className="h-6 w-6 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
-                      title="Futa"
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
+                     <div className="flex justify-between items-center">
+                       <div className="flex items-center gap-2">
+                         <span className="text-sm font-bold text-green-600">
+                           TZS {(product.price || 0).toLocaleString()}
+                         </span>
+                         {product.is_weight_based && (
+                           <Badge variant="secondary" className="text-xs">
+                             kwa {product.unit_type || 'kipande'}
+                           </Badge>
+                         )}
+                       </div>
+                       <div className="flex items-center space-x-1">
+                         <Package className="h-3 w-3 text-gray-500" />
+                         <span className="text-xs text-gray-600">
+                           {product.stock_quantity || 0}
+                         </span>
+                       </div>
+                     </div>
+                   </div>
+                   
+                   <div className="flex space-x-1 ml-2 flex-shrink-0">
+                     {product.is_weight_based && (
+                       <Button 
+                         variant="ghost" 
+                         size="sm" 
+                         onClick={() => handleWeightProductSelect(product)}
+                         className="h-6 w-6 p-0 hover:bg-green-50"
+                         title="Chagua Kiasi"
+                       >
+                         <Scale className="h-3 w-3 text-green-600" />
+                       </Button>
+                     )}
+                     <Button 
+                       variant="ghost" 
+                       size="sm" 
+                       onClick={() => navigate(`/products/edit/${product.id}`)}
+                       className="h-6 w-6 p-0 hover:bg-blue-50"
+                       title="Hariri"
+                     >
+                       <Edit className="h-3 w-3 text-blue-600" />
+                     </Button>
+                     <Button 
+                       variant="ghost" 
+                       size="sm" 
+                       onClick={() => handleDeleteProduct(product.id, product.name)}
+                       className="h-6 w-6 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                       title="Futa"
+                     >
+                       <Trash2 className="h-3 w-3" />
+                     </Button>
                   </div>
                 </div>
               </CardContent>
@@ -276,6 +308,15 @@ export const ProductsPage = () => {
             )}
           </CardContent>
         </Card>
+      )}
+      
+      {/* Weight Quantity Selector Modal */}
+      {selectedWeightProduct && (
+        <WeightQuantitySelector
+          product={selectedWeightProduct}
+          onClose={() => setSelectedWeightProduct(null)}
+          onAddToCart={handleAddToCart}
+        />
       )}
     </div>
   );

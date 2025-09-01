@@ -421,11 +421,14 @@ export type Database = {
           generated_barcode: boolean | null
           id: string
           image_url: string | null
+          is_weight_based: boolean | null
           low_stock_threshold: number | null
+          min_quantity: number | null
           name: string
           owner_id: string
           price: number
           stock_quantity: number
+          unit_type: string | null
           updated_at: string | null
         }
         Insert: {
@@ -437,11 +440,14 @@ export type Database = {
           generated_barcode?: boolean | null
           id?: string
           image_url?: string | null
+          is_weight_based?: boolean | null
           low_stock_threshold?: number | null
+          min_quantity?: number | null
           name: string
           owner_id: string
           price?: number
           stock_quantity?: number
+          unit_type?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -453,11 +459,14 @@ export type Database = {
           generated_barcode?: boolean | null
           id?: string
           image_url?: string | null
+          is_weight_based?: boolean | null
           low_stock_threshold?: number | null
+          min_quantity?: number | null
           name?: string
           owner_id?: string
           price?: number
           stock_quantity?: number
+          unit_type?: string | null
           updated_at?: string | null
         }
         Relationships: [

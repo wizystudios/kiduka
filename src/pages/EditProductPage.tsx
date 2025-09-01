@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ArrowLeft, Save, Scan } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -21,7 +22,10 @@ export const EditProductPage = () => {
     stock_quantity: '',
     category: '',
     description: '',
-    low_stock_threshold: '10'
+    low_stock_threshold: '10',
+    is_weight_based: false,
+    unit_type: 'piece',
+    min_quantity: '0.1'
   });
   
   const navigate = useNavigate();
@@ -52,7 +56,10 @@ export const EditProductPage = () => {
         stock_quantity: data.stock_quantity?.toString() || '',
         category: data.category || '',
         description: data.description || '',
-        low_stock_threshold: data.low_stock_threshold?.toString() || '10'
+        low_stock_threshold: data.low_stock_threshold?.toString() || '10',
+        is_weight_based: data.is_weight_based || false,
+        unit_type: data.unit_type || 'piece',
+        min_quantity: data.min_quantity?.toString() || '0.1'
       });
     } catch (error) {
       console.error('Error fetching product:', error);
@@ -92,6 +99,9 @@ export const EditProductPage = () => {
         category: formData.category?.trim() || null,
         description: formData.description?.trim() || null,
         low_stock_threshold: parseInt(formData.low_stock_threshold),
+        is_weight_based: formData.is_weight_based,
+        unit_type: formData.unit_type,
+        min_quantity: parseFloat(formData.min_quantity) || 0.1,
         updated_at: new Date().toISOString()
       };
       
@@ -257,6 +267,53 @@ export const EditProductPage = () => {
                 placeholder="Maelezo ya bidhaa (si lazima)"
                 rows={3}
               />
+            </div>
+
+            {/* Weight-Based Product Settings */}
+            <div className="border-t pt-4">
+              <div className="flex items-center space-x-2 mb-4">
+                <input
+                  type="checkbox"
+                  id="is_weight_based"
+                  checked={formData.is_weight_based}
+                  onChange={(e) => setFormData({...formData, is_weight_based: e.target.checked})}
+                  className="rounded"
+                />
+                <Label htmlFor="is_weight_based" className="font-medium">
+                  Bidhaa hii inazwa kwa uzito/kipimo (kg, lita, n.k.)
+                </Label>
+              </div>
+              
+              {formData.is_weight_based && (
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="unit_type">Aina ya Kipimo</Label>
+                    <Select value={formData.unit_type} onValueChange={(value) => setFormData({...formData, unit_type: value})}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Chagua kipimo" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="kg">Kilogramu (kg)</SelectItem>
+                        <SelectItem value="g">Gramu (g)</SelectItem>
+                        <SelectItem value="ltr">Lita (ltr)</SelectItem>
+                        <SelectItem value="ml">Millilita (ml)</SelectItem>
+                        <SelectItem value="piece">Kipande</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor="min_quantity">Kiwango cha Chini</Label>
+                    <Input
+                      id="min_quantity"
+                      type="number"
+                      step="0.1"
+                      value={formData.min_quantity}
+                      onChange={(e) => setFormData({...formData, min_quantity: e.target.value})}
+                      placeholder="0.1"
+                    />
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="flex gap-3 pt-4">

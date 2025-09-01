@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ArrowLeft, Save, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -21,7 +22,10 @@ export const AddProductPage = () => {
     stock_quantity: '',
     category: '',
     description: '',
-    low_stock_threshold: '10'
+    low_stock_threshold: '10',
+    is_weight_based: false,
+    unit_type: 'piece',
+    min_quantity: '0.1'
   });
   
   const navigate = useNavigate();
@@ -66,6 +70,9 @@ export const AddProductPage = () => {
         category: formData.category?.trim() || null,
         description: formData.description?.trim() || null,
         low_stock_threshold: parseInt(formData.low_stock_threshold),
+        is_weight_based: formData.is_weight_based,
+        unit_type: formData.unit_type,
+        min_quantity: parseFloat(formData.min_quantity) || 0.1,
         owner_id: user.id
       };
 
@@ -99,7 +106,10 @@ export const AddProductPage = () => {
         stock_quantity: '',
         category: '',
         description: '',
-        low_stock_threshold: '10'
+        low_stock_threshold: '10',
+        is_weight_based: false,
+        unit_type: 'piece',
+        min_quantity: '0.1'
       });
       
       navigate('/products');
@@ -245,6 +255,54 @@ export const AddProductPage = () => {
                 rows={2}
                 className="text-sm"
               />
+            </div>
+
+            {/* Weight-Based Product Settings */}
+            <div className="border-t pt-3">
+              <div className="flex items-center space-x-2 mb-3">
+                <input
+                  type="checkbox"
+                  id="is_weight_based"
+                  checked={formData.is_weight_based}
+                  onChange={(e) => setFormData({...formData, is_weight_based: e.target.checked})}
+                  className="rounded"
+                />
+                <Label htmlFor="is_weight_based" className="text-xs font-medium">
+                  Bidhaa hii inazwa kwa uzito/kipimo (kg, lita, n.k.)
+                </Label>
+              </div>
+              
+              {formData.is_weight_based && (
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <Label htmlFor="unit_type" className="text-xs">Aina ya Kipimo</Label>
+                    <Select value={formData.unit_type} onValueChange={(value) => setFormData({...formData, unit_type: value})}>
+                      <SelectTrigger className="h-8 text-sm">
+                        <SelectValue placeholder="Chagua kipimo" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="kg">Kilogramu (kg)</SelectItem>
+                        <SelectItem value="g">Gramu (g)</SelectItem>
+                        <SelectItem value="ltr">Lita (ltr)</SelectItem>
+                        <SelectItem value="ml">Millilita (ml)</SelectItem>
+                        <SelectItem value="piece">Kipande</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor="min_quantity" className="text-xs">Kiwango cha Chini</Label>
+                    <Input
+                      id="min_quantity"
+                      type="number"
+                      step="0.1"
+                      value={formData.min_quantity}
+                      onChange={(e) => setFormData({...formData, min_quantity: e.target.value})}
+                      placeholder="0.1"
+                      className="text-sm h-8"
+                    />
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="flex gap-2 pt-2">
