@@ -13,6 +13,7 @@ import { EmailVerificationStatus } from '@/components/EmailVerificationStatus';
 import { Dashboard } from '@/pages/Dashboard';
 import { ProductsPage } from '@/pages/ProductsPage';
 import { AddProductPage } from '@/pages/AddProductPage';
+import { EditProductPage } from '@/pages/EditProductPage';
 import { ScannerPage } from '@/pages/ScannerPage';
 import { SalesPage } from '@/pages/SalesPage';
 import { CustomersPage } from '@/pages/CustomersPage';
@@ -88,6 +89,14 @@ function App() {
                 <ProtectedRoute>
                   <AppLayout>
                     <AddProductPage />
+                  </AppLayout>
+                </ProtectedRoute>
+              } />
+              
+              <Route path="/products/edit/:id" element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <EditProductPage />
                   </AppLayout>
                 </ProtectedRoute>
               } />
