@@ -20,6 +20,7 @@ interface Product {
   price: number;
   stock_quantity: number;
   category: string;
+  is_weight_based?: boolean;
 }
 
 interface CartItem extends Product {
@@ -163,19 +164,8 @@ export const ScannerPage = () => {
   };
 
   const addToCart = (product: Product) => {
-    // Check if this is a weight-based product (typically food items)
-    const weightBasedCategories = ['chakula', 'food', 'vyakula', 'mazao'];
-    const isWeightBased = weightBasedCategories.some(category => 
-      product.category?.toLowerCase().includes(category.toLowerCase()) ||
-      product.name.toLowerCase().includes('sugar') ||
-      product.name.toLowerCase().includes('sukari') ||
-      product.name.toLowerCase().includes('salt') ||
-      product.name.toLowerCase().includes('chumvi') ||
-      product.name.toLowerCase().includes('flour') ||
-      product.name.toLowerCase().includes('unga')
-    );
-
-    if (isWeightBased) {
+    // Check if this is a weight-based product using the database field
+    if (product.is_weight_based) {
       setSelectedProductForWeight(product);
       setShowWeightSelector(true);
       return;

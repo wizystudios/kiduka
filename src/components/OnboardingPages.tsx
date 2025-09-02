@@ -62,12 +62,8 @@ export const OnboardingPages = ({ onComplete }: OnboardingPagesProps) => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-blue-50 to-purple-50 flex flex-col">
       {/* Header with Logo */}
-      <div className="p-3 flex justify-between items-center">
+      <div className="p-3 flex justify-center items-center">
         <KidukaLogo size="sm" animate />
-        <Button variant="ghost" onClick={handleSkip} className="text-gray-500 text-xs px-2 py-1 h-7">
-          <X className="h-3 w-3 mr-1" />
-          Ruka
-        </Button>
       </div>
 
       {/* Main Content */}
@@ -181,20 +177,29 @@ export const OnboardingPages = ({ onComplete }: OnboardingPagesProps) => {
           ))}
         </div>
 
-        {/* Next Button */}
-        <Button 
-          onClick={handleNext} 
-          className="w-full bg-gradient-to-r from-emerald-600 to-blue-600 hover:from-emerald-700 hover:to-blue-700 text-white py-2 text-xs font-semibold h-9"
-        >
-          {currentPage < pages.length - 1 ? (
-            <>
-              Endelea
-              <ArrowRight className="ml-2 h-3 w-3" />
-            </>
-          ) : (
-            'Anza Kutumia'
-          )}
-        </Button>
+        {/* Action Buttons */}
+        <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            onClick={handleSkip} 
+            className="flex-1 text-gray-500 border-gray-300 hover:bg-gray-50 text-xs py-2 h-9"
+          >
+            Ruka
+          </Button>
+          <Button 
+            onClick={handleNext} 
+            className="flex-1 bg-gradient-to-r from-emerald-600 to-blue-600 hover:from-emerald-700 hover:to-blue-700 text-white py-2 text-xs font-semibold h-9"
+          >
+            {currentPage < pages.length - 1 ? (
+              <>
+                Endelea
+                <ArrowRight className="ml-2 h-3 w-3" />
+              </>
+            ) : (
+              'Anza Kutumia'
+            )}
+          </Button>
+        </div>
       </div>
     </div>
   );
