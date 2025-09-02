@@ -92,14 +92,6 @@ export const AuthPage = () => {
             </TabsList>
             
             <TabsContent value="signin">
-              {/* Show info about email confirmation for sign in */}
-              <Alert className="mb-4 border-blue-200 bg-blue-50">
-                <AlertCircle className="h-4 w-4 text-blue-600" />
-                <AlertDescription className="text-blue-800">
-                  Ni lazima uthimbishe barua pepe yako kabla ya kuingia.
-                </AlertDescription>
-              </Alert>
-
               <form onSubmit={handleSignIn} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="signin-email">Barua Pepe</Label>
