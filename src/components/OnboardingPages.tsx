@@ -67,8 +67,8 @@ export const OnboardingPages = ({ onComplete }: OnboardingPagesProps) => {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex items-center justify-center p-3">
-        <Card className="w-full max-w-xs border-0 shadow-xl bg-white/80 backdrop-blur-sm">
+      <div className="flex-1 flex flex-col items-center justify-center p-3 max-w-sm mx-auto">
+        <Card className="w-full border-0 shadow-xl bg-white/80 backdrop-blur-sm mb-6">
           <CardContent className="p-4 text-center">
             {/* Icon */}
             <div className={`mx-auto w-12 h-12 bg-gradient-to-br ${currentPageData.color} rounded-full flex items-center justify-center mb-3 animate-scale-in`}>
@@ -159,46 +159,46 @@ export const OnboardingPages = ({ onComplete }: OnboardingPagesProps) => {
             </div>
           </CardContent>
         </Card>
-      </div>
 
-      {/* Footer Navigation - Fixed at bottom */}
-      <div className="p-3">
-        {/* Page Indicators */}
-        <div className="flex justify-center space-x-2 mb-3">
-          {pages.map((_, index) => (
-            <div
-              key={index}
-              className={`w-2 h-2 rounded-full transition-all duration-300 ${
-                index === currentPage 
-                  ? 'bg-gradient-to-r from-emerald-500 to-blue-500 scale-125' 
-                  : 'bg-gray-300'
-              }`}
-            />
-          ))}
-        </div>
+        {/* Navigation moved up closer to content */}
+        <div className="w-full">
+          {/* Page Indicators */}
+          <div className="flex justify-center space-x-2 mb-3">
+            {pages.map((_, index) => (
+              <div
+                key={index}
+                className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                  index === currentPage 
+                    ? 'bg-gradient-to-r from-emerald-500 to-blue-500 scale-125' 
+                    : 'bg-gray-300'
+                }`}
+              />
+            ))}
+          </div>
 
-        {/* Action Buttons */}
-        <div className="flex gap-2">
-          <Button 
-            variant="outline" 
-            onClick={handleSkip} 
-            className="flex-1 text-gray-500 border-gray-300 hover:bg-gray-50 text-xs py-2 h-9"
-          >
-            Ruka
-          </Button>
-          <Button 
-            onClick={handleNext} 
-            className="flex-1 bg-gradient-to-r from-emerald-600 to-blue-600 hover:from-emerald-700 hover:to-blue-700 text-white py-2 text-xs font-semibold h-9"
-          >
-            {currentPage < pages.length - 1 ? (
-              <>
-                Endelea
-                <ArrowRight className="ml-2 h-3 w-3" />
-              </>
-            ) : (
-              'Anza Kutumia'
-            )}
-          </Button>
+          {/* Action Buttons */}
+          <div className="flex gap-2">
+            <Button 
+              variant="outline" 
+              onClick={handleSkip} 
+              className="flex-1 text-gray-500 border-gray-300 hover:bg-gray-50 text-xs py-2 h-9"
+            >
+              Ruka
+            </Button>
+            <Button 
+              onClick={handleNext} 
+              className="flex-1 bg-gradient-to-r from-emerald-600 to-blue-600 hover:from-emerald-700 hover:to-blue-700 text-white py-2 text-xs font-semibold h-9"
+            >
+              {currentPage < pages.length - 1 ? (
+                <>
+                  Endelea
+                  <ArrowRight className="ml-2 h-3 w-3" />
+                </>
+              ) : (
+                'Anza Kutumia'
+              )}
+            </Button>
+          </div>
         </div>
       </div>
     </div>
