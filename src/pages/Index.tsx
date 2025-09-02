@@ -8,7 +8,11 @@ const Index = () => {
   const { user, loading } = useAuth();
   const [showOnboarding, setShowOnboarding] = useState(false);
 
+  // Debug logging
+  console.log('Index component render - loading:', loading, 'user:', user?.email || 'no user', 'showOnboarding:', showOnboarding);
+
   useEffect(() => {
+    console.log('Index useEffect - loading:', loading, 'user:', user?.email || 'no user');
     if (loading) return;
     
     if (user && user.email_confirmed_at) {
@@ -17,6 +21,7 @@ const Index = () => {
     } else if (!user) {
       // Check if user has seen onboarding before
       const hasSeenOnboarding = localStorage.getItem('kiduka_onboarding_seen');
+      console.log('No user, hasSeenOnboarding:', hasSeenOnboarding);
       if (!hasSeenOnboarding) {
         setShowOnboarding(true);
       }
