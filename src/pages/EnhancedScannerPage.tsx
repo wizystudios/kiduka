@@ -301,30 +301,35 @@ export const EnhancedScannerPage = () => {
 
         if (itemsError) throw itemsError;
 
-        // Update product stock using current DB value to avoid double deductions
+        // Aggregate quantities per product to avoid double deductions if duplicates exist
+        const qtyByProduct = new Map<string, number>();
         for (const item of cart) {
+          qtyByProduct.set(item.id, (qtyByProduct.get(item.id) || 0) + Number(item.quantity));
+        }
+
+        for (const [productId, qty] of qtyByProduct.entries()) {
           // Fetch latest stock to ensure we update from the current value
           const { data: current, error: fetchErr } = await supabase
             .from('products')
             .select('stock_quantity, name')
-            .eq('id', item.id)
+            .eq('id', productId)
             .single();
 
           if (fetchErr || !current) {
-            console.error('Failed to fetch current stock for', item.id, fetchErr);
+            console.error('Failed to fetch current stock for', productId, fetchErr);
             continue;
           }
 
-          const newStock = Math.max(0, Number(current.stock_quantity) - Number(item.quantity));
-          console.log(`Updating stock for ${current.name}: ${current.stock_quantity} - ${item.quantity} = ${newStock}`);
+          const newStock = Math.max(0, Number(current.stock_quantity) - Number(qty));
+          console.log(`Updating stock for ${current.name}: ${current.stock_quantity} - ${qty} = ${newStock}`);
 
           const { error: updErr } = await supabase
             .from('products')
             .update({ stock_quantity: newStock, updated_at: new Date().toISOString() })
-            .eq('id', item.id);
+            .eq('id', productId);
 
           if (updErr) {
-            console.error('Stock update error for', item.id, updErr);
+            console.error('Stock update error for', productId, updErr);
           }
         }
 
@@ -381,6 +386,9 @@ export const EnhancedScannerPage = () => {
         description: 'Imeshindwa kukamilisha muuzo',
         variant: 'destructive'
       });
+    } finally {
+      // Release duplicate-call lock
+      (handlePaymentComplete as any).__lock = false;
     }
   };
 
