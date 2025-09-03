@@ -48,7 +48,9 @@ export const PaymentMethodDialog = ({ open, onOpenChange, totalAmount, onPayment
   ];
 
   const handlePayment = async () => {
+    if (processing) return; // prevent double submit
     if (selectedMethod === 'cash') {
+      setProcessing(true);
       // Cash payment - immediate confirmation
       onPaymentComplete({
         method: 'cash',
