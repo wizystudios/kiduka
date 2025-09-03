@@ -301,12 +301,31 @@ export const EnhancedScannerPage = () => {
 
         if (itemsError) throw itemsError;
 
-        // Update product stock
+        // Update product stock using current DB value to avoid double deductions
         for (const item of cart) {
-          await supabase
+          // Fetch latest stock to ensure we update from the current value
+          const { data: current, error: fetchErr } = await supabase
             .from('products')
-            .update({ stock_quantity: item.stock_quantity - item.quantity })
+            .select('stock_quantity, name')
+            .eq('id', item.id)
+            .single();
+
+          if (fetchErr || !current) {
+            console.error('Failed to fetch current stock for', item.id, fetchErr);
+            continue;
+          }
+
+          const newStock = Math.max(0, Number(current.stock_quantity) - Number(item.quantity));
+          console.log(`Updating stock for ${current.name}: ${current.stock_quantity} - ${item.quantity} = ${newStock}`);
+
+          const { error: updErr } = await supabase
+            .from('products')
+            .update({ stock_quantity: newStock, updated_at: new Date().toISOString() })
             .eq('id', item.id);
+
+          if (updErr) {
+            console.error('Stock update error for', item.id, updErr);
+          }
         }
 
         // Prepare digital receipt data

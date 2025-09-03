@@ -91,6 +91,8 @@ export const PaymentMethodDialog = ({ open, onOpenChange, totalAmount, onPayment
   };
 
   const confirmPaymentReceived = () => {
+    // Guard against double submission
+    if (paymentConfirmed) return;
     setPaymentConfirmed(true);
     setAwaitingPayment(false);
     
