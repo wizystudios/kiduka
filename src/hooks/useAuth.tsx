@@ -18,35 +18,11 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  // Initialize state with error boundaries for HMR
-  const [user, setUser] = useState<User | null>(() => {
-    try {
-      return null;
-    } catch {
-      return null;
-    }
-  });
-  const [session, setSession] = useState<Session | null>(() => {
-    try {
-      return null;
-    } catch {
-      return null;
-    }
-  });
-  const [userProfile, setUserProfile] = useState<any>(() => {
-    try {
-      return null;
-    } catch {
-      return null;
-    }
-  });
-  const [loading, setLoading] = useState(() => {
-    try {
-      return true;
-    } catch {
-      return false;
-    }
-  });
+  // Simplified state initialization to prevent dispatcher errors
+  const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
+  const [userProfile, setUserProfile] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
   // Clean-up any stale Supabase auth state to prevent limbo sessions
   const cleanupAuthState = () => {
@@ -163,96 +139,71 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     let mounted = true;
-    let isInitialized = false;
     let subscription: any = null;
 
-    const safeSetState = (setter: Function, value: any) => {
-      try {
+    const handleAuthStateChange = async (event: string, session: any) => {
+      if (!mounted) return;
+      
+      console.log('Auth state changed:', event, session?.user?.email);
+      
+      if (mounted) {
+        setSession(session);
+        setUser(session?.user ?? null);
+      }
+      
+      if (event === 'SIGNED_OUT') {
         if (mounted) {
-          setter(value);
+          setUserProfile(null);
+          setLoading(false);
         }
-      } catch (error) {
-        console.warn('State update warning:', error);
+        return;
+      }
+      
+      if (session?.user && mounted) {
+        try {
+          const profile = await fetchUserProfile(session.user.id);
+          if (mounted) {
+            setUserProfile(profile);
+            setLoading(false);
+          }
+        } catch (error) {
+          console.error('Error loading profile:', error);
+          if (mounted) {
+            setLoading(false);
+          }
+        }
+      } else if (mounted) {
+        setLoading(false);
       }
     };
 
-    const handleAuthStateChange = (event: string, session: any) => {
-      if (!mounted) return;
-      
+    const initializeAuth = async () => {
       try {
-        // Prevent infinite loops on INITIAL_SESSION
-        if (event === 'INITIAL_SESSION' && isInitialized) {
-          return;
-        }
-        
-        console.log('Auth state changed:', event, session?.user?.email);
-        safeSetState(setSession, session);
-        safeSetState(setUser, session?.user ?? null);
-        
-        if (event === 'SIGNED_OUT') {
-          safeSetState(setUserProfile, null);
-          safeSetState(setLoading, false);
-          isInitialized = true;
-          return;
-        }
-        
-        if (session?.user) {
-          // Defer profile loading to prevent blocking
-          setTimeout(async () => {
-            if (!mounted) return;
-            
-            try {
-              const profile = await fetchUserProfile(session.user.id);
-              safeSetState(setUserProfile, profile);
-              safeSetState(setLoading, false);
-            } catch (error) {
-              console.error('Error loading profile:', error);
-              safeSetState(setLoading, false);
-            }
-          }, 0);
-        } else {
-          safeSetState(setLoading, false);
-        }
-        
-        isInitialized = true;
+        const { data: { session } } = await supabase.auth.getSession();
+        await handleAuthStateChange('INITIAL_SESSION', session);
       } catch (error) {
-        console.error('Auth state change error:', error);
-        safeSetState(setLoading, false);
+        console.error('Error getting session:', error);
+        if (mounted) {
+          setLoading(false);
+        }
       }
     };
 
     try {
       const authListener = supabase.auth.onAuthStateChange(handleAuthStateChange);
       subscription = authListener.data.subscription;
-
-      // Check for existing session only once
-      const initializeAuth = async () => {
-        try {
-          const { data: { session } } = await supabase.auth.getSession();
-          if (mounted && !isInitialized) {
-            handleAuthStateChange('INITIAL_SESSION', session);
-          }
-        } catch (error) {
-          console.error('Error getting session:', error);
-          safeSetState(setLoading, false);
-          isInitialized = true;
-        }
-      };
-
       initializeAuth();
     } catch (error) {
       console.error('Auth initialization error:', error);
-      safeSetState(setLoading, false);
+      if (mounted) {
+        setLoading(false);
+      }
     }
 
     return () => {
       mounted = false;
       if (subscription) {
-        try {
-          subscription.unsubscribe();
-        } catch (error) {
-          console.warn('Subscription cleanup warning:', error);
-        }
+        subscription.unsubscribe();
       }
     };
   }, []);
@@ -329,35 +280,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  // Error boundary for the provider value
-  const contextValue = React.useMemo(() => {
-    try {
-      return {
-        user,
-        session,
-        userProfile,
-        loading,
-        signIn,
-        signUp,
-        signOut,
-        refreshProfile,
-        updateProfile,
-      };
-    } catch (error) {
-      console.error('Context value creation error:', error);
-      return {
-        user: null,
-        session: null,
-        userProfile: null,
-        loading: false,
-        signIn: async () => {},
-        signUp: async () => {},
-        signOut: async () => {},
-        refreshProfile: async () => {},
-        updateProfile: async () => ({}),
-      };
-    }
-  }, [user, session, userProfile, loading, signIn, signUp, signOut, refreshProfile, updateProfile]);
+  const contextValue = React.useMemo(() => ({
+    user,
+    session,
+    userProfile,
+    loading,
+    signIn,
+    signUp,
+    signOut,
+    refreshProfile,
+    updateProfile,
+  }), [user, session, userProfile, loading, signIn, signUp, signOut, refreshProfile, updateProfile]);
 
   return (
     <AuthContext.Provider value={contextValue}>
