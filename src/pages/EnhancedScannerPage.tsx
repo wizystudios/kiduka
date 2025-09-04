@@ -10,6 +10,7 @@ import { BarcodeScanner } from '@/components/BarcodeScanner';
 import { PaymentMethodDialog } from '@/components/PaymentMethodDialog';
 import { EnhancedReceiptPrinter } from '@/components/EnhancedReceiptPrinter';
 import { DigitalReceiptService } from '@/components/DigitalReceiptService';
+import { WeightQuantitySelector } from '@/components/WeightQuantitySelector';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
@@ -59,6 +60,8 @@ export const EnhancedScannerPage = () => {
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
   const [showReceipt, setShowReceipt] = useState(false);
   const [showDigitalReceipt, setShowDigitalReceipt] = useState(false);
+  const [showWeightSelector, setShowWeightSelector] = useState(false);
+  const [selectedProductForWeight, setSelectedProductForWeight] = useState<Product | null>(null);
   const [currentReceiptData, setCurrentReceiptData] = useState<any>(null);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -142,6 +145,13 @@ export const EnhancedScannerPage = () => {
         return;
       }
 
+      // Check if this is a weight-based product
+      if (product.is_weight_based) {
+        setSelectedProductForWeight(product);
+        setShowWeightSelector(true);
+        return;
+      }
+
       if (product.stock_quantity <= 0) {
         toast({
           title: 'Out of stock',
@@ -154,6 +164,7 @@ export const EnhancedScannerPage = () => {
       const existingItem = cart.find(item => item.id === product.id);
       
       if (existingItem) {
+        // For regular products, check against whole number stock
         if (existingItem.quantity >= product.stock_quantity) {
           toast({
             title: 'Insufficient stock',
@@ -167,7 +178,7 @@ export const EnhancedScannerPage = () => {
         const cartItem: CartItem = {
           ...product,
           quantity: 1,
-          total: product.price
+          total: product.price * 1
         };
         setCart([...cart, cartItem]);
       }
@@ -188,6 +199,36 @@ export const EnhancedScannerPage = () => {
     }
   };
 
+  const handleWeightProductAdd = (product: Product, quantity: number) => {
+    const existingItem = cart.find(item => item.id === product.id);
+    
+    if (existingItem) {
+      // For weight-based products, add to existing quantity
+      const newQuantity = existingItem.quantity + quantity;
+      const newTotal = newQuantity * product.price;
+      
+      setCart(cart.map(item => 
+        item.id === product.id 
+          ? { ...item, quantity: newQuantity, total: newTotal }
+          : item
+      ));
+    } else {
+      const cartItem: CartItem = {
+        ...product,
+        quantity: quantity,
+        total: quantity * product.price
+      };
+      setCart([...cart, cartItem]);
+    }
+    
+    setShowWeightSelector(false);
+    setSelectedProductForWeight(null);
+    
+    toast({
+      title: 'Product added',
+      description: `${quantity} ${product.unit_type || 'units'} of ${product.name} added to cart`
+    });
+  };
   const updateCartItemQuantity = (productId: string, newQuantity: number) => {
     if (newQuantity <= 0) {
       removeFromCart(productId);
@@ -196,7 +237,8 @@ export const EnhancedScannerPage = () => {
 
     setCart(cart.map(item => {
       if (item.id === productId) {
-        const maxQuantity = item.stock_quantity;
+        // For weight-based products, allow decimal quantities
+        const maxQuantity = item.is_weight_based ? 999999 : Math.floor(item.stock_quantity);
         const quantity = Math.min(newQuantity, maxQuantity);
         return {
           ...item,
@@ -481,48 +523,59 @@ export const EnhancedScannerPage = () => {
           {cart.length === 0 ? (
             <p className="text-gray-500 text-center py-8">Cart is empty. Scan products to add them.</p>
           ) : (
-            <div className="space-y-4">
-              {cart.map((item) => (
-                <div key={item.id} className="flex items-center justify-between p-3 border rounded-lg">
-                  <div className="flex-1">
-                    <h4 className="font-medium">{item.name}</h4>
-                    <p className="text-sm text-gray-600">TZS {item.price.toLocaleString()} each</p>
-                  </div>
-                  
-                  <div className="flex items-center space-x-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => updateCartItemQuantity(item.id, item.quantity - 1)}
-                    >
-                      <Minus className="h-3 w-3" />
-                    </Button>
-                    
-                    <span className="w-8 text-center">{item.quantity}</span>
-                    
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => updateCartItemQuantity(item.id, item.quantity + 1)}
-                      disabled={item.quantity >= item.stock_quantity}
-                    >
-                      <Plus className="h-3 w-3" />
-                    </Button>
-                    
-                    <span className="w-20 text-right font-medium">TZS {item.total.toLocaleString()}</span>
-                    
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => removeFromCart(item.id)}
-                      className="text-red-500 hover:text-red-700"
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
-                  </div>
+          <div className="space-y-4">
+            {cart.map((item) => (
+              <div key={item.id} className="flex items-center justify-between p-3 border rounded-lg">
+                <div className="flex-1">
+                  <h4 className="font-medium">{item.name}</h4>
+                  <p className="text-sm text-gray-600">
+                    TZS {item.price.toLocaleString()} per {item.is_weight_based ? (item.unit_type || 'unit') : 'piece'}
+                  </p>
+                  {item.is_weight_based && (
+                    <p className="text-xs text-blue-600">Weight-based product</p>
+                  )}
                 </div>
-              ))}
-            </div>
+                
+                <div className="flex items-center space-x-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => updateCartItemQuantity(item.id, item.quantity - (item.is_weight_based ? 0.1 : 1))}
+                    disabled={item.quantity <= (item.is_weight_based ? (item.min_quantity || 0.1) : 1)}
+                  >
+                    <Minus className="h-3 w-3" />
+                  </Button>
+                  
+                  <span className="w-16 text-center text-sm">
+                    {item.is_weight_based 
+                      ? `${item.quantity} ${item.unit_type || 'unit'}`
+                      : item.quantity
+                    }
+                  </span>
+                  
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => updateCartItemQuantity(item.id, item.quantity + (item.is_weight_based ? 0.1 : 1))}
+                    disabled={!item.is_weight_based && item.quantity >= item.stock_quantity}
+                  >
+                    <Plus className="h-3 w-3" />
+                  </Button>
+                  
+                  <span className="w-20 text-right font-medium">TZS {item.total.toLocaleString()}</span>
+                  
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => removeFromCart(item.id)}
+                    className="text-red-500 hover:text-red-700"
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
           )}
         </CardContent>
       </Card>
@@ -637,6 +690,18 @@ export const EnhancedScannerPage = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Weight Quantity Selector Modal */}
+      {showWeightSelector && selectedProductForWeight && (
+        <WeightQuantitySelector
+          product={selectedProductForWeight}
+          onClose={() => {
+            setShowWeightSelector(false);
+            setSelectedProductForWeight(null);
+          }}
+          onAddToCart={handleWeightProductAdd}
+        />
+      )}
 
       {/* Payment Method Dialog */}
       <PaymentMethodDialog
