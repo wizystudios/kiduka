@@ -275,48 +275,8 @@ export const ScannerPage = () => {
 
       if (itemsError) throw itemsError;
 
-      // Update product stock quantities with real-time updates
-      const stockUpdates = [];
-      for (const item of cart) {
-        // Get current stock from database to ensure accuracy
-        const { data: currentProduct, error: fetchError } = await supabase
-          .from('products')
-          .select('stock_quantity, name')
-          .eq('id', item.id)
-          .single();
-
-        if (fetchError) {
-          console.error('Error fetching current stock for product:', item.id, fetchError);
-          continue;
-        }
-
-        // Calculate new stock - ensure it doesn't go below 0
-        const newStock = Math.max(0, currentProduct.stock_quantity - item.quantity);
-        
-        console.log(`Updating stock for ${currentProduct.name}: ${currentProduct.stock_quantity} - ${item.quantity} = ${newStock}`);
-        
-        const { error: stockError } = await supabase
-          .from('products')
-          .update({ 
-            stock_quantity: newStock,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', item.id);
-        
-        if (stockError) {
-          console.error('Error updating stock for product:', item.id, stockError);
-        } else {
-          stockUpdates.push({
-            id: item.id,
-            name: currentProduct.name,
-            old_stock: currentProduct.stock_quantity,
-            new_stock: newStock,
-            sold: item.quantity
-          });
-        }
-      }
-
-      console.log('Stock updates completed:', stockUpdates);
+      // Stock is now handled automatically by the database trigger after inserting sale_items
+      console.log('Stock will be updated automatically by database trigger');
 
       const receiptItems = cart.map(item => ({
         name: item.name,

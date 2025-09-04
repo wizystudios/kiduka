@@ -22,6 +22,9 @@ interface Product {
   stock_quantity: number;
   barcode?: string;
   cost_price?: number;
+  is_weight_based?: boolean;
+  unit_type?: string;
+  min_quantity?: number;
 }
 
 interface CartItem extends Product {
@@ -117,7 +120,7 @@ export const EnhancedScannerPage = () => {
       if (navigator.onLine) {
         const { data, error } = await supabase
           .from('products')
-          .select('id, name, price, stock_quantity, barcode, cost_price')
+          .select('id, name, price, stock_quantity, barcode, cost_price, is_weight_based, unit_type, min_quantity')
           .eq('barcode', barcode)
           .eq('owner_id', userProfile?.id)
           .single();
@@ -301,37 +304,8 @@ export const EnhancedScannerPage = () => {
 
         if (itemsError) throw itemsError;
 
-        // Aggregate quantities per product to avoid double deductions if duplicates exist
-        const qtyByProduct = new Map<string, number>();
-        for (const item of cart) {
-          qtyByProduct.set(item.id, (qtyByProduct.get(item.id) || 0) + Number(item.quantity));
-        }
-
-        for (const [productId, qty] of qtyByProduct.entries()) {
-          // Fetch latest stock to ensure we update from the current value
-          const { data: current, error: fetchErr } = await supabase
-            .from('products')
-            .select('stock_quantity, name')
-            .eq('id', productId)
-            .single();
-
-          if (fetchErr || !current) {
-            console.error('Failed to fetch current stock for', productId, fetchErr);
-            continue;
-          }
-
-          const newStock = Math.max(0, Number(current.stock_quantity) - Number(qty));
-          console.log(`Updating stock for ${current.name}: ${current.stock_quantity} - ${qty} = ${newStock}`);
-
-          const { error: updErr } = await supabase
-            .from('products')
-            .update({ stock_quantity: newStock, updated_at: new Date().toISOString() })
-            .eq('id', productId);
-
-          if (updErr) {
-            console.error('Stock update error for', productId, updErr);
-          }
-        }
+        // Stock is now handled automatically by the database trigger after inserting sale_items
+        console.log('Stock will be updated automatically by database trigger');
 
         // Prepare digital receipt data
         setCurrentReceiptData({
@@ -386,9 +360,6 @@ export const EnhancedScannerPage = () => {
         description: 'Imeshindwa kukamilisha muuzo',
         variant: 'destructive'
       });
-    } finally {
-      // Release duplicate-call lock
-      (handlePaymentComplete as any).__lock = false;
     }
   };
 

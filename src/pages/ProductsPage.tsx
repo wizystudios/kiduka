@@ -239,7 +239,10 @@ export const ProductsPage = () => {
                        <div className="flex items-center space-x-1">
                          <Package className="h-3 w-3 text-gray-500" />
                          <span className="text-xs text-gray-600">
-                           {product.stock_quantity || 0}
+                            {product.is_weight_based 
+                              ? `${product.stock_quantity || 0} ${product.unit_type || 'unit'}`
+                              : product.stock_quantity || 0
+                            }
                          </span>
                        </div>
                      </div>

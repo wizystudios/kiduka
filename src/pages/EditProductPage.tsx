@@ -95,7 +95,7 @@ export const EditProductPage = () => {
         barcode: formData.barcode?.trim() || null,
         price: parseFloat(formData.price),
         cost_price: parseFloat(formData.cost_price) || 0,
-        stock_quantity: parseInt(formData.stock_quantity),
+        stock_quantity: parseFloat(formData.stock_quantity),
         category: formData.category?.trim() || null,
         description: formData.description?.trim() || null,
         low_stock_threshold: parseInt(formData.low_stock_threshold),
@@ -227,9 +227,10 @@ export const EditProductPage = () => {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="stock">Idadi ya Stock *</Label>
-                <Input
-                  id="stock"
-                  type="number"
+                 <Input
+                   id="stock"
+                   type="number"
+                   step={formData.is_weight_based ? "0.1" : "1"}
                   value={formData.stock_quantity}
                   onChange={(e) => setFormData({...formData, stock_quantity: e.target.value})}
                   placeholder="0"
