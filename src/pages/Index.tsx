@@ -12,13 +12,18 @@ const Index = () => {
   console.log('Index component render - loading:', loading, 'user:', user?.email || 'no user', 'showOnboarding:', showOnboarding);
 
   useEffect(() => {
-    console.log('Index useEffect - loading:', loading, 'user:', user?.email || 'no user');
+    console.log('Index useEffect - loading:', loading, 'user:', user?.email || 'no user', 'email_confirmed_at:', user?.email_confirmed_at);
     if (loading) return;
     
-    if (user && user.email_confirmed_at) {
-      console.log('User is authenticated and confirmed, redirecting to dashboard');
-      navigate('/dashboard', { replace: true });
-    } else if (!user) {
+    if (user) {
+      if (user.email_confirmed_at) {
+        console.log('User is authenticated and confirmed, redirecting to dashboard');
+        navigate('/dashboard', { replace: true });
+      } else {
+        console.log('User exists but email not confirmed, redirecting to auth');
+        navigate('/auth', { replace: true });
+      }
+    } else {
       // Check if user has seen onboarding before
       const hasSeenOnboarding = localStorage.getItem('kiduka_onboarding_seen');
       console.log('No user, hasSeenOnboarding:', hasSeenOnboarding);
