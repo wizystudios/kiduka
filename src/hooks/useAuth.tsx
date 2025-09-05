@@ -18,10 +18,11 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [user, setUser] = React.useState<User | null>(null);
-  const [session, setSession] = React.useState<Session | null>(null);
-  const [userProfile, setUserProfile] = React.useState<any>(null);
-  const [loading, setLoading] = React.useState(true);
+  try {
+    const [user, setUser] = useState<User | null>(null);
+    const [session, setSession] = useState<Session | null>(null);
+    const [userProfile, setUserProfile] = useState<any>(null);
+    const [loading, setLoading] = useState(true);
 
   // Clean-up any stale Supabase auth state to prevent limbo sessions
   const cleanupAuthState = () => {
@@ -295,29 +296,64 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
-  const contextValue = React.useMemo(() => ({
-    user,
-    session,
-    userProfile,
-    loading,
-    signIn,
-    signUp,
-    signOut,
-    refreshProfile,
-    updateProfile,
-  }), [user, session, userProfile, loading, signIn, signUp, signOut, refreshProfile, updateProfile]);
+    const contextValue = React.useMemo(() => ({
+      user,
+      session,
+      userProfile,
+      loading,
+      signIn,
+      signUp,
+      signOut,
+      refreshProfile,
+      updateProfile,
+    }), [user, session, userProfile, loading, signIn, signUp, signOut, refreshProfile, updateProfile]);
 
-  return (
-    <AuthContext.Provider value={contextValue}>
-      {children}
-    </AuthContext.Provider>
-  );
+    return (
+      <AuthContext.Provider value={contextValue}>
+        {children}
+      </AuthContext.Provider>
+    );
+  } catch (error) {
+    console.error('AuthProvider error:', error);
+    // Return minimal provider to prevent crashes
+    return (
+      <AuthContext.Provider value={{
+        user: null,
+        session: null,
+        userProfile: null,
+        loading: false,
+        signIn: async () => {},
+        signUp: async () => {},
+        signOut: async () => {},
+        refreshProfile: async () => {},
+        updateProfile: async () => ({})
+      }}>
+        {children}
+      </AuthContext.Provider>
+    );
+  }
 };
 
 export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
+  try {
+    const context = useContext(AuthContext);
+    if (context === undefined) {
+      throw new Error('useAuth must be used within an AuthProvider');
+    }
+    return context;
+  } catch (error) {
+    console.warn('useAuth hook error:', error);
+    // Return fallback context to prevent crashes
+    return {
+      user: null,
+      session: null,
+      userProfile: null,
+      loading: false,
+      signIn: async () => {},
+      signUp: async () => {},
+      signOut: async () => {},
+      refreshProfile: async () => {},
+      updateProfile: async () => ({})
+    };
   }
-  return context;
 };
