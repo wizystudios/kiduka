@@ -169,22 +169,33 @@ function toast({ ...props }: Toast) {
 }
 
 function useToast() {
-  const [state, setState] = React.useState<State>(memoryState)
+  // Add safety check for React context
+  try {
+    const [state, setState] = React.useState<State>(memoryState)
 
-  React.useEffect(() => {
-    listeners.push(setState)
-    return () => {
-      const index = listeners.indexOf(setState)
-      if (index > -1) {
-        listeners.splice(index, 1)
+    React.useEffect(() => {
+      listeners.push(setState)
+      return () => {
+        const index = listeners.indexOf(setState)
+        if (index > -1) {
+          listeners.splice(index, 1)
+        }
       }
-    }
-  }, [state])
+    }, [state])
 
-  return {
-    ...state,
-    toast,
-    dismiss: (toastId?: string) => dispatch({ type: "DISMISS_TOAST", toastId }),
+    return {
+      ...state,
+      toast,
+      dismiss: (toastId?: string) => dispatch({ type: "DISMISS_TOAST", toastId }),
+    }
+  } catch (error) {
+    // Fallback during hot reload or when React context is not available
+    console.warn('useToast called outside React context, returning fallback')
+    return {
+      toasts: [],
+      toast,
+      dismiss: (toastId?: string) => dispatch({ type: "DISMISS_TOAST", toastId }),
+    }
   }
 }
 
