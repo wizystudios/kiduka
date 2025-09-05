@@ -17,12 +17,11 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  // Simplified state initialization to prevent dispatcher errors
-  const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
-  const [userProfile, setUserProfile] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const [user, setUser] = React.useState<User | null>(null);
+  const [session, setSession] = React.useState<Session | null>(null);
+  const [userProfile, setUserProfile] = React.useState<any>(null);
+  const [loading, setLoading] = React.useState(true);
 
   // Clean-up any stale Supabase auth state to prevent limbo sessions
   const cleanupAuthState = () => {
