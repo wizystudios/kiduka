@@ -173,14 +173,19 @@ export const EnhancedScannerPage = () => {
           });
           return;
         }
-        updateCartItemQuantity(product.id, existingItem.quantity + 1);
+        // Increment by exactly 1 for regular products
+        const newQuantity = existingItem.quantity + 1;
+        updateCartItemQuantity(product.id, newQuantity);
       } else {
+        // Add new product with quantity 1
         const cartItem: CartItem = {
           ...product,
           quantity: 1,
-          total: product.price * 1
+          total: product.price
         };
         setCart([...cart, cartItem]);
+        
+        console.log(`Added new product: ${product.name}, quantity: 1`);
       }
 
       toast({
@@ -546,12 +551,12 @@ export const EnhancedScannerPage = () => {
                     <Minus className="h-3 w-3" />
                   </Button>
                   
-                  <span className="w-16 text-center text-sm">
-                    {item.is_weight_based 
-                      ? `${item.quantity} ${item.unit_type || 'unit'}`
-                      : item.quantity
-                    }
-                  </span>
+                   <span className="w-16 text-center text-sm">
+                     {item.is_weight_based 
+                       ? `${parseFloat(item.quantity.toString()).toLocaleString()} ${item.unit_type || 'unit'}`
+                       : Math.floor(item.quantity).toString()
+                     }
+                   </span>
                   
                   <Button
                     size="sm"
