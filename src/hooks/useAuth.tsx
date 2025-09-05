@@ -93,6 +93,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           user?.user_metadata?.full_name,
           user?.user_metadata?.business_name
         );
+        console.log('New profile created:', newProfile);
         return newProfile;
       }
       console.log('Profile fetched successfully:', profile);
@@ -139,6 +140,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   useEffect(() => {
     let mounted = true;
     let subscription: any = null;
+    
+    // Add a timeout to prevent indefinite loading
+    const loadingTimeout = setTimeout(() => {
+      if (mounted && loading) {
+        console.log('Auth loading timeout, forcing loading to false');
+        setLoading(false);
+      }
+    }, 10000); // 10 second timeout
 
     const handleAuthStateChange = async (event: string, session: any) => {
       if (!mounted) return;
@@ -163,26 +172,32 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           const profile = await fetchUserProfile(session.user.id);
           if (mounted) {
             setUserProfile(profile);
+            console.log('Profile loaded, setting loading to false');
             setLoading(false);
           }
         } catch (error) {
           console.error('Error loading profile:', error);
           if (mounted) {
+            console.log('Profile load error, setting loading to false');
             setLoading(false);
           }
         }
       } else if (mounted) {
+        console.log('No session/user, setting loading to false');
         setLoading(false);
       }
     };
 
     const initializeAuth = async () => {
       try {
+        console.log('Initializing auth...');
         const { data: { session } } = await supabase.auth.getSession();
+        console.log('Got session:', session?.user?.email || 'no session');
         await handleAuthStateChange('INITIAL_SESSION', session);
       } catch (error) {
         console.error('Error getting session:', error);
         if (mounted) {
+          console.log('Auth init error, setting loading to false');
           setLoading(false);
         }
       }
@@ -201,6 +216,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     return () => {
       mounted = false;
+      clearTimeout(loadingTimeout);
       if (subscription) {
         subscription.unsubscribe();
       }
