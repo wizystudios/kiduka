@@ -13,7 +13,14 @@ export const ProtectedRoute = ({ children, requiredRole, allowedRoles }: Protect
   const { user, userProfile, loading } = useAuth();
 
   if (loading) {
-    return <LoadingScreen onComplete={() => {}} />;
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-blue-50 to-purple-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto"></div>
+          <p className="mt-3 text-sm text-gray-600">Inapakia...</p>
+        </div>
+      </div>
+    );
   }
 
   if (!user) {
