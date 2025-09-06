@@ -15,21 +15,23 @@ const Index = () => {
     console.log('Index useEffect - loading:', loading, 'user:', user?.email || 'no user', 'email_confirmed_at:', user?.email_confirmed_at);
     if (loading) return;
     
-    if (user) {
-      if (user.email_confirmed_at) {
-        console.log('User is authenticated and confirmed, redirecting to dashboard');
-        navigate('/dashboard', { replace: true });
-      } else {
-        console.log('User exists but email not confirmed, redirecting to auth');
-        navigate('/auth', { replace: true });
-      }
-    } else {
-      // Check if user has seen onboarding before
-      const hasSeenOnboarding = localStorage.getItem('kiduka_onboarding_seen');
-      console.log('No user, hasSeenOnboarding:', hasSeenOnboarding);
-      if (!hasSeenOnboarding) {
-        setShowOnboarding(true);
-      }
+    if (user?.email_confirmed_at) {
+      console.log('User is authenticated and confirmed, redirecting to dashboard immediately');
+      window.location.href = '/dashboard';
+      return;
+    }
+    
+    if (user && !user.email_confirmed_at) {
+      console.log('User exists but email not confirmed, redirecting to auth');
+      navigate('/auth', { replace: true });
+      return;
+    }
+    
+    // No user - show onboarding or landing page
+    const hasSeenOnboarding = localStorage.getItem('kiduka_onboarding_seen');
+    console.log('No user, hasSeenOnboarding:', hasSeenOnboarding);
+    if (!hasSeenOnboarding) {
+      setShowOnboarding(true);
     }
   }, [user, loading, navigate]);
 
