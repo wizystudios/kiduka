@@ -141,14 +141,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   useEffect(() => {
     let mounted = true;
     let subscription: any = null;
-    
-    // Add a timeout to prevent indefinite loading
-    const loadingTimeout = setTimeout(() => {
-      if (mounted && loading) {
-        console.log('Auth loading timeout, forcing loading to false');
-        setLoading(false);
-      }
-    }, 10000); // 10 second timeout
 
     const handleAuthStateChange = async (event: string, session: any) => {
       if (!mounted) return;
@@ -217,7 +209,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     return () => {
       mounted = false;
-      clearTimeout(loadingTimeout);
       if (subscription) {
         subscription.unsubscribe();
       }
