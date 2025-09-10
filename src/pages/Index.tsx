@@ -17,7 +17,7 @@ const Index = () => {
     
     if (user?.email_confirmed_at) {
       console.log('User is authenticated and confirmed, redirecting to dashboard immediately');
-      window.location.href = '/dashboard';
+      navigate('/dashboard', { replace: true });
       return;
     }
     
