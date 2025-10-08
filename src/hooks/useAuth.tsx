@@ -76,32 +76,47 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const fetchUserProfile = async (userId: string) => {
     try {
-      console.log('Fetching profile for user:', userId);
       const { data: profile, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
         .maybeSingle();
+      
       if (error) {
         console.error('Error fetching profile:', error);
         return null;
       }
+      
       if (!profile) {
-        console.log('No profile found, creating one...');
-        const newProfile = await createProfile(
+        // Create profile without waiting - let it happen in background
+        createProfile(
           userId,
           user?.email || '',
           user?.user_metadata?.full_name,
           user?.user_metadata?.business_name
-        );
-        console.log('New profile created:', newProfile);
-        return newProfile;
+        ).catch(err => console.error('Background profile creation failed:', err));
+        
+        // Return minimal profile immediately so user can proceed
+        return {
+          id: userId,
+          email: user?.email || '',
+          full_name: user?.user_metadata?.full_name || '',
+          business_name: user?.user_metadata?.business_name || '',
+          role: 'owner'
+        };
       }
-      console.log('Profile fetched successfully:', profile);
+      
       return profile;
     } catch (error) {
       console.error('Error in fetchUserProfile:', error);
-      return null;
+      // Return minimal profile on error so user isn't blocked
+      return {
+        id: userId,
+        email: user?.email || '',
+        full_name: user?.user_metadata?.full_name || '',
+        business_name: user?.user_metadata?.business_name || '',
+        role: 'owner'
+      };
     }
   };
 
@@ -162,22 +177,20 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
       
       if (session?.user && mounted) {
-        try {
-          const profile = await fetchUserProfile(session.user.id);
-          if (mounted) {
-            setUserProfile(profile);
-            console.log('Profile loaded, setting loading to false');
-            setLoading(false);
-          }
-        } catch (error) {
-          console.error('Error loading profile:', error);
-          if (mounted) {
-            console.log('Profile load error, setting loading to false');
-            setLoading(false);
-          }
-        }
+        // Don't block on profile fetch - load it in background
+        fetchUserProfile(session.user.id)
+          .then(profile => {
+            if (mounted) {
+              setUserProfile(profile);
+            }
+          })
+          .catch(err => console.error('Profile load error:', err))
+          .finally(() => {
+            if (mounted) {
+              setLoading(false);
+            }
+          });
       } else if (mounted) {
-        console.log('No session/user, setting loading to false');
         setLoading(false);
       }
     };
