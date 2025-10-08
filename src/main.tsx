@@ -3,7 +3,20 @@ import { createRoot } from 'react-dom/client'
 import App from './App.tsx'
 import './index.css'
 
-// Register service worker for PWA functionality
+const rootElement = document.getElementById("root");
+
+if (!rootElement) {
+  throw new Error("Root element not found");
+}
+
+// Render the app first
+createRoot(rootElement).render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>
+);
+
+// Register service worker AFTER React has mounted
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', async () => {
     try {
@@ -14,9 +27,3 @@ if ('serviceWorker' in navigator) {
     }
   });
 }
-
-createRoot(document.getElementById("root")!).render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>
-);
