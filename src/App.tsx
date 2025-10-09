@@ -24,6 +24,7 @@ import { SettingsPage } from '@/pages/SettingsPage';
 import { UsersPage } from '@/pages/UsersPage';
 import { SubscriptionPage } from '@/pages/SubscriptionPage';
 import { SubscriptionGuard } from '@/components/SubscriptionGuard';
+import { InventorySnapshotPage } from '@/pages/InventorySnapshotPage';
 
 // AI and Business Intelligence Pages
 import { BusinessIntelligencePage } from '@/pages/BusinessIntelligencePage';
@@ -130,6 +131,14 @@ function App() {
                 <ProtectedRoute>
                   <AppLayout>
                     <DiscountsPage />
+                  </AppLayout>
+                </ProtectedRoute>
+              } />
+              
+              <Route path="/inventory-snapshots" element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <InventorySnapshotPage />
                   </AppLayout>
                 </ProtectedRoute>
               } />

@@ -34,7 +34,8 @@ import {
   Brain,
   TrendingUp,
   LogOut,
-  Crown
+  Crown,
+  ClipboardList
 } from 'lucide-react';
 
 const navigationItems = [
@@ -42,6 +43,7 @@ const navigationItems = [
   { id: 'products', label: 'Bidhaa', icon: Package, href: '/products' },
   { id: 'scanner', label: 'Scanner', icon: QrCode, href: '/scanner' },
   { id: 'sales', label: 'Mauzo', icon: ShoppingCart, href: '/sales' },
+  { id: 'inventory-snapshots', label: 'Hesabu ya Stock', icon: ClipboardList, href: '/inventory-snapshots' },
   { id: 'customers', label: 'Wateja', icon: Users, href: '/customers' },
   { id: 'discounts', label: 'Punguzo', icon: Percent, href: '/discounts' },
   { id: 'mikopo', label: 'Mikopo', icon: CreditCard, href: '/credit-management' },
