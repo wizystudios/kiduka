@@ -232,9 +232,8 @@ export const VoicePOS = () => {
         .insert({
           user_id: user.id,
           command_text: commandText,
-          language: 'sw',
-          action_taken: result.message,
-          success: isSuccessful
+          command_type: commandType,
+          result: result
         });
 
       if (error) throw error;
@@ -274,13 +273,13 @@ export const VoicePOS = () => {
       // Create sale items
       for (const item of currentSale) {
         await supabase
-          .from('sale_items')
+          .from('sales_items')
           .insert({
             sale_id: sale.id,
             product_id: item.product.id,
             quantity: item.quantity,
             unit_price: item.unit_price,
-            total_price: item.total_price
+            subtotal: item.total_price
           });
 
         // Update stock

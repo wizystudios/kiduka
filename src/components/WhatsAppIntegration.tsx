@@ -110,36 +110,40 @@ export const WhatsAppIntegration = () => {
 
   const sendReceiptViaWhatsApp = async (saleId: string, customerPhone: string) => {
     try {
-      // Fetch sale details
       const { data: sale, error: saleError } = await supabase
         .from('sales')
-        .select(`
-          *,
-          sale_items (
-            *,
-            products (name, price)
-          )
-        `)
+        .select('id, created_at, total_amount, payment_method')
         .eq('id', saleId)
-        .single();
+        .maybeSingle();
 
       if (saleError) throw saleError;
+      if (!sale) throw new Error('Sale not found');
 
-      // Format receipt message in Swahili
+      const { data: items, error: itemsError } = await supabase
+        .from('sales_items')
+        .select(`
+          quantity,
+          unit_price,
+          subtotal,
+          products ( name )
+        `)
+        .eq('sale_id', saleId);
+
+      if (itemsError) throw itemsError;
+
       let receiptMessage = `🧾 RISITI YA MAUZO\n\n`;
       receiptMessage += `📅 Tarehe: ${new Date(sale.created_at).toLocaleDateString('sw-TZ')}\n`;
-      receiptMessage += `🔢 Namba: ${sale.id.slice(0, 8)}\n\n`;
-      
+      receiptMessage += `🔢 Namba: ${String(sale.id).slice(0, 8)}\n\n`;
       receiptMessage += `📦 BIDHAA:\n`;
-      sale.sale_items.forEach((item: any) => {
-        receiptMessage += `• ${item.products.name}\n`;
-        receiptMessage += `  ${item.quantity} × TZS ${item.unit_price.toLocaleString()} = TZS ${item.total_price.toLocaleString()}\n\n`;
+
+      (items || []).forEach((item: any) => {
+        receiptMessage += `• ${item.products?.name}\n`;
+        receiptMessage += `  ${item.quantity} × TZS ${Number(item.unit_price).toLocaleString()} = TZS ${Number(item.subtotal).toLocaleString()}\n\n`;
       });
 
-      receiptMessage += `💰 JUMLA: TZS ${sale.total_amount.toLocaleString()}\n`;
-      receiptMessage += `💳 MALIPO: ${sale.payment_method}\n\n`;
-      receiptMessage += `Asante kwa kununua! 🙏\n`;
-      receiptMessage += `Karibu tena! 😊`;
+      receiptMessage += `💰 JUMLA: TZS ${Number(sale.total_amount).toLocaleString()}\n`;
+      receiptMessage += `💳 MALIPO: ${sale.payment_method || 'cash'}\n\n`;
+      receiptMessage += `Asante kwa kununua! 🙏\nKaribu tena! 😊`;
 
       await sendWhatsAppMessage(customerPhone, receiptMessage, 'receipt');
     } catch (error) {
