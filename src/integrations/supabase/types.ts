@@ -107,6 +107,47 @@ export type Database = {
         }
         Relationships: []
       }
+      inventory_snapshots: {
+        Row: {
+          created_at: string
+          id: string
+          notes: string | null
+          owner_id: string
+          product_id: string
+          quantity: number
+          snapshot_date: string
+          snapshot_type: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          owner_id: string
+          product_id: string
+          quantity: number
+          snapshot_date?: string
+          snapshot_type: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          owner_id?: string
+          product_id?: string
+          quantity?: number
+          snapshot_date?: string
+          snapshot_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_snapshots_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       marketplace_listings: {
         Row: {
           contact_info: Json | null
@@ -163,13 +204,18 @@ export type Database = {
           description: string | null
           id: string
           image_url: string | null
+          is_weight_based: boolean | null
           low_stock_threshold: number | null
+          min_quantity: number | null
           name: string
           owner_id: string
+          parent_product_id: string | null
           price: number
           stock_quantity: number
           unit: string | null
+          unit_type: string | null
           updated_at: string
+          variant_name: string | null
         }
         Insert: {
           barcode?: string | null
@@ -178,13 +224,18 @@ export type Database = {
           description?: string | null
           id?: string
           image_url?: string | null
+          is_weight_based?: boolean | null
           low_stock_threshold?: number | null
+          min_quantity?: number | null
           name: string
           owner_id: string
+          parent_product_id?: string | null
           price: number
           stock_quantity?: number
           unit?: string | null
+          unit_type?: string | null
           updated_at?: string
+          variant_name?: string | null
         }
         Update: {
           barcode?: string | null
@@ -193,15 +244,28 @@ export type Database = {
           description?: string | null
           id?: string
           image_url?: string | null
+          is_weight_based?: boolean | null
           low_stock_threshold?: number | null
+          min_quantity?: number | null
           name?: string
           owner_id?: string
+          parent_product_id?: string | null
           price?: number
           stock_quantity?: number
           unit?: string | null
+          unit_type?: string | null
           updated_at?: string
+          variant_name?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "products_parent_product_id_fkey"
+            columns: ["parent_product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
