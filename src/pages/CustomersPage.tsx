@@ -15,8 +15,8 @@ interface Customer {
   name: string;
   email?: string;
   phone?: string;
-  address?: string;
-  loyalty_points: number;
+  total_purchases?: number;
+  outstanding_balance?: number;
   created_at: string;
 }
 
@@ -29,9 +29,7 @@ export const CustomersPage = () => {
   const [customerData, setCustomerData] = useState({
     name: '',
     email: '',
-    phone: '',
-    address: '',
-    loyalty_points: 0
+    phone: ''
   });
   const { toast } = useToast();
 
@@ -83,10 +81,7 @@ export const CustomersPage = () => {
           .update({
             name: customerData.name,
             email: customerData.email || null,
-            phone: customerData.phone || null,
-            address: customerData.address || null,
-            loyalty_points: customerData.loyalty_points,
-            updated_at: new Date().toISOString()
+            phone: customerData.phone || null
           })
           .eq('id', editingCustomer.id);
 
@@ -99,15 +94,14 @@ export const CustomersPage = () => {
             name: customerData.name,
             email: customerData.email || null,
             phone: customerData.phone || null,
-            address: customerData.address || null,
-            loyalty_points: customerData.loyalty_points
+            owner_id: (await supabase.auth.getUser()).data.user?.id
           });
 
         if (error) throw error;
         toast({ title: 'Success', description: 'Customer added successfully' });
       }
 
-      setCustomerData({ name: '', email: '', phone: '', address: '', loyalty_points: 0 });
+      setCustomerData({ name: '', email: '', phone: '' });
       setEditingCustomer(null);
       setDialogOpen(false);
       fetchCustomers();
@@ -125,9 +119,7 @@ export const CustomersPage = () => {
     setCustomerData({
       name: customer.name,
       email: customer.email || '',
-      phone: customer.phone || '',
-      address: customer.address || '',
-      loyalty_points: customer.loyalty_points
+      phone: customer.phone || ''
     });
     setEditingCustomer(customer);
     setDialogOpen(true);
@@ -220,25 +212,6 @@ export const CustomersPage = () => {
                   placeholder="+255 123 456 789"
                 />
               </div>
-              <div>
-                <Label htmlFor="address">Anwani</Label>
-                <Input
-                  id="address"
-                  value={customerData.address}
-                  onChange={(e) => setCustomerData({...customerData, address: e.target.value})}
-                  placeholder="Anwani ya mteja"
-                />
-              </div>
-              <div>
-                <Label htmlFor="loyalty_points">Pointi za Utii</Label>
-                <Input
-                  id="loyalty_points"
-                  type="number"
-                  value={customerData.loyalty_points}
-                  onChange={(e) => setCustomerData({...customerData, loyalty_points: parseInt(e.target.value) || 0})}
-                  placeholder="0"
-                />
-              </div>
               <Button onClick={handleSaveCustomer} className="w-full bg-blue-600 hover:bg-blue-700">
                 {editingCustomer ? 'Sasisha Mteja' : 'Ongeza Mteja'}
               </Button>
@@ -281,25 +254,11 @@ export const CustomersPage = () => {
                           <span>{customer.phone}</span>
                         </div>
                       )}
-                      {customer.address && (
-                        <div className="flex items-center space-x-2">
-                          <MapPin className="h-4 w-4" />
-                          <span>{customer.address}</span>
-                        </div>
-                      )}
                     </div>
                   </div>
                 </div>
                 
                 <div className="flex items-center space-x-3">
-                  <div className="text-center">
-                    <div className="flex items-center space-x-1">
-                      <Star className="h-4 w-4 text-yellow-500" />
-                      <span className="font-semibold">{customer.loyalty_points}</span>
-                    </div>
-                    <p className="text-xs text-gray-500">Points</p>
-                  </div>
-                  
                   <div className="flex space-x-1">
                     <Button 
                       variant="ghost" 

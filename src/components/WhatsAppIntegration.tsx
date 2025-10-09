@@ -238,8 +238,9 @@ export const WhatsAppIntegration = () => {
         const { data: newCustomer, error: customerError } = await supabase
           .from('customers')
           .insert({
-            name: order.customer_name,
-            phone: order.customer_phone
+            name: order.customer_name || 'Customer',
+            phone: order.customer_phone,
+            owner_id: user.id
           })
           .select('id')
           .single();

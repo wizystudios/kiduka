@@ -77,19 +77,21 @@ export const AdvancedReportsPage = () => {
         }
         dailySales[date].sales += sale.total_amount;
 
-        sale.sale_items?.forEach((item: any) => {
-          const productName = item.products?.name || 'Unknown Product';
-          const profit = (item.unit_price - (item.products?.cost_price || 0)) * item.quantity;
-          
-          dailySales[date].profit += profit;
-          totalProfit += profit;
+        if (Array.isArray(sale.sale_items)) {
+          sale.sale_items.forEach((item: any) => {
+            const productName = item.products?.name || 'Unknown Product';
+            const profit = (item.unit_price - (item.products?.cost_price || 0)) * item.quantity;
+            
+            dailySales[date].profit += profit;
+            totalProfit += profit;
 
-          if (!productSales[productName]) {
-            productSales[productName] = { quantity: 0, revenue: 0 };
-          }
-          productSales[productName].quantity += item.quantity;
-          productSales[productName].revenue += item.total_price;
-        });
+            if (!productSales[productName]) {
+              productSales[productName] = { quantity: 0, revenue: 0 };
+            }
+            productSales[productName].quantity += item.quantity;
+            productSales[productName].revenue += item.subtotal;
+          });
+        }
       });
 
       // Convert to chart format
