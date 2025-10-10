@@ -13,6 +13,7 @@ interface Product {
   name: string;
   stock_quantity: number;
   unit_type?: string;
+  price?: number;
 }
 
 interface Snapshot {
@@ -29,6 +30,8 @@ interface ProductWithSnapshots extends Product {
   opening?: number;
   closing?: number;
   sold?: number;
+  revenue?: number;
+  price?: number;
 }
 
 export const InventorySnapshotPage = () => {
@@ -48,7 +51,7 @@ export const InventorySnapshotPage = () => {
       // Fetch products
       const { data: productsData, error: productsError } = await supabase
         .from('products')
-        .select('id, name, stock_quantity, unit_type')
+        .select('id, name, stock_quantity, unit_type, price')
         .eq('owner_id', user.id)
         .order('name');
 
@@ -127,12 +130,15 @@ export const InventorySnapshotPage = () => {
       const openingQty = opening?.quantity ?? 0;
       const closingQty = closing?.quantity ?? 0;
       const sold = openingQty - closingQty;
+      const revenue = sold * (product.price || 0);
 
       return {
         ...product,
         opening: opening ? openingQty : undefined,
         closing: closing ? closingQty : undefined,
-        sold: opening && closing ? sold : undefined
+        sold: opening && closing ? sold : undefined,
+        revenue: opening && closing ? revenue : undefined,
+        price: product.price
       };
     });
   };
@@ -229,20 +235,10 @@ export const InventorySnapshotPage = () => {
             {productReport.map(product => (
               <div
                 key={product.id}
-                className="flex items-center justify-between p-3 border rounded-lg"
+                className="p-3 border rounded-lg space-y-2"
               >
-                <div className="flex-1">
+                <div className="flex items-center justify-between">
                   <div className="font-medium text-sm">{product.name}</div>
-                  <div className="flex gap-4 mt-1 text-xs text-muted-foreground">
-                    {product.opening !== undefined && (
-                      <span>Asubuhi: {product.opening}</span>
-                    )}
-                    {product.closing !== undefined && (
-                      <span>Jioni: {product.closing}</span>
-                    )}
-                  </div>
-                </div>
-                <div className="text-right">
                   {product.sold !== undefined ? (
                     <Badge 
                       variant={product.sold > 0 ? "default" : "secondary"}
@@ -260,8 +256,39 @@ export const InventorySnapshotPage = () => {
                     </Badge>
                   )}
                 </div>
+                
+                <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
+                  {product.opening !== undefined && (
+                    <div>Asubuhi: <span className="font-medium text-foreground">{product.opening}</span></div>
+                  )}
+                  {product.closing !== undefined && (
+                    <div>Jioni: <span className="font-medium text-foreground">{product.closing}</span></div>
+                  )}
+                  {product.price !== undefined && product.sold !== undefined && (
+                    <>
+                      <div>Bei: <span className="font-medium text-foreground">TZS {product.price.toLocaleString()}</span></div>
+                      <div>Mapato: <span className="font-medium text-green-600">TZS {(product.revenue || 0).toLocaleString()}</span></div>
+                    </>
+                  )}
+                </div>
               </div>
             ))}
+            
+            {/* Total Summary */}
+            {hasClosingCount && (
+              <div className="pt-3 border-t mt-3">
+                <div className="flex justify-between items-center text-sm font-bold">
+                  <span>Jumla ya Mapato:</span>
+                  <span className="text-green-600 text-lg">
+                    TZS {productReport.reduce((sum, p) => sum + (p.revenue || 0), 0).toLocaleString()}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center text-xs text-muted-foreground mt-1">
+                  <span>Bidhaa zilizouzwa:</span>
+                  <span>{productReport.reduce((sum, p) => sum + (p.sold || 0), 0)}</span>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       )}

@@ -222,7 +222,10 @@ export const AddProductPage = () => {
                 />
               </div>
               <div>
-                <Label htmlFor="threshold" className="text-xs">Kiwango cha Stock Ndogo</Label>
+                <Label htmlFor="threshold" className="text-xs">
+                  Kiwango cha Stock Ndogo
+                  <span className="text-muted-foreground ml-1">(Chaguo, Default: 10)</span>
+                </Label>
                 <Input
                   id="threshold"
                   type="number"
@@ -231,6 +234,9 @@ export const AddProductPage = () => {
                   placeholder="10"
                   className="text-sm h-8"
                 />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Utapata onyo wakati stock inafikia kiwango hiki
+                </p>
               </div>
             </div>
 

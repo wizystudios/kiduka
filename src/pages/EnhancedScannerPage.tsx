@@ -302,6 +302,10 @@ export const EnhancedScannerPage = () => {
       };
 
       if (navigator.onLine) {
+        if (!userProfile?.id) {
+          throw new Error('User not authenticated');
+        }
+
         const { data: sale, error: saleError } = await supabase
           .from('sales')
           .insert({
@@ -310,8 +314,7 @@ export const EnhancedScannerPage = () => {
             customer_id: saleData.customer_id,
             discount_id: saleData.discount_id,
             discount_amount: saleData.discount_amount,
-            tax_amount: saleData.tax_amount,
-            owner_id: userProfile?.id
+            owner_id: userProfile.id
           })
           .select()
           .single();
