@@ -50,38 +50,13 @@ export const SubscriptionPage = () => {
   }, [user]);
 
   const fetchPlans = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('subscription_plans')
-        .select('*')
-        .eq('is_active', true)
-        .order('price', { ascending: true });
-
-      if (error) throw error;
-      setPlans(data || []);
-    } catch (error) {
-      console.error('Error fetching plans:', error);
-      toast.error('Imeshindwa kupakia mipango ya malipo');
-    }
+    // Subscription plans table doesn't exist yet
+    console.log('Subscription plans feature not yet implemented');
   };
 
   const checkSubscriptionStatus = async () => {
-    if (!user) return;
-
-    try {
-      const { data, error } = await supabase
-        .rpc('check_subscription_status', { user_uuid: user.id });
-
-      if (error) throw error;
-      
-      if (data && data.length > 0) {
-        setSubscriptionStatus(data[0]);
-      }
-    } catch (error) {
-      console.error('Error checking subscription:', error);
-    } finally {
-      setLoading(false);
-    }
+    // Subscription status check not yet implemented
+    setLoading(false);
   };
 
   const handleSubscribe = async (planId: string) => {

@@ -266,11 +266,11 @@ export const ScannerPage = () => {
         product_id: item.id,
         quantity: item.quantity,
         unit_price: item.price,
-        total_price: item.price * item.quantity
+        subtotal: item.price * item.quantity
       }));
 
       const { error: itemsError } = await supabase
-        .from('sale_items')
+        .from('sales_items')
         .insert(saleItems);
 
       if (itemsError) throw itemsError;

@@ -70,11 +70,11 @@ class SyncService {
           product_id: item.product_id,
           quantity: item.quantity,
           unit_price: item.unit_price,
-          total_price: item.total_price
+          subtotal: item.total_price
         }));
 
         const { error: itemsError } = await supabase
-          .from('sale_items')
+          .from('sales_items')
           .insert(saleItems);
 
         if (itemsError) throw itemsError;

@@ -17,12 +17,11 @@ interface Sale {
   created_at: string;
   customer_id?: string;
   discount_amount?: number;
-  tax_amount?: number;
-  sale_items: Array<{
+  sales_items: Array<{
     id: string;
     quantity: number;
     unit_price: number;
-    total_price: number;
+    subtotal: number;
     product_id: string;
     products: {
       name: string;
@@ -62,12 +61,11 @@ export const SalesPage = () => {
           created_at,
           customer_id,
           discount_amount,
-          tax_amount,
-          sale_items (
+          sales_items (
             id,
             quantity,
             unit_price,
-            total_price,
+            subtotal,
             product_id,
             products (
               name,
@@ -147,7 +145,7 @@ export const SalesPage = () => {
     return sales.filter(sale =>
       sale.id.toLowerCase().includes(searchLower) ||
       sale.customers?.name?.toLowerCase().includes(searchLower) ||
-      sale.sale_items.some(item => 
+      sale.sales_items.some(item => 
         item.products.name.toLowerCase().includes(searchLower)
       )
     );
@@ -176,11 +174,11 @@ export const SalesPage = () => {
         payment_method: sale.payment_method,
         created_at: sale.created_at,
         customer: sale.customers?.name || 'Hakuna',
-        items: sale.sale_items.map(item => ({
+        items: sale.sales_items.map(item => ({
           product: item.products.name,
           quantity: item.quantity,
           unit_price: item.unit_price,
-          total_price: item.total_price
+          subtotal: item.subtotal
         }))
       }));
 
@@ -316,15 +314,15 @@ export const SalesPage = () => {
                   )}
                   
                   <div className="space-y-1">
-                    {sale.sale_items.slice(0, 3).map((item, index) => (
+                    {sale.sales_items.slice(0, 3).map((item, index) => (
                       <div key={index} className="flex justify-between text-sm">
                         <span>{item.quantity}x {item.products.name}</span>
-                        <span className="font-medium">TZS {item.total_price.toLocaleString()}</span>
+                        <span className="font-medium">TZS {item.subtotal.toLocaleString()}</span>
                       </div>
                     ))}
-                    {sale.sale_items.length > 3 && (
+                    {sale.sales_items.length > 3 && (
                       <p className="text-sm text-gray-500">
-                        ...na mengine {sale.sale_items.length - 3}
+                        ...na mengine {sale.sales_items.length - 3}
                       </p>
                     )}
                   </div>
@@ -415,7 +413,7 @@ export const SalesPage = () => {
               <div>
                 <h4 className="font-semibold mb-3">Bidhaa Zilizouzwa</h4>
                 <div className="space-y-2">
-                  {selectedSale.sale_items.map((item, index) => (
+                  {selectedSale.sales_items.map((item, index) => (
                     <div key={index} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
                       <div className="flex-1">
                         <p className="font-medium">{item.products.name}</p>
@@ -425,7 +423,7 @@ export const SalesPage = () => {
                       </div>
                       <div className="text-right">
                         <p className="font-medium">{item.quantity} x TZS {item.unit_price.toLocaleString()}</p>
-                        <p className="text-sm text-gray-600">= TZS {item.total_price.toLocaleString()}</p>
+                        <p className="text-sm text-gray-600">= TZS {item.subtotal.toLocaleString()}</p>
                       </div>
                     </div>
                   ))}
@@ -437,18 +435,12 @@ export const SalesPage = () => {
                 <div className="space-y-2">
                   <div className="flex justify-between">
                     <span>Jumla ya Bidhaa:</span>
-                    <span>TZS {selectedSale.sale_items.reduce((sum, item) => sum + item.total_price, 0).toLocaleString()}</span>
+                    <span>TZS {selectedSale.sales_items.reduce((sum, item) => sum + item.subtotal, 0).toLocaleString()}</span>
                   </div>
                   {selectedSale.discount_amount && selectedSale.discount_amount > 0 && (
                     <div className="flex justify-between text-red-600">
                       <span>Punguzo:</span>
                       <span>-TZS {selectedSale.discount_amount.toLocaleString()}</span>
-                    </div>
-                  )}
-                  {selectedSale.tax_amount && selectedSale.tax_amount > 0 && (
-                    <div className="flex justify-between">
-                      <span>Kodi:</span>
-                      <span>TZS {selectedSale.tax_amount.toLocaleString()}</span>
                     </div>
                   )}
                   <div className="flex justify-between text-lg font-bold border-t pt-2">
