@@ -47,10 +47,10 @@ export const ReceiptViewPage = () => {
           total_amount,
           payment_method,
           created_at,
-          sale_items (
+          sales_items (
             quantity,
             unit_price,
-            total_price,
+            subtotal,
             products (
               name
             )
@@ -73,11 +73,11 @@ export const ReceiptViewPage = () => {
         payment_method: sale.payment_method,
         created_at: sale.created_at,
         business_name: 'Kiduka Store',
-        items: sale.sale_items.map((item: any) => ({
+        items: sale.sales_items.map((item: any) => ({
           name: item.products?.name || 'Bidhaa Isiyojulikana',
           quantity: item.quantity,
           unit_price: item.unit_price,
-          total_price: item.total_price
+          total_price: item.subtotal
         }))
       };
 

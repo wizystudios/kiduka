@@ -66,25 +66,14 @@ export const EnhancedSettingsPage = () => {
   }, [userProfile]);
 
   const fetchBusinessSettings = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('settings')
-        .select('*')
-        .eq('owner_id', userProfile?.id)
-        .single();
-
-      if (data) {
-        setBusinessSettings({
-          business_name: data.business_name || '',
-          tax_rate: data.tax_rate?.toString() || '0',
-          currency: data.currency || 'TZS',
-          receipt_footer: data.receipt_footer || '',
-          enable_notifications: data.enable_notifications ?? true
-        });
-      }
-    } catch (error) {
-      console.log('No business settings found, using defaults');
-    }
+    // No backend settings table; use profile defaults
+    setBusinessSettings((prev) => ({
+      business_name: userProfile?.business_name || prev.business_name,
+      tax_rate: prev.tax_rate,
+      currency: prev.currency,
+      receipt_footer: prev.receipt_footer,
+      enable_notifications: prev.enable_notifications
+    }));
   };
 
   const getInitials = (name: string) => {
@@ -128,24 +117,7 @@ export const EnhancedSettingsPage = () => {
   const handleBusinessSettingsUpdate = async () => {
     setLoading(true);
     try {
-      const { error } = await supabase
-        .from('settings')
-        .upsert({
-          owner_id: userProfile?.id,
-          business_name: businessSettings.business_name,
-          tax_rate: parseFloat(businessSettings.tax_rate),
-          currency: businessSettings.currency,
-          receipt_footer: businessSettings.receipt_footer,
-          enable_notifications: businessSettings.enable_notifications,
-          updated_at: new Date().toISOString()
-        });
-
-      if (error) throw error;
-
-      toast({
-        title: t('success'),
-        description: 'Business settings updated successfully'
-      });
+      toast({ title: t('success'), description: 'Settings saved locally for this session' });
     } catch (error) {
       console.error('Error updating business settings:', error);
       toast({
@@ -201,7 +173,7 @@ export const EnhancedSettingsPage = () => {
         .from('sales')
         .select(`
           *,
-          sale_items(*, products(*))
+          sales_items(*, products(*))
         `)
         .eq('owner_id', userProfile?.id);
 

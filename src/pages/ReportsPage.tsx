@@ -57,10 +57,10 @@ export const ReportsPage = () => {
 
       // Fetch top products
       const { data: products, error: productsError } = await supabase
-        .from('sale_items')
+        .from('sales_items')
         .select(`
           quantity,
-          total_price,
+          subtotal,
           products (name),
           sales!inner (created_at)
         `)
@@ -91,13 +91,13 @@ export const ReportsPage = () => {
       // Process top products
       const productStats: { [key: string]: { total_sold: number; revenue: number } } = {};
       
-      products?.forEach(item => {
-        const productName = item.products.name;
+      products?.forEach((item: any) => {
+        const productName = item.products?.name || 'Unknown';
         if (!productStats[productName]) {
           productStats[productName] = { total_sold: 0, revenue: 0 };
         }
-        productStats[productName].total_sold += item.quantity;
-        productStats[productName].revenue += Number(item.total_price);
+        productStats[productName].total_sold += Number(item.quantity);
+        productStats[productName].revenue += Number(item.subtotal);
       });
 
       const topProductsData = Object.entries(productStats)

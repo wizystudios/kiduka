@@ -57,13 +57,12 @@ export const EnhancedReportsPage = () => {
           id,
           total_amount,
           created_at,
-          sale_items (
+          sales_items (
             quantity,
             unit_price,
-            total_price,
+            subtotal,
             products (
               name,
-              cost_price,
               price
             )
           )
@@ -93,13 +92,9 @@ export const EnhancedReportsPage = () => {
         salesByDate[date].sales += Number(sale.total_amount);
         salesByDate[date].transactions += 1;
 
-        // Calculate profit and track product sales
-        sale.sale_items.forEach(item => {
+        // Track product sales and revenue (profit not tracked without cost price)
+        sale.sales_items.forEach((item: any) => {
           if (item.products) {
-            const profit = (Number(item.products.price) - Number(item.products.cost_price || 0)) * item.quantity;
-            salesByDate[date].profit += profit;
-
-            // Track product sales
             const productName = item.products.name;
             if (!productSales[productName]) {
               productSales[productName] = {
@@ -109,9 +104,9 @@ export const EnhancedReportsPage = () => {
                 profit: 0
               };
             }
-            productSales[productName].quantity += item.quantity;
-            productSales[productName].revenue += Number(item.total_price);
-            productSales[productName].profit += profit;
+            productSales[productName].quantity += Number(item.quantity);
+            productSales[productName].revenue += Number(item.subtotal);
+            // Profit calculation skipped due to missing cost price in schema
           }
         });
       });

@@ -61,20 +61,19 @@ export const AddProductPage = () => {
         barcodeToUse = '8' + Date.now().toString().slice(-11);
       }
       
-      const productData = {
-        name: formData.name.trim(),
-        barcode: barcodeToUse,
-        price: parseFloat(formData.price),
-        cost_price: parseFloat(formData.cost_price) || 0,
-        stock_quantity: parseFloat(formData.stock_quantity),
-        category: formData.category?.trim() || null,
-        description: formData.description?.trim() || null,
-        low_stock_threshold: parseInt(formData.low_stock_threshold),
-        is_weight_based: formData.is_weight_based,
-        unit_type: formData.unit_type,
-        min_quantity: parseFloat(formData.min_quantity) || 0.1,
-        owner_id: user.id
-      };
+       const productData = {
+         name: formData.name.trim(),
+         barcode: barcodeToUse,
+         price: parseFloat(formData.price),
+         stock_quantity: parseFloat(formData.stock_quantity),
+         category: formData.category?.trim() || null,
+         description: formData.description?.trim() || null,
+         low_stock_threshold: parseInt(formData.low_stock_threshold),
+         is_weight_based: formData.is_weight_based,
+         unit_type: formData.unit_type,
+         min_quantity: parseFloat(formData.min_quantity) || 0.1,
+         owner_id: user.id
+       };
 
       console.log('Inserting product:', productData);
       

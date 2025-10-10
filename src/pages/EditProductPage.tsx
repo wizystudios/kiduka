@@ -52,7 +52,7 @@ export const EditProductPage = () => {
         name: data.name || '',
         barcode: data.barcode || '',
         price: data.price?.toString() || '',
-        cost_price: data.cost_price?.toString() || '',
+        cost_price: '',
         stock_quantity: data.stock_quantity?.toString() || '',
         category: data.category || '',
         description: data.description || '',
@@ -93,16 +93,15 @@ export const EditProductPage = () => {
       const updateData = {
         name: formData.name.trim(),
         barcode: formData.barcode?.trim() || null,
-        price: parseFloat(formData.price),
-        cost_price: parseFloat(formData.cost_price) || 0,
-        stock_quantity: parseFloat(formData.stock_quantity),
-        category: formData.category?.trim() || null,
-        description: formData.description?.trim() || null,
-        low_stock_threshold: parseInt(formData.low_stock_threshold),
-        is_weight_based: formData.is_weight_based,
-        unit_type: formData.unit_type,
-        min_quantity: parseFloat(formData.min_quantity) || 0.1,
-        updated_at: new Date().toISOString()
+         price: parseFloat(formData.price),
+         stock_quantity: parseFloat(formData.stock_quantity),
+         category: formData.category?.trim() || null,
+         description: formData.description?.trim() || null,
+         low_stock_threshold: parseInt(formData.low_stock_threshold),
+         is_weight_based: formData.is_weight_based,
+         unit_type: formData.unit_type,
+         min_quantity: parseFloat(formData.min_quantity) || 0.1,
+         updated_at: new Date().toISOString()
       };
       
       const { data, error } = await supabase

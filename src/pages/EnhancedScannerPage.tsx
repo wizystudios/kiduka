@@ -36,7 +36,7 @@ interface CartItem extends Product {
 interface Customer {
   id: string;
   name: string;
-  loyalty_points: number;
+  loyalty_points?: number;
 }
 
 interface Discount {
@@ -82,34 +82,15 @@ export const EnhancedScannerPage = () => {
 
   const fetchInitialData = async () => {
     try {
-      // Fetch customers
+      // Fetch customers only (no loyalty points column in schema)
       const { data: customersData } = await supabase
         .from('customers')
-        .select('id, name, loyalty_points')
+        .select('id, name')
         .order('name');
 
-      // Fetch discounts
-      const { data: discountsData } = await supabase
-        .from('discounts')
-        .select('*')
-        .eq('active', true);
-
-      // Fetch business settings
-      const { data: settingsData } = await supabase
-        .from('settings')
-        .select('*')
-        .eq('owner_id', userProfile?.id)
-        .single();
-
       setCustomers(customersData || []);
-      
-      const typedDiscounts = (discountsData || []).map(discount => ({
-        ...discount,
-        type: discount.type as 'percentage' | 'fixed'
-      }));
-      setDiscounts(typedDiscounts);
-      
-      setBusinessSettings(settingsData);
+      setDiscounts([]);
+      setBusinessSettings(null);
     } catch (error) {
       console.error('Error fetching initial data:', error);
     }
@@ -123,7 +104,7 @@ export const EnhancedScannerPage = () => {
       if (navigator.onLine) {
         const { data, error } = await supabase
           .from('products')
-          .select('id, name, price, stock_quantity, barcode, cost_price, is_weight_based, unit_type, min_quantity')
+          .select('id, name, price, stock_quantity, barcode, is_weight_based, unit_type, min_quantity')
           .eq('barcode', barcode)
           .eq('owner_id', userProfile?.id)
           .single();
@@ -342,11 +323,11 @@ export const EnhancedScannerPage = () => {
           product_id: item.product_id,
           quantity: item.quantity,
           unit_price: item.unit_price,
-          total_price: item.total_price
+          subtotal: item.total_price
         }));
 
         const { error: itemsError } = await supabase
-          .from('sale_items')
+          .from('sales_items')
           .insert(saleItems);
 
         if (itemsError) throw itemsError;
@@ -483,7 +464,7 @@ export const EnhancedScannerPage = () => {
                 <SelectItem value="">No customer</SelectItem>
                 {customers.map(customer => (
                   <SelectItem key={customer.id} value={customer.id}>
-                    {customer.name} ({customer.loyalty_points} pts)
+                    {customer.name}
                   </SelectItem>
                 ))}
               </SelectContent>
