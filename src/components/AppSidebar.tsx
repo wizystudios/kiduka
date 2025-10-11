@@ -35,7 +35,8 @@ import {
   TrendingUp,
   LogOut,
   Crown,
-  ClipboardList
+  ClipboardList,
+  Smartphone
 } from 'lucide-react';
 
 const navigationItems = [
@@ -177,6 +178,17 @@ export function AppSidebar() {
                   >
                     <Settings className="h-4 w-4" />
                     {!collapsed && <span>Mipangilio</span>}
+                  </NavLink>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem key="pwa-install">
+                <SidebarMenuButton asChild isActive={isActive('/pwa-install')}>
+                  <NavLink 
+                    to="/pwa-install"
+                    className="flex items-center gap-3 px-3 py-2 rounded-lg transition-colors"
+                  >
+                    <Smartphone className="h-4 w-4" />
+                    {!collapsed && <span>Sakinisha App</span>}
                   </NavLink>
                 </SidebarMenuButton>
               </SidebarMenuItem>

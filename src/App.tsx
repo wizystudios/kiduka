@@ -25,6 +25,7 @@ import { UsersPage } from '@/pages/UsersPage';
 import { SubscriptionPage } from '@/pages/SubscriptionPage';
 import { SubscriptionGuard } from '@/components/SubscriptionGuard';
 import { InventorySnapshotPage } from '@/pages/InventorySnapshotPage';
+import { PWAInstallerPage } from '@/pages/PWAInstallerPage';
 
 // AI and Business Intelligence Pages
 import { BusinessIntelligencePage } from '@/pages/BusinessIntelligencePage';
@@ -139,6 +140,14 @@ function App() {
                 <ProtectedRoute>
                   <AppLayout>
                     <InventorySnapshotPage />
+                  </AppLayout>
+                </ProtectedRoute>
+              } />
+              
+              <Route path="/pwa-install" element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <PWAInstallerPage />
                   </AppLayout>
                 </ProtectedRoute>
               } />

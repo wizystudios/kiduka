@@ -15,17 +15,7 @@ export default defineConfig(({ mode }) => ({
     componentTagger(),
   ].filter(Boolean),
   optimizeDeps: {
-    include: [
-      "react", 
-      "react-dom", 
-      "react/jsx-runtime",
-      "react/jsx-dev-runtime",
-      "@radix-ui/react-toast", 
-      "react-router-dom",
-      "@tanstack/react-query"
-    ],
-    exclude: [],
-    force: true
+    include: ["react", "react-dom", "@radix-ui/react-toast", "react-router-dom"],
   },
   resolve: {
     alias: {
