@@ -312,7 +312,6 @@ export const EnhancedScannerPage = () => {
             total_amount: saleData.total_amount,
             payment_method: saleData.payment_method,
             customer_id: saleData.customer_id,
-            discount_id: saleData.discount_id,
             discount_amount: saleData.discount_amount,
             owner_id: userProfile.id
           })
