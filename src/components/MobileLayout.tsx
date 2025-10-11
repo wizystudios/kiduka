@@ -164,16 +164,16 @@ export const MobileLayout = ({ children }: MobileLayoutProps) => {
           </div>
         </div>
         
-        <div className="flex items-center space-x-2 sm:space-x-3 flex-shrink-0">
+      <div className="flex items-center space-x-2 sm:space-x-3 flex-shrink-0">
           {/* Network Status */}
           <div className="flex items-center space-x-1">
             {syncStatus.isOnline ? (
-              <Wifi className="h-4 w-4 text-green-600" />
+              <Wifi className="h-5 w-5 text-green-600" />
             ) : (
-              <WifiOff className="h-4 w-4 text-red-600" />
+              <WifiOff className="h-5 w-5 text-red-600" />
             )}
             {!syncStatus.isOnline && syncStatus.summary.unsyncedSalesCount > 0 && (
-              <Badge variant="destructive" className="text-xs">
+              <Badge variant="destructive" className="text-sm">
                 {syncStatus.summary.unsyncedSalesCount}
               </Badge>
             )}
@@ -182,10 +182,10 @@ export const MobileLayout = ({ children }: MobileLayoutProps) => {
           {/* User Profile Dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="relative h-8 w-8 sm:h-10 sm:w-10 rounded-full p-0">
-                <Avatar className="h-8 w-8 sm:h-10 sm:w-10">
+              <Button variant="ghost" className="relative h-10 w-10 sm:h-12 sm:w-12 rounded-full p-0">
+                <Avatar className="h-10 w-10 sm:h-12 sm:w-12">
                   <AvatarImage src={userProfile?.avatar_url} />
-                  <AvatarFallback className="bg-gradient-to-br from-emerald-500 to-blue-600 text-white text-xs sm:text-sm">
+                  <AvatarFallback className="bg-gradient-to-br from-emerald-500 to-blue-600 text-white text-sm">
                     {getUserInitials()}
                   </AvatarFallback>
                 </Avatar>
@@ -194,11 +194,11 @@ export const MobileLayout = ({ children }: MobileLayoutProps) => {
             <DropdownMenuContent className="w-56" align="end" forceMount>
               <div className="flex items-center justify-start gap-2 p-2">
                 <div className="flex flex-col space-y-1 leading-none">
-                  <p className="font-medium">{getDisplayName()}</p>
+                  <p className="font-medium text-base">{getDisplayName()}</p>
                   <p className="w-[200px] truncate text-sm text-muted-foreground">
                     {user?.email}
                   </p>
-                  <Badge variant="outline" className="text-xs w-fit">
+                  <Badge variant="outline" className="text-sm w-fit">
                     {getUserRole()}
                   </Badge>
                 </div>
@@ -206,34 +206,34 @@ export const MobileLayout = ({ children }: MobileLayoutProps) => {
               <DropdownMenuSeparator />
               
               {/* Quick Navigation */}
-              <DropdownMenuItem onClick={() => navigate('/dashboard')}>
-                <Home className="mr-2 h-4 w-4" />
+              <DropdownMenuItem onClick={() => navigate('/dashboard')} className="text-base py-3">
+                <Home className="mr-2 h-5 w-5" />
                 Dashboard
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => navigate('/settings')}>
-                <Settings className="mr-2 h-4 w-4" />
+              <DropdownMenuItem onClick={() => navigate('/settings')} className="text-base py-3">
+                <Settings className="mr-2 h-5 w-5" />
                 Mipangilio
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => navigate('/products')}>
-                <Package className="mr-2 h-4 w-4" />
+              <DropdownMenuItem onClick={() => navigate('/products')} className="text-base py-3">
+                <Package className="mr-2 h-5 w-5" />
                 Bidhaa
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => navigate('/scanner')}>
-                <QrCode className="mr-2 h-4 w-4" />
+              <DropdownMenuItem onClick={() => navigate('/scanner')} className="text-base py-3">
+                <QrCode className="mr-2 h-5 w-5" />
                 Scanner
               </DropdownMenuItem>
               
               {/* Users menu for owners - This was missing! */}
               {userProfile?.role === 'owner' && (
-                <DropdownMenuItem onClick={() => navigate('/users')}>
-                  <UserCheck className="mr-2 h-4 w-4" />
+                <DropdownMenuItem onClick={() => navigate('/users')} className="text-base py-3">
+                  <UserCheck className="mr-2 h-5 w-5" />
                   Watumiaji
                 </DropdownMenuItem>
               )}
               
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleSignOut}>
-                <LogOut className="mr-2 h-4 w-4" />
+              <DropdownMenuItem onClick={handleSignOut} className="text-base py-3">
+                <LogOut className="mr-2 h-5 w-5" />
                 Toka
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -251,17 +251,17 @@ export const MobileLayout = ({ children }: MobileLayoutProps) => {
             {/* User Profile in Sidebar */}
             <div className="p-4 border-b border-gray-200 flex-shrink-0">
               <div className="flex items-center space-x-3">
-                <Avatar className="h-10 w-10">
+                <Avatar className="h-12 w-12">
                   <AvatarImage src={userProfile?.avatar_url} />
-                  <AvatarFallback className="bg-gradient-to-br from-emerald-500 to-blue-600 text-white">
+                  <AvatarFallback className="bg-gradient-to-br from-emerald-500 to-blue-600 text-white text-sm">
                     {getUserInitials()}
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900 truncate">
+                  <p className="text-base font-medium text-gray-900 truncate">
                     {getDisplayName()}
                   </p>
-                  <p className="text-xs text-gray-500 truncate">
+                  <p className="text-sm text-gray-500 truncate">
                     {getUserRole()}
                   </p>
                 </div>
@@ -277,14 +277,13 @@ export const MobileLayout = ({ children }: MobileLayoutProps) => {
                      <Button
                       key={item.id}
                       variant={isActive(item.href) ? "default" : "ghost"}
-                      className={`w-full justify-start text-xs sm:text-sm h-8 sm:h-10 ${
+                      className={`w-full justify-start text-sm h-12 ${
                         isActive(item.href) ? 'bg-blue-600 text-white' : 'text-gray-700 hover:bg-gray-100'
                       }`}
                       onClick={() => handleNavigation(item.href)}
                     >
-                      <Icon className="h-3 w-3 sm:h-4 sm:w-4 mr-2 sm:mr-3 flex-shrink-0" />
-                      <span className="truncate hidden sm:inline">{item.label}</span>
-                      <span className="truncate sm:hidden">{item.shortLabel}</span>
+                      <Icon className="h-5 w-5 mr-3 flex-shrink-0" />
+                      <span className="truncate">{item.label}</span>
                     </Button>
                   );
                 })}

@@ -138,11 +138,12 @@ export const ScannerPage = () => {
           });
         }
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error searching product:', error);
+      const errorMessage = error?.message || 'Hitilafu ya kutafuta. Jaribu tena.';
       toast({
-        title: 'Error',
-        description: 'Failed to search product. Please try again.',
+        title: 'Hitilafu',
+        description: errorMessage,
         variant: 'destructive'
       });
     } finally {
@@ -306,13 +307,16 @@ export const ScannerPage = () => {
       setScannedProduct(null);
       setSearchQuery('');
       setSearchResults([]);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error completing sale:', error);
+      const errorMessage = error?.message || 'Kosa la kutarajwa. Jaribu tena.';
       toast({
-        title: 'Error',
-        description: 'Failed to complete sale',
+        title: 'Hitilafu ya Mauzo',
+        description: errorMessage,
         variant: 'destructive'
       });
+      
+      // Don't clear cart on error so user can retry
     } finally {
       setLoading(false);
     }
@@ -329,10 +333,15 @@ export const ScannerPage = () => {
   };
 
   return (
-    <div className="p-4 space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Product Scanner</h2>
-        <p className="text-gray-600">Search products by barcode or name</p>
+    <div className="p-4 space-y-6 pb-20">
+      <div className="bg-gradient-to-r from-blue-50 to-purple-50 p-4 rounded-lg">
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">💰 Muuzo wa Haraka</h2>
+        <p className="text-base text-gray-700">Tafuta bidhaa kwa jina au scan barcode</p>
+        <div className="mt-3 p-3 bg-green-50 border-l-4 border-green-500 rounded">
+          <p className="text-sm text-green-800">
+            💡 <strong>Tip:</strong> Kwa biashara ya haraka, tumia utafutaji wa jina badala ya scan!
+          </p>
+        </div>
       </div>
 
       {/* Camera Scanner Component */}
@@ -411,54 +420,57 @@ export const ScannerPage = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Scanner Section */}
         <div className="space-y-4">
-          <Card>
+          <Card className="shadow-lg">
             <CardHeader>
-              <CardTitle className="flex items-center">
-                <Search className="h-5 w-5 mr-2" />
-                Product Search
+              <CardTitle className="flex items-center text-lg">
+                <Search className="h-6 w-6 mr-2" />
+                Tafuta Bidhaa
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               {/* Search Type Toggle */}
               <div className="flex space-x-2">
                 <Button
-                  variant={searchType === "barcode" ? "default" : "outline"}
-                  onClick={() => setSearchType("barcode")}
-                  className="flex-1"
-                >
-                  Barcode
-                </Button>
-                <Button
                   variant={searchType === "name" ? "default" : "outline"}
                   onClick={() => setSearchType("name")}
-                  className="flex-1"
+                  className="flex-1 h-12 text-base bg-green-600 hover:bg-green-700"
                 >
-                  Name
+                  📝 Jina (Haraka)
+                </Button>
+                <Button
+                  variant={searchType === "barcode" ? "default" : "outline"}
+                  onClick={() => setSearchType("barcode")}
+                  className="flex-1 h-12 text-base"
+                >
+                  📷 Barcode
                 </Button>
               </div>
 
               <div className="space-y-3">
                 <Input
-                  placeholder={searchType === 'barcode' ? "Enter barcode..." : "Enter product name..."}
+                  placeholder={searchType === 'barcode' ? "Ingiza nambari ya barcode..." : "Andika jina la bidhaa..."}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && handleSearchProduct(searchQuery)}
+                  className="h-14 text-lg"
+                  autoFocus
                 />
                 <div className="flex gap-2">
                   <Button 
                     onClick={() => handleSearchProduct(searchQuery)}
-                    className="flex-1"
+                    className="flex-1 h-14 text-base bg-blue-600 hover:bg-blue-700"
                     disabled={!searchQuery || loading}
                   >
-                    <Search className="h-4 w-4 mr-2" />
-                    {loading ? 'Searching...' : 'Search Product'}
+                    <Search className="h-5 w-5 mr-2" />
+                    {loading ? 'Inatafuta...' : 'Tafuta'}
                   </Button>
                   {searchType === 'barcode' && (
                     <Button 
                       onClick={() => setShowCamera(true)}
                       variant="outline"
+                      className="h-14 px-6"
                     >
-                      <Camera className="h-4 w-4" />
+                      <Camera className="h-6 w-6" />
                     </Button>
                   )}
                 </div>
@@ -468,29 +480,32 @@ export const ScannerPage = () => {
 
           {/* Search Results for Name Search */}
           {searchResults.length > 0 && (
-            <Card>
+            <Card className="shadow-lg">
               <CardHeader>
-                <CardTitle className="text-blue-800">Search Results</CardTitle>
+                <CardTitle className="text-blue-800 text-lg">Matokeo ({searchResults.length})</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 {searchResults.map((product) => (
-                  <div key={product.id} className="p-3 bg-blue-50 rounded-lg">
-                    <div className="flex justify-between items-start">
+                  <div key={product.id} className="p-4 bg-blue-50 rounded-lg border-l-4 border-blue-500 shadow">
+                    <div className="flex justify-between items-start gap-3">
                       <div className="flex-1">
-                        <h3 className="font-semibold">{product.name}</h3>
-                        <p className="text-blue-600 font-bold">TZS {product.price.toLocaleString()}</p>
+                        <h3 className="font-semibold text-base mb-1">{product.name}</h3>
+                        <p className="text-blue-600 font-bold text-lg mb-1">TZS {product.price.toLocaleString()}</p>
                         <p className="text-sm text-gray-600">{product.category}</p>
                       </div>
-                      <div className="text-right">
-                        <Badge variant="outline" className="text-blue-600 mb-2">
+                      <div className="text-right space-y-2">
+                        <Badge variant="outline" className="text-blue-600 text-sm">
                           Stock: {product.stock_quantity}
                         </Badge>
                         <Button 
-                          onClick={() => selectProduct(product)}
-                          size="sm"
-                          className="bg-blue-600 hover:bg-blue-700"
+                          onClick={() => {
+                            selectProduct(product);
+                            addToCart(product);
+                          }}
+                          size="lg"
+                          className="bg-green-600 hover:bg-green-700 w-full"
                         >
-                          Select
+                          ➕ Ongeza
                         </Button>
                       </div>
                     </div>

@@ -157,13 +157,24 @@ export const InventorySnapshotPage = () => {
 
   return (
     <div className="p-4 space-y-4 pb-20">
-      {/* Header */}
-      <div className="flex items-center gap-3">
-        <ClipboardList className="h-6 w-6 text-primary" />
-        <div>
-          <h1 className="text-xl font-bold">Hesabu ya Stock</h1>
-          <p className="text-sm text-muted-foreground">
-            Rekodi hesabu ya asubuhi na jioni
+      {/* Header with Warning */}
+      <div className="space-y-3">
+        <div className="flex items-center gap-3">
+          <ClipboardList className="h-8 w-8 text-primary" />
+          <div>
+            <h1 className="text-2xl font-bold">Hesabu ya Stock</h1>
+            <p className="text-base text-muted-foreground">
+              Rekodi hesabu ya asubuhi na jioni
+            </p>
+          </div>
+        </div>
+        
+        <div className="bg-yellow-50 border-l-4 border-yellow-500 p-4 rounded-lg">
+          <p className="text-sm text-yellow-800 mb-2">
+            <strong>⚠️ Kumbuka:</strong> Hii ni kwa ajili ya biashara ambazo zinaweza kuhesabu stock mara mbili kwa siku.
+          </p>
+          <p className="text-sm text-yellow-800">
+            Kama biashara yako ni ya haraka sana na hakuna muda wa kuhesabu, tumia <strong>"Scanner"</strong> badala yake!
           </p>
         </div>
       </div>
@@ -172,12 +183,12 @@ export const InventorySnapshotPage = () => {
       <Card>
         <CardContent className="p-4">
           <div className="flex items-center gap-2">
-            <Calendar className="h-4 w-4 text-muted-foreground" />
+            <Calendar className="h-5 w-5 text-muted-foreground" />
             <input
               type="date"
               value={selectedDate}
               onChange={(e) => setSelectedDate(e.target.value)}
-              className="flex-1 px-3 py-2 border rounded-md text-sm"
+              className="flex-1 px-4 py-3 border rounded-md text-base"
               max={format(new Date(), 'yyyy-MM-dd')}
             />
           </div>
@@ -185,21 +196,21 @@ export const InventorySnapshotPage = () => {
       </Card>
 
       {/* Action Buttons */}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 gap-4">
         <Button
           onClick={() => recordSnapshot('opening')}
           disabled={recording || hasOpeningCount}
-          className="h-auto py-4 flex-col gap-2"
+          className="h-auto py-6 flex-col gap-3"
           variant={hasOpeningCount ? "outline" : "default"}
         >
           {hasOpeningCount ? (
-            <CheckCircle2 className="h-5 w-5 text-green-600" />
+            <CheckCircle2 className="h-6 w-6 text-green-600" />
           ) : (
-            <Package className="h-5 w-5" />
+            <Package className="h-6 w-6" />
           )}
           <div className="text-center">
-            <div className="font-semibold">Hesabu ya Asubuhi</div>
-            <div className="text-xs opacity-80">
+            <div className="font-semibold text-base">Hesabu ya Asubuhi</div>
+            <div className="text-sm opacity-80">
               {hasOpeningCount ? 'Imerekodishwa' : 'Rekodi stock ya kuanzia'}
             </div>
           </div>
@@ -208,17 +219,17 @@ export const InventorySnapshotPage = () => {
         <Button
           onClick={() => recordSnapshot('closing')}
           disabled={recording || !hasOpeningCount || hasClosingCount}
-          className="h-auto py-4 flex-col gap-2"
+          className="h-auto py-6 flex-col gap-3"
           variant={hasClosingCount ? "outline" : "default"}
         >
           {hasClosingCount ? (
-            <CheckCircle2 className="h-5 w-5 text-green-600" />
+            <CheckCircle2 className="h-6 w-6 text-green-600" />
           ) : (
-            <TrendingDown className="h-5 w-5" />
+            <TrendingDown className="h-6 w-6" />
           )}
           <div className="text-center">
-            <div className="font-semibold">Hesabu ya Jioni</div>
-            <div className="text-xs opacity-80">
+            <div className="font-semibold text-base">Hesabu ya Jioni</div>
+            <div className="text-sm opacity-80">
               {hasClosingCount ? 'Imerekodishwa' : 'Rekodi stock iliyobaki'}
             </div>
           </div>
@@ -229,16 +240,16 @@ export const InventorySnapshotPage = () => {
       {hasOpeningCount && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Ripoti ya Mauzo</CardTitle>
+            <CardTitle className="text-xl">Ripoti ya Mauzo</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className="space-y-4">
             {productReport.map(product => (
               <div
                 key={product.id}
-                className="p-3 border rounded-lg space-y-2"
+                className="p-4 border rounded-lg space-y-3"
               >
                 <div className="flex items-center justify-between">
-                  <div className="font-medium text-sm">{product.name}</div>
+                  <div className="font-medium text-base">{product.name}</div>
                   {product.sold !== undefined ? (
                     <Badge 
                       variant={product.sold > 0 ? "default" : "secondary"}
@@ -251,13 +262,13 @@ export const InventorySnapshotPage = () => {
                       )}
                     </Badge>
                   ) : (
-                    <Badge variant="outline" className="text-xs">
+                    <Badge variant="outline" className="text-sm">
                       Subiri hesabu ya jioni
                     </Badge>
                   )}
                 </div>
                 
-                <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
+                <div className="grid grid-cols-2 gap-3 text-sm text-muted-foreground">
                   {product.opening !== undefined && (
                     <div>Asubuhi: <span className="font-medium text-foreground">{product.opening}</span></div>
                   )}
@@ -276,14 +287,14 @@ export const InventorySnapshotPage = () => {
             
             {/* Total Summary */}
             {hasClosingCount && (
-              <div className="pt-3 border-t mt-3">
-                <div className="flex justify-between items-center text-sm font-bold">
+              <div className="pt-4 border-t mt-4">
+                <div className="flex justify-between items-center text-base font-bold">
                   <span>Jumla ya Mapato:</span>
-                  <span className="text-green-600 text-lg">
+                  <span className="text-green-600 text-xl">
                     TZS {productReport.reduce((sum, p) => sum + (p.revenue || 0), 0).toLocaleString()}
                   </span>
                 </div>
-                <div className="flex justify-between items-center text-xs text-muted-foreground mt-1">
+                <div className="flex justify-between items-center text-sm text-muted-foreground mt-2">
                   <span>Bidhaa zilizouzwa:</span>
                   <span>{productReport.reduce((sum, p) => sum + (p.sold || 0), 0)}</span>
                 </div>
@@ -296,10 +307,10 @@ export const InventorySnapshotPage = () => {
       {/* Empty State */}
       {!hasOpeningCount && (
         <Card className="border-dashed">
-          <CardContent className="py-8 text-center">
-            <ClipboardList className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
-            <h3 className="font-semibold mb-2">Anza Kuhesabu</h3>
-            <p className="text-sm text-muted-foreground mb-4">
+          <CardContent className="py-12 text-center">
+            <ClipboardList className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+            <h3 className="font-semibold text-lg mb-3">Anza Kuhesabu</h3>
+            <p className="text-base text-muted-foreground mb-4">
               Bonyeza "Hesabu ya Asubuhi" kurekodi stock yako ya kuanzia siku
             </p>
           </CardContent>
