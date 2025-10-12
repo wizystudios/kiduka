@@ -11,9 +11,15 @@ export default defineConfig(({ mode }) => ({
   },
   plugins: [
     react(),
-    mode === 'development' &&
-    componentTagger(),
+    mode === 'development' && componentTagger(),
   ].filter(Boolean),
+  optimizeDeps: {
+    include: [
+      'react/jsx-runtime',
+      'react/jsx-dev-runtime',
+      '@tanstack/react-query'
+    ],
+  },
   resolve: {
     dedupe: ['react', 'react-dom'],
     alias: {
