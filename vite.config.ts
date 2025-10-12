@@ -15,16 +15,13 @@ export default defineConfig(({ mode }) => ({
     componentTagger(),
   ].filter(Boolean),
   optimizeDeps: {
-    include: [
-      "react", 
-      "react-dom", 
-      "react/jsx-runtime",
-      "@radix-ui/react-toast", 
-      "react-router-dom"
-    ],
-    esbuildOptions: {
-      target: 'esnext'
-    }
+    exclude: [
+      'react',
+      'react-dom',
+      'react/jsx-runtime',
+      'react/jsx-dev-runtime',
+      '@tanstack/react-query'
+    ]
   },
   resolve: {
     dedupe: ['react', 'react-dom'],
