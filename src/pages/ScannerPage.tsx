@@ -253,7 +253,6 @@ export const ScannerPage = () => {
         .from('sales')
         .insert({
           owner_id: user?.id,
-          cashier_id: user?.id,
           total_amount: getSubtotal(),
           payment_method: paymentData.method
         })
@@ -333,13 +332,13 @@ export const ScannerPage = () => {
   };
 
   return (
-    <div className="p-4 space-y-6 pb-20">
-      <div className="bg-gradient-to-r from-blue-50 to-purple-50 p-4 rounded-lg">
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">💰 Muuzo wa Haraka</h2>
-        <p className="text-base text-gray-700">Tafuta bidhaa kwa jina au scan barcode</p>
-        <div className="mt-3 p-3 bg-green-50 border-l-4 border-green-500 rounded">
-          <p className="text-sm text-green-800">
-            💡 <strong>Tip:</strong> Kwa biashara ya haraka, tumia utafutaji wa jina badala ya scan!
+    <div className="p-2 space-y-2 pb-20">
+      <div className="bg-gradient-to-r from-blue-50 to-purple-50 p-2 rounded">
+        <h2 className="text-sm font-bold text-gray-900 mb-1">💰 Muuzo wa Haraka</h2>
+        <p className="text-xs text-gray-700">Tafuta bidhaa</p>
+        <div className="mt-1 p-1.5 bg-green-50 border-l-2 border-green-500 rounded">
+          <p className="text-xs text-green-800">
+            💡 Tumia jina kwa haraka!
           </p>
         </div>
       </div>

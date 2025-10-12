@@ -4,12 +4,17 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Search, Edit, Trash2, Package, Loader2, Scale } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, Package, Loader2, Scale, ChevronDown, ChevronUp, ShoppingCart, Pause, Play } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { WeightQuantitySelector } from '@/components/WeightQuantitySelector';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 
 interface Product {
   id: string;
@@ -31,6 +36,7 @@ export const ProductsPage = () => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [selectedWeightProduct, setSelectedWeightProduct] = useState<Product | null>(null);
+  const [expandedProduct, setExpandedProduct] = useState<string | null>(null);
   const navigate = useNavigate();
   const { user } = useAuth();
 
@@ -90,7 +96,7 @@ export const ProductsPage = () => {
   };
 
   const handleDeleteProduct = async (id: string, productName: string) => {
-    if (!confirm(`Je, una uhakika unataka kufuta bidhaa "${productName}"? Hii haitaweza kubadilishwa.`)) return;
+    if (!confirm(`Je, una uhakika unataka kufuta bidhaa "${productName}"?`)) return;
 
     try {
       const { error } = await supabase
@@ -102,7 +108,7 @@ export const ProductsPage = () => {
       if (error) throw error;
 
       setProducts(prev => prev.filter(p => p.id !== id));
-      toast.success('Bidhaa imefutwa kwa mafanikio');
+      toast.success('Bidhaa imefutwa');
     } catch (error) {
       console.error('Error deleting product:', error);
       toast.error('Imeshindwa kufuta bidhaa');
@@ -114,8 +120,11 @@ export const ProductsPage = () => {
   };
 
   const handleAddToCart = (product: Product, quantity: number) => {
-    // This would typically add to a cart/sale
     toast.success(`Imeongezwa: ${quantity} ${product.unit_type} ya ${product.name}`);
+  };
+
+  const handleSellProduct = (product: Product) => {
+    navigate('/scanner', { state: { selectedProduct: product } });
   };
 
   const filteredProducts = useMemo(() => {
@@ -133,15 +142,15 @@ export const ProductsPage = () => {
     if (stock <= 0) return { color: 'bg-red-100 text-red-800', label: 'Hazipatikani' };
     if (stock <= threshold) return { color: 'bg-red-100 text-red-800', label: 'Stock Ndogo' };
     if (stock <= threshold * 2) return { color: 'bg-yellow-100 text-yellow-800', label: 'Wastani' };
-    return { color: 'bg-green-100 text-green-800', label: 'Ipo Stock' };
+    return { color: 'bg-green-100 text-green-800', label: 'Ipo' };
   };
 
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[40vh]">
         <div className="text-center">
-          <Loader2 className="h-6 w-6 animate-spin text-blue-600 mx-auto mb-2" />
-          <p className="text-xs text-gray-600">Inapakia bidhaa...</p>
+          <Loader2 className="h-4 w-4 animate-spin text-blue-600 mx-auto mb-1" />
+          <p className="text-xs text-gray-600">Inapakia...</p>
         </div>
       </div>
     );
@@ -151,35 +160,27 @@ export const ProductsPage = () => {
     <div className="p-2 space-y-2 pb-16">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-        <div className="flex items-center gap-2">
-          <Package className="h-5 w-5 text-blue-600" />
+        <div className="flex items-center gap-1">
+          <Package className="h-4 w-4 text-blue-600" />
           <div>
-            <h2 className="text-base font-bold text-gray-900">Bidhaa</h2>
-            <div className="flex items-center gap-2">
-              <p className="text-xs text-gray-600">{products.length} bidhaa</p>
-              {refreshing && (
-                <Loader2 className="h-3 w-3 animate-spin text-blue-600" />
-              )}
-            </div>
+            <h2 className="text-sm font-bold text-gray-900">Bidhaa</h2>
+            <p className="text-xs text-gray-600">{products.length} bidhaa</p>
           </div>
         </div>
         
-        <div className="flex gap-2 w-full sm:w-auto">
+        <div className="flex gap-1 w-full sm:w-auto">
           <Button 
             onClick={handleRefresh}
             variant="outline"
             disabled={refreshing}
             className="text-blue-600 border-blue-600 hover:bg-blue-50 text-xs px-2 py-1 h-7 flex-1 sm:flex-none"
           >
-            {refreshing ? (
-              <Loader2 className="h-3 w-3 animate-spin mr-1" />
-            ) : null}
-            Sasisha
+            {refreshing ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Sasisha'}
           </Button>
 
           <Button 
             onClick={handleAddProduct}
-            className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-2 py-1 h-7 flex-1 sm:flex-none font-semibold shadow-lg"
+            className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-2 py-1 h-7 flex-1 sm:flex-none"
           >
             <Plus className="h-3 w-3 mr-1" />
             Ongeza
@@ -189,121 +190,155 @@ export const ProductsPage = () => {
 
       {/* Search */}
       <div className="relative">
-        <Search className="absolute left-2 top-2 h-3 w-3 text-gray-400" />
+        <Search className="absolute left-2 top-1.5 h-3 w-3 text-gray-400" />
         <Input
-          placeholder="Tafuta bidhaa..."
+          placeholder="Tafuta..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="pl-7 text-xs h-8"
+          className="pl-7 text-xs h-7"
         />
       </div>
 
       {/* Products List */}
-      <div className="space-y-2">
+      <div className="space-y-1">
         {filteredProducts.map((product) => {
           const stockStatus = getStockStatus(
             product.stock_quantity || 0, 
             product.low_stock_threshold || 10
           );
+          const isExpanded = expandedProduct === product.id;
+          
           return (
-            <Card key={product.id} className="hover:shadow-md transition-all duration-200 border-l-4 border-l-blue-500">
-              <CardContent className="p-2">
-                <div className="flex justify-between items-start">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <h3 className="font-semibold text-xs truncate">{product.name}</h3>
-                      <Badge className={`${stockStatus.color} text-xs px-1 py-0.5 flex-shrink-0`}>
-                        {stockStatus.label}
-                      </Badge>
+            <Collapsible
+              key={product.id}
+              open={isExpanded}
+              onOpenChange={() => setExpandedProduct(isExpanded ? null : product.id)}
+            >
+              <Card className="hover:shadow-sm transition-all">
+                <CardContent className="p-2">
+                  <CollapsibleTrigger className="w-full">
+                    <div className="flex justify-between items-center">
+                      <div className="flex-1 min-w-0 text-left">
+                        <div className="flex items-center gap-1 mb-0.5">
+                          <h3 className="font-semibold text-xs truncate">{product.name}</h3>
+                          <Badge className={`${stockStatus.color} text-xs px-1 py-0`}>
+                            {stockStatus.label}
+                          </Badge>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-xs font-bold text-green-600">
+                            {(product.price || 0).toLocaleString()} TZS
+                          </span>
+                          <span className="text-xs text-gray-600">
+                            Stock: {product.stock_quantity || 0}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="ml-2">
+                        {isExpanded ? (
+                          <ChevronUp className="h-4 w-4 text-gray-500" />
+                        ) : (
+                          <ChevronDown className="h-4 w-4 text-gray-500" />
+                        )}
+                      </div>
                     </div>
-                    {product.barcode && (
-                      <p className="text-xs text-gray-500 mb-1">#{product.barcode}</p>
-                    )}
-                    {product.category && (
-                      <p className="text-xs text-gray-500 mb-1">{product.category}</p>
-                    )}
-                    {product.description && (
-                      <p className="text-xs text-gray-600 mb-1 truncate">{product.description}</p>
-                    )}
-                     <div className="flex justify-between items-center">
-                       <div className="flex items-center gap-2">
-                         <span className="text-sm font-bold text-green-600">
-                           TZS {(product.price || 0).toLocaleString()}
-                         </span>
-                         {product.is_weight_based && (
-                           <Badge variant="secondary" className="text-xs">
-                             kwa {product.unit_type || 'kipande'}
-                           </Badge>
-                         )}
-                       </div>
-                       <div className="flex items-center space-x-1">
-                         <Package className="h-3 w-3 text-gray-500" />
-                         <span className="text-xs text-gray-600">
-                            {product.is_weight_based 
-                              ? `${product.stock_quantity || 0} ${product.unit_type || 'unit'}`
-                              : product.stock_quantity || 0
-                            }
-                         </span>
-                       </div>
-                     </div>
-                   </div>
-                   
-                   <div className="flex space-x-1 ml-2 flex-shrink-0">
-                     {product.is_weight_based && (
-                       <Button 
-                         variant="ghost" 
-                         size="sm" 
-                         onClick={() => handleWeightProductSelect(product)}
-                         className="h-6 w-6 p-0 hover:bg-green-50"
-                         title="Chagua Kiasi"
-                       >
-                         <Scale className="h-3 w-3 text-green-600" />
-                       </Button>
-                     )}
-                     <Button 
-                       variant="ghost" 
-                       size="sm" 
-                       onClick={() => navigate(`/products/edit/${product.id}`)}
-                       className="h-6 w-6 p-0 hover:bg-blue-50"
-                       title="Hariri"
-                     >
-                       <Edit className="h-3 w-3 text-blue-600" />
-                     </Button>
-                     <Button 
-                       variant="ghost" 
-                       size="sm" 
-                       onClick={() => handleDeleteProduct(product.id, product.name)}
-                       className="h-6 w-6 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
-                       title="Futa"
-                     >
-                       <Trash2 className="h-3 w-3" />
-                     </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+                  </CollapsibleTrigger>
+                  
+                  <CollapsibleContent>
+                    <div className="mt-2 pt-2 border-t space-y-1">
+                      {/* Details */}
+                      {product.barcode && (
+                        <p className="text-xs text-gray-600">Barcode: {product.barcode}</p>
+                      )}
+                      {product.category && (
+                        <p className="text-xs text-gray-600">Aina: {product.category}</p>
+                      )}
+                      {product.description && (
+                        <p className="text-xs text-gray-600">{product.description}</p>
+                      )}
+                      
+                      {/* Action Buttons */}
+                      <div className="flex flex-wrap gap-1 pt-1">
+                        <Button
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleSellProduct(product);
+                          }}
+                          className="h-6 text-xs px-2 bg-green-600 hover:bg-green-700"
+                        >
+                          <ShoppingCart className="h-3 w-3 mr-1" />
+                          Uza
+                        </Button>
+                        
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/products/edit/${product.id}`);
+                          }}
+                          className="h-6 text-xs px-2"
+                        >
+                          <Edit className="h-3 w-3 mr-1" />
+                          Hariri
+                        </Button>
+                        
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteProduct(product.id, product.name);
+                          }}
+                          className="h-6 text-xs px-2 text-red-600 hover:text-red-700 hover:bg-red-50"
+                        >
+                          <Trash2 className="h-3 w-3 mr-1" />
+                          Futa
+                        </Button>
+                        
+                        {product.is_weight_based && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleWeightProductSelect(product);
+                            }}
+                            className="h-6 text-xs px-2"
+                          >
+                            <Scale className="h-3 w-3 mr-1" />
+                            Pima
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  </CollapsibleContent>
+                </CardContent>
+              </Card>
+            </Collapsible>
           );
         })}
       </div>
 
       {/* Empty State */}
       {filteredProducts.length === 0 && !loading && (
-        <Card className="text-center py-6 border-2 border-dashed border-gray-200">
+        <Card className="text-center py-4 border-2 border-dashed">
           <CardContent>
-            <Package className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-            <h3 className="text-sm font-semibold text-gray-900 mb-2">
-              {searchTerm ? 'Hakuna bidhaa zilizopatikana' : 'Hakuna bidhaa bado'}
+            <Package className="h-6 w-6 text-gray-400 mx-auto mb-1" />
+            <h3 className="text-xs font-semibold text-gray-900 mb-1">
+              {searchTerm ? 'Hakuna bidhaa' : 'Hakuna bidhaa bado'}
             </h3>
-            <p className="text-xs text-gray-600 mb-3">
+            <p className="text-xs text-gray-600 mb-2">
               {searchTerm 
-                ? `Hakuna bidhaa zinazofanana na "${searchTerm}"`
-                : "Anza kwa kuongeza bidhaa yako ya kwanza"
+                ? `Hakuna "${searchTerm}"`
+                : "Ongeza bidhaa"
               }
             </p>
             {!searchTerm && (
               <Button 
                 onClick={handleAddProduct} 
-                className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1 shadow-lg"
+                className="bg-blue-600 hover:bg-blue-700 text-xs px-2 py-1 h-7"
               >
                 <Plus className="h-3 w-3 mr-1" />
                 Ongeza Bidhaa
