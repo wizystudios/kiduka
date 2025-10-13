@@ -52,6 +52,9 @@ export const MobileBottomNav = () => {
     { id: 'products', label: 'Bidhaa', icon: Package, href: '/products' },
     { id: 'scanner', label: 'Scan', icon: QrCode, href: '/scanner' },
     { id: 'sales', label: 'Mauzo', icon: ShoppingCart, href: '/sales' },
+    { id: 'inventory', label: 'Hesabu', icon: BarChart3, href: '/inventory-snapshots' },
+    { id: 'pwa', label: 'Sakinisha', icon: Download, href: '/pwa-install' },
+    { id: 'logout', label: 'Toka', icon: LogOut, href: '#' },
   ];
 
   const profileMenuItems = [
@@ -133,7 +136,7 @@ export const MobileBottomNav = () => {
     <>
       {/* Bottom Navigation Bar */}
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 md:hidden">
-        <div className="grid grid-cols-5 h-14">
+        <div className="grid grid-cols-7 h-14">
           {/* Main Navigation Items */}
           {mainNavItems.map((item) => {
             const Icon = item.icon;
@@ -141,7 +144,7 @@ export const MobileBottomNav = () => {
             return (
               <button
                 key={item.id}
-                onClick={() => handleNavigation(item.href)}
+                onClick={() => item.id === 'logout' ? handleSignOut() : handleNavigation(item.href)}
                 className={`flex flex-col items-center justify-center h-full ${
                   active 
                     ? 'text-blue-600 bg-blue-50' 

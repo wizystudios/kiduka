@@ -278,13 +278,26 @@ export const ScannerPage = () => {
       // Update product stock quantities after successful sale
       try {
         const updates = cart.map(async (item) => {
-          const newQty = Math.max(0, item.is_weight_based ? Math.floor(item.stock_quantity - item.quantity) : (item.stock_quantity - item.quantity));
-          const { error } = await supabase
+          // Fetch latest stock to avoid stale values
+          const { data: latest, error: fetchErr } = await supabase
+            .from('products')
+            .select('stock_quantity, is_weight_based')
+            .eq('id', item.id)
+            .eq('owner_id', user?.id)
+            .single();
+          if (fetchErr) throw fetchErr;
+
+          const currentQty = Number(latest?.stock_quantity ?? item.stock_quantity);
+          const isWeight = latest?.is_weight_based ?? item.is_weight_based;
+          const deduction = item.quantity as number;
+          const newQty = Math.max(0, isWeight ? Math.floor(currentQty - deduction) : currentQty - deduction);
+
+          const { error: updateErr } = await supabase
             .from('products')
             .update({ stock_quantity: newQty })
             .eq('id', item.id)
             .eq('owner_id', user?.id);
-          if (error) throw error;
+          if (updateErr) throw updateErr;
         });
         await Promise.all(updates);
       } catch (e) {
