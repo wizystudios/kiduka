@@ -334,8 +334,21 @@ export const EnhancedScannerPage = () => {
 
         if (itemsError) throw itemsError;
 
-        // Stock is now handled automatically by the database trigger after inserting sale_items
-        console.log('Stock will be updated automatically by database trigger');
+        // Update product stock quantities after successful sale
+        try {
+          const updates = cart.map(async (item) => {
+            const newQty = Math.max(0, item.is_weight_based ? Math.floor(item.stock_quantity - item.quantity) : (item.stock_quantity - item.quantity));
+            const { error } = await supabase
+              .from('products')
+              .update({ stock_quantity: newQty })
+              .eq('id', item.id)
+              .eq('owner_id', userProfile.id);
+            if (error) throw error;
+          });
+          await Promise.all(updates);
+        } catch (e) {
+          console.error('Error updating product stock after sale:', e);
+        }
 
         // Prepare digital receipt data
         setCurrentReceiptData({

@@ -105,3 +105,9 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Mobile typography scale */
+@media (max-width: 768px) {
+  html { font-size: 12px; }
+}
+

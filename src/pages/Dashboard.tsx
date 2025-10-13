@@ -143,7 +143,7 @@ export const Dashboard = () => {
   const dashboardMetrics = [
     {
       title: "Mauzo Leo",
-      value: `${(metrics.todaysSales / 1000).toFixed(0)}K`,
+      value: `TZS ${metrics.todaysSales.toLocaleString()}`,
       fullValue: `TZS ${metrics.todaysSales.toLocaleString()}`,
       icon: DollarSign,
       color: "text-green-600",

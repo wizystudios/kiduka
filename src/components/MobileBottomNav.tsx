@@ -22,7 +22,12 @@ import {
   Bell,
   Users,
   CreditCard,
-  Percent
+  Percent,
+  Store,
+  Brain,
+  TrendingUp,
+  BarChart3,
+  Download
 } from 'lucide-react';
 import { NotificationCenter } from '@/components/NotificationCenter';
 
@@ -53,6 +58,13 @@ export const MobileBottomNav = () => {
     { id: 'customers', label: 'Wateja', icon: Users, href: '/customers' },
     { id: 'discounts', label: 'Punguzo', icon: Percent, href: '/discounts' },
     { id: 'credit', label: 'Mikopo', icon: CreditCard, href: '/credit-management' },
+    { id: 'micro-loans', label: 'Mikopo Midogo', icon: CreditCard, href: '/micro-loans' },
+    { id: 'inventory', label: 'Hesabu ya Stock', icon: BarChart3, href: '/inventory-snapshots' },
+    { id: 'marketplace', label: 'Soko la Jamii', icon: Store, href: '/marketplace' },
+    { id: 'ai-advisor', label: 'Mshauri wa AI', icon: Brain, href: '/ai-advisor' },
+    { id: 'bi', label: 'Takwimu za AI', icon: TrendingUp, href: '/business-intelligence' },
+    { id: 'reports', label: 'Ripoti', icon: BarChart3, href: '/reports' },
+    { id: 'pwa', label: 'Sakinisha App', icon: Download, href: '/pwa-install' },
     { id: 'settings', label: 'Mipangilio', icon: Settings, href: '/settings' },
     ...(userProfile?.role === 'owner' ? [
       { id: 'users', label: 'Watumiaji', icon: Users, href: '/users' }
@@ -121,7 +133,7 @@ export const MobileBottomNav = () => {
     <>
       {/* Bottom Navigation Bar */}
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 md:hidden">
-        <div className="grid grid-cols-5 h-16">
+        <div className="grid grid-cols-5 h-14">
           {/* Main Navigation Items */}
           {mainNavItems.map((item) => {
             const Icon = item.icon;
@@ -136,8 +148,8 @@ export const MobileBottomNav = () => {
                     : 'text-gray-600 hover:text-blue-600 hover:bg-gray-50'
                 } transition-colors`}
               >
-                <Icon className={`h-5 w-5 ${active ? 'text-blue-600' : 'text-gray-600'}`} />
-                <span className={`text-xs mt-1 ${active ? 'text-blue-600 font-medium' : 'text-gray-600'}`}>
+                <Icon className={`h-4 w-4 ${active ? 'text-blue-600' : 'text-gray-600'}`} />
+                <span className={`text-[10px] mt-0.5 ${active ? 'text-blue-600 font-medium' : 'text-gray-600'}`}>
                   {item.label}
                 </span>
               </button>
