@@ -14,11 +14,7 @@ export default defineConfig(({ mode }) => ({
     mode === 'development' && componentTagger(),
   ].filter(Boolean),
   optimizeDeps: {
-    include: [
-      'react/jsx-runtime',
-      'react/jsx-dev-runtime',
-      '@tanstack/react-query'
-    ],
+    exclude: ['react', 'react-dom', 'react/jsx-runtime', 'react/jsx-dev-runtime'],
   },
   resolve: {
     dedupe: ['react', 'react-dom'],
