@@ -65,6 +65,74 @@ export type Database = {
         }
         Relationships: []
       }
+      customer_transactions: {
+        Row: {
+          amount_paid: number | null
+          balance: number | null
+          created_at: string
+          customer_id: string | null
+          customer_name: string
+          id: string
+          notes: string | null
+          owner_id: string
+          payment_method: string | null
+          payment_status: string
+          product_name: string | null
+          quantity: number | null
+          total_amount: number
+          transaction_date: string
+          transaction_type: string
+          unit_price: number | null
+          updated_at: string
+        }
+        Insert: {
+          amount_paid?: number | null
+          balance?: number | null
+          created_at?: string
+          customer_id?: string | null
+          customer_name: string
+          id?: string
+          notes?: string | null
+          owner_id: string
+          payment_method?: string | null
+          payment_status?: string
+          product_name?: string | null
+          quantity?: number | null
+          total_amount: number
+          transaction_date?: string
+          transaction_type: string
+          unit_price?: number | null
+          updated_at?: string
+        }
+        Update: {
+          amount_paid?: number | null
+          balance?: number | null
+          created_at?: string
+          customer_id?: string | null
+          customer_name?: string
+          id?: string
+          notes?: string | null
+          owner_id?: string
+          payment_method?: string | null
+          payment_status?: string
+          product_name?: string | null
+          quantity?: number | null
+          total_amount?: number
+          transaction_date?: string
+          transaction_type?: string
+          unit_price?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_transactions_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       customers: {
         Row: {
           created_at: string
@@ -107,6 +175,48 @@ export type Database = {
         }
         Relationships: []
       }
+      discounts: {
+        Row: {
+          active: boolean | null
+          applicable_products: Json | null
+          created_at: string
+          discount_type: string
+          end_date: string | null
+          id: string
+          name: string
+          owner_id: string
+          start_date: string | null
+          updated_at: string
+          value: number
+        }
+        Insert: {
+          active?: boolean | null
+          applicable_products?: Json | null
+          created_at?: string
+          discount_type: string
+          end_date?: string | null
+          id?: string
+          name: string
+          owner_id: string
+          start_date?: string | null
+          updated_at?: string
+          value: number
+        }
+        Update: {
+          active?: boolean | null
+          applicable_products?: Json | null
+          created_at?: string
+          discount_type?: string
+          end_date?: string | null
+          id?: string
+          name?: string
+          owner_id?: string
+          start_date?: string | null
+          updated_at?: string
+          value?: number
+        }
+        Relationships: []
+      }
       inventory_snapshots: {
         Row: {
           created_at: string
@@ -144,6 +254,44 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      loan_payments: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          loan_id: string
+          notes: string | null
+          payment_date: string
+          payment_method: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: string
+          loan_id: string
+          notes?: string | null
+          payment_date?: string
+          payment_method?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          loan_id?: string
+          notes?: string | null
+          payment_date?: string
+          payment_method?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "loan_payments_loan_id_fkey"
+            columns: ["loan_id"]
+            isOneToOne: false
+            referencedRelation: "micro_loans"
             referencedColumns: ["id"]
           },
         ]
@@ -195,6 +343,71 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      micro_loans: {
+        Row: {
+          amount_paid: number | null
+          balance: number
+          created_at: string
+          customer_id: string | null
+          customer_name: string
+          due_date: string
+          id: string
+          interest_rate: number | null
+          loan_amount: number
+          loan_date: string
+          notes: string | null
+          owner_id: string
+          phone: string | null
+          status: string
+          total_amount: number
+          updated_at: string
+        }
+        Insert: {
+          amount_paid?: number | null
+          balance: number
+          created_at?: string
+          customer_id?: string | null
+          customer_name: string
+          due_date: string
+          id?: string
+          interest_rate?: number | null
+          loan_amount: number
+          loan_date?: string
+          notes?: string | null
+          owner_id: string
+          phone?: string | null
+          status?: string
+          total_amount: number
+          updated_at?: string
+        }
+        Update: {
+          amount_paid?: number | null
+          balance?: number
+          created_at?: string
+          customer_id?: string | null
+          customer_name?: string
+          due_date?: string
+          id?: string
+          interest_rate?: number | null
+          loan_amount?: number
+          loan_date?: string
+          notes?: string | null
+          owner_id?: string
+          phone?: string | null
+          status?: string
+          total_amount?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "micro_loans_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       products: {
         Row: {
@@ -459,10 +672,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      get_user_role: {
-        Args: { _user_id: string }
-        Returns: string
-      }
+      get_user_role: { Args: { _user_id: string }; Returns: string }
     }
     Enums: {
       [_ in never]: never

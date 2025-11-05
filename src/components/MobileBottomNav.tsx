@@ -58,6 +58,7 @@ export const MobileBottomNav = () => {
   ];
 
   const profileMenuItems = [
+    { id: 'quick-sale', label: 'Mauzo Haraka', icon: ShoppingCart, href: '/quick-sale' },
     { id: 'customers', label: 'Wateja', icon: Users, href: '/customers' },
     { id: 'discounts', label: 'Punguzo', icon: Percent, href: '/discounts' },
     { id: 'credit', label: 'Mikopo', icon: CreditCard, href: '/credit-management' },
@@ -71,6 +72,9 @@ export const MobileBottomNav = () => {
     { id: 'settings', label: 'Mipangilio', icon: Settings, href: '/settings' },
     ...(userProfile?.role === 'owner' ? [
       { id: 'users', label: 'Watumiaji', icon: Users, href: '/users' }
+    ] : []),
+    ...(userProfile?.role === 'super_admin' ? [
+      { id: 'super-admin', label: 'Super Admin', icon: User, href: '/super-admin' }
     ] : []),
   ];
 

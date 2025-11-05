@@ -35,6 +35,8 @@ import { AIAdvisorPage } from '@/pages/AIAdvisorPage';
 import { CreditManagementPage } from '@/pages/CreditManagementPage';
 import { MarketplacePage } from '@/pages/MarketplacePage';
 import { MicroLoanPage } from '@/pages/MicroLoanPage';
+import { QuickSalePage } from '@/pages/QuickSalePage';
+import { MicroLoansManagementPage } from '@/pages/MicroLoansManagementPage';
 
 // Voice POS Pages
 import { VoicePOSPage } from '@/pages/VoicePOSPage';
@@ -210,7 +212,14 @@ function App() {
               <Route path="/micro-loans" element={
                 <ProtectedRoute>
                   <AppLayout>
-                    <MicroLoanPage />
+                    <MicroLoansManagementPage />
+                  </AppLayout>
+                </ProtectedRoute>
+              } />
+              <Route path="/quick-sale" element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <QuickSalePage />
                   </AppLayout>
                 </ProtectedRoute>
               } />

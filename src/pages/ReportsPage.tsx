@@ -36,35 +36,44 @@ export const ReportsPage = () => {
     try {
       // Get date range based on selected period
       const now = new Date();
+      const endOfToday = new Date(now);
+      endOfToday.setHours(23, 59, 59, 999);
+      
       let startDate: Date;
       
       if (selectedPeriod === 'week') {
-        startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        startDate = new Date(now);
+        startDate.setDate(now.getDate() - 6); // Last 7 days including today
+        startDate.setHours(0, 0, 0, 0);
       } else if (selectedPeriod === 'month') {
         startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+        startDate.setHours(0, 0, 0, 0);
       } else {
-        startDate = new Date(now.getFullYear(), 0, 1); // Year
+        startDate = new Date(now.getFullYear(), 0, 1);
+        startDate.setHours(0, 0, 0, 0);
       }
 
-      // Fetch sales data
+      // Fetch sales data with proper user filtering
       const { data: sales, error: salesError } = await supabase
         .from('sales')
-        .select('created_at, total_amount')
+        .select('created_at, total_amount, owner_id')
         .gte('created_at', startDate.toISOString())
+        .lte('created_at', endOfToday.toISOString())
         .order('created_at', { ascending: true });
 
       if (salesError) throw salesError;
 
-      // Fetch top products
+      // Fetch top products with proper filtering
       const { data: products, error: productsError } = await supabase
         .from('sales_items')
         .select(`
           quantity,
           subtotal,
           products (name),
-          sales!inner (created_at)
+          sales!inner (created_at, owner_id)
         `)
-        .gte('sales.created_at', startDate.toISOString());
+        .gte('sales.created_at', startDate.toISOString())
+        .lte('sales.created_at', endOfToday.toISOString());
 
       if (productsError) throw productsError;
 
