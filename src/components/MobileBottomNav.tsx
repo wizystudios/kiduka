@@ -139,8 +139,8 @@ export const MobileBottomNav = () => {
   return (
     <>
       {/* Bottom Navigation Bar */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 md:hidden">
-        <div className="grid grid-cols-7 h-14">
+      <div className="fixed bottom-0 left-0 right-0 bg-background border-t border-border z-[9999] md:hidden mobile-bottom-nav">
+        <div className="grid grid-cols-7 h-16">
           {/* Main Navigation Items */}
           {mainNavItems.map((item) => {
             const Icon = item.icon;
@@ -149,14 +149,14 @@ export const MobileBottomNav = () => {
               <button
                 key={item.id}
                 onClick={() => item.id === 'logout' ? handleSignOut() : handleNavigation(item.href)}
-                className={`flex flex-col items-center justify-center h-full ${
+                className={`flex flex-col items-center justify-center h-full transition-colors ${
                   active 
-                    ? 'text-blue-600 bg-blue-50' 
-                    : 'text-gray-600 hover:text-blue-600 hover:bg-gray-50'
-                } transition-colors`}
+                    ? 'text-primary bg-primary/10' 
+                    : 'text-muted-foreground hover:text-primary hover:bg-accent'
+                }`}
               >
-                <Icon className={`h-4 w-4 ${active ? 'text-blue-600' : 'text-gray-600'}`} />
-                <span className={`text-[10px] mt-0.5 ${active ? 'text-blue-600 font-medium' : 'text-gray-600'}`}>
+                <Icon className={`h-5 w-5 ${active ? 'text-primary' : ''}`} />
+                <span className={`text-[10px] mt-0.5 ${active ? 'font-medium' : ''}`}>
                   {item.label}
                 </span>
               </button>
@@ -166,21 +166,21 @@ export const MobileBottomNav = () => {
           {/* Profile Sheet Trigger */}
           <Sheet open={profileSheetOpen} onOpenChange={setProfileSheetOpen}>
             <SheetTrigger asChild>
-              <button className="flex flex-col items-center justify-center h-full text-gray-600 hover:text-blue-600 hover:bg-gray-50 transition-colors">
+              <button className="flex flex-col items-center justify-center h-full text-muted-foreground hover:text-primary hover:bg-accent transition-colors">
                 <div className="relative">
-                  <Avatar className="h-5 w-5">
+                  <Avatar className="h-6 w-6">
                     <AvatarImage src={userProfile?.avatar_url} />
                     <AvatarFallback className="bg-gradient-to-br from-emerald-500 to-blue-600 text-white text-xs">
                       {getUserInitials()}
                     </AvatarFallback>
                   </Avatar>
                   {unreadCount > 0 && (
-                    <Badge className="absolute -top-1 -right-1 h-4 w-4 p-0 bg-red-500 text-white text-xs flex items-center justify-center">
+                    <Badge className="absolute -top-1 -right-1 h-4 w-4 p-0 bg-red-500 text-white text-[9px] flex items-center justify-center">
                       {unreadCount > 9 ? '9+' : unreadCount}
                     </Badge>
                   )}
                 </div>
-                <span className="text-xs mt-1 text-gray-600">Profile</span>
+                <span className="text-[10px] mt-0.5">Profile</span>
               </button>
             </SheetTrigger>
             

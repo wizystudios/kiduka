@@ -106,22 +106,20 @@
   }
 }
 
-/* Mobile-specific optimizations */
+/* Mobile Bottom Navigation */
 @media (max-width: 768px) {
-  html {
-    font-size: 14px;
+  /* Add padding to main content for bottom nav */
+  main {
+    padding-bottom: 5rem !important;
   }
   
-  .p-4 {
-    padding: 0.75rem !important;
-  }
-  
-  h1 {
-    font-size: 1.5rem !important;
-  }
-  
-  h2 {
-    font-size: 1.25rem !important;
+  /* Ensure bottom nav is always visible and on top */
+  .mobile-bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 9999;
   }
 }
 

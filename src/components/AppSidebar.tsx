@@ -36,18 +36,23 @@ import {
   LogOut,
   Crown,
   ClipboardList,
-  Smartphone
+  Smartphone,
+  Zap,
+  Banknote,
+  Download
 } from 'lucide-react';
 
 const navigationItems = [
   { id: 'dashboard', label: 'Dashboard', icon: Home, href: '/' },
   { id: 'products', label: 'Bidhaa', icon: Package, href: '/products' },
   { id: 'scanner', label: 'Scanner', icon: QrCode, href: '/scanner' },
+  { id: 'quick-sale', label: 'Mauzo Haraka', icon: Zap, href: '/quick-sale' },
   { id: 'sales', label: 'Mauzo', icon: ShoppingCart, href: '/sales' },
   { id: 'inventory-snapshots', label: 'Hesabu ya Stock', icon: ClipboardList, href: '/inventory-snapshots' },
   { id: 'customers', label: 'Wateja', icon: Users, href: '/customers' },
   { id: 'discounts', label: 'Punguzo', icon: Percent, href: '/discounts' },
-  { id: 'mikopo', label: 'Mikopo', icon: CreditCard, href: '/credit-management' },
+  { id: 'credit', label: 'Mikopo', icon: CreditCard, href: '/credit-management' },
+  { id: 'micro-loans', label: 'Mikopo Midogo', icon: Banknote, href: '/micro-loans' },
   { id: 'marketplace', label: 'Soko la Jamii', icon: Store, href: '/marketplace' },
   { id: 'ai-advisor', label: 'Mshauri wa AI', icon: Brain, href: '/ai-advisor' },
   { id: 'business-intelligence', label: 'Takwimu za AI', icon: TrendingUp, href: '/business-intelligence' },

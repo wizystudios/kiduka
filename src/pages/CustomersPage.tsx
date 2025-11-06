@@ -6,9 +6,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Plus, Search, Edit, Trash2, Users, Mail, Phone, MapPin, Star } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, Users, Mail, Phone, MapPin, Star, FileText } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { CustomerLedger } from '@/components/CustomerLedger';
 
 interface Customer {
   id: string;
@@ -26,6 +27,8 @@ export const CustomersPage = () => {
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
+  const [ledgerOpen, setLedgerOpen] = useState(false);
+  const [selectedCustomer, setSelectedCustomer] = useState<{ id: string; name: string } | null>(null);
   const [customerData, setCustomerData] = useState({
     name: '',
     email: '',
@@ -264,6 +267,18 @@ export const CustomersPage = () => {
                       variant="ghost" 
                       size="sm" 
                       className="h-8 w-8 p-0"
+                      onClick={() => {
+                        setSelectedCustomer({ id: customer.id, name: customer.name });
+                        setLedgerOpen(true);
+                      }}
+                      title="View Ledger"
+                    >
+                      <FileText className="h-4 w-4" />
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="h-8 w-8 p-0"
                       onClick={() => handleEditCustomer(customer)}
                     >
                       <Edit className="h-4 w-4" />
@@ -301,6 +316,16 @@ export const CustomersPage = () => {
           </CardContent>
         </Card>
       )}
+
+    {/* Customer Ledger Dialog */}
+    {selectedCustomer && (
+      <CustomerLedger
+        customerId={selectedCustomer.id}
+        customerName={selectedCustomer.name}
+        open={ledgerOpen}
+        onOpenChange={setLedgerOpen}
+      />
+    )}
     </div>
   );
 };
