@@ -52,9 +52,6 @@ export const MobileBottomNav = () => {
     { id: 'products', label: 'Bidhaa', icon: Package, href: '/products' },
     { id: 'scanner', label: 'Scan', icon: QrCode, href: '/scanner' },
     { id: 'sales', label: 'Mauzo', icon: ShoppingCart, href: '/sales' },
-    { id: 'inventory', label: 'Hesabu', icon: BarChart3, href: '/inventory-snapshots' },
-    { id: 'pwa', label: 'Sakinisha', icon: Download, href: '/pwa-install' },
-    { id: 'logout', label: 'Toka', icon: LogOut, href: '#' },
   ];
 
   const profileMenuItems = [
@@ -64,9 +61,6 @@ export const MobileBottomNav = () => {
     { id: 'credit', label: 'Mikopo', icon: CreditCard, href: '/credit-management' },
     { id: 'micro-loans', label: 'Mikopo Midogo', icon: CreditCard, href: '/micro-loans' },
     { id: 'inventory', label: 'Hesabu ya Stock', icon: BarChart3, href: '/inventory-snapshots' },
-    { id: 'marketplace', label: 'Soko la Jamii', icon: Store, href: '/marketplace' },
-    { id: 'ai-advisor', label: 'Mshauri wa AI', icon: Brain, href: '/ai-advisor' },
-    { id: 'bi', label: 'Takwimu za AI', icon: TrendingUp, href: '/business-intelligence' },
     { id: 'reports', label: 'Ripoti', icon: BarChart3, href: '/reports' },
     { id: 'pwa', label: 'Sakinisha App', icon: Download, href: '/pwa-install' },
     { id: 'settings', label: 'Mipangilio', icon: Settings, href: '/settings' },
@@ -76,6 +70,10 @@ export const MobileBottomNav = () => {
     ...(userProfile?.role === 'super_admin' ? [
       { id: 'super-admin', label: 'Super Admin', icon: User, href: '/super-admin' }
     ] : []),
+    // Hidden unfinished features until implemented:
+    // { id: 'marketplace', label: 'Soko la Jamii', icon: Store, href: '/marketplace' },
+    // { id: 'ai-advisor', label: 'Mshauri wa AI', icon: Brain, href: '/ai-advisor' },
+    // { id: 'bi', label: 'Takwimu za AI', icon: TrendingUp, href: '/business-intelligence' },
   ];
 
   // Mock notification count - replace with actual data

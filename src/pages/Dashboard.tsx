@@ -18,6 +18,7 @@ import {
   BarChart3,
   Users
 } from 'lucide-react';
+import { format } from 'date-fns';
 
 export const Dashboard = () => {
   const { user, userProfile, loading: authLoading } = useAuth();
@@ -59,11 +60,10 @@ export const Dashboard = () => {
         .gte('created_at', startOfDay.toISOString())
         .lt('created_at', endOfDay.toISOString());
 
-      console.log('Today sales query result:', { 
-        count: todaysSales?.length || 0, 
-        sales: todaysSales,
-        dateRange: { start: startOfDay.toISOString(), end: endOfDay.toISOString() }
-      });
+      // Log for debugging
+      if (todaysSales && todaysSales.length > 0) {
+        console.log('Found today sales:', todaysSales.length);
+      }
 
       if (salesError) {
         console.error('Error fetching sales:', salesError);
@@ -220,6 +220,10 @@ export const Dashboard = () => {
 
   return (
     <div className="p-2 space-y-2 pb-20">
+      {/* Last Updated Timestamp */}
+      <div className="text-xs text-center text-muted-foreground">
+        Imesasishwa: {format(new Date(), 'HH:mm:ss')}
+      </div>
       {/* Welcome Message with Profile */}
       <Card className="bg-gradient-to-r from-emerald-50 via-blue-50 to-purple-50 border-purple-200">
         <CardContent className="p-2">

@@ -53,9 +53,6 @@ const navigationItems = [
   { id: 'discounts', label: 'Punguzo', icon: Percent, href: '/discounts' },
   { id: 'credit', label: 'Mikopo', icon: CreditCard, href: '/credit-management' },
   { id: 'micro-loans', label: 'Mikopo Midogo', icon: Banknote, href: '/micro-loans' },
-  { id: 'marketplace', label: 'Soko la Jamii', icon: Store, href: '/marketplace' },
-  { id: 'ai-advisor', label: 'Mshauri wa AI', icon: Brain, href: '/ai-advisor' },
-  { id: 'business-intelligence', label: 'Takwimu za AI', icon: TrendingUp, href: '/business-intelligence' },
   { id: 'reports', label: 'Ripoti', icon: BarChart3, href: '/reports' },
 ];
 
