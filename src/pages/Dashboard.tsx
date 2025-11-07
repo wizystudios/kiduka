@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -17,7 +16,16 @@ import {
   Scan,
   BarChart3,
   Users,
-  FileSpreadsheet
+  FileSpreadsheet,
+  Settings,
+  CreditCard,
+  Percent,
+  Banknote,
+  ClipboardList,
+  Smartphone,
+  Zap,
+  UserCheck,
+  Home
 } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -35,60 +43,34 @@ export const Dashboard = () => {
 
   useEffect(() => {
     if (user && userProfile && !authLoading) {
-      console.log('User and profile loaded, fetching dashboard data:', user.id);
       fetchDashboardData();
     }
   }, [user, userProfile, authLoading]);
 
   const fetchDashboardData = async () => {
-    if (!user?.id) {
-      setLoading(false);
-      return;
-    }
+    if (!user?.id) return setLoading(false);
 
     try {
-      console.log('Fetching dashboard data for user:', user.id);
-      
       const today = new Date();
       const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
       const endOfDay = new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000);
 
-      // Fetch today's sales with proper date filtering
-      const { data: todaysSales, error: salesError } = await supabase
+      const { data: todaysSales } = await supabase
         .from('sales')
-        .select('total_amount, created_at, id')
+        .select('total_amount')
         .eq('owner_id', user.id)
         .gte('created_at', startOfDay.toISOString())
         .lt('created_at', endOfDay.toISOString());
 
-      // Log for debugging
-      if (todaysSales && todaysSales.length > 0) {
-        console.log('Found today sales:', todaysSales.length);
-      }
-
-      if (salesError) {
-        console.error('Error fetching sales:', salesError);
-      }
-
-      // Fetch total products
-      const { data: products, error: productsError } = await supabase
+      const { data: products } = await supabase
         .from('products')
         .select('*')
         .eq('owner_id', user.id);
 
-      if (productsError) {
-        console.error('Error fetching products:', productsError);
-      }
-
-      // Calculate metrics with proper fallbacks
       const totalSales = todaysSales?.reduce((sum, sale) => sum + Number(sale.total_amount || 0), 0) || 0;
       const totalProducts = products?.length || 0;
       const transactionCount = todaysSales?.length || 0;
-      
-      // Find low stock items
-      const lowStock = products?.filter(p => 
-        (p.stock_quantity || 0) <= (p.low_stock_threshold || 10)
-      ) || [];
+      const lowStock = products?.filter(p => (p.stock_quantity || 0) <= (p.low_stock_threshold || 10)) || [];
 
       setMetrics({
         todaysSales: totalSales,
@@ -96,33 +78,18 @@ export const Dashboard = () => {
         todaysTransactions: transactionCount,
         lowStockItems: lowStock.length
       });
-
       setLowStockProducts(lowStock.slice(0, 3));
-      console.log('Dashboard data loaded successfully');
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
-      // Set default values on error
-      setMetrics({
-        todaysSales: 0,
-        totalProducts: 0,
-        todaysTransactions: 0,
-        lowStockItems: 0
-      });
     } finally {
       setLoading(false);
     }
   };
 
-  const getInitials = (name: string) => {
-    if (!name) return 'U';
-    return name
-      .split(' ')
-      .map(word => word.charAt(0).toUpperCase())
-      .join('')
-      .slice(0, 2);
-  };
+  const getInitials = (name: string) =>
+    name ? name.split(' ').map(w => w[0].toUpperCase()).join('').slice(0, 2) : 'U';
 
-  if (authLoading) {
+  if (authLoading)
     return (
       <div className="flex items-center justify-center min-h-[40vh]">
         <div className="text-center">
@@ -131,114 +98,52 @@ export const Dashboard = () => {
         </div>
       </div>
     );
-  }
 
-  // Get display name with proper fallbacks
-  const displayName = userProfile?.full_name || 
-                     user?.user_metadata?.full_name || 
-                     user?.email?.split('@')[0] || 
-                     'Mtumiaji';
+  const displayName =
+    userProfile?.full_name ||
+    user?.user_metadata?.full_name ||
+    user?.email?.split('@')[0] ||
+    'Mtumiaji';
   const businessName = userProfile?.business_name || user?.user_metadata?.business_name;
   const userRole = userProfile?.role || 'owner';
 
   const dashboardMetrics = [
-    {
-      title: "Mauzo Leo",
-      value: `TZS ${metrics.todaysSales.toLocaleString()}`,
-      fullValue: `TZS ${metrics.todaysSales.toLocaleString()}`,
-      icon: DollarSign,
-      color: "text-green-600",
-      bgColor: "bg-green-50",
-      borderColor: "border-l-green-500"
-    },
-    {
-      title: "Bidhaa",
-      value: metrics.totalProducts.toString(),
-      fullValue: `${metrics.totalProducts} bidhaa`,
-      icon: Package,
-      color: "text-purple-600",
-      bgColor: "bg-purple-50",
-      borderColor: "border-l-purple-500"
-    },
-    {
-      title: "Miamala",
-      value: metrics.todaysTransactions.toString(),
-      fullValue: `${metrics.todaysTransactions} miamala leo`,
-      icon: ShoppingCart,
-      color: "text-blue-600",
-      bgColor: "bg-blue-50",
-      borderColor: "border-l-blue-500"
-    },
-    {
-      title: "Stock Ndogo",
-      value: metrics.lowStockItems.toString(),
-      fullValue: `${metrics.lowStockItems} bidhaa`,
-      icon: AlertTriangle,
-      color: "text-orange-600",
-      bgColor: "bg-orange-50",
-      borderColor: "border-l-orange-500"
-    }
+    { title: "Mauzo Leo", value: `TZS ${metrics.todaysSales.toLocaleString()}`, icon: DollarSign, color: "text-green-600", bg: "bg-green-50", border: "border-l-green-500" },
+    { title: "Bidhaa", value: metrics.totalProducts, icon: Package, color: "text-purple-600", bg: "bg-purple-50", border: "border-l-purple-500" },
+    { title: "Miamala", value: metrics.todaysTransactions, icon: ShoppingCart, color: "text-blue-600", bg: "bg-blue-50", border: "border-l-blue-500" },
+    { title: "Stock Ndogo", value: metrics.lowStockItems, icon: AlertTriangle, color: "text-orange-600", bg: "bg-orange-50", border: "border-l-orange-500" },
   ];
 
+  // ✅ Full Quick Actions (All navigation shortcuts)
   const quickActions = [
-    {
-      title: "Bidhaa",
-      description: "Ongeza bidhaa mpya",
-      icon: Plus,
-      color: "text-blue-600",
-      bgColor: "bg-blue-50",
-      borderColor: "border-blue-200",
-      action: () => navigate('/products/add')
-    },
-    {
-      title: "Ingiza",
-      description: "Import CSV/Excel",
-      icon: FileSpreadsheet,
-      color: "text-orange-600",
-      bgColor: "bg-orange-50",
-      borderColor: "border-orange-200",
-      action: () => navigate('/products/import')
-    },
-    {
-      title: "Scan",
-      description: "Muuzo haraka",
-      icon: Scan,
-      color: "text-green-600",
-      bgColor: "bg-green-50", 
-      borderColor: "border-green-200",
-      action: () => navigate('/scanner')
-    },
-    {
-      title: "Ripoti",
-      description: "Ona takwimu",
-      icon: BarChart3,
-      color: "text-purple-600",
-      bgColor: "bg-purple-50",
-      borderColor: "border-purple-200", 
-      action: () => navigate('/reports')
-    },
-    {
-      title: "Wateja",
-      description: "Simamia wateja",
-      icon: Users,
-      color: "text-indigo-600",
-      bgColor: "bg-indigo-50",
-      borderColor: "border-indigo-200",
-      action: () => navigate('/customers')
-    }
+    { title: "Dashboard", icon: Home, color: "text-blue-600", bg: "bg-blue-50", action: () => navigate('/dashboard') },
+    { title: "Bidhaa", icon: Package, color: "text-purple-600", bg: "bg-purple-50", action: () => navigate('/products') },
+    { title: "Scanner", icon: Scan, color: "text-green-600", bg: "bg-green-50", action: () => navigate('/scanner') },
+    { title: "Mauzo Haraka", icon: Zap, color: "text-orange-600", bg: "bg-orange-50", action: () => navigate('/quick-sale') },
+    { title: "Mauzo", icon: ShoppingCart, color: "text-blue-600", bg: "bg-blue-50", action: () => navigate('/sales') },
+    { title: "Hesabu", icon: ClipboardList, color: "text-yellow-600", bg: "bg-yellow-50", action: () => navigate('/inventory-snapshots') },
+    { title: "Wateja", icon: Users, color: "text-indigo-600", bg: "bg-indigo-50", action: () => navigate('/customers') },
+    { title: "Punguzo", icon: Percent, color: "text-pink-600", bg: "bg-pink-50", action: () => navigate('/discounts') },
+    { title: "Mikopo", icon: CreditCard, color: "text-teal-600", bg: "bg-teal-50", action: () => navigate('/credit-management') },
+    { title: "Mikopo Midogo", icon: Banknote, color: "text-lime-600", bg: "bg-lime-50", action: () => navigate('/micro-loans') },
+    { title: "Ripoti", icon: BarChart3, color: "text-purple-600", bg: "bg-purple-50", action: () => navigate('/reports') },
+    { title: "Faida/Hasara", icon: TrendingUp, color: "text-emerald-600", bg: "bg-emerald-50", action: () => navigate('/profit-loss') },
+    { title: "Ingiza Bidhaa", icon: FileSpreadsheet, color: "text-orange-600", bg: "bg-orange-50", action: () => navigate('/products/import') },
+    { title: "Mipangilio", icon: Settings, color: "text-gray-700", bg: "bg-gray-100", action: () => navigate('/settings') },
+    { title: "Watumiaji", icon: UserCheck, color: "text-blue-700", bg: "bg-blue-100", action: () => navigate('/users') },
+    { title: "Sakinisha App", icon: Smartphone, color: "text-green-700", bg: "bg-green-100", action: () => navigate('/pwa-install') },
   ];
 
   return (
     <div className="p-2 space-y-2 pb-20">
-      {/* Last Updated Timestamp */}
       <div className="text-xs text-center text-muted-foreground">
         Imesasishwa: {format(new Date(), 'HH:mm:ss')}
       </div>
-      {/* Welcome Message with Profile */}
+
       <Card className="bg-gradient-to-r from-emerald-50 via-blue-50 to-purple-50 border-purple-200">
         <CardContent className="p-2">
           <div className="flex items-center space-x-2">
-            <Avatar className="h-8 w-8 flex-shrink-0">
+            <Avatar className="h-8 w-8">
               <AvatarImage src={userProfile?.avatar_url} />
               <AvatarFallback className="bg-gradient-to-br from-emerald-500 via-blue-500 to-purple-600 text-white text-xs">
                 {getInitials(displayName)}
@@ -250,10 +155,7 @@ export const Dashboard = () => {
               </h2>
               <div className="flex flex-wrap items-center gap-1 mt-0.5">
                 <Badge variant="outline" className="text-purple-600 border-purple-200 text-xs px-1 py-0">
-                  {userRole === 'owner' ? 'Mmiliki' : 
-                   userRole === 'assistant' ? 'Msaidizi' : 
-                   userRole === 'super_admin' ? 'Msimamizi' :
-                   'Mtumiaji'}
+                  {userRole === 'owner' ? 'Mmiliki' : userRole === 'assistant' ? 'Msaidizi' : 'Mtumiaji'}
                 </Badge>
                 {businessName && (
                   <Badge variant="outline" className="text-blue-600 border-blue-200 text-xs px-1 py-0">
@@ -266,22 +168,18 @@ export const Dashboard = () => {
         </CardContent>
       </Card>
 
-      {/* Metrics Grid */}
+      {/* Metrics */}
       <div className="grid grid-cols-2 gap-2">
-        {dashboardMetrics.map((metric, index) => (
-          <Card key={index} className={`border-0 border-l-2 ${metric.borderColor}`}>
+        {dashboardMetrics.map((m, i) => (
+          <Card key={i} className={`border-0 border-l-2 ${m.border}`}>
             <CardContent className="p-2">
               <div className="flex items-center justify-between">
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs text-gray-600 mb-0.5 truncate">
-                    {metric.title}
-                  </p>
-                  <p className="text-sm font-bold text-gray-900 truncate" title={metric.fullValue}>
-                    {metric.value}
-                  </p>
+                <div>
+                  <p className="text-xs text-gray-600">{m.title}</p>
+                  <p className="text-sm font-bold">{m.value}</p>
                 </div>
-                <div className={`p-1 rounded-full ${metric.bgColor} flex-shrink-0`}>
-                  <metric.icon className={`h-3 w-3 ${metric.color}`} />
+                <div className={`p-1 rounded-full ${m.bg}`}>
+                  <m.icon className={`h-3 w-3 ${m.color}`} />
                 </div>
               </div>
             </CardContent>
@@ -289,24 +187,21 @@ export const Dashboard = () => {
         ))}
       </div>
 
-      {/* Low Stock Alert */}
+      {/* Low Stock */}
       {lowStockProducts.length > 0 && (
         <Card className="border-orange-200">
           <CardHeader className="pb-1 pt-2 px-2">
             <CardTitle className="flex items-center text-orange-700 text-xs">
-              <AlertTriangle className="h-3 w-3 mr-1 flex-shrink-0" />
+              <AlertTriangle className="h-3 w-3 mr-1" />
               Stock Ndogo ({lowStockProducts.length})
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-1 p-2 pt-1">
-            {lowStockProducts.map((product) => (
-              <div key={product.id} className="flex justify-between items-center p-1.5 bg-orange-50 rounded border-l-2 border-l-orange-400">
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-gray-900 text-xs truncate">{product.name}</p>
-                  <p className="text-xs text-gray-600 truncate">{product.category || 'Bila'}</p>
-                </div>
-                <Badge variant="outline" className="text-orange-600 border-orange-200 text-xs px-1 py-0 flex-shrink-0">
-                  {product.stock_quantity || 0}
+            {lowStockProducts.map((p) => (
+              <div key={p.id} className="flex justify-between items-center p-1.5 bg-orange-50 rounded border-l-2 border-l-orange-400">
+                <p className="text-xs font-medium truncate">{p.name}</p>
+                <Badge variant="outline" className="text-orange-600 border-orange-200 text-xs px-1 py-0">
+                  {p.stock_quantity || 0}
                 </Badge>
               </div>
             ))}
@@ -314,26 +209,21 @@ export const Dashboard = () => {
         </Card>
       )}
 
-      {/* Quick Actions */}
+      {/* Haraka (Quick Navigation Buttons) */}
       <Card>
         <CardHeader className="pb-1 pt-2 px-2">
-          <CardTitle className="text-xs flex items-center">
-            Haraka
-          </CardTitle>
+          <CardTitle className="text-xs flex items-center">Haraka</CardTitle>
         </CardHeader>
-        <CardContent className="grid grid-cols-2 gap-1 p-2 pt-1">
-          {quickActions.map((action, index) => (
-            <Button 
-              key={index}
-              onClick={action.action}
-              className={`p-2 h-auto ${action.bgColor} hover:opacity-80 ${action.color} border ${action.borderColor}`}
+        <CardContent className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-1 p-2 pt-1">
+          {quickActions.map((a, i) => (
+            <Button
+              key={i}
+              onClick={a.action}
+              className={`p-2 h-auto text-center ${a.bg} ${a.color} hover:opacity-80 border rounded-md`}
               variant="outline"
             >
-              <div className="text-center">
-                <action.icon className="h-4 w-4 mx-auto mb-1" />
-                <p className="text-xs font-medium">{action.title}</p>
-                <p className="text-xs opacity-75 truncate">{action.description}</p>
-              </div>
+              <a.icon className="h-4 w-4 mx-auto mb-1" />
+              <p className="text-[11px] font-medium truncate">{a.title}</p>
             </Button>
           ))}
         </CardContent>
