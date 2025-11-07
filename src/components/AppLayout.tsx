@@ -1,156 +1,250 @@
-import { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { 
-  SidebarProvider, 
-  SidebarTrigger,
-  SidebarInset 
-} from '@/components/ui/sidebar';
-import { AppSidebar } from '@/components/AppSidebar';
-import { MobileNavigationMenu } from '@/components/MobileNavigationMenu';
-import { PWAInstaller } from '@/components/PWAInstaller';
+import { useState } from 'react';
+import { useNavigate, useLocation, NavLink } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
-import { syncService } from '@/utils/syncService';
-import { useIsMobile } from '@/hooks/use-mobile';
-import { 
-  Wifi,
-  WifiOff,
-  Menu,
-  Bell,
-  Download
-} from 'lucide-react';
 import { KidukaLogo } from '@/components/KidukaLogo';
-import { NotificationCenter } from '@/components/NotificationCenter';
-import { AdminNotifications } from '@/components/AdminNotifications';
+import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarHeader,
+  SidebarFooter,
+  useSidebar,
+} from '@/components/ui/sidebar';
+import {
+  Shield,
+  Home,
+  Package,
+  QrCode,
+  ShoppingCart,
+  BarChart3,
+  Settings,
+  Users,
+  UserCheck,
+  Percent,
+  CreditCard,
+  Banknote,
+  Download,
+  TrendingUp,
+  ClipboardList,
+  Smartphone,
+  Zap,
+  LogOut,
+} from 'lucide-react';
 
-interface AppLayoutProps {
-  children: React.ReactNode;
-}
+// Main navigation items
+const navigationItems = [
+  { id: 'dashboard', label: 'Dashboard', icon: Home, href: '/dashboard' },
+  { id: 'products', label: 'Bidhaa', icon: Package, href: '/products' },
+  { id: 'scanner', label: 'Scanner', icon: QrCode, href: '/scanner' },
+  { id: 'quick-sale', label: 'Mauzo Haraka', icon: Zap, href: '/quick-sale' },
+  { id: 'sales', label: 'Mauzo', icon: ShoppingCart, href: '/sales' },
+  { id: 'inventory-snapshots', label: 'Hesabu ya Stock', icon: ClipboardList, href: '/inventory-snapshots' },
+  { id: 'customers', label: 'Wateja', icon: Users, href: '/customers' },
+  { id: 'discounts', label: 'Punguzo', icon: Percent, href: '/discounts' },
+  { id: 'credit', label: 'Mikopo', icon: CreditCard, href: '/credit-management' },
+  { id: 'micro-loans', label: 'Mikopo Midogo', icon: Banknote, href: '/micro-loans' },
+  { id: 'reports', label: 'Ripoti', icon: BarChart3, href: '/reports' },
+  { id: 'profit-loss', label: 'Faida/Hasara', icon: TrendingUp, href: '/profit-loss' },
+  { id: 'import-products', label: 'Ingiza Bidhaa', icon: Download, href: '/products/import' },
+];
 
-export const AppLayout = ({ children }: AppLayoutProps) => {
-  const [syncStatus, setSyncStatus] = useState(syncService.getSyncStatus());
-  const [showPWAInstaller, setShowPWAInstaller] = useState(false);
-  const { userProfile } = useAuth();
-  const isMobile = useIsMobile();
+export function AppSidebar() {
+  const { signOut, userProfile, user } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { state } = useSidebar();
+  const collapsed = state === 'collapsed';
 
-  useEffect(() => {
-    // Register PWA installer
-    const handleBeforeInstallPrompt = () => {
-      setShowPWAInstaller(true);
-    };
+  if (!userProfile) return null;
 
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+  // Super Admin route
+  const superAdminRoutes =
+    userProfile.role === 'super_admin'
+      ? [
+          {
+            id: 'super-admin',
+            label: 'Super Admin',
+            icon: Shield,
+            href: '/super-admin',
+          },
+        ]
+      : [];
 
-    // Reduce sync check frequency to improve performance
-    const interval = setInterval(() => {
-      setSyncStatus(syncService.getSyncStatus());
-    }, 30000); // Check every 30 seconds instead of 5
+  const businessRoutes = navigationItems;
 
-    return () => {
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-      clearInterval(interval);
-    };
-  }, []);
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      navigate('/auth');
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
+  };
+
+  const getUserInitials = () => {
+    const displayName =
+      userProfile?.full_name ||
+      user?.user_metadata?.full_name ||
+      user?.email?.split('@')[0] ||
+      'User';
+
+    return displayName
+      .split(' ')
+      .map((n) => n.charAt(0).toUpperCase())
+      .join('')
+      .slice(0, 2);
+  };
+
+  const getDisplayName = () => {
+    return (
+      userProfile?.full_name ||
+      user?.user_metadata?.full_name ||
+      user?.email?.split('@')[0] ||
+      'User'
+    );
+  };
+
+  const getUserRole = () => {
+    const role = userProfile?.role || 'owner';
+    switch (role) {
+      case 'owner':
+        return 'Mmiliki';
+      case 'assistant':
+        return 'Msaidizi';
+      case 'super_admin':
+        return 'Msimamizi Mkuu';
+      default:
+        return 'Mtumiaji';
+    }
+  };
+
+  const isActive = (href: string) => {
+    if (href === '/') {
+      return location.pathname === '/';
+    }
+    return location.pathname.startsWith(href);
+  };
 
   return (
-    <SidebarProvider defaultOpen={!isMobile}>
-      <div className="min-h-screen flex w-full bg-background">
-        {!isMobile && <AppSidebar />}
-        
-        <SidebarInset className="flex-1">
-          {/* Top Header */}
-          <header className="sticky top-0 z-40 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-            <div className="flex h-14 items-center justify-between px-4">
-              <div className="flex items-center gap-3">
-                {isMobile ? (
-                  <MobileNavigationMenu />
-                ) : (
-                  <>
-                    <SidebarTrigger className="h-7 w-7" />
-                    <div className="flex items-center gap-2">
-                      <KidukaLogo size="sm" showText={true} />
-                      {userProfile?.business_name && (
-                        <Badge variant="outline" className="text-xs">
-                          {userProfile.business_name}
-                        </Badge>
-                      )}
-                    </div>
-                  </>
-                )}
-              </div>
-              
-               <div className="flex items-center gap-3">
-                 {/* PWA Install Button */}
-                 {showPWAInstaller && (
-                   <Button
-                     size="sm"
-                     variant="outline"
-                     onClick={() => setShowPWAInstaller(false)}
-                     className="hidden sm:flex"
-                   >
-                     <Download className="h-4 w-4 mr-2" />
-                     Install App
-                   </Button>
-                 )}
-
-                 {/* Network Status */}
-                 <div className="flex items-center gap-2">
-                   {syncStatus.isOnline ? (
-                     <div className="flex items-center gap-1">
-                       <Wifi className="h-4 w-4 text-green-600" />
-                       <span className="text-xs text-green-600 hidden sm:inline">
-                         Mtandaoni
-                       </span>
-                     </div>
-                   ) : (
-                     <div className="flex items-center gap-1">
-                       <WifiOff className="h-4 w-4 text-red-600" />
-                       <span className="text-xs text-red-600 hidden sm:inline">
-                         Nje ya mtandao
-                       </span>
-                       {syncStatus.summary.unsyncedSalesCount > 0 && (
-                         <Badge variant="destructive" className="text-xs">
-                           {syncStatus.summary.unsyncedSalesCount}
-                         </Badge>
-                       )}
-                     </div>
-                   )}
-                 </div>
-
-                 {/* Notifications */}
-                 <AdminNotifications />
-                 <NotificationCenter />
-               </div>
-            </div>
-          </header>
-
-          {/* Main Content */}
-          <main className="flex-1 overflow-auto">
-            <div className="container mx-auto p-4 max-w-7xl">
-              {children}
-            </div>
-          </main>
-
-          {/* Offline Status Footer */}
-          {!syncStatus.isOnline && (
-            <div className="sticky bottom-0 z-30 w-full border-t border-orange-200 bg-orange-50 px-4 py-2">
-              <div className="flex items-center justify-between text-sm">
-                <div className="flex items-center gap-2">
-                  <WifiOff className="h-4 w-4 text-orange-600" />
-                  <span className="text-orange-800 font-medium">
-                    Mfumo wa nje ya mtandao umewashwa
-                  </span>
-                </div>
-                {syncStatus.summary.unsyncedSalesCount > 0 && (
-                  <Badge variant="outline" className="text-orange-600 border-orange-300">
-                    {syncStatus.summary.unsyncedSalesCount} mauzo hayajahifadhiwa
-                  </Badge>
-                )}
-              </div>
+    <Sidebar className="border-r border-border/40 bg-background">
+      {/* Header */}
+      <SidebarHeader className="border-b border-border/40 p-4">
+        <div className="flex items-center gap-3">
+          <KidukaLogo size="sm" showText={!collapsed} />
+          {!collapsed && (
+            <div className="flex flex-col">
+              <span className="text-sm font-semibold text-foreground">
+                Kiduka POS
+              </span>
             </div>
           )}
-        </SidebarInset>
-      </div>
-    </SidebarProvider>
+        </div>
+      </SidebarHeader>
+
+      {/* Main Navigation */}
+      <SidebarContent className="py-4">
+        <SidebarGroup>
+          <SidebarGroupLabel className={collapsed ? 'sr-only' : ''}>
+            Msingi
+          </SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {[...superAdminRoutes, ...businessRoutes].map((item) => (
+                <SidebarMenuItem key={item.id}>
+                  <SidebarMenuButton asChild isActive={isActive(item.href)}>
+                    <NavLink
+                      to={item.href}
+                      className="flex items-center gap-3 px-3 py-2 rounded-lg transition-colors"
+                    >
+                      <item.icon className="h-4 w-4" />
+                      {!collapsed && <span>{item.label}</span>}
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+
+              {userProfile?.role === 'owner' && (
+                <SidebarMenuItem key="users">
+                  <SidebarMenuButton asChild isActive={isActive('/users')}>
+                    <NavLink
+                      to="/users"
+                      className="flex items-center gap-3 px-3 py-2 rounded-lg transition-colors"
+                    >
+                      <UserCheck className="h-4 w-4" />
+                      {!collapsed && <span>Watumiaji</span>}
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
+
+              <SidebarMenuItem key="settings">
+                <SidebarMenuButton asChild isActive={isActive('/settings')}>
+                  <NavLink
+                    to="/settings"
+                    className="flex items-center gap-3 px-3 py-2 rounded-lg transition-colors"
+                  >
+                    <Settings className="h-4 w-4" />
+                    {!collapsed && <span>Mipangilio</span>}
+                  </NavLink>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+
+              <SidebarMenuItem key="pwa-install">
+                <SidebarMenuButton asChild isActive={isActive('/pwa-install')}>
+                  <NavLink
+                    to="/pwa-install"
+                    className="flex items-center gap-3 px-3 py-2 rounded-lg transition-colors"
+                  >
+                    <Smartphone className="h-4 w-4" />
+                    {!collapsed && <span>Sakinisha App</span>}
+                  </NavLink>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+      </SidebarContent>
+
+      {/* Footer */}
+      <SidebarFooter className="border-t border-border/40 p-4">
+        <div className="flex items-center gap-3 mb-3">
+          <Avatar className="h-8 w-8">
+            <AvatarImage src={userProfile?.avatar_url} />
+            <AvatarFallback className="bg-gradient-to-br from-emerald-500 to-blue-600 text-white text-xs">
+              {getUserInitials()}
+            </AvatarFallback>
+          </Avatar>
+
+          {!collapsed && (
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-foreground truncate">
+                {getDisplayName()}
+              </p>
+              <Badge variant="outline" className="text-xs">
+                {getUserRole()}
+              </Badge>
+            </div>
+          )}
+        </div>
+
+        <Button
+          variant="outline"
+          onClick={handleSignOut}
+          className="w-full justify-start"
+          size="sm"
+        >
+          <LogOut className="h-4 w-4" />
+          {!collapsed && <span className="ml-2">Toka</span>}
+        </Button>
+      </SidebarFooter>
+    </Sidebar>
   );
-};
+}
