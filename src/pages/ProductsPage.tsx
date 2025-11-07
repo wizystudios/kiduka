@@ -4,7 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Search, Edit, Trash2, Package, Loader2, Scale, ChevronDown, ChevronUp, ShoppingCart, Pause, Play, FileSpreadsheet } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, Package, Loader2, Scale, ChevronDown, ChevronUp, ShoppingCart, Pause, Play, FileSpreadsheet, Download } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -127,6 +127,36 @@ export const ProductsPage = () => {
     navigate('/scanner', { state: { selectedProduct: product } });
   };
 
+  const exportToCSV = () => {
+    if (filteredProducts.length === 0) {
+      toast.error('Hakuna bidhaa za kuexport');
+      return;
+    }
+    const headers = ['name', 'barcode', 'price', 'cost_price', 'stock_quantity', 'category', 'description', 'low_stock_threshold', 'is_weight_based', 'unit_type', 'min_quantity'];
+    const rows = filteredProducts.map((p) => [
+      p.name,
+      p.barcode || '',
+      p.price,
+      0, // cost_price not in interface, default 0
+      p.stock_quantity,
+      p.category || '',
+      p.description || '',
+      p.low_stock_threshold,
+      p.is_weight_based ? 'true' : 'false',
+      p.unit_type || 'piece',
+      p.min_quantity || 0.1,
+    ]);
+    const csv = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `products_${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success('Export imekamilika');
+  };
+
   const filteredProducts = useMemo(() => {
     if (!searchTerm.trim()) return products;
     
@@ -176,6 +206,14 @@ export const ProductsPage = () => {
             className="text-blue-600 border-blue-600 hover:bg-blue-50 text-xs px-2 py-1 h-7 flex-1 sm:flex-none"
           >
             {refreshing ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Sasisha'}
+          </Button>
+          <Button 
+            onClick={exportToCSV}
+            variant="outline"
+            className="text-xs px-2 py-1 h-7 flex-1 sm:flex-none"
+          >
+            <Download className="h-3 w-3 mr-1" />
+            Export
           </Button>
           <Button 
             onClick={() => navigate('/products/import')}

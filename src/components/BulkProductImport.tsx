@@ -10,6 +10,7 @@ import * as XLSX from "xlsx";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { Upload, FileSpreadsheet, CheckCircle2, AlertTriangle, Download } from "lucide-react";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 interface ParsedRow {
   name?: string;
@@ -49,6 +50,7 @@ export function BulkProductImport() {
   const [fileName, setFileName] = useState<string | null>(null);
   const [rows, setRows] = useState<ParsedRow[]>([]);
   const [loading, setLoading] = useState(false);
+  const [duplicateMode, setDuplicateMode] = useState<"skip" | "update">("skip");
   const inputRef = useRef<HTMLInputElement | null>(null);
 
   const handleFile = useCallback((file: File) => {
@@ -146,30 +148,92 @@ export function BulkProductImport() {
 
     setLoading(true);
     try {
-      // Batch insert in chunks of 100
-      const chunkSize = 100;
-      for (let i = 0; i < normalized.length; i += chunkSize) {
-        const chunk = normalized.slice(i, i + chunkSize).map((r) => ({
-          owner_id: user.id,
-          name: r.name,
-          price: r.price,
-          stock_quantity: r.stock_quantity,
-          barcode: r.barcode,
-          category: r.category,
-          description: r.description,
-          low_stock_threshold: r.low_stock_threshold,
-          is_weight_based: r.is_weight_based,
-          unit: r.unit_type, // keep both fields for compatibility if present
-          unit_type: r.unit_type,
-          min_quantity: r.min_quantity,
-          cost_price: r.cost_price,
-        }));
+      // 1) Fetch existing products to check duplicates
+      const { data: existing, error: fetchErr } = await supabase
+        .from("products")
+        .select("id, name, barcode")
+        .eq("owner_id", user.id);
+      if (fetchErr) throw fetchErr;
 
+      const existingMap = new Map<string, string>(); // key -> id
+      (existing || []).forEach((p) => {
+        if (p.barcode) existingMap.set(`barcode:${p.barcode}`, p.id);
+        if (p.name) existingMap.set(`name:${p.name.toLowerCase()}`, p.id);
+      });
+
+      const toInsert: any[] = [];
+      const toUpdate: any[] = [];
+      let skipped = 0;
+
+      normalized.forEach((r) => {
+        const barcodeKey = r.barcode ? `barcode:${r.barcode}` : null;
+        const nameKey = `name:${r.name.toLowerCase()}`;
+        const dupId = (barcodeKey && existingMap.get(barcodeKey)) || existingMap.get(nameKey);
+
+        if (dupId) {
+          // Duplicate found
+          if (duplicateMode === "update") {
+            toUpdate.push({
+              id: dupId,
+              name: r.name,
+              price: r.price,
+              stock_quantity: r.stock_quantity,
+              barcode: r.barcode,
+              category: r.category,
+              description: r.description,
+              low_stock_threshold: r.low_stock_threshold,
+              is_weight_based: r.is_weight_based,
+              unit: r.unit_type,
+              unit_type: r.unit_type,
+              min_quantity: r.min_quantity,
+              cost_price: r.cost_price,
+            });
+          } else {
+            skipped++;
+          }
+        } else {
+          // New product
+          toInsert.push({
+            owner_id: user.id,
+            name: r.name,
+            price: r.price,
+            stock_quantity: r.stock_quantity,
+            barcode: r.barcode,
+            category: r.category,
+            description: r.description,
+            low_stock_threshold: r.low_stock_threshold,
+            is_weight_based: r.is_weight_based,
+            unit: r.unit_type,
+            unit_type: r.unit_type,
+            min_quantity: r.min_quantity,
+            cost_price: r.cost_price,
+          });
+        }
+      });
+
+      // Insert new in chunks
+      const chunkSize = 100;
+      for (let i = 0; i < toInsert.length; i += chunkSize) {
+        const chunk = toInsert.slice(i, i + chunkSize);
         const { error } = await supabase.from("products").insert(chunk);
         if (error) throw error;
       }
 
-      toast.success(`Imefanikiwa: Bidhaa ${normalized.length} zimeingizwa`);
+      // Update existing in chunks
+      for (let i = 0; i < toUpdate.length; i += chunkSize) {
+        const chunk = toUpdate.slice(i, i + chunkSize);
+        for (const prod of chunk) {
+          const { id, ...rest } = prod;
+          const { error } = await supabase.from("products").update(rest).eq("id", id);
+          if (error) throw error;
+        }
+      }
+
+      const msg =
+        duplicateMode === "skip"
+          ? `Imefanikiwa: ${toInsert.length} mpya, ${skipped} zilipitishwa (duplicate)`
+          : `Imefanikiwa: ${toInsert.length} mpya, ${toUpdate.length} zimesasishwa`;
+      toast.success(msg);
       setRows([]);
       setFileName(null);
       inputRef.current && (inputRef.current.value = "");
@@ -211,10 +275,27 @@ export function BulkProductImport() {
           )}
         </div>
 
-        <div className="flex items-center gap-2">
-          <Badge variant="outline" className="text-xs">Safu zinazosaidiwa</Badge>
-          <div className="text-[11px] text-muted-foreground">
-            name, price, stock_quantity, barcode, category, description, low_stock_threshold, is_weight_based, unit_type, min_quantity, cost_price
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <Badge variant="outline" className="text-xs">Safu zinazosaidiwa</Badge>
+            <div className="text-[11px] text-muted-foreground">
+              name, price, stock_quantity, barcode, category, description, low_stock_threshold, is_weight_based, unit_type, min_quantity, cost_price
+            </div>
+          </div>
+
+          <div className="border rounded-md p-2">
+            <Label className="text-xs mb-1 block">Duplicate Handling</Label>
+            <RadioGroup value={duplicateMode} onValueChange={(v) => setDuplicateMode(v as any)} className="flex gap-3">
+              <div className="flex items-center gap-1">
+                <RadioGroupItem value="skip" id="skip" className="h-3 w-3" />
+                <Label htmlFor="skip" className="text-xs cursor-pointer">Ruka (Skip duplicates)</Label>
+              </div>
+              <div className="flex items-center gap-1">
+                <RadioGroupItem value="update" id="update" className="h-3 w-3" />
+                <Label htmlFor="update" className="text-xs cursor-pointer">Sasisha (Update existing)</Label>
+              </div>
+            </RadioGroup>
+            <p className="text-[10px] text-muted-foreground mt-1">Duplicates checked by barcode or name (case-insensitive)</p>
           </div>
         </div>
 

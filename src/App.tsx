@@ -37,6 +37,8 @@ import { MarketplacePage } from '@/pages/MarketplacePage';
 import { MicroLoanPage } from '@/pages/MicroLoanPage';
 import { QuickSalePage } from '@/pages/QuickSalePage';
 import { MicroLoansManagementPage } from '@/pages/MicroLoansManagementPage';
+import { ImportProductsPage } from '@/pages/ImportProductsPage';
+import { ProfitLossPage } from '@/pages/ProfitLossPage';
 
 // Voice POS Pages
 import { VoicePOSPage } from '@/pages/VoicePOSPage';
@@ -106,6 +108,14 @@ function App() {
                 </ProtectedRoute>
               } />
               
+              <Route path="/products/import" element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <ImportProductsPage />
+                  </AppLayout>
+                </ProtectedRoute>
+              } />
+              
               <Route path="/scanner" element={
                 <ProtectedRoute>
                   <AppLayout>
@@ -158,6 +168,14 @@ function App() {
                 <ProtectedRoute>
                   <AppLayout>
                     <ReportsPage />
+                  </AppLayout>
+                </ProtectedRoute>
+              } />
+              
+              <Route path="/profit-loss" element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <ProfitLossPage />
                   </AppLayout>
                 </ProtectedRoute>
               } />

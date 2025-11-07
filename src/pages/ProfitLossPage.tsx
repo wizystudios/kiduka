@@ -6,6 +6,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { format, subDays, eachDayOfInterval } from "date-fns";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, CartesianGrid } from "recharts";
+import { Download } from "lucide-react";
 
 interface DayPoint { date: string; revenue: number; cost: number; profit: number }
 
@@ -103,11 +104,33 @@ export const ProfitLossPage = () => {
     fetchData();
   }, [range, user?.id]);
 
+  const exportToCSV = () => {
+    if (data.length === 0) {
+      toast.error('Hakuna data ya kuexport');
+      return;
+    }
+    const headers = ['date', 'revenue', 'cost', 'profit'];
+    const rows = data.map((d) => [d.date, d.revenue, d.cost, d.profit]);
+    const csv = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `profit_loss_${range}d_${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success('Export imekamilika');
+  };
+
   return (
     <div className="p-2 pb-20 space-y-2">
       <div className="flex items-center justify-between">
         <h1 className="text-sm font-bold">Profit & Loss</h1>
         <div className="flex gap-1">
+          <Button variant="outline" size="sm" className="h-7 text-xs" onClick={exportToCSV}>
+            <Download className="h-3 w-3 mr-1" />
+            Export
+          </Button>
           <Button variant={range === 7 ? 'default' : 'outline'} size="sm" className="h-7 text-xs" onClick={() => setRange(7)}>7d</Button>
           <Button variant={range === 30 ? 'default' : 'outline'} size="sm" className="h-7 text-xs" onClick={() => setRange(30)}>30d</Button>
           <Button variant={range === 90 ? 'default' : 'outline'} size="sm" className="h-7 text-xs" onClick={() => setRange(90)}>90d</Button>

@@ -16,7 +16,8 @@ import {
   Plus,
   Scan,
   BarChart3,
-  Users
+  Users,
+  FileSpreadsheet
 } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -188,6 +189,15 @@ export const Dashboard = () => {
       bgColor: "bg-blue-50",
       borderColor: "border-blue-200",
       action: () => navigate('/products/add')
+    },
+    {
+      title: "Ingiza",
+      description: "Import CSV/Excel",
+      icon: FileSpreadsheet,
+      color: "text-orange-600",
+      bgColor: "bg-orange-50",
+      borderColor: "border-orange-200",
+      action: () => navigate('/products/import')
     },
     {
       title: "Scan",
