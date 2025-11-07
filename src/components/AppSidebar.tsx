@@ -43,7 +43,7 @@ import {
 } from 'lucide-react';
 
 const navigationItems = [
-  { id: 'dashboard', label: 'Dashboard', icon: Home, href: '/' },
+  { id: 'dashboard', label: 'Dashboard', icon: Home, href: '/dashboard' },
   { id: 'products', label: 'Bidhaa', icon: Package, href: '/products' },
   { id: 'scanner', label: 'Scanner', icon: QrCode, href: '/scanner' },
   { id: 'quick-sale', label: 'Mauzo Haraka', icon: Zap, href: '/quick-sale' },
@@ -54,6 +54,8 @@ const navigationItems = [
   { id: 'credit', label: 'Mikopo', icon: CreditCard, href: '/credit-management' },
   { id: 'micro-loans', label: 'Mikopo Midogo', icon: Banknote, href: '/micro-loans' },
   { id: 'reports', label: 'Ripoti', icon: BarChart3, href: '/reports' },
+  { id: 'profit-loss', label: 'Faida/Hasara', icon: TrendingUp, href: '/profit-loss' },
+  { id: 'import-products', label: 'Ingiza Bidhaa', icon: Download, href: '/products/import' },
 ];
 
 export function AppSidebar() {

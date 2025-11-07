@@ -4,7 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Search, Edit, Trash2, Package, Loader2, Scale, ChevronDown, ChevronUp, ShoppingCart, Pause, Play } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, Package, Loader2, Scale, ChevronDown, ChevronUp, ShoppingCart, Pause, Play, FileSpreadsheet } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -177,7 +177,14 @@ export const ProductsPage = () => {
           >
             {refreshing ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Sasisha'}
           </Button>
-
+          <Button 
+            onClick={() => navigate('/products/import')}
+            variant="outline"
+            className="text-xs px-2 py-1 h-7 flex-1 sm:flex-none"
+          >
+            <FileSpreadsheet className="h-3 w-3 mr-1" />
+            Ingiza
+          </Button>
           <Button 
             onClick={handleAddProduct}
             className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-2 py-1 h-7 flex-1 sm:flex-none"

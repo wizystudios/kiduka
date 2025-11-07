@@ -48,7 +48,7 @@ export const MobileBottomNav = () => {
   const { user, userProfile, signOut } = useAuth();
 
   const mainNavItems: BottomNavItem[] = [
-    { id: 'home', label: 'Home', icon: Home, href: '/' },
+    { id: 'home', label: 'Home', icon: Home, href: '/dashboard' },
     { id: 'products', label: 'Bidhaa', icon: Package, href: '/products' },
     { id: 'scanner', label: 'Scan', icon: QrCode, href: '/scanner' },
     { id: 'sales', label: 'Mauzo', icon: ShoppingCart, href: '/sales' },
@@ -62,6 +62,8 @@ export const MobileBottomNav = () => {
     { id: 'micro-loans', label: 'Mikopo Midogo', icon: CreditCard, href: '/micro-loans' },
     { id: 'inventory', label: 'Hesabu ya Stock', icon: BarChart3, href: '/inventory-snapshots' },
     { id: 'reports', label: 'Ripoti', icon: BarChart3, href: '/reports' },
+    { id: 'profit-loss', label: 'Faida/Hasara', icon: TrendingUp, href: '/profit-loss' },
+    { id: 'import-products', label: 'Ingiza Bidhaa', icon: Download, href: '/products/import' },
     { id: 'pwa', label: 'Sakinisha App', icon: Download, href: '/pwa-install' },
     { id: 'settings', label: 'Mipangilio', icon: Settings, href: '/settings' },
     ...(userProfile?.role === 'owner' ? [
