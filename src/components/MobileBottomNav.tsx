@@ -140,7 +140,8 @@ export const MobileBottomNav = () => {
     <>
       {/* Bottom Navigation Bar */}
       <div className="fixed bottom-0 left-0 right-0 bg-background border-t border-border z-[9999] md:hidden mobile-bottom-nav">
-        <div className="grid grid-cols-7 h-16">
+        <div className="flex justify-center items-center h-16 px-4">
+          <div className="grid grid-cols-5 max-w-md w-full">
           {/* Main Navigation Items */}
           {mainNavItems.map((item) => {
             const Icon = item.icon;
@@ -262,6 +263,7 @@ export const MobileBottomNav = () => {
               </div>
             </SheetContent>
           </Sheet>
+          </div>
         </div>
       </div>
     </>

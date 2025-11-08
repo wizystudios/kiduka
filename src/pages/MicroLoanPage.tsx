@@ -1,6 +1,5 @@
-
-import { MicroLoanIntegration } from '@/components/MicroLoanIntegration';
+import { MicroLoanManagement } from '@/components/MicroLoanManagement';
 
 export const MicroLoanPage = () => {
-  return <MicroLoanIntegration />;
+  return <MicroLoanManagement />;
 };

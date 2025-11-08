@@ -133,7 +133,7 @@ h3 { font-size: 1.1rem !important; line-height: 1.3 !important; font-weight: 600
   
   /* Bottom nav spacing */
   body, #root {
-    padding-bottom: 70px !important;
+    padding-bottom: 140px !important;
   }
   
   main {
@@ -149,4 +149,47 @@ h3 { font-size: 1.1rem !important; line-height: 1.3 !important; font-weight: 600
     z-index: 9999 !important;
   }
 }
+
+/* Page animations */
+@keyframes slideUpFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.page-container {
+  animation: slideUpFadeIn 0.3s ease-out;
+  padding: 0.75rem;
+  padding-bottom: 8rem;
+}
+
+@media (min-width: 768px) {
+  .page-container {
+    padding: 1.5rem;
+    padding-bottom: 2rem;
+  }
+}
+
+/* Curved top shape for pages */
+.page-container::before {
+  content: '';
+  position: absolute;
+  top: -20px;
+  left: 0;
+  right: 0;
+  height: 20px;
+  background: hsl(var(--background));
+  border-radius: 20px 20px 0 0;
+}
+
+.page-header {
+  position: relative;
+  margin-bottom: 1rem;
+}
+
 

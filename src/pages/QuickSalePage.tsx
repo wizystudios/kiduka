@@ -10,6 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
+import { PageHeader } from '@/components/PageHeader';
 
 interface Customer {
   id: string;
@@ -123,7 +124,9 @@ export const QuickSalePage = () => {
   };
 
   return (
-    <div className="p-4 pb-20">
+    <div className="page-container">
+      <PageHeader title="Mauzo ya Haraka" subtitle="Rekodi mauzo kwa haraka" backTo="/dashboard" />
+      
       <Card>
         <CardHeader>
           <div className="flex items-center gap-3">
@@ -191,7 +194,8 @@ export const QuickSalePage = () => {
                 <Input
                   id="quantity"
                   type="number"
-                  step="0.01"
+                  step="any"
+                  min="0"
                   value={formData.quantity}
                   onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
                   required
@@ -202,7 +206,8 @@ export const QuickSalePage = () => {
                 <Input
                   id="unit_price"
                   type="number"
-                  step="0.01"
+                  step="any"
+                  min="0"
                   value={formData.unit_price}
                   onChange={(e) => setFormData({ ...formData, unit_price: e.target.value })}
                   required
@@ -244,7 +249,8 @@ export const QuickSalePage = () => {
                 <Input
                   id="amount_paid"
                   type="number"
-                  step="0.01"
+                  step="any"
+                  min="0"
                   value={formData.amount_paid}
                   onChange={(e) => setFormData({ ...formData, amount_paid: e.target.value })}
                   required

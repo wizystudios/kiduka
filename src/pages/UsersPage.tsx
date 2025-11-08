@@ -12,6 +12,7 @@ import { Plus, Search, Edit, Trash2, Users as UsersIcon, Mail, Phone } from 'luc
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
+import { PageHeader } from '@/components/PageHeader';
 
 interface UserProfile {
   id: string;
@@ -240,11 +241,12 @@ export const UsersPage = () => {
 
   if (userProfile?.role !== 'owner') {
     return (
-      <div className="p-4">
-        <Card className="text-center py-12">
+      <div className="p-3">
+        <Card className="text-center py-8">
           <CardContent>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Hauruhusiwi</h3>
-            <p className="text-gray-600">Huna ruhusa ya kuona ukurasa huu</p>
+            <UsersIcon className="h-10 w-10 text-muted-foreground mx-auto mb-2" />
+            <h3 className="text-sm font-semibold mb-1">Hauruhusiwi</h3>
+            <p className="text-xs text-muted-foreground">Huna ruhusa ya kuona ukurasa huu</p>
           </CardContent>
         </Card>
       </div>
@@ -262,19 +264,22 @@ export const UsersPage = () => {
   }
 
   return (
-    <div className="p-4 space-y-6">
+    <div className="page-container">
+      <PageHeader title="Watumiaji" subtitle={`${users.length} watumiaji katika mfumo`} backTo="/dashboard" />
+      
+      <div className="space-y-3">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Watumiaji</h2>
-          <p className="text-gray-600">{users.length} watumiaji katika mfumo</p>
+          <h2 className="text-lg font-bold text-gray-900">Watumiaji</h2>
+          <p className="text-xs text-gray-600">{users.length} watumiaji</p>
         </div>
         
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
-            <Button className="bg-blue-600 hover:bg-blue-700 text-white">
-              <Plus className="h-4 w-4 mr-2" />
-              Ongeza Mtumiaji
+            <Button size="sm" className="bg-blue-600 hover:bg-blue-700 text-white h-9">
+              <Plus className="h-4 w-4 mr-1" />
+              Ongeza
             </Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-md">
@@ -332,7 +337,7 @@ export const UsersPage = () => {
                   </SelectContent>
                 </Select>
               </div>
-              <Button onClick={handleCreateUser} className="w-full bg-blue-600 hover:bg-blue-700">
+              <Button onClick={handleCreateUser} className="w-full bg-blue-600 hover:bg-blue-700 h-9 text-sm">
                 Ongeza Mtumiaji
               </Button>
             </div>
@@ -342,66 +347,66 @@ export const UsersPage = () => {
 
       {/* Search */}
       <div className="relative">
-        <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+        <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-400" />
         <Input
-          placeholder="Tafuta kwa jina, barua pepe, au biashara..."
+          placeholder="Tafuta..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="pl-10"
+          className="pl-8 h-9 text-sm"
         />
       </div>
 
       {/* Users List */}
-      <div className="space-y-4">
+      <div className="space-y-2">
         {filteredUsers.map((user) => (
-          <Card key={user.id} className="hover:shadow-lg transition-all duration-300">
-            <CardContent className="p-4">
+          <Card key={user.id} className="hover:shadow-md transition-shadow">
+            <CardContent className="p-3">
               <div className="flex justify-between items-start">
-                <div className="flex items-center space-x-4 flex-1">
-                  <Avatar className="h-12 w-12">
+                <div className="flex items-center space-x-3 flex-1">
+                  <Avatar className="h-10 w-10">
                     <AvatarImage src="" />
-                    <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white">
+                    <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white text-xs">
                       {getInitials(user.full_name)}
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-1">
-                      <h3 className="font-semibold text-lg">{user.full_name}</h3>
-                      <Badge className={getRoleBadgeColor(user.role)}>
+                    <div className="flex items-center gap-2 mb-0.5">
+                      <h3 className="font-semibold text-sm">{user.full_name}</h3>
+                      <Badge className={getRoleBadgeColor(user.role) + " text-xs"}>
                         {getRoleLabel(user.role)}
                       </Badge>
                     </div>
-                    <div className="flex items-center gap-2 text-sm text-gray-600 mb-1">
-                      <Mail className="h-4 w-4" />
+                    <div className="flex items-center gap-1 text-xs text-gray-600 mb-0.5">
+                      <Mail className="h-3 w-3" />
                       <span>{user.email}</span>
                     </div>
                     {user.business_name && (
-                      <p className="text-sm text-gray-500">Biashara: {user.business_name}</p>
+                      <p className="text-xs text-gray-500">Biashara: {user.business_name}</p>
                     )}
-                    <p className="text-xs text-gray-400">
-                      Amesajiliwa: {new Date(user.created_at).toLocaleDateString()}
+                    <p className="text-[10px] text-gray-400">
+                      {new Date(user.created_at).toLocaleDateString()}
                     </p>
                   </div>
                 </div>
                 
-                <div className="flex space-x-1 ml-4">
+                <div className="flex space-x-1 ml-2">
                   <Button 
                     variant="ghost" 
                     size="sm" 
-                    className="h-8 w-8 p-0"
-                    title="Hariri mtumiaji"
+                    className="h-7 w-7 p-0"
+                    title="Hariri"
                   >
-                    <Edit className="h-4 w-4" />
+                    <Edit className="h-3 w-3" />
                   </Button>
                   {user.role !== 'owner' && (
                     <Button 
                       variant="ghost" 
                       size="sm" 
                       onClick={() => handleDeleteUser(user.id, user.full_name)}
-                      className="h-8 w-8 p-0 text-red-500 hover:text-red-700"
-                      title="Futa mtumiaji"
+                      className="h-7 w-7 p-0 text-red-500 hover:text-red-700"
+                      title="Futa"
                     >
-                      <Trash2 className="h-4 w-4" />
+                      <Trash2 className="h-3 w-3" />
                     </Button>
                   )}
                 </div>
@@ -412,22 +417,23 @@ export const UsersPage = () => {
       </div>
 
       {filteredUsers.length === 0 && (
-        <Card className="text-center py-12">
+        <Card className="text-center py-8">
           <CardContent>
-            <UsersIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Hakuna watumiaji waliopatikana</h3>
-            <p className="text-gray-600 mb-4">
-              {searchTerm ? "Jaribu kubadilisha maneno ya utafutaji" : "Anza kwa kumwalika mwanatimu wako wa kwanza"}
+            <UsersIcon className="h-10 w-10 text-gray-400 mx-auto mb-2" />
+            <h3 className="text-sm font-semibold text-gray-900 mb-1">Hakuna watumiaji</h3>
+            <p className="text-xs text-gray-600 mb-3">
+              {searchTerm ? "Hakuna matokeo" : "Anza kuongeza mtumiaji"}
             </p>
             {!searchTerm && (
-              <Button onClick={() => setDialogOpen(true)}>
-                <Plus className="h-4 w-4 mr-2" />
-                Ongeza Mtumiaji
+              <Button size="sm" onClick={() => setDialogOpen(true)}>
+                <Plus className="h-4 w-4 mr-1" />
+                Ongeza
               </Button>
             )}
           </CardContent>
         </Card>
       )}
+      </div>
     </div>
   );
 };
