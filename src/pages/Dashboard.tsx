@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -12,7 +11,6 @@ import {
   ShoppingCart, 
   DollarSign, 
   AlertTriangle,
-  Plus,
   Scan,
   BarChart3,
   Users,
@@ -86,9 +84,6 @@ export const Dashboard = () => {
     }
   };
 
-  const getInitials = (name: string) =>
-    name ? name.split(' ').map(w => w[0].toUpperCase()).join('').slice(0, 2) : 'U';
-
   if (authLoading)
     return (
       <div className="flex items-center justify-center min-h-[40vh]">
@@ -99,14 +94,6 @@ export const Dashboard = () => {
       </div>
     );
 
-  const displayName =
-    userProfile?.full_name ||
-    user?.user_metadata?.full_name ||
-    user?.email?.split('@')[0] ||
-    'Mtumiaji';
-  const businessName = userProfile?.business_name || user?.user_metadata?.business_name;
-  const userRole = userProfile?.role || 'owner';
-
   const dashboardMetrics = [
     { title: "Mauzo Leo", value: `TZS ${metrics.todaysSales.toLocaleString()}`, icon: DollarSign, color: "text-green-600", bg: "bg-green-50", border: "border-l-green-500" },
     { title: "Bidhaa", value: metrics.totalProducts, icon: Package, color: "text-purple-600", bg: "bg-purple-50", border: "border-l-purple-500" },
@@ -114,7 +101,6 @@ export const Dashboard = () => {
     { title: "Stock Ndogo", value: metrics.lowStockItems, icon: AlertTriangle, color: "text-orange-600", bg: "bg-orange-50", border: "border-l-orange-500" },
   ];
 
-  // ✅ Full Quick Actions (All navigation shortcuts)
   const quickActions = [
     { title: "Dashboard", icon: Home, color: "text-blue-600", bg: "bg-blue-50", action: () => navigate('/dashboard') },
     { title: "Bidhaa", icon: Package, color: "text-purple-600", bg: "bg-purple-50", action: () => navigate('/products') },
@@ -139,34 +125,6 @@ export const Dashboard = () => {
       <div className="text-xs text-center text-muted-foreground">
         Imesasishwa: {format(new Date(), 'HH:mm:ss')}
       </div>
-
-      <Card className="bg-gradient-to-r from-emerald-50 via-blue-50 to-purple-50 border-purple-200">
-        <CardContent className="p-2">
-          <div className="flex items-center space-x-2">
-            <Avatar className="h-8 w-8">
-              <AvatarImage src={userProfile?.avatar_url} />
-              <AvatarFallback className="bg-gradient-to-br from-emerald-500 via-blue-500 to-purple-600 text-white text-xs">
-                {getInitials(displayName)}
-              </AvatarFallback>
-            </Avatar>
-            <div className="flex-1 min-w-0">
-              <h2 className="text-xs font-bold text-gray-900 truncate">
-                Karibu, {displayName.split(' ')[0]}!
-              </h2>
-              <div className="flex flex-wrap items-center gap-1 mt-0.5">
-                <Badge variant="outline" className="text-purple-600 border-purple-200 text-xs px-1 py-0">
-                  {userRole === 'owner' ? 'Mmiliki' : userRole === 'assistant' ? 'Msaidizi' : 'Mtumiaji'}
-                </Badge>
-                {businessName && (
-                  <Badge variant="outline" className="text-blue-600 border-blue-200 text-xs px-1 py-0">
-                    {businessName}
-                  </Badge>
-                )}
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
 
       {/* Metrics */}
       <div className="grid grid-cols-2 gap-2">
