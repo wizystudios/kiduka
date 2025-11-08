@@ -9,6 +9,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
+import * as XLSX from 'xlsx';
 import { WeightQuantitySelector } from '@/components/WeightQuantitySelector';
 import {
   Collapsible,
@@ -154,7 +155,32 @@ export const ProductsPage = () => {
     a.download = `products_${new Date().toISOString().split('T')[0]}.csv`;
     a.click();
     URL.revokeObjectURL(url);
-    toast.success('Export imekamilika');
+    toast.success('CSV export imekamilika');
+  };
+
+  const exportToExcel = () => {
+    if (filteredProducts.length === 0) {
+      toast.error('Hakuna bidhaa za kuexport');
+      return;
+    }
+    const ws = XLSX.utils.json_to_sheet(
+      filteredProducts.map((p) => ({
+        Jina: p.name,
+        Barcode: p.barcode || '',
+        Bei: p.price,
+        Stock: p.stock_quantity,
+        Category: p.category || '',
+        Maelezo: p.description || '',
+        'Kiwango cha Chini': p.low_stock_threshold,
+        'Inategemea Uzito': p.is_weight_based ? 'Ndiyo' : 'Hapana',
+        Kipimo: p.unit_type || 'piece',
+        'Kiasi cha Chini': p.min_quantity || 0.1,
+      }))
+    );
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Products');
+    XLSX.writeFile(wb, `products_${new Date().toISOString().split('T')[0]}.xlsx`);
+    toast.success('Excel export imekamilika');
   };
 
   const filteredProducts = useMemo(() => {
@@ -213,7 +239,15 @@ export const ProductsPage = () => {
             className="text-xs px-2 py-1 h-7 flex-1 sm:flex-none"
           >
             <Download className="h-3 w-3 mr-1" />
-            Export
+            CSV
+          </Button>
+          <Button 
+            onClick={exportToExcel}
+            variant="outline"
+            className="text-xs px-2 py-1 h-7 flex-1 sm:flex-none"
+          >
+            <FileSpreadsheet className="h-3 w-3 mr-1" />
+            Excel
           </Button>
           <Button 
             onClick={() => navigate('/products/import')}

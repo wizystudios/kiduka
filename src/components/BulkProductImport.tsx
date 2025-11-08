@@ -9,7 +9,7 @@ import Papa from "papaparse";
 import * as XLSX from "xlsx";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
-import { Upload, FileSpreadsheet, CheckCircle2, AlertTriangle, Download } from "lucide-react";
+import { Upload, FileSpreadsheet, CheckCircle2, AlertTriangle, Download, XCircle } from "lucide-react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 interface ParsedRow {
@@ -89,10 +89,18 @@ export function BulkProductImport() {
   }, []);
 
   const normalized = useMemo(() => {
-    return rows
-      .map((r) => ({
-        name: (r.name ?? "").toString().trim(),
-        price: toNumber(r.price, NaN),
+    return rows.map((r, idx) => {
+      const errors: string[] = [];
+      const name = (r.name ?? "").toString().trim();
+      const price = toNumber(r.price, NaN);
+      
+      if (!name) errors.push("Jina linahitajika");
+      if (isNaN(price) || price <= 0) errors.push("Bei halali inahitajika");
+
+      return {
+        rowIndex: idx + 1,
+        name,
+        price,
         stock_quantity: Math.max(0, Math.floor(toNumber(r.stock_quantity, 0))),
         barcode: r.barcode?.toString().trim() || null,
         category: r.category?.toString().trim() || null,
@@ -102,9 +110,14 @@ export function BulkProductImport() {
         unit_type: r.unit_type?.toString().trim() || "piece",
         min_quantity: toNumber(r.min_quantity, 0.1),
         cost_price: toNumber(r.cost_price, 0),
-      }))
-      .filter((r) => !!r.name && !isNaN(r.price));
+        errors,
+        isValid: errors.length === 0,
+      };
+    });
   }, [rows]);
+
+  const validRows = useMemo(() => normalized.filter((r) => r.isValid), [normalized]);
+  const invalidRows = useMemo(() => normalized.filter((r) => !r.isValid), [normalized]);
 
   const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -141,7 +154,7 @@ export function BulkProductImport() {
       toast.error("Haujaingia. Tafadhali ingia kwanza.");
       return;
     }
-    if (normalized.length === 0) {
+    if (validRows.length === 0) {
       toast.error("Hakuna mistari halali ya kuingiza.");
       return;
     }
@@ -165,7 +178,7 @@ export function BulkProductImport() {
       const toUpdate: any[] = [];
       let skipped = 0;
 
-      normalized.forEach((r) => {
+      validRows.forEach((r) => {
         const barcodeKey = r.barcode ? `barcode:${r.barcode}` : null;
         const nameKey = `name:${r.name.toLowerCase()}`;
         const dupId = (barcodeKey && existingMap.get(barcodeKey)) || existingMap.get(nameKey);
@@ -304,41 +317,80 @@ export function BulkProductImport() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="h-4 w-4 text-green-600" />
-                <p className="text-xs">Mistari iliyopatikana: {rows.length} (halali: {normalized.length})</p>
+                <p className="text-xs">Mistari: {rows.length} | Halali: {validRows.length} | Kosa: {invalidRows.length}</p>
               </div>
-              {normalized.length < rows.length && (
-                <div className="flex items-center gap-1 text-orange-600 text-xs">
-                  <AlertTriangle className="h-4 w-4" />
-                  Baadhi ya mistari itapita kwa sababu ya data pungufu/kosa
-                </div>
-              )}
             </div>
 
-            {/* Preview table */}
-            <div className="overflow-auto border rounded-md">
-              <table className="w-full text-xs">
-                <thead className="bg-muted/40">
-                  <tr>
-                    {Object.keys(normalized[0] || { name: "", price: "" }).map((key) => (
-                      <th key={key} className="text-left px-2 py-1 capitalize">{key.replace(/_/g, " ")}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {normalized.slice(0, 5).map((row, idx) => (
-                    <tr key={idx} className="border-t">
-                      {Object.values(row).map((val, i) => (
-                        <td key={i} className="px-2 py-1 whitespace-nowrap">{String(val)}</td>
+            {/* Error preview */}
+            {invalidRows.length > 0 && (
+              <div className="border border-red-200 rounded-md p-2 bg-red-50/50">
+                <div className="flex items-center gap-1 text-red-600 text-xs mb-2">
+                  <XCircle className="h-4 w-4" />
+                  <span className="font-semibold">Mistari {invalidRows.length} ina makosa (haitaingizwa)</span>
+                </div>
+                <div className="overflow-auto max-h-32 border rounded bg-background">
+                  <table className="w-full text-[11px]">
+                    <thead className="bg-muted/40 sticky top-0">
+                      <tr>
+                        <th className="text-left px-2 py-1">Mstari</th>
+                        <th className="text-left px-2 py-1">Jina</th>
+                        <th className="text-left px-2 py-1">Bei</th>
+                        <th className="text-left px-2 py-1">Makosa</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {invalidRows.map((row) => (
+                        <tr key={row.rowIndex} className="border-t">
+                          <td className="px-2 py-1">{row.rowIndex}</td>
+                          <td className="px-2 py-1">{row.name || "-"}</td>
+                          <td className="px-2 py-1">{isNaN(row.price) ? "-" : row.price}</td>
+                          <td className="px-2 py-1 text-red-600">{row.errors.join(", ")}</td>
+                        </tr>
                       ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* Valid rows preview */}
+            {validRows.length > 0 && (
+              <div className="overflow-auto border rounded-md">
+                <table className="w-full text-xs">
+                  <thead className="bg-muted/40">
+                    <tr>
+                      <th className="text-left px-2 py-1">Jina</th>
+                      <th className="text-left px-2 py-1">Bei</th>
+                      <th className="text-left px-2 py-1">Stock</th>
+                      <th className="text-left px-2 py-1">Barcode</th>
+                      <th className="text-left px-2 py-1">Category</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {validRows.slice(0, 5).map((row) => (
+                      <tr key={row.rowIndex} className="border-t">
+                        <td className="px-2 py-1">{row.name}</td>
+                        <td className="px-2 py-1">{row.price}</td>
+                        <td className="px-2 py-1">{row.stock_quantity}</td>
+                        <td className="px-2 py-1">{row.barcode || "-"}</td>
+                        <td className="px-2 py-1">{row.category || "-"}</td>
+                      </tr>
+                    ))}
+                    {validRows.length > 5 && (
+                      <tr className="border-t bg-muted/20">
+                        <td colSpan={5} className="px-2 py-1 text-center text-muted-foreground">
+                          ...na {validRows.length - 5} zaidi
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            )}
 
             <div className="flex gap-2 justify-end">
-              <Button onClick={importRows} disabled={loading || normalized.length === 0} className="h-8 text-xs">
-                {loading ? "Inaingiza..." : "Ingiza Bidhaa"}
+              <Button onClick={importRows} disabled={loading || validRows.length === 0} className="h-8 text-xs">
+                {loading ? "Inaingiza..." : `Ingiza Bidhaa (${validRows.length})`}
               </Button>
             </div>
           </div>

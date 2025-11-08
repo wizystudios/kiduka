@@ -1,18 +1,23 @@
 import { useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
-import { format, subDays, eachDayOfInterval } from "date-fns";
+import { format, subDays, eachDayOfInterval, parseISO } from "date-fns";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, CartesianGrid } from "recharts";
-import { Download } from "lucide-react";
+import { Download, FileSpreadsheet } from "lucide-react";
+import * as XLSX from "xlsx";
 
 interface DayPoint { date: string; revenue: number; cost: number; profit: number }
 
 export const ProfitLossPage = () => {
   const { user } = useAuth();
-  const [range, setRange] = useState<7 | 30 | 90>(30);
+  const [range, setRange] = useState<7 | 30 | 90 | "custom">(30);
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
   const [data, setData] = useState<DayPoint[]>([]);
   const [totals, setTotals] = useState({ revenue: 0, cost: 0, profit: 0, margin: 0 });
   const [loading, setLoading] = useState(false);
@@ -32,8 +37,21 @@ export const ProfitLossPage = () => {
       if (!user?.id) return;
       setLoading(true);
       try {
-        const end = new Date();
-        const start = subDays(end, range - 1);
+        let start: Date;
+        let end: Date;
+
+        if (range === "custom") {
+          if (!startDate || !endDate) {
+            setLoading(false);
+            return;
+          }
+          start = parseISO(startDate);
+          end = parseISO(endDate);
+        } else {
+          end = new Date();
+          start = subDays(end, range - 1);
+        }
+
         const days = eachDayOfInterval({ start, end }).map((d) => format(d, 'yyyy-MM-dd'));
 
         // 1) Fetch sales for owner within range
@@ -102,7 +120,7 @@ export const ProfitLossPage = () => {
     };
 
     fetchData();
-  }, [range, user?.id]);
+  }, [range, startDate, endDate, user?.id]);
 
   const exportToCSV = () => {
     if (data.length === 0) {
@@ -116,10 +134,29 @@ export const ProfitLossPage = () => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `profit_loss_${range}d_${new Date().toISOString().split('T')[0]}.csv`;
+    a.download = `profit_loss_${range}_${new Date().toISOString().split('T')[0]}.csv`;
     a.click();
     URL.revokeObjectURL(url);
-    toast.success('Export imekamilika');
+    toast.success('CSV export imekamilika');
+  };
+
+  const exportToExcel = () => {
+    if (data.length === 0) {
+      toast.error('Hakuna data ya kuexport');
+      return;
+    }
+    const ws = XLSX.utils.json_to_sheet(
+      data.map((d) => ({
+        Tarehe: d.date,
+        Mapato: d.revenue,
+        Gharama: d.cost,
+        Faida: d.profit,
+      }))
+    );
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Profit & Loss');
+    XLSX.writeFile(wb, `profit_loss_${range}_${new Date().toISOString().split('T')[0]}.xlsx`);
+    toast.success('Excel export imekamilika');
   };
 
   return (
@@ -129,13 +166,39 @@ export const ProfitLossPage = () => {
         <div className="flex gap-1">
           <Button variant="outline" size="sm" className="h-7 text-xs" onClick={exportToCSV}>
             <Download className="h-3 w-3 mr-1" />
-            Export
+            CSV
           </Button>
-          <Button variant={range === 7 ? 'default' : 'outline'} size="sm" className="h-7 text-xs" onClick={() => setRange(7)}>7d</Button>
-          <Button variant={range === 30 ? 'default' : 'outline'} size="sm" className="h-7 text-xs" onClick={() => setRange(30)}>30d</Button>
-          <Button variant={range === 90 ? 'default' : 'outline'} size="sm" className="h-7 text-xs" onClick={() => setRange(90)}>90d</Button>
+          <Button variant="outline" size="sm" className="h-7 text-xs" onClick={exportToExcel}>
+            <FileSpreadsheet className="h-3 w-3 mr-1" />
+            Excel
+          </Button>
         </div>
       </div>
+
+      {/* Date Range Selector */}
+      <Card>
+        <CardContent className="p-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            <Button variant={range === 7 ? 'default' : 'outline'} size="sm" className="h-7 text-xs" onClick={() => setRange(7)}>7d</Button>
+            <Button variant={range === 30 ? 'default' : 'outline'} size="sm" className="h-7 text-xs" onClick={() => setRange(30)}>30d</Button>
+            <Button variant={range === 90 ? 'default' : 'outline'} size="sm" className="h-7 text-xs" onClick={() => setRange(90)}>90d</Button>
+            <Button variant={range === "custom" ? 'default' : 'outline'} size="sm" className="h-7 text-xs" onClick={() => setRange("custom")}>Custom</Button>
+            
+            {range === "custom" && (
+              <>
+                <div className="flex items-center gap-1">
+                  <Label className="text-xs">Kuanzia:</Label>
+                  <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="h-7 text-xs w-32" />
+                </div>
+                <div className="flex items-center gap-1">
+                  <Label className="text-xs">Hadi:</Label>
+                  <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="h-7 text-xs w-32" />
+                </div>
+              </>
+            )}
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Summary */}
       <div className="grid grid-cols-2 gap-2">
