@@ -1,6 +1,6 @@
 
-import { SmartCreditManager } from '@/components/SmartCreditManager';
+import { MicroLoanManagement } from '@/components/MicroLoanManagement';
 
 export const CreditManagementPage = () => {
-  return <SmartCreditManager />;
+  return <MicroLoanManagement />;
 };

@@ -42,6 +42,13 @@ export const Dashboard = () => {
   useEffect(() => {
     if (user && userProfile && !authLoading) {
       fetchDashboardData();
+      
+      // Auto-refresh every 30 seconds
+      const interval = setInterval(() => {
+        fetchDashboardData();
+      }, 30000);
+      
+      return () => clearInterval(interval);
     }
   }, [user, userProfile, authLoading]);
 
@@ -121,10 +128,7 @@ export const Dashboard = () => {
   ];
 
   return (
-    <div className="p-2 space-y-2 pb-20">
-      <div className="text-xs text-center text-muted-foreground">
-        Imesasishwa: {format(new Date(), 'HH:mm:ss')}
-      </div>
+    <div className="p-2 space-y-2 pb-20"	>
 
       {/* Metrics */}
       <div className="grid grid-cols-2 gap-2">

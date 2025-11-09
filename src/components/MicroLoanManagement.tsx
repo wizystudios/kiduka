@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Search, DollarSign, Calendar, User, Phone } from 'lucide-react';
+import { Plus, Search, DollarSign, Calendar, User, Phone, History, ArrowRight } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
@@ -33,6 +33,13 @@ export const MicroLoanManagement = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
+  const [selectedLoan, setSelectedLoan] = useState<MicroLoan | null>(null);
+  const [paymentAmount, setPaymentAmount] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState('cash');
+  const [paymentNotes, setPaymentNotes] = useState('');
+  const [paymentsHistoryOpen, setPaymentsHistoryOpen] = useState(false);
+  const [payments, setPayments] = useState<any[]>([]);
   const { user } = useAuth();
   
   const [newLoan, setNewLoan] = useState({
@@ -115,6 +122,58 @@ export const MicroLoanManagement = () => {
     } catch (error) {
       console.error('Error creating loan:', error);
       toast.error('Imeshindwa kuongeza mkopo');
+    }
+  };
+
+  const handleRecordPayment = async () => {
+    if (!selectedLoan || !paymentAmount) {
+      toast.error('Tafadhali jaza kiasi cha malipo');
+      return;
+    }
+
+    const amount = parseFloat(paymentAmount);
+    if (amount <= 0 || amount > selectedLoan.balance) {
+      toast.error('Kiasi si sahihi');
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('loan_payments')
+        .insert([{
+          loan_id: selectedLoan.id,
+          amount,
+          payment_method: paymentMethod,
+          notes: paymentNotes || null
+        }]);
+
+      if (error) throw error;
+
+      toast.success('Malipo yamerekodishwa!');
+      setPaymentDialogOpen(false);
+      setPaymentAmount('');
+      setPaymentNotes('');
+      setSelectedLoan(null);
+      fetchLoans();
+    } catch (error) {
+      console.error('Error recording payment:', error);
+      toast.error('Imeshindwa kurekodi malipo');
+    }
+  };
+
+  const fetchPaymentHistory = async (loanId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('loan_payments')
+        .select('*')
+        .eq('loan_id', loanId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setPayments(data || []);
+    } catch (error) {
+      console.error('Error fetching payment history:', error);
+      toast.error('Imeshindwa kupakia historia ya malipo');
     }
   };
 
@@ -327,6 +386,35 @@ export const MicroLoanManagement = () => {
                   <span>•</span>
                   <span>Mwisho: {format(new Date(loan.due_date), 'dd/MM/yyyy')}</span>
                 </div>
+
+                {loan.balance > 0 && (
+                  <div className="flex gap-1 mt-2">
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      className="flex-1 h-7 text-xs"
+                      onClick={() => {
+                        setSelectedLoan(loan);
+                        setPaymentDialogOpen(true);
+                      }}
+                    >
+                      <DollarSign className="h-3 w-3 mr-1" />
+                      Lipa
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      variant="ghost"
+                      className="h-7 text-xs"
+                      onClick={() => {
+                        setSelectedLoan(loan);
+                        fetchPaymentHistory(loan.id);
+                        setPaymentsHistoryOpen(true);
+                      }}
+                    >
+                      <History className="h-3 w-3" />
+                    </Button>
+                  </div>
+                )}
               </CardContent>
             </Card>
           ))}
@@ -350,6 +438,122 @@ export const MicroLoanManagement = () => {
           </Card>
         )}
       </div>
+
+      {/* Payment Dialog */}
+      <Dialog open={paymentDialogOpen} onOpenChange={setPaymentDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Rekodi Malipo</DialogTitle>
+          </DialogHeader>
+          {selectedLoan && (
+            <div className="space-y-3">
+              <div className="p-3 bg-muted rounded-lg">
+                <p className="text-xs text-muted-foreground">Mteja</p>
+                <p className="font-semibold">{selectedLoan.customer_name}</p>
+                <p className="text-xs text-muted-foreground mt-2">Salio</p>
+                <p className="text-xl font-bold text-orange-600">TZS {selectedLoan.balance.toLocaleString()}</p>
+              </div>
+              <div>
+                <Label htmlFor="payment_amount" className="text-xs">Kiasi cha Malipo (TZS) *</Label>
+                <Input
+                  id="payment_amount"
+                  type="number"
+                  step="0.01"
+                  max={selectedLoan.balance}
+                  value={paymentAmount}
+                  onChange={(e) => setPaymentAmount(e.target.value)}
+                  className="h-9 text-sm"
+                  placeholder="0.00"
+                />
+              </div>
+              <div>
+                <Label htmlFor="payment_method" className="text-xs">Njia ya Malipo</Label>
+                <Select value={paymentMethod} onValueChange={setPaymentMethod}>
+                  <SelectTrigger className="h-9 text-sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="cash">Taslimu</SelectItem>
+                    <SelectItem value="mobile_money">Pesa za Simu</SelectItem>
+                    <SelectItem value="bank">Benki</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="payment_notes" className="text-xs">Maelezo</Label>
+                <Input
+                  id="payment_notes"
+                  value={paymentNotes}
+                  onChange={(e) => setPaymentNotes(e.target.value)}
+                  className="h-9 text-sm"
+                  placeholder="Maelezo ya ziada"
+                />
+              </div>
+              <div className="flex gap-2">
+                <Button 
+                  variant="outline" 
+                  className="flex-1 h-9 text-sm"
+                  onClick={() => {
+                    setPaymentDialogOpen(false);
+                    setPaymentAmount('');
+                    setPaymentNotes('');
+                  }}
+                >
+                  Ghairi
+                </Button>
+                <Button 
+                  className="flex-1 h-9 text-sm"
+                  onClick={handleRecordPayment}
+                >
+                  Rekodi
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Payment History Dialog */}
+      <Dialog open={paymentsHistoryOpen} onOpenChange={setPaymentsHistoryOpen}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <History className="h-5 w-5" />
+              Historia ya Malipo - {selectedLoan?.customer_name}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2">
+            {payments.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-8">Hakuna malipo yaliyorekodishwa</p>
+            ) : (
+              payments.map((payment) => (
+                <Card key={payment.id}>
+                  <CardContent className="p-3">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <p className="font-semibold text-sm">TZS {parseFloat(payment.amount).toLocaleString()}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {format(new Date(payment.payment_date), 'dd/MM/yyyy')}
+                        </p>
+                        {payment.payment_method && (
+                          <p className="text-xs text-muted-foreground capitalize">
+                            {payment.payment_method === 'cash' ? 'Taslimu' : 
+                             payment.payment_method === 'mobile_money' ? 'Pesa za Simu' : 
+                             payment.payment_method === 'bank' ? 'Benki' : payment.payment_method}
+                          </p>
+                        )}
+                        {payment.notes && (
+                          <p className="text-xs text-muted-foreground mt-1">{payment.notes}</p>
+                        )}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

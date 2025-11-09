@@ -137,27 +137,24 @@ export const MobileBottomNav = () => {
   if (!user) return null;
 
   return (
-    <>
-      {/* Bottom Navigation Bar */}
-      <div className="fixed bottom-0 left-0 right-0 bg-background border-t border-border z-[9999] md:hidden mobile-bottom-nav">
-        <div className="flex justify-center items-center h-16 px-4">
-          <div className="grid grid-cols-5 max-w-md w-full">
-          {/* Main Navigation Items */}
+    <nav className="fixed bottom-0 left-0 right-0 bg-background border-t border-border z-50 md:hidden">
+      <div className="flex items-center justify-center h-16 px-2">
+        <div className="grid grid-cols-5 gap-1 max-w-md">
           {mainNavItems.map((item) => {
             const Icon = item.icon;
             const active = isActive(item.href);
             return (
               <button
                 key={item.id}
-                onClick={() => item.id === 'logout' ? handleSignOut() : handleNavigation(item.href)}
-                className={`flex flex-col items-center justify-center h-full transition-colors ${
+                onClick={() => handleNavigation(item.href)}
+                className={`flex flex-col items-center justify-center p-2 rounded-lg transition-all min-w-[70px] ${
                   active 
                     ? 'text-primary bg-primary/10' 
-                    : 'text-muted-foreground hover:text-primary hover:bg-accent'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-muted'
                 }`}
               >
-                <Icon className={`h-5 w-5 ${active ? 'text-primary' : ''}`} />
-                <span className={`text-[10px] mt-0.5 ${active ? 'font-medium' : ''}`}>
+                <Icon className={`h-5 w-5 ${active ? 'scale-110' : ''}`} />
+                <span className={`text-[10px] mt-0.5 font-medium ${active ? '' : ''}`}>
                   {item.label}
                 </span>
               </button>
@@ -167,25 +164,25 @@ export const MobileBottomNav = () => {
           {/* Profile Sheet Trigger */}
           <Sheet open={profileSheetOpen} onOpenChange={setProfileSheetOpen}>
             <SheetTrigger asChild>
-              <button className="flex flex-col items-center justify-center h-full text-muted-foreground hover:text-primary hover:bg-accent transition-colors">
+              <button className="flex flex-col items-center justify-center p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-all min-w-[70px]">
                 <div className="relative">
-                  <Avatar className="h-6 w-6">
+                  <Avatar className="h-5 w-5">
                     <AvatarImage src={userProfile?.avatar_url} />
                     <AvatarFallback className="bg-gradient-to-br from-emerald-500 to-blue-600 text-white text-xs">
                       {getUserInitials()}
                     </AvatarFallback>
                   </Avatar>
                   {unreadCount > 0 && (
-                    <Badge className="absolute -top-1 -right-1 h-4 w-4 p-0 bg-red-500 text-white text-[9px] flex items-center justify-center">
-                      {unreadCount > 9 ? '9+' : unreadCount}
+                    <Badge className="absolute -top-1 -right-1 h-3 w-3 p-0 bg-red-500 text-white text-[8px] flex items-center justify-center">
+                      {unreadCount}
                     </Badge>
                   )}
                 </div>
-                <span className="text-[10px] mt-0.5">Profile</span>
+                <span className="text-[10px] mt-0.5 font-medium">Profile</span>
               </button>
             </SheetTrigger>
             
-            <SheetContent side="bottom" className="h-[80vh]">
+            <SheetContent side="bottom" className="h-[80vh] overflow-y-auto">
               <SheetHeader className="pb-4">
                 <SheetTitle className="flex items-center gap-3">
                   <Avatar className="h-12 w-12">
@@ -204,7 +201,7 @@ export const MobileBottomNav = () => {
                 </SheetTitle>
               </SheetHeader>
               
-              <div className="space-y-2">
+              <div className="space-y-2 pb-8">
                 {/* Notifications */}
                 <Sheet open={notificationSheetOpen} onOpenChange={setNotificationSheetOpen}>
                   <SheetTrigger asChild>
@@ -263,9 +260,8 @@ export const MobileBottomNav = () => {
               </div>
             </SheetContent>
           </Sheet>
-          </div>
         </div>
       </div>
-    </>
+    </nav>
   );
 };

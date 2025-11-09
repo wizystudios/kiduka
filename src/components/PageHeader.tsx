@@ -4,51 +4,32 @@ import { useNavigate } from 'react-router-dom';
 import { ReactNode } from 'react';
 
 interface PageHeaderProps {
-  title?: string;
+  title: string;
   subtitle?: string;
-  onBack?: () => void;
   backTo?: string;
-  children?: ReactNode;
-  className?: string;
 }
 
-export const PageHeader = ({ 
-  title, 
-  subtitle, 
-  onBack, 
-  backTo, 
-  children,
-  className = ''
-}: PageHeaderProps) => {
+export const PageHeader = ({ title, subtitle, backTo }: PageHeaderProps) => {
   const navigate = useNavigate();
 
-  const handleBack = () => {
-    if (onBack) {
-      onBack();
-    } else if (backTo) {
-      navigate(backTo);
-    } else {
-      navigate(-1);
-    }
-  };
-
   return (
-    <div className={`page-header ${className}`}>
-      <div className="flex items-center gap-2 mb-2">
-        <Button 
-          variant="ghost" 
+    <div className="flex items-start gap-2 mb-3">
+      {backTo && (
+        <Button
+          variant="ghost"
           size="icon"
-          onClick={handleBack}
-          className="h-8 w-8 rounded-full"
+          className="h-8 w-8 shrink-0"
+          onClick={() => navigate(backTo)}
         >
           <ArrowLeft className="h-4 w-4" />
         </Button>
-        <div className="flex-1 min-w-0">
-          {title && <h1 className="text-lg font-bold truncate">{title}</h1>}
-          {subtitle && <p className="text-xs text-muted-foreground truncate">{subtitle}</p>}
-        </div>
+      )}
+      <div className="flex-1 min-w-0">
+        <h1 className="text-lg font-bold text-foreground">{title}</h1>
+        {subtitle && (
+          <p className="text-xs text-muted-foreground">{subtitle}</p>
+        )}
       </div>
-      {children}
     </div>
   );
 };

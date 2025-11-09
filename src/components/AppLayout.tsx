@@ -15,7 +15,7 @@ export function AppLayout({ children }: AppLayoutProps) {
       <div className="flex min-h-screen w-full">
         <AppSidebar />
         <SidebarInset className="flex-1">
-          <main className="w-full pt-14 pb-32 lg:pt-0 lg:pb-0">
+          <main className="w-full pt-16 pb-36 md:pt-0 md:pb-0">
             {children}
           </main>
         </SidebarInset>

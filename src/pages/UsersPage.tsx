@@ -241,7 +241,8 @@ export const UsersPage = () => {
 
   if (userProfile?.role !== 'owner') {
     return (
-      <div className="p-3">
+      <div className="page-container">
+        <PageHeader title="Watumiaji" subtitle="Simamia watumiaji wa mfumo" backTo="/dashboard" />
         <Card className="text-center py-8">
           <CardContent>
             <UsersIcon className="h-10 w-10 text-muted-foreground mx-auto mb-2" />
