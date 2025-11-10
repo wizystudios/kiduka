@@ -38,6 +38,60 @@ export type Database = {
         }
         Relationships: []
       }
+      assistant_permissions: {
+        Row: {
+          assistant_id: string
+          can_create_sales: boolean | null
+          can_delete_products: boolean | null
+          can_edit_customers: boolean | null
+          can_edit_inventory: boolean | null
+          can_edit_products: boolean | null
+          can_view_customers: boolean | null
+          can_view_inventory: boolean | null
+          can_view_products: boolean | null
+          can_view_reports: boolean | null
+          can_view_sales: boolean | null
+          created_at: string | null
+          id: string
+          owner_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          assistant_id: string
+          can_create_sales?: boolean | null
+          can_delete_products?: boolean | null
+          can_edit_customers?: boolean | null
+          can_edit_inventory?: boolean | null
+          can_edit_products?: boolean | null
+          can_view_customers?: boolean | null
+          can_view_inventory?: boolean | null
+          can_view_products?: boolean | null
+          can_view_reports?: boolean | null
+          can_view_sales?: boolean | null
+          created_at?: string | null
+          id?: string
+          owner_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          assistant_id?: string
+          can_create_sales?: boolean | null
+          can_delete_products?: boolean | null
+          can_edit_customers?: boolean | null
+          can_edit_inventory?: boolean | null
+          can_edit_products?: boolean | null
+          can_view_customers?: boolean | null
+          can_view_inventory?: boolean | null
+          can_view_products?: boolean | null
+          can_view_reports?: boolean | null
+          can_view_sales?: boolean | null
+          created_at?: string | null
+          id?: string
+          owner_id?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       business_insights: {
         Row: {
           created_at: string

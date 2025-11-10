@@ -4,6 +4,9 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from '@/hooks/useAuth';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { AppLayout } from '@/components/AppLayout';
+import { NotificationSettingsPage } from '@/pages/NotificationSettingsPage';
+import { CustomerReportsPage } from '@/pages/CustomerReportsPage';
+import { ProductReportsPage } from '@/pages/ProductReportsPage';
 import { Toaster } from '@/components/ui/toaster';
 
 // Pages
@@ -188,9 +191,41 @@ export default function App() {
               } />
               
               <Route path="/users" element={
-                <ProtectedRoute allowedRoles={['owner']}>
+                <ProtectedRoute>
                   <AppLayout>
                     <UsersPage />
+                  </AppLayout>
+                </ProtectedRoute>
+              } />
+              
+              <Route path="/notifications" element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <NotificationSettingsPage />
+                  </AppLayout>
+                </ProtectedRoute>
+              } />
+              
+              <Route path="/notifications" element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <NotificationSettingsPage />
+                  </AppLayout>
+                </ProtectedRoute>
+              } />
+              
+              <Route path="/customer-reports" element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <CustomerReportsPage />
+                  </AppLayout>
+                </ProtectedRoute>
+              } />
+              
+              <Route path="/product-reports" element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <ProductReportsPage />
                   </AppLayout>
                 </ProtectedRoute>
               } />
