@@ -41,6 +41,8 @@ import { QuickSalePage } from '@/pages/QuickSalePage';
 import { MicroLoansManagementPage } from '@/pages/MicroLoansManagementPage';
 import { ImportProductsPage } from '@/pages/ImportProductsPage';
 import { ProfitLossPage } from '@/pages/ProfitLossPage';
+import ExpensesPage from '@/pages/ExpensesPage';
+import CalculatorPage from '@/pages/CalculatorPage';
 
 // Voice POS Pages
 import { VoicePOSPage } from '@/pages/VoicePOSPage';
@@ -178,6 +180,22 @@ export default function App() {
                 <ProtectedRoute>
                   <AppLayout>
                     <ProfitLossPage />
+                  </AppLayout>
+                </ProtectedRoute>
+              } />
+              
+              <Route path="/expenses" element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <ExpensesPage />
+                  </AppLayout>
+                </ProtectedRoute>
+              } />
+              
+              <Route path="/calculator" element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <CalculatorPage />
                   </AppLayout>
                 </ProtectedRoute>
               } />

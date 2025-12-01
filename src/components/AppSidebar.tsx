@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, useLocation, NavLink } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+import { usePermissions } from '@/hooks/usePermissions';
 import { KidukaLogo } from '@/components/KidukaLogo';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -39,33 +40,54 @@ import {
   Smartphone,
   Zap,
   Banknote,
-  Download
+  Download,
+  Calculator as CalcIcon,
+  Receipt
 } from 'lucide-react';
 
 const navigationItems = [
-  { id: 'dashboard', label: 'Dashboard', icon: Home, href: '/dashboard' },
-  { id: 'products', label: 'Bidhaa', icon: Package, href: '/products' },
-  { id: 'scanner', label: 'Scanner', icon: QrCode, href: '/scanner' },
-  { id: 'quick-sale', label: 'Mauzo Haraka', icon: Zap, href: '/quick-sale' },
-  { id: 'sales', label: 'Mauzo', icon: ShoppingCart, href: '/sales' },
-  { id: 'inventory-snapshots', label: 'Hesabu ya Stock', icon: ClipboardList, href: '/inventory-snapshots' },
-  { id: 'customers', label: 'Wateja', icon: Users, href: '/customers' },
-  { id: 'discounts', label: 'Punguzo', icon: Percent, href: '/discounts' },
-  { id: 'credit', label: 'Mikopo', icon: CreditCard, href: '/credit-management' },
-  { id: 'micro-loans', label: 'Mikopo Midogo', icon: Banknote, href: '/micro-loans' },
-  { id: 'reports', label: 'Ripoti', icon: BarChart3, href: '/reports' },
-  { id: 'profit-loss', label: 'Faida/Hasara', icon: TrendingUp, href: '/profit-loss' },
-  { id: 'import-products', label: 'Ingiza Bidhaa', icon: Download, href: '/products/import' },
+  { id: 'dashboard', label: 'Dashboard', icon: Home, href: '/dashboard', permission: null },
+  { id: 'products', label: 'Bidhaa', icon: Package, href: '/products', permission: 'can_view_products' },
+  { id: 'scanner', label: 'Scanner', icon: QrCode, href: '/scanner', permission: 'can_view_products' },
+  { id: 'quick-sale', label: 'Mauzo Haraka', icon: Zap, href: '/quick-sale', permission: 'can_create_sales' },
+  { id: 'sales', label: 'Mauzo', icon: ShoppingCart, href: '/sales', permission: 'can_view_sales' },
+  { id: 'inventory-snapshots', label: 'Hesabu ya Stock', icon: ClipboardList, href: '/inventory-snapshots', permission: 'can_view_inventory' },
+  { id: 'customers', label: 'Wateja', icon: Users, href: '/customers', permission: 'can_view_customers' },
+  { id: 'discounts', label: 'Punguzo', icon: Percent, href: '/discounts', permission: null },
+  { id: 'credit', label: 'Mikopo', icon: CreditCard, href: '/credit-management', permission: null },
+  { id: 'micro-loans', label: 'Mikopo Midogo', icon: Banknote, href: '/micro-loans', permission: null },
+  { id: 'expenses', label: 'Matumizi', icon: Receipt, href: '/expenses', permission: null },
+  { id: 'reports', label: 'Ripoti', icon: BarChart3, href: '/reports', permission: 'can_view_reports' },
+  { id: 'profit-loss', label: 'Faida/Hasara', icon: TrendingUp, href: '/profit-loss', permission: 'can_view_reports' },
+  { id: 'import-products', label: 'Ingiza Bidhaa', icon: Download, href: '/products/import', permission: 'can_edit_products' },
+  { id: 'calculator', label: 'Kikokotoo', icon: CalcIcon, href: '/calculator', permission: null },
 ];
 
 export function AppSidebar() {
   const { signOut, userProfile, user } = useAuth();
+  const { permissions, loading: permissionsLoading } = usePermissions();
   const navigate = useNavigate();
   const location = useLocation();
   const { state } = useSidebar();
   const collapsed = state === 'collapsed';
 
   if (!userProfile) return null;
+
+  // Filter navigation items based on permissions
+  const filteredNavItems = navigationItems.filter(item => {
+    // Owner and super_admin see everything
+    if (userProfile.role === 'owner' || userProfile.role === 'super_admin') return true;
+    
+    // No permission required - everyone can see
+    if (!item.permission) return true;
+    
+    // Check if assistant has permission
+    if (permissions && item.permission) {
+      return permissions[item.permission as keyof typeof permissions];
+    }
+    
+    return false;
+  });
 
   // Add Super Admin route
   const superAdminRoutes = userProfile.role === 'super_admin' ? [
@@ -148,7 +170,7 @@ export function AppSidebar() {
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {[...superAdminRoutes, ...businessRoutes].map((item) => (
+              {[...superAdminRoutes, ...filteredNavItems].map((item) => (
                 <SidebarMenuItem key={item.id}>
                   <SidebarMenuButton asChild isActive={isActive(item.href)}>
                     <NavLink 
