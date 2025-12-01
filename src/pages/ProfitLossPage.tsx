@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,12 +6,19 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
-import { format, subDays, eachDayOfInterval, parseISO } from "date-fns";
+import { format, subDays } from "date-fns";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, CartesianGrid } from "recharts";
-import { Download, FileSpreadsheet } from "lucide-react";
+import { Download, FileSpreadsheet, FileText } from "lucide-react";
 import * as XLSX from "xlsx";
+import { PageHeader } from "@/components/PageHeader";
 
-interface DayPoint { date: string; revenue: number; cost: number; profit: number }
+interface DayPoint { 
+  date: string; 
+  revenue: number; 
+  cost: number; 
+  expenses: number;
+  profit: number;
+}
 
 export const ProfitLossPage = () => {
   const { user } = useAuth();
@@ -19,101 +26,145 @@ export const ProfitLossPage = () => {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [data, setData] = useState<DayPoint[]>([]);
-  const [totals, setTotals] = useState({ revenue: 0, cost: 0, profit: 0, margin: 0 });
+  const [totals, setTotals] = useState({ 
+    revenue: 0, 
+    cost: 0, 
+    expenses: 0,
+    profit: 0, 
+    margin: 0 
+  });
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    document.title = "Profit & Loss - Kiduka POS";
-    const meta = document.querySelector('meta[name="description"]');
-    if (meta) meta.setAttribute('content', 'Ripoti ya faida/hasara: mapato dhidi ya gharama, chati na muhtasari.');
-    const link = document.querySelector('link[rel="canonical"]') || document.createElement('link');
-    link.setAttribute('rel', 'canonical');
-    link.setAttribute('href', window.location.href);
-    if (!link.parentNode) document.head.appendChild(link);
-  }, []);
+  const getDateRange = () => {
+    const end = new Date();
+    let start: Date;
+    
+    if (range === "custom") {
+      if (!startDate || !endDate) return null;
+      return {
+        start: startDate,
+        end: endDate
+      };
+    }
+    
+    start = subDays(end, range);
+    return {
+      start: format(start, 'yyyy-MM-dd'),
+      end: format(end, 'yyyy-MM-dd')
+    };
+  };
 
   useEffect(() => {
     const fetchData = async () => {
       if (!user?.id) return;
+      
+      const dateRange = getDateRange();
+      if (!dateRange) return;
+      
       setLoading(true);
       try {
-        let start: Date;
-        let end: Date;
+        const startDateTime = new Date(dateRange.start);
+        const endDateTime = new Date(dateRange.end);
+        endDateTime.setHours(23, 59, 59, 999);
 
-        if (range === "custom") {
-          if (!startDate || !endDate) {
-            setLoading(false);
-            return;
-          }
-          start = parseISO(startDate);
-          end = parseISO(endDate);
-        } else {
-          end = new Date();
-          start = subDays(end, range - 1);
-        }
-
-        const days = eachDayOfInterval({ start, end }).map((d) => format(d, 'yyyy-MM-dd'));
-
-        // 1) Fetch sales for owner within range
-        const { data: sales, error: salesErr } = await supabase
+        // Fetch sales
+        const { data: sales, error: salesError } = await supabase
           .from('sales')
-          .select('id, created_at, total_amount')
+          .select('*, sales_items(product_id, quantity, unit_price, subtotal)')
           .eq('owner_id', user.id)
-          .gte('created_at', start.toISOString())
-          .lte('created_at', end.toISOString());
-        if (salesErr) throw salesErr;
-        const saleIds = (sales || []).map((s) => s.id);
+          .gte('created_at', startDateTime.toISOString())
+          .lte('created_at', endDateTime.toISOString());
 
-        // 2) Fetch sales_items for these sales (batch if many)
-        let items: any[] = [];
-        const chunkSize = 500;
-        for (let i = 0; i < saleIds.length; i += chunkSize) {
-          const chunk = saleIds.slice(i, i + chunkSize);
-          if (chunk.length === 0) continue;
-          const { data: si, error: siErr } = await supabase
-            .from('sales_items')
-            .select('sale_id, product_id, quantity, unit_price, subtotal, created_at')
-            .in('sale_id', chunk);
-          if (siErr) throw siErr;
-          items = items.concat(si || []);
-        }
+        if (salesError) throw salesError;
 
-        // 3) Fetch products map with cost_price
-        const { data: products, error: prodErr } = await supabase
+        // Fetch product costs
+        const productIds = sales?.flatMap(sale => 
+          sale.sales_items.map((item: any) => item.product_id)
+        ) || [];
+        
+        const { data: products, error: productsError } = await supabase
           .from('products')
           .select('id, cost_price')
-          .eq('owner_id', user.id);
-        if (prodErr) throw prodErr;
-        const costMap = new Map((products || []).map((p) => [p.id, Number(p.cost_price || 0)]));
+          .in('id', [...new Set(productIds)]);
 
-        // 4) Aggregate by day
-        const dayMap = new Map<string, DayPoint>();
-        days.forEach((d) => dayMap.set(d, { date: d, revenue: 0, cost: 0, profit: 0 }));
+        if (productsError) throw productsError;
 
-        (items || []).forEach((it) => {
-          const d = format(new Date(it.created_at), 'yyyy-MM-dd');
-          if (!dayMap.has(d)) dayMap.set(d, { date: d, revenue: 0, cost: 0, profit: 0 });
-          const dp = dayMap.get(d)!;
-          const qty = Number(it.quantity || 0);
-          const subtotal = Number(it.subtotal || (qty * Number(it.unit_price || 0)));
-          const costPrice = costMap.get(it.product_id) ?? 0;
-          const cost = qty * costPrice;
-          dp.revenue += subtotal;
-          dp.cost += cost;
-          dp.profit = dp.revenue - dp.cost;
+        const productCostMap = new Map(
+          products?.map(p => [p.id, p.cost_price || 0]) || []
+        );
+
+        // Fetch expenses
+        const { data: expenses, error: expensesError } = await supabase
+          .from('expenses')
+          .select('amount, expense_date')
+          .eq('owner_id', user.id)
+          .gte('expense_date', dateRange.start)
+          .lte('expense_date', dateRange.end);
+
+        if (expensesError) throw expensesError;
+
+        // Group expenses by date
+        const expensesByDate = new Map<string, number>();
+        expenses?.forEach(exp => {
+          const date = format(new Date(exp.expense_date), 'yyyy-MM-dd');
+          expensesByDate.set(date, (expensesByDate.get(date) || 0) + exp.amount);
         });
 
-        const arr = Array.from(dayMap.values()).sort((a, b) => a.date.localeCompare(b.date));
-        const revenue = arr.reduce((s, x) => s + x.revenue, 0);
-        const cost = arr.reduce((s, x) => s + x.cost, 0);
-        const profit = revenue - cost;
-        const margin = revenue > 0 ? (profit / revenue) * 100 : 0;
+        // Calculate daily data
+        const dailyMap = new Map<string, { revenue: number; cost: number; expenses: number }>();
+        
+        sales?.forEach(sale => {
+          const date = format(new Date(sale.created_at), 'yyyy-MM-dd');
+          
+          if (!dailyMap.has(date)) {
+            dailyMap.set(date, { revenue: 0, cost: 0, expenses: 0 });
+          }
+          
+          const dayData = dailyMap.get(date)!;
+          dayData.revenue += sale.total_amount;
+          
+          sale.sales_items.forEach((item: any) => {
+            const itemCost = (productCostMap.get(item.product_id) || 0) * item.quantity;
+            dayData.cost += itemCost;
+          });
 
-        setData(arr);
-        setTotals({ revenue, cost, profit, margin });
-      } catch (e: any) {
-        console.error(e);
-        toast.error(e?.message || 'Imeshindwa kupakia ripoti');
+          dayData.expenses = expensesByDate.get(date) || 0;
+        });
+
+        // Add days with expenses but no sales
+        expensesByDate.forEach((amount, date) => {
+          if (!dailyMap.has(date)) {
+            dailyMap.set(date, { revenue: 0, cost: 0, expenses: amount });
+          }
+        });
+
+        const sortedData = Array.from(dailyMap.entries())
+          .map(([date, data]) => ({
+            date: format(new Date(date), 'dd MMM'),
+            revenue: data.revenue,
+            cost: data.cost,
+            expenses: data.expenses,
+            profit: data.revenue - data.cost - data.expenses
+          }))
+          .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+        setData(sortedData);
+
+        const totalRevenue = sortedData.reduce((sum, day) => sum + day.revenue, 0);
+        const totalCost = sortedData.reduce((sum, day) => sum + day.cost, 0);
+        const totalExpenses = sortedData.reduce((sum, day) => sum + day.expenses, 0);
+        const totalProfit = totalRevenue - totalCost - totalExpenses;
+
+        setTotals({
+          revenue: totalRevenue,
+          cost: totalCost,
+          expenses: totalExpenses,
+          profit: totalProfit,
+          margin: totalRevenue > 0 ? (totalProfit / totalRevenue) * 100 : 0
+        });
+      } catch (error) {
+        console.error('Error fetching data:', error);
+        toast.error('Imeshindwa kupakia data');
       } finally {
         setLoading(false);
       }
@@ -127,17 +178,17 @@ export const ProfitLossPage = () => {
       toast.error('Hakuna data ya kuexport');
       return;
     }
-    const headers = ['date', 'revenue', 'cost', 'profit'];
-    const rows = data.map((d) => [d.date, d.revenue, d.cost, d.profit]);
+    const headers = ['Tarehe', 'Mapato', 'Gharama ya Bidhaa', 'Matumizi', 'Faida'];
+    const rows = data.map((d) => [d.date, d.revenue, d.cost, d.expenses, d.profit]);
     const csv = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `profit_loss_${range}_${new Date().toISOString().split('T')[0]}.csv`;
+    a.download = `faida_hasara_${new Date().toISOString().split('T')[0]}.csv`;
     a.click();
     URL.revokeObjectURL(url);
-    toast.success('CSV export imekamilika');
+    toast.success('CSV imepakua');
   };
 
   const exportToExcel = () => {
@@ -149,50 +200,169 @@ export const ProfitLossPage = () => {
       data.map((d) => ({
         Tarehe: d.date,
         Mapato: d.revenue,
-        Gharama: d.cost,
+        'Gharama ya Bidhaa': d.cost,
+        Matumizi: d.expenses,
         Faida: d.profit,
       }))
     );
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Profit & Loss');
-    XLSX.writeFile(wb, `profit_loss_${range}_${new Date().toISOString().split('T')[0]}.xlsx`);
-    toast.success('Excel export imekamilika');
+    XLSX.utils.book_append_sheet(wb, ws, 'Faida na Hasara');
+    XLSX.writeFile(wb, `faida_hasara_${new Date().toISOString().split('T')[0]}.xlsx`);
+    toast.success('Excel imepakua');
+  };
+
+  const exportToPDF = () => {
+    const printWindow = window.open('', '', 'width=800,height=600');
+    if (!printWindow) return;
+
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Ripoti ya Faida/Hasara</title>
+          <style>
+            body { font-family: Arial, sans-serif; padding: 20px; }
+            h1 { text-align: center; }
+            table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+            th, td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; }
+            th { background-color: #f5f5f5; }
+            .summary { margin: 20px 0; padding: 15px; background: #f9f9f9; }
+            .summary-item { display: flex; justify-content: space-between; padding: 5px 0; }
+          </style>
+        </head>
+        <body>
+          <h1>Ripoti ya Faida/Hasara</h1>
+          <p>Tarehe: ${format(new Date(), 'dd/MM/yyyy')}</p>
+          
+          <div class="summary">
+            <div class="summary-item">
+              <strong>Jumla ya Mapato:</strong>
+              <span>TZS ${totals.revenue.toLocaleString()}</span>
+            </div>
+            <div class="summary-item">
+              <strong>Gharama ya Bidhaa:</strong>
+              <span>TZS ${totals.cost.toLocaleString()}</span>
+            </div>
+            <div class="summary-item">
+              <strong>Matumizi:</strong>
+              <span>TZS ${totals.expenses.toLocaleString()}</span>
+            </div>
+            <div class="summary-item">
+              <strong>Faida Halisi:</strong>
+              <span style="color: ${totals.profit >= 0 ? 'green' : 'red'}">
+                TZS ${totals.profit.toLocaleString()}
+              </span>
+            </div>
+            <div class="summary-item">
+              <strong>Margin:</strong>
+              <span>${totals.margin.toFixed(1)}%</span>
+            </div>
+          </div>
+
+          <table>
+            <thead>
+              <tr>
+                <th>Tarehe</th>
+                <th>Mapato</th>
+                <th>Gharama ya Bidhaa</th>
+                <th>Matumizi</th>
+                <th>Faida</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${data.map(d => `
+                <tr>
+                  <td>${d.date}</td>
+                  <td>TZS ${d.revenue.toLocaleString()}</td>
+                  <td>TZS ${d.cost.toLocaleString()}</td>
+                  <td>TZS ${d.expenses.toLocaleString()}</td>
+                  <td style="color: ${d.profit >= 0 ? 'green' : 'red'}">
+                    TZS ${d.profit.toLocaleString()}
+                  </td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+    printWindow.print();
   };
 
   return (
-    <div className="p-2 pb-20 space-y-2">
-      <div className="flex items-center justify-between">
-        <h1 className="text-sm font-bold">Profit & Loss</h1>
-        <div className="flex gap-1">
-          <Button variant="outline" size="sm" className="h-7 text-xs" onClick={exportToCSV}>
-            <Download className="h-3 w-3 mr-1" />
-            CSV
-          </Button>
-          <Button variant="outline" size="sm" className="h-7 text-xs" onClick={exportToExcel}>
-            <FileSpreadsheet className="h-3 w-3 mr-1" />
-            Excel
-          </Button>
-        </div>
+    <div className="page-container p-4 pb-24 md:p-6 space-y-4">
+      <PageHeader 
+        title="Faida na Hasara"
+        subtitle="Ripoti ya mapato na gharama"
+      />
+
+      <div className="flex gap-2">
+        <Button variant="outline" size="sm" onClick={exportToCSV}>
+          <Download className="h-4 w-4 mr-2" />
+          CSV
+        </Button>
+        <Button variant="outline" size="sm" onClick={exportToExcel}>
+          <FileSpreadsheet className="h-4 w-4 mr-2" />
+          Excel
+        </Button>
+        <Button variant="outline" size="sm" onClick={exportToPDF}>
+          <FileText className="h-4 w-4 mr-2" />
+          PDF
+        </Button>
       </div>
 
       {/* Date Range Selector */}
       <Card>
-        <CardContent className="p-2">
+        <CardContent className="p-4">
           <div className="flex items-center gap-2 flex-wrap">
-            <Button variant={range === 7 ? 'default' : 'outline'} size="sm" className="h-7 text-xs" onClick={() => setRange(7)}>7d</Button>
-            <Button variant={range === 30 ? 'default' : 'outline'} size="sm" className="h-7 text-xs" onClick={() => setRange(30)}>30d</Button>
-            <Button variant={range === 90 ? 'default' : 'outline'} size="sm" className="h-7 text-xs" onClick={() => setRange(90)}>90d</Button>
-            <Button variant={range === "custom" ? 'default' : 'outline'} size="sm" className="h-7 text-xs" onClick={() => setRange("custom")}>Custom</Button>
+            <Button 
+              variant={range === 7 ? 'default' : 'outline'} 
+              size="sm" 
+              onClick={() => setRange(7)}
+            >
+              7 Siku
+            </Button>
+            <Button 
+              variant={range === 30 ? 'default' : 'outline'} 
+              size="sm" 
+              onClick={() => setRange(30)}
+            >
+              30 Siku
+            </Button>
+            <Button 
+              variant={range === 90 ? 'default' : 'outline'} 
+              size="sm" 
+              onClick={() => setRange(90)}
+            >
+              90 Siku
+            </Button>
+            <Button 
+              variant={range === "custom" ? 'default' : 'outline'} 
+              size="sm" 
+              onClick={() => setRange("custom")}
+            >
+              Chagua Tarehe
+            </Button>
             
             {range === "custom" && (
               <>
-                <div className="flex items-center gap-1">
-                  <Label className="text-xs">Kuanzia:</Label>
-                  <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="h-7 text-xs w-32" />
+                <div className="flex items-center gap-2">
+                  <Label>Kuanzia:</Label>
+                  <Input 
+                    type="date" 
+                    value={startDate} 
+                    onChange={(e) => setStartDate(e.target.value)} 
+                    className="h-9"
+                  />
                 </div>
-                <div className="flex items-center gap-1">
-                  <Label className="text-xs">Hadi:</Label>
-                  <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="h-7 text-xs w-32" />
+                <div className="flex items-center gap-2">
+                  <Label>Hadi:</Label>
+                  <Input 
+                    type="date" 
+                    value={endDate} 
+                    onChange={(e) => setEndDate(e.target.value)} 
+                    className="h-9"
+                  />
                 </div>
               </>
             )}
@@ -201,57 +371,110 @@ export const ProfitLossPage = () => {
       </Card>
 
       {/* Summary */}
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         <Card>
-          <CardContent className="p-2">
-            <p className="text-[11px] text-muted-foreground">Mapato</p>
-            <p className="text-sm font-bold">TZS {totals.revenue.toLocaleString()}</p>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm">Mapato</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-bold text-green-600">
+              TZS {totals.revenue.toLocaleString()}
+            </p>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-2">
-            <p className="text-[11px] text-muted-foreground">Gharama</p>
-            <p className="text-sm font-bold">TZS {totals.cost.toLocaleString()}</p>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm">Gharama ya Bidhaa</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-bold text-orange-600">
+              TZS {totals.cost.toLocaleString()}
+            </p>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-2">
-            <p className="text-[11px] text-muted-foreground">Faida</p>
-            <p className={`text-sm font-bold ${totals.profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>TZS {totals.profit.toLocaleString()}</p>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm">Matumizi</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-bold text-amber-600">
+              TZS {totals.expenses.toLocaleString()}
+            </p>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-2">
-            <p className="text-[11px] text-muted-foreground">Margin</p>
-            <p className="text-sm font-bold">{totals.margin.toFixed(1)}%</p>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm">Faida Halisi</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className={`text-2xl font-bold ${totals.profit >= 0 ? 'text-blue-600' : 'text-red-600'}`}>
+              TZS {totals.profit.toLocaleString()}
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm">Margin</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-bold">
+              {totals.margin.toFixed(1)}%
+            </p>
           </CardContent>
         </Card>
       </div>
 
       {/* Chart */}
       <Card>
-        <CardHeader className="p-2">
-          <CardTitle className="text-xs">Mapato vs Gharama</CardTitle>
+        <CardHeader>
+          <CardTitle className="text-lg">Mwenendo wa Mapato na Gharama</CardTitle>
         </CardHeader>
-        <CardContent className="p-2">
-          <div className="h-56">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="date" tick={{ fontSize: 10 }} interval={Math.ceil(data.length / 6)} />
-                <YAxis tick={{ fontSize: 10 }} />
-                <Tooltip formatter={(v: any) => `TZS ${Number(v).toLocaleString()}`} />
-                <Legend wrapperStyle={{ fontSize: 10 }} />
-                <Line type="monotone" dataKey="revenue" name="Mapato" stroke="#16a34a" strokeWidth={2} dot={false} />
-                <Line type="monotone" dataKey="cost" name="Gharama" stroke="#ef4444" strokeWidth={2} dot={false} />
-                <Line type="monotone" dataKey="profit" name="Faida" stroke="#2563eb" strokeWidth={2} dot={false} />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
+        <CardContent>
+          {loading ? (
+            <p className="text-center text-muted-foreground py-8">Inapakia...</p>
+          ) : (
+            <div className="h-80">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={data}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="date" />
+                  <YAxis />
+                  <Tooltip formatter={(v: any) => `TZS ${Number(v).toLocaleString()}`} />
+                  <Legend />
+                  <Line 
+                    type="monotone" 
+                    dataKey="revenue" 
+                    name="Mapato" 
+                    stroke="#10b981" 
+                    strokeWidth={2}
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="cost" 
+                    name="Gharama ya Bidhaa" 
+                    stroke="#f97316" 
+                    strokeWidth={2}
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="expenses" 
+                    name="Matumizi" 
+                    stroke="#f59e0b" 
+                    strokeWidth={2}
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="profit" 
+                    name="Faida" 
+                    stroke="#3b82f6" 
+                    strokeWidth={2}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          )}
         </CardContent>
       </Card>
-
-      {loading && <p className="text-center text-xs text-muted-foreground">Inapakia...</p>}
     </div>
   );
 };

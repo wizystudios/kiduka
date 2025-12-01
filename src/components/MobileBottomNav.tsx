@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+import { usePermissions } from '@/hooks/usePermissions';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -27,7 +28,9 @@ import {
   Brain,
   TrendingUp,
   BarChart3,
-  Download
+  Download,
+  Calculator as CalcIcon,
+  Receipt
 } from 'lucide-react';
 import { NotificationCenter } from '@/components/NotificationCenter';
 
@@ -36,7 +39,7 @@ interface BottomNavItem {
   label: string;
   icon: React.ComponentType<any>;
   href: string;
-  requiresAuth?: boolean;
+  permission?: string | null;
 }
 
 export const MobileBottomNav = () => {
@@ -46,37 +49,46 @@ export const MobileBottomNav = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, userProfile, signOut } = useAuth();
+  const { permissions } = usePermissions();
 
   const mainNavItems: BottomNavItem[] = [
-    { id: 'home', label: 'Home', icon: Home, href: '/dashboard' },
-    { id: 'products', label: 'Bidhaa', icon: Package, href: '/products' },
-    { id: 'scanner', label: 'Scan', icon: QrCode, href: '/scanner' },
-    { id: 'sales', label: 'Mauzo', icon: ShoppingCart, href: '/sales' },
-  ];
+    { id: 'home', label: 'Home', icon: Home, href: '/dashboard', permission: null },
+    { id: 'products', label: 'Bidhaa', icon: Package, href: '/products', permission: 'can_view_products' },
+    { id: 'scanner', label: 'Scan', icon: QrCode, href: '/scanner', permission: 'can_view_products' },
+    { id: 'sales', label: 'Mauzo', icon: ShoppingCart, href: '/sales', permission: 'can_view_sales' },
+  ].filter(item => {
+    if (userProfile?.role === 'owner' || userProfile?.role === 'super_admin') return true;
+    if (!item.permission) return true;
+    return permissions?.[item.permission as keyof typeof permissions];
+  });
 
-  const profileMenuItems = [
-    { id: 'quick-sale', label: 'Mauzo Haraka', icon: ShoppingCart, href: '/quick-sale' },
-    { id: 'customers', label: 'Wateja', icon: Users, href: '/customers' },
-    { id: 'discounts', label: 'Punguzo', icon: Percent, href: '/discounts' },
-    { id: 'credit', label: 'Mikopo', icon: CreditCard, href: '/credit-management' },
-    { id: 'micro-loans', label: 'Mikopo Midogo', icon: CreditCard, href: '/micro-loans' },
-    { id: 'inventory', label: 'Hesabu ya Stock', icon: BarChart3, href: '/inventory-snapshots' },
-    { id: 'reports', label: 'Ripoti', icon: BarChart3, href: '/reports' },
-    { id: 'profit-loss', label: 'Faida/Hasara', icon: TrendingUp, href: '/profit-loss' },
-    { id: 'import-products', label: 'Ingiza Bidhaa', icon: Download, href: '/products/import' },
-    { id: 'pwa', label: 'Sakinisha App', icon: Download, href: '/pwa-install' },
-    { id: 'settings', label: 'Mipangilio', icon: Settings, href: '/settings' },
+  const allProfileMenuItems: BottomNavItem[] = [
+    { id: 'quick-sale', label: 'Mauzo Haraka', icon: ShoppingCart, href: '/quick-sale', permission: 'can_create_sales' },
+    { id: 'customers', label: 'Wateja', icon: Users, href: '/customers', permission: 'can_view_customers' },
+    { id: 'discounts', label: 'Punguzo', icon: Percent, href: '/discounts', permission: null },
+    { id: 'credit', label: 'Mikopo', icon: CreditCard, href: '/credit-management', permission: null },
+    { id: 'micro-loans', label: 'Mikopo Midogo', icon: CreditCard, href: '/micro-loans', permission: null },
+    { id: 'expenses', label: 'Matumizi', icon: Receipt, href: '/expenses', permission: null },
+    { id: 'inventory', label: 'Hesabu ya Stock', icon: BarChart3, href: '/inventory-snapshots', permission: 'can_view_inventory' },
+    { id: 'reports', label: 'Ripoti', icon: BarChart3, href: '/reports', permission: 'can_view_reports' },
+    { id: 'profit-loss', label: 'Faida/Hasara', icon: TrendingUp, href: '/profit-loss', permission: 'can_view_reports' },
+    { id: 'import-products', label: 'Ingiza Bidhaa', icon: Download, href: '/products/import', permission: 'can_edit_products' },
+    { id: 'calculator', label: 'Kikokotoo', icon: CalcIcon, href: '/calculator', permission: null },
+    { id: 'pwa', label: 'Sakinisha App', icon: Download, href: '/pwa-install', permission: null },
+    { id: 'settings', label: 'Mipangilio', icon: Settings, href: '/settings', permission: null },
     ...(userProfile?.role === 'owner' ? [
-      { id: 'users', label: 'Watumiaji', icon: Users, href: '/users' }
+      { id: 'users', label: 'Watumiaji', icon: Users, href: '/users', permission: null }
     ] : []),
     ...(userProfile?.role === 'super_admin' ? [
-      { id: 'super-admin', label: 'Super Admin', icon: User, href: '/super-admin' }
+      { id: 'super-admin', label: 'Super Admin', icon: User, href: '/super-admin', permission: null }
     ] : []),
-    // Hidden unfinished features until implemented:
-    // { id: 'marketplace', label: 'Soko la Jamii', icon: Store, href: '/marketplace' },
-    // { id: 'ai-advisor', label: 'Mshauri wa AI', icon: Brain, href: '/ai-advisor' },
-    // { id: 'bi', label: 'Takwimu za AI', icon: TrendingUp, href: '/business-intelligence' },
   ];
+
+  const profileMenuItems = allProfileMenuItems.filter(item => {
+    if (userProfile?.role === 'owner' || userProfile?.role === 'super_admin') return true;
+    if (!item.permission) return true;
+    return permissions?.[item.permission as keyof typeof permissions];
+  });
 
   // Mock notification count - replace with actual data
   useEffect(() => {
