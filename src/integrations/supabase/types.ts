@@ -824,6 +824,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_access_owner_data: {
+        Args: { target_owner_id: string }
+        Returns: boolean
+      }
       get_user_role: { Args: { _user_id: string }; Returns: string }
     }
     Enums: {
