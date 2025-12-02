@@ -40,10 +40,11 @@ import { MicroLoanPage } from '@/pages/MicroLoanPage';
 import { QuickSalePage } from '@/pages/QuickSalePage';
 import { MicroLoansManagementPage } from '@/pages/MicroLoansManagementPage';
 import { ImportProductsPage } from '@/pages/ImportProductsPage';
-import { ProfitLossPage } from '@/pages/ProfitLossPage';
+import ProfitLossPage from '@/pages/ProfitLossPage';
 import ExpensesPage from '@/pages/ExpensesPage';
-import CalculatorPage from '@/pages/CalculatorPage';
-import { InventoryAdjustmentPage } from '@/pages/InventoryAdjustmentPage';
+import CalculatorPage from './pages/CalculatorPage';
+import { InventoryAdjustmentPage } from './pages/InventoryAdjustmentPage';
+import SalesAnalyticsPage from './pages/SalesAnalyticsPage';
 
 // Voice POS Pages
 import { VoicePOSPage } from '@/pages/VoicePOSPage';
@@ -269,6 +270,14 @@ export default function App() {
                 <ProtectedRoute>
                   <AppLayout>
                     <InventoryAdjustmentPage />
+                  </AppLayout>
+                </ProtectedRoute>
+              } />
+              
+              <Route path="/sales-analytics" element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <SalesAnalyticsPage />
                   </AppLayout>
                 </ProtectedRoute>
               } />

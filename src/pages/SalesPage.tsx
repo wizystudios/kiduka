@@ -5,10 +5,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Calendar, Search, Download, Eye, DollarSign, Receipt, X } from 'lucide-react';
+import { Calendar, Search, Download, Eye, DollarSign, Receipt, X, FileSpreadsheet } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
+import { exportToExcel, exportToCSV, ExportColumn } from '@/utils/exportUtils';
 
 interface Sale {
   id: string;
@@ -167,36 +168,24 @@ export const SalesPage = () => {
   };
 
   const handleExportSales = () => {
-    try {
-      const exportData = filteredSales.map(sale => ({
-        id: sale.id,
-        total_amount: sale.total_amount,
-        payment_method: sale.payment_method,
-        created_at: sale.created_at,
-        customer: sale.customers?.name || 'Hakuna',
-        items: sale.sales_items.map(item => ({
-          product: item.products.name,
-          quantity: item.quantity,
-          unit_price: item.unit_price,
-          subtotal: item.subtotal
-        }))
-      }));
+    const columns: ExportColumn[] = [
+      { header: 'Tarehe', key: 'created_at', formatter: (v) => formatDate(v) },
+      { header: 'Mteja', key: 'customer', formatter: (v) => v || 'Hakuna' },
+      { header: 'Jumla (TSh)', key: 'total_amount', formatter: (v) => Number(v).toLocaleString() },
+      { header: 'Njia ya Malipo', key: 'payment_method' },
+      { header: 'Punguzo (TSh)', key: 'discount_amount', formatter: (v) => Number(v || 0).toLocaleString() },
+    ];
 
-      const dataStr = JSON.stringify(exportData, null, 2);
-      const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
-      
-      const exportFileDefaultName = `mauzo_${selectedPeriod}_${new Date().toISOString().split('T')[0]}.json`;
-      
-      const linkElement = document.createElement('a');
-      linkElement.setAttribute('href', dataUri);
-      linkElement.setAttribute('download', exportFileDefaultName);
-      linkElement.click();
-      
-      toast.success('Data ya mauzo imehamishwa kwa mafanikio');
-    } catch (error) {
-      console.error('Export error:', error);
-      toast.error('Imeshindwa kuhamisha data');
-    }
+    const exportData = filteredSales.map(sale => ({
+      created_at: sale.created_at,
+      customer: sale.customers?.name,
+      total_amount: sale.total_amount,
+      payment_method: sale.payment_method,
+      discount_amount: sale.discount_amount || 0,
+    }));
+
+    exportToExcel(exportData, columns, `mauzo_${selectedPeriod}`);
+    toast.success('Mauzo yamehamishwa kwa mafanikio');
   };
 
   if (loading) {

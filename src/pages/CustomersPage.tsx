@@ -6,10 +6,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Plus, Search, Edit, Trash2, Users, Mail, Phone, MapPin, Star, FileText } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, Users, Mail, Phone, MapPin, Star, FileText, FileSpreadsheet, Download } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { CustomerLedger } from '@/components/CustomerLedger';
+import { exportToExcel, exportToCSV, ExportColumn } from '@/utils/exportUtils';
 
 interface Customer {
   id: string;
@@ -151,6 +152,23 @@ export const CustomersPage = () => {
     }
   };
 
+  const handleExport = () => {
+    const columns: ExportColumn[] = [
+      { header: 'Jina', key: 'name' },
+      { header: 'Barua Pepe', key: 'email', formatter: (v) => v || '' },
+      { header: 'Simu', key: 'phone', formatter: (v) => v || '' },
+      { header: 'Jumla ya Ununuzi (TSh)', key: 'total_purchases', formatter: (v) => Number(v || 0).toLocaleString() },
+      { header: 'Deni (TSh)', key: 'outstanding_balance', formatter: (v) => Number(v || 0).toLocaleString() },
+      { header: 'Tarehe ya Usajili', key: 'created_at', formatter: (v) => new Date(v).toLocaleDateString('sw-TZ') },
+    ];
+
+    exportToExcel(filteredCustomers, columns, 'wateja');
+    toast({
+      title: 'Mafanikio',
+      description: 'Wateja wamehamishwa kwa mafanikio'
+    });
+  };
+
   const filteredCustomers = customers.filter(customer =>
     customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     customer.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -175,7 +193,23 @@ export const CustomersPage = () => {
           <p className="text-gray-600">Simamia wateja na pointi za utii</p>
         </div>
         
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={handleExport}
+            className="flex items-center gap-2"
+          >
+            <FileSpreadsheet className="h-4 w-4" />
+            Export
+          </Button>
+          
+          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+            <DialogTrigger asChild>
+              <Button className="bg-blue-600 hover:bg-blue-700 text-white">
+                <Plus className="h-4 w-4 mr-2" />
+                Ongeza Mteja
+              </Button>
+            </DialogTrigger>
           <DialogTrigger asChild>
             <Button className="bg-blue-600 hover:bg-blue-700 text-white">
               <Plus className="h-4 w-4 mr-2" />
@@ -221,6 +255,7 @@ export const CustomersPage = () => {
             </div>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
 
       <div className="relative">
