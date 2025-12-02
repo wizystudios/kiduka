@@ -11,6 +11,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { PageHeader } from '@/components/PageHeader';
+import { InvoiceGenerator } from '@/components/InvoiceGenerator';
 
 interface Customer {
   id: string;
@@ -20,7 +21,9 @@ interface Customer {
 export const QuickSalePage = () => {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(false);
-  const { user } = useAuth();
+  const [showInvoice, setShowInvoice] = useState(false);
+  const [lastSaleData, setLastSaleData] = useState<any>(null);
+  const { user, userProfile } = useAuth();
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
@@ -107,8 +110,24 @@ export const QuickSalePage = () => {
           .eq('id', formData.customer_id);
       }
 
+      // Prepare invoice data
+      setLastSaleData({
+        customer_name: formData.customer_name,
+        items: [{
+          name: formData.product_name,
+          quantity,
+          unit_price,
+          subtotal: total_amount
+        }],
+        total_amount,
+        payment_method: formData.payment_method,
+        payment_status: formData.payment_status,
+        invoice_number: `INV-${Date.now()}`,
+        date: new Date().toLocaleDateString('sw-TZ')
+      });
+
       toast.success('Mauzo yamerekodishwa!');
-      navigate('/customers');
+      setShowInvoice(true);
     } catch (error) {
       console.error('Error recording sale:', error);
       toast.error('Imeshindwa kurekodi mauzo');
@@ -127,6 +146,30 @@ export const QuickSalePage = () => {
     <div className="page-container">
       <PageHeader title="Mauzo ya Haraka" subtitle="Rekodi mauzo kwa haraka" backTo="/dashboard" />
       
+      {showInvoice && lastSaleData ? (
+        <div className="space-y-4">
+          <InvoiceGenerator {...lastSaleData} />
+          <Button 
+            onClick={() => {
+              setShowInvoice(false);
+              setFormData({
+                customer_name: '',
+                customer_id: '',
+                product_name: '',
+                quantity: '',
+                unit_price: '',
+                payment_status: 'paid',
+                amount_paid: '',
+                payment_method: 'cash',
+                notes: ''
+              });
+            }}
+            className="w-full"
+          >
+            Mauzo Mengine
+          </Button>
+        </div>
+      ) : (
       <Card>
         <CardHeader>
           <div className="flex items-center gap-3">
@@ -293,6 +336,7 @@ export const QuickSalePage = () => {
           </form>
         </CardContent>
       </Card>
+      )}
     </div>
   );
 };

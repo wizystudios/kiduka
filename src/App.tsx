@@ -43,6 +43,7 @@ import { ImportProductsPage } from '@/pages/ImportProductsPage';
 import { ProfitLossPage } from '@/pages/ProfitLossPage';
 import ExpensesPage from '@/pages/ExpensesPage';
 import CalculatorPage from '@/pages/CalculatorPage';
+import { InventoryAdjustmentPage } from '@/pages/InventoryAdjustmentPage';
 
 // Voice POS Pages
 import { VoicePOSPage } from '@/pages/VoicePOSPage';
@@ -244,6 +245,30 @@ export default function App() {
                 <ProtectedRoute>
                   <AppLayout>
                     <ProductReportsPage />
+                  </AppLayout>
+                </ProtectedRoute>
+              } />
+              
+              <Route path="/calculator" element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <CalculatorPage />
+                  </AppLayout>
+                </ProtectedRoute>
+              } />
+              
+              <Route path="/expenses" element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <ExpensesPage />
+                  </AppLayout>
+                </ProtectedRoute>
+              } />
+              
+              <Route path="/inventory-adjustment" element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <InventoryAdjustmentPage />
                   </AppLayout>
                 </ProtectedRoute>
               } />

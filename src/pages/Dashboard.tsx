@@ -19,13 +19,16 @@ import {
   CreditCard,
   Percent,
   Banknote,
-  ClipboardList,
+  ClipboardCheck,
   Smartphone,
   Zap,
   UserCheck,
-  Home
+  Home,
+  Calculator,
+  Wallet
 } from 'lucide-react';
 import { format } from 'date-fns';
+import { ExpensesDashboardWidget } from '@/components/ExpensesDashboardWidget';
 
 export const Dashboard = () => {
   const { user, userProfile, loading: authLoading } = useAuth();
@@ -111,10 +114,12 @@ export const Dashboard = () => {
   const quickActions = [
     { title: "Dashboard", icon: Home, color: "text-blue-600", bg: "bg-blue-50", action: () => navigate('/dashboard') },
     { title: "Bidhaa", icon: Package, color: "text-purple-600", bg: "bg-purple-50", action: () => navigate('/products') },
+    { title: "Calculator", icon: Calculator, color: "text-cyan-600", bg: "bg-cyan-50", action: () => navigate('/calculator') },
+    { title: "Matumizi", icon: Wallet, color: "text-red-600", bg: "bg-red-50", action: () => navigate('/expenses') },
     { title: "Scanner", icon: Scan, color: "text-green-600", bg: "bg-green-50", action: () => navigate('/scanner') },
     { title: "Mauzo Haraka", icon: Zap, color: "text-orange-600", bg: "bg-orange-50", action: () => navigate('/quick-sale') },
     { title: "Mauzo", icon: ShoppingCart, color: "text-blue-600", bg: "bg-blue-50", action: () => navigate('/sales') },
-    { title: "Hesabu", icon: ClipboardList, color: "text-yellow-600", bg: "bg-yellow-50", action: () => navigate('/inventory-snapshots') },
+    { title: "Hesabu", icon: ClipboardCheck, color: "text-yellow-600", bg: "bg-yellow-50", action: () => navigate('/inventory-snapshots') },
     { title: "Wateja", icon: Users, color: "text-indigo-600", bg: "bg-indigo-50", action: () => navigate('/customers') },
     { title: "Punguzo", icon: Percent, color: "text-pink-600", bg: "bg-pink-50", action: () => navigate('/discounts') },
     { title: "Mikopo", icon: CreditCard, color: "text-teal-600", bg: "bg-teal-50", action: () => navigate('/credit-management') },
@@ -149,27 +154,31 @@ export const Dashboard = () => {
         ))}
       </div>
 
-      {/* Low Stock */}
-      {lowStockProducts.length > 0 && (
-        <Card className="border-orange-200">
-          <CardHeader className="pb-1 pt-2 px-2">
-            <CardTitle className="flex items-center text-orange-700 text-xs">
-              <AlertTriangle className="h-3 w-3 mr-1" />
-              Stock Ndogo ({lowStockProducts.length})
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-1 p-2 pt-1">
-            {lowStockProducts.map((p) => (
-              <div key={p.id} className="flex justify-between items-center p-1.5 bg-orange-50 rounded border-l-2 border-l-orange-400">
-                <p className="text-xs font-medium truncate">{p.name}</p>
-                <Badge variant="outline" className="text-orange-600 border-orange-200 text-xs px-1 py-0">
-                  {p.stock_quantity || 0}
-                </Badge>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-      )}
+      {/* Low Stock & Expenses */}
+      <div className="grid grid-cols-1 gap-2">
+        {lowStockProducts.length > 0 && (
+          <Card className="border-orange-200">
+            <CardHeader className="pb-1 pt-2 px-2">
+              <CardTitle className="flex items-center text-orange-700 text-xs">
+                <AlertTriangle className="h-3 w-3 mr-1" />
+                Stock Ndogo ({lowStockProducts.length})
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-1 p-2 pt-1">
+              {lowStockProducts.map((p) => (
+                <div key={p.id} className="flex justify-between items-center p-1.5 bg-orange-50 rounded border-l-2 border-l-orange-400">
+                  <p className="text-xs font-medium truncate">{p.name}</p>
+                  <Badge variant="outline" className="text-orange-600 border-orange-200 text-xs px-1 py-0">
+                    {p.stock_quantity || 0}
+                  </Badge>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        )}
+
+        <ExpensesDashboardWidget />
+      </div>
 
       {/* Haraka (Quick Navigation Buttons) */}
       <Card>
