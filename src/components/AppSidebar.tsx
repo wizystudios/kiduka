@@ -42,7 +42,8 @@ import {
   Banknote,
   Download,
   Calculator as CalcIcon,
-  Receipt
+  Receipt,
+  LineChart
 } from 'lucide-react';
 
 const navigationItems = [
@@ -59,6 +60,7 @@ const navigationItems = [
   { id: 'expenses', label: 'Matumizi', icon: Receipt, href: '/expenses', permission: null },
   { id: 'reports', label: 'Ripoti', icon: BarChart3, href: '/reports', permission: 'can_view_reports' },
   { id: 'profit-loss', label: 'Faida/Hasara', icon: TrendingUp, href: '/profit-loss', permission: 'can_view_reports' },
+  { id: 'sales-analytics', label: 'Takwimu za Mauzo', icon: LineChart, href: '/sales-analytics', permission: 'can_view_reports' },
   { id: 'import-products', label: 'Ingiza Bidhaa', icon: Download, href: '/products/import', permission: 'can_edit_products' },
   { id: 'calculator', label: 'Kikokotoo', icon: CalcIcon, href: '/calculator', permission: null },
 ];

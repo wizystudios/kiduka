@@ -29,6 +29,7 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ExpensesDashboardWidget } from '@/components/ExpensesDashboardWidget';
+import { StockAlertSystem } from '@/components/StockAlertSystem';
 
 export const Dashboard = () => {
   const { user, userProfile, loading: authLoading } = useAuth();
@@ -156,6 +157,8 @@ export const Dashboard = () => {
 
       {/* Low Stock & Expenses */}
       <div className="grid grid-cols-1 gap-2">
+        <StockAlertSystem />
+        
         {lowStockProducts.length > 0 && (
           <Card className="border-orange-200">
             <CardHeader className="pb-1 pt-2 px-2">
