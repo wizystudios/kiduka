@@ -10,7 +10,6 @@ import { format, subDays } from "date-fns";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, CartesianGrid } from "recharts";
 import { Download, FileSpreadsheet, FileText } from "lucide-react";
 import * as XLSX from "xlsx";
-import { PageHeader } from "@/components/PageHeader";
 
 interface DayPoint { 
   date: string; 
@@ -41,10 +40,7 @@ export const ProfitLossPage = () => {
     
     if (range === "custom") {
       if (!startDate || !endDate) return null;
-      return {
-        start: startDate,
-        end: endDate
-      };
+      return { start: startDate, end: endDate };
     }
     
     start = subDays(end, range);
@@ -67,7 +63,7 @@ export const ProfitLossPage = () => {
         const endDateTime = new Date(dateRange.end);
         endDateTime.setHours(23, 59, 59, 999);
 
-        // Fetch sales
+        // Fetch sales from sales table
         const { data: sales, error: salesError } = await supabase
           .from('sales')
           .select('*, sales_items(product_id, quantity, unit_price, subtotal)')
@@ -76,6 +72,17 @@ export const ProfitLossPage = () => {
           .lte('created_at', endDateTime.toISOString());
 
         if (salesError) throw salesError;
+
+        // Fetch quick sales from customer_transactions
+        const { data: quickSales, error: quickSalesError } = await supabase
+          .from('customer_transactions')
+          .select('total_amount, transaction_date')
+          .eq('owner_id', user.id)
+          .eq('transaction_type', 'sale')
+          .gte('transaction_date', dateRange.start)
+          .lte('transaction_date', dateRange.end);
+
+        if (quickSalesError) throw quickSalesError;
 
         // Fetch product costs
         const productIds = sales?.flatMap(sale => 
@@ -113,6 +120,7 @@ export const ProfitLossPage = () => {
         // Calculate daily data
         const dailyMap = new Map<string, { revenue: number; cost: number; expenses: number }>();
         
+        // Add regular sales
         sales?.forEach(sale => {
           const date = format(new Date(sale.created_at), 'yyyy-MM-dd');
           
@@ -127,8 +135,23 @@ export const ProfitLossPage = () => {
             const itemCost = (productCostMap.get(item.product_id) || 0) * item.quantity;
             dayData.cost += itemCost;
           });
+        });
 
-          dayData.expenses = expensesByDate.get(date) || 0;
+        // Add quick sales
+        quickSales?.forEach(sale => {
+          const date = format(new Date(sale.transaction_date), 'yyyy-MM-dd');
+          
+          if (!dailyMap.has(date)) {
+            dailyMap.set(date, { revenue: 0, cost: 0, expenses: 0 });
+          }
+          
+          const dayData = dailyMap.get(date)!;
+          dayData.revenue += sale.total_amount;
+        });
+
+        // Add expenses to daily map
+        dailyMap.forEach((data, date) => {
+          data.expenses = expensesByDate.get(date) || 0;
         });
 
         // Add days with expenses but no sales
@@ -290,30 +313,25 @@ export const ProfitLossPage = () => {
   };
 
   return (
-    <div className="page-container p-4 pb-24 md:p-6 space-y-4">
-      <PageHeader 
-        title="Faida na Hasara"
-        subtitle="Ripoti ya mapato na gharama"
-      />
-
-      <div className="flex gap-2">
+    <div className="p-4 pb-24 space-y-4">
+      <div className="flex gap-2 flex-wrap">
         <Button variant="outline" size="sm" onClick={exportToCSV}>
-          <Download className="h-4 w-4 mr-2" />
+          <Download className="h-4 w-4 mr-1" />
           CSV
         </Button>
         <Button variant="outline" size="sm" onClick={exportToExcel}>
-          <FileSpreadsheet className="h-4 w-4 mr-2" />
+          <FileSpreadsheet className="h-4 w-4 mr-1" />
           Excel
         </Button>
         <Button variant="outline" size="sm" onClick={exportToPDF}>
-          <FileText className="h-4 w-4 mr-2" />
+          <FileText className="h-4 w-4 mr-1" />
           PDF
         </Button>
       </div>
 
       {/* Date Range Selector */}
       <Card>
-        <CardContent className="p-4">
+        <CardContent className="p-3">
           <div className="flex items-center gap-2 flex-wrap">
             <Button 
               variant={range === 7 ? 'default' : 'outline'} 
@@ -341,83 +359,68 @@ export const ProfitLossPage = () => {
               size="sm" 
               onClick={() => setRange("custom")}
             >
-              Chagua Tarehe
+              Chagua
             </Button>
             
             {range === "custom" && (
-              <>
-                <div className="flex items-center gap-2">
-                  <Label>Kuanzia:</Label>
-                  <Input 
-                    type="date" 
-                    value={startDate} 
-                    onChange={(e) => setStartDate(e.target.value)} 
-                    className="h-9"
-                  />
-                </div>
-                <div className="flex items-center gap-2">
-                  <Label>Hadi:</Label>
-                  <Input 
-                    type="date" 
-                    value={endDate} 
-                    onChange={(e) => setEndDate(e.target.value)} 
-                    className="h-9"
-                  />
-                </div>
-              </>
+              <div className="flex gap-2 items-center">
+                <Input 
+                  type="date" 
+                  value={startDate} 
+                  onChange={(e) => setStartDate(e.target.value)} 
+                  className="h-8 w-32"
+                />
+                <span>-</span>
+                <Input 
+                  type="date" 
+                  value={endDate} 
+                  onChange={(e) => setEndDate(e.target.value)} 
+                  className="h-8 w-32"
+                />
+              </div>
             )}
           </div>
         </CardContent>
       </Card>
 
       {/* Summary */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm">Mapato</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold text-green-600">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+        <Card className="bg-green-500/10">
+          <CardContent className="p-3">
+            <p className="text-xs text-muted-foreground">Mapato</p>
+            <p className="text-lg font-bold text-green-600">
               TZS {totals.revenue.toLocaleString()}
             </p>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm">Gharama ya Bidhaa</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold text-orange-600">
+        <Card className="bg-orange-500/10">
+          <CardContent className="p-3">
+            <p className="text-xs text-muted-foreground">Gharama</p>
+            <p className="text-lg font-bold text-orange-600">
               TZS {totals.cost.toLocaleString()}
             </p>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm">Matumizi</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold text-amber-600">
+        <Card className="bg-amber-500/10">
+          <CardContent className="p-3">
+            <p className="text-xs text-muted-foreground">Matumizi</p>
+            <p className="text-lg font-bold text-amber-600">
               TZS {totals.expenses.toLocaleString()}
             </p>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm">Faida Halisi</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className={`text-2xl font-bold ${totals.profit >= 0 ? 'text-blue-600' : 'text-red-600'}`}>
+        <Card className="bg-blue-500/10">
+          <CardContent className="p-3">
+            <p className="text-xs text-muted-foreground">Faida</p>
+            <p className={`text-lg font-bold ${totals.profit >= 0 ? 'text-blue-600' : 'text-red-600'}`}>
               TZS {totals.profit.toLocaleString()}
             </p>
           </CardContent>
         </Card>
         <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm">Margin</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">
+          <CardContent className="p-3">
+            <p className="text-xs text-muted-foreground">Margin</p>
+            <p className="text-lg font-bold">
               {totals.margin.toFixed(1)}%
             </p>
           </CardContent>
@@ -426,49 +429,22 @@ export const ProfitLossPage = () => {
 
       {/* Chart */}
       <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Mwenendo wa Mapato na Gharama</CardTitle>
-        </CardHeader>
-        <CardContent>
+        <CardContent className="p-3">
           {loading ? (
             <p className="text-center text-muted-foreground py-8">Inapakia...</p>
           ) : (
-            <div className="h-80">
+            <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={data}>
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="date" />
-                  <YAxis />
+                  <XAxis dataKey="date" tick={{ fontSize: 10 }} />
+                  <YAxis tick={{ fontSize: 10 }} />
                   <Tooltip formatter={(v: any) => `TZS ${Number(v).toLocaleString()}`} />
-                  <Legend />
-                  <Line 
-                    type="monotone" 
-                    dataKey="revenue" 
-                    name="Mapato" 
-                    stroke="#10b981" 
-                    strokeWidth={2}
-                  />
-                  <Line 
-                    type="monotone" 
-                    dataKey="cost" 
-                    name="Gharama ya Bidhaa" 
-                    stroke="#f97316" 
-                    strokeWidth={2}
-                  />
-                  <Line 
-                    type="monotone" 
-                    dataKey="expenses" 
-                    name="Matumizi" 
-                    stroke="#f59e0b" 
-                    strokeWidth={2}
-                  />
-                  <Line 
-                    type="monotone" 
-                    dataKey="profit" 
-                    name="Faida" 
-                    stroke="#3b82f6" 
-                    strokeWidth={2}
-                  />
+                  <Legend wrapperStyle={{ fontSize: 10 }} />
+                  <Line type="monotone" dataKey="revenue" name="Mapato" stroke="#10b981" strokeWidth={2} dot={false} />
+                  <Line type="monotone" dataKey="cost" name="Gharama" stroke="#f97316" strokeWidth={2} dot={false} />
+                  <Line type="monotone" dataKey="expenses" name="Matumizi" stroke="#f59e0b" strokeWidth={2} dot={false} />
+                  <Line type="monotone" dataKey="profit" name="Faida" stroke="#3b82f6" strokeWidth={2} dot={false} />
                 </LineChart>
               </ResponsiveContainer>
             </div>

@@ -83,7 +83,7 @@ export const UsersPage = () => {
           emailRedirectTo: `${window.location.origin}/auth`,
           data: {
             full_name: newUser.full_name,
-            business_name: newUser.business_name,
+            business_name: userProfile?.business_name || '', // Inherit owner's business
             role: newUser.role
           }
         }
@@ -94,47 +94,51 @@ export const UsersPage = () => {
         return;
       }
 
-      setTimeout(async () => {
-        try {
-          const { data: profile, error: profileFetchError } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', authData.user?.id)
-            .single();
+      // Create profile and link assistant to owner
+      if (authData.user) {
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .upsert([{
+            id: authData.user.id,
+            email: newUser.email,
+            full_name: newUser.full_name,
+            business_name: userProfile?.business_name || '', // Same business as owner
+            role: newUser.role
+          }]);
 
-          if (profileFetchError) {
-            const { error: profileInsertError } = await supabase
-              .from('profiles')
-              .insert([{
-                id: authData.user?.id,
-                email: newUser.email,
-                full_name: newUser.full_name,
-                business_name: newUser.business_name || null,
-                role: newUser.role
-              }]);
-
-            if (profileInsertError) {
-              console.error('Profile creation error:', profileInsertError);
-            }
-          } else if (profile.role !== newUser.role) {
-            await supabase
-              .from('profiles')
-              .update({
-                role: newUser.role,
-                business_name: newUser.business_name || null
-              })
-              .eq('id', authData.user?.id);
-          }
-
-          toast.success('Mtumiaji ameongezwa');
-          setNewUser({ email: '', password: '', full_name: '', business_name: '', role: 'assistant' });
-          setDialogOpen(false);
-          fetchUsers();
-        } catch (error) {
-          console.error('Error:', error);
-          fetchUsers();
+        if (profileError) {
+          console.error('Profile error:', profileError);
         }
-      }, 1000);
+
+        // If assistant, create permissions record linking to owner
+        if (newUser.role === 'assistant' && userProfile?.id) {
+          const { error: permError } = await supabase
+            .from('assistant_permissions')
+            .upsert([{
+              assistant_id: authData.user.id,
+              owner_id: userProfile.id,
+              can_view_products: true,
+              can_edit_products: false,
+              can_delete_products: false,
+              can_view_sales: true,
+              can_create_sales: true,
+              can_view_customers: true,
+              can_edit_customers: false,
+              can_view_reports: false,
+              can_view_inventory: true,
+              can_edit_inventory: false
+            }]);
+
+          if (permError) {
+            console.error('Permissions error:', permError);
+          }
+        }
+
+        toast.success('Mtumiaji ameongezwa! Msaidizi sasa anaweza kuingia na kufanya kazi kwenye biashara yako.');
+        setNewUser({ email: '', password: '', full_name: '', business_name: '', role: 'assistant' });
+        setDialogOpen(false);
+        fetchUsers();
+      }
     } catch (error: any) {
       toast.error('Imeshindwa kuongeza mtumiaji');
     }
