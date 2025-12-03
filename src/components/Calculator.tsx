@@ -1,13 +1,79 @@
-import { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Calculator as CalcIcon } from 'lucide-react';
+import { X, TrendingUp, TrendingDown, Wallet, Users, Delete } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 
-export const Calculator = () => {
+interface CalculatorProps {
+  onClose?: () => void;
+  isOpen?: boolean;
+}
+
+export const Calculator = ({ onClose, isOpen = true }: CalculatorProps) => {
   const [display, setDisplay] = useState('0');
   const [previousValue, setPreviousValue] = useState<number | null>(null);
   const [operation, setOperation] = useState<string | null>(null);
   const [newNumber, setNewNumber] = useState(true);
+  const [showStats, setShowStats] = useState(false);
+  const [stats, setStats] = useState({
+    revenue: 0,
+    expenses: 0,
+    profit: 0,
+    totalDebt: 0
+  });
+  const { user } = useAuth();
+
+  useEffect(() => {
+    if (user?.id) {
+      fetchStats();
+    }
+  }, [user?.id]);
+
+  const fetchStats = async () => {
+    if (!user?.id) return;
+    
+    try {
+      // Fetch revenue from sales
+      const { data: sales } = await supabase
+        .from('sales')
+        .select('total_amount')
+        .eq('owner_id', user.id);
+      
+      // Fetch quick sales from customer_transactions
+      const { data: quickSales } = await supabase
+        .from('customer_transactions')
+        .select('total_amount')
+        .eq('owner_id', user.id)
+        .eq('transaction_type', 'sale');
+
+      // Fetch expenses
+      const { data: expenses } = await supabase
+        .from('expenses')
+        .select('amount')
+        .eq('owner_id', user.id);
+
+      // Fetch customer debts
+      const { data: customers } = await supabase
+        .from('customers')
+        .select('outstanding_balance')
+        .eq('owner_id', user.id);
+
+      const totalSales = (sales?.reduce((sum, s) => sum + (s.total_amount || 0), 0) || 0);
+      const totalQuickSales = (quickSales?.reduce((sum, s) => sum + (s.total_amount || 0), 0) || 0);
+      const totalRevenue = totalSales + totalQuickSales;
+      const totalExpenses = expenses?.reduce((sum, e) => sum + (e.amount || 0), 0) || 0;
+      const totalDebt = customers?.reduce((sum, c) => sum + (c.outstanding_balance || 0), 0) || 0;
+
+      setStats({
+        revenue: totalRevenue,
+        expenses: totalExpenses,
+        profit: totalRevenue - totalExpenses,
+        totalDebt
+      });
+    } catch (error) {
+      console.error('Error fetching stats:', error);
+    }
+  };
 
   const handleNumber = (num: string) => {
     if (newNumber) {
@@ -47,7 +113,7 @@ export const Calculator = () => {
       case '+': return prev + current;
       case '-': return prev - current;
       case '×': return prev * current;
-      case '÷': return prev / current;
+      case '÷': return current !== 0 ? prev / current : 0;
       default: return current;
     }
   };
@@ -78,50 +144,146 @@ export const Calculator = () => {
     }
   };
 
-  const buttonClass = "h-14 text-lg font-semibold";
-  const operationClass = "h-14 text-lg font-semibold bg-primary text-primary-foreground hover:bg-primary/90";
+  if (!isOpen) return null;
 
   return (
-    <Card className="w-full max-w-sm mx-auto">
-      <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-lg">
-          <CalcIcon className="h-5 w-5" />
-          Kikokotoo
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-2">
-        <div className="bg-muted p-4 rounded-lg text-right mb-2">
-          <div className="text-sm text-muted-foreground h-6">
-            {previousValue !== null && operation && `${previousValue} ${operation}`}
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 backdrop-blur-sm">
+      <div className="w-full max-w-md bg-gradient-to-t from-background via-background to-background/95 rounded-t-[2rem] p-4 pb-8 animate-in slide-in-from-bottom duration-300">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex gap-2">
+            <Button
+              variant={showStats ? "default" : "outline"}
+              size="sm"
+              onClick={() => setShowStats(!showStats)}
+              className="rounded-full"
+            >
+              {showStats ? 'Kikokotoo' : 'Takwimu'}
+            </Button>
           </div>
-          <div className="text-3xl font-bold truncate">{display}</div>
+          {onClose && (
+            <Button variant="ghost" size="icon" onClick={onClose} className="rounded-full">
+              <X className="h-5 w-5" />
+            </Button>
+          )}
         </div>
 
-        <div className="grid grid-cols-4 gap-2">
-          <Button variant="outline" className={buttonClass} onClick={handleClear}>C</Button>
-          <Button variant="outline" className={buttonClass} onClick={handleBackspace}>←</Button>
-          <Button variant="outline" className={buttonClass} onClick={() => handleOperation('÷')}>÷</Button>
-          <Button className={operationClass} onClick={() => handleOperation('×')}>×</Button>
+        {showStats ? (
+          /* Stats View */
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="bg-green-500/10 p-4 rounded-2xl">
+                <div className="flex items-center gap-2 mb-1">
+                  <TrendingUp className="h-4 w-4 text-green-600" />
+                  <span className="text-xs text-muted-foreground">Mapato</span>
+                </div>
+                <p className="text-lg font-bold text-green-600">
+                  TZS {stats.revenue.toLocaleString()}
+                </p>
+              </div>
+              <div className="bg-red-500/10 p-4 rounded-2xl">
+                <div className="flex items-center gap-2 mb-1">
+                  <TrendingDown className="h-4 w-4 text-red-600" />
+                  <span className="text-xs text-muted-foreground">Matumizi</span>
+                </div>
+                <p className="text-lg font-bold text-red-600">
+                  TZS {stats.expenses.toLocaleString()}
+                </p>
+              </div>
+              <div className="bg-blue-500/10 p-4 rounded-2xl">
+                <div className="flex items-center gap-2 mb-1">
+                  <Wallet className="h-4 w-4 text-blue-600" />
+                  <span className="text-xs text-muted-foreground">Faida</span>
+                </div>
+                <p className={`text-lg font-bold ${stats.profit >= 0 ? 'text-blue-600' : 'text-red-600'}`}>
+                  TZS {stats.profit.toLocaleString()}
+                </p>
+              </div>
+              <div className="bg-orange-500/10 p-4 rounded-2xl">
+                <div className="flex items-center gap-2 mb-1">
+                  <Users className="h-4 w-4 text-orange-600" />
+                  <span className="text-xs text-muted-foreground">Madeni</span>
+                </div>
+                <p className="text-lg font-bold text-orange-600">
+                  TZS {stats.totalDebt.toLocaleString()}
+                </p>
+              </div>
+            </div>
+            <Button onClick={fetchStats} variant="outline" className="w-full rounded-xl">
+              Sasisha Takwimu
+            </Button>
+          </div>
+        ) : (
+          /* Calculator View */
+          <>
+            {/* Display */}
+            <div className="bg-muted/50 rounded-2xl p-4 mb-4">
+              <div className="text-right">
+                <div className="text-xs text-muted-foreground h-5 mb-1">
+                  {previousValue !== null && operation && `${previousValue.toLocaleString()} ${operation}`}
+                </div>
+                <div className="text-4xl font-light truncate">
+                  {parseFloat(display).toLocaleString()}
+                </div>
+              </div>
+            </div>
 
-          <Button variant="outline" className={buttonClass} onClick={() => handleNumber('7')}>7</Button>
-          <Button variant="outline" className={buttonClass} onClick={() => handleNumber('8')}>8</Button>
-          <Button variant="outline" className={buttonClass} onClick={() => handleNumber('9')}>9</Button>
-          <Button className={operationClass} onClick={() => handleOperation('-')}>−</Button>
+            {/* Buttons */}
+            <div className="grid grid-cols-4 gap-2">
+              {/* Row 1 */}
+              <Button 
+                variant="secondary" 
+                className="h-14 text-lg rounded-2xl font-medium"
+                onClick={handleClear}
+              >
+                C
+              </Button>
+              <Button 
+                variant="secondary" 
+                className="h-14 text-lg rounded-2xl"
+                onClick={handleBackspace}
+              >
+                <Delete className="h-5 w-5" />
+              </Button>
+              <Button 
+                variant="secondary" 
+                className="h-14 text-lg rounded-2xl"
+                onClick={() => handleOperation('÷')}
+              >
+                ÷
+              </Button>
+              <Button 
+                className="h-14 text-lg rounded-2xl bg-primary"
+                onClick={() => handleOperation('×')}
+              >
+                ×
+              </Button>
 
-          <Button variant="outline" className={buttonClass} onClick={() => handleNumber('4')}>4</Button>
-          <Button variant="outline" className={buttonClass} onClick={() => handleNumber('5')}>5</Button>
-          <Button variant="outline" className={buttonClass} onClick={() => handleNumber('6')}>6</Button>
-          <Button className={operationClass} onClick={() => handleOperation('+')}>+</Button>
+              {/* Row 2 */}
+              <Button variant="outline" className="h-14 text-xl rounded-2xl" onClick={() => handleNumber('7')}>7</Button>
+              <Button variant="outline" className="h-14 text-xl rounded-2xl" onClick={() => handleNumber('8')}>8</Button>
+              <Button variant="outline" className="h-14 text-xl rounded-2xl" onClick={() => handleNumber('9')}>9</Button>
+              <Button className="h-14 text-lg rounded-2xl bg-primary" onClick={() => handleOperation('-')}>−</Button>
 
-          <Button variant="outline" className={buttonClass} onClick={() => handleNumber('1')}>1</Button>
-          <Button variant="outline" className={buttonClass} onClick={() => handleNumber('2')}>2</Button>
-          <Button variant="outline" className={buttonClass} onClick={() => handleNumber('3')}>3</Button>
-          <Button className={`${operationClass} row-span-2`} onClick={handleEquals}>=</Button>
+              {/* Row 3 */}
+              <Button variant="outline" className="h-14 text-xl rounded-2xl" onClick={() => handleNumber('4')}>4</Button>
+              <Button variant="outline" className="h-14 text-xl rounded-2xl" onClick={() => handleNumber('5')}>5</Button>
+              <Button variant="outline" className="h-14 text-xl rounded-2xl" onClick={() => handleNumber('6')}>6</Button>
+              <Button className="h-14 text-lg rounded-2xl bg-primary" onClick={() => handleOperation('+')}>+</Button>
 
-          <Button variant="outline" className={`${buttonClass} col-span-2`} onClick={() => handleNumber('0')}>0</Button>
-          <Button variant="outline" className={buttonClass} onClick={handleDecimal}>.</Button>
-        </div>
-      </CardContent>
-    </Card>
+              {/* Row 4 */}
+              <Button variant="outline" className="h-14 text-xl rounded-2xl" onClick={() => handleNumber('1')}>1</Button>
+              <Button variant="outline" className="h-14 text-xl rounded-2xl" onClick={() => handleNumber('2')}>2</Button>
+              <Button variant="outline" className="h-14 text-xl rounded-2xl" onClick={() => handleNumber('3')}>3</Button>
+              <Button className="h-14 text-lg rounded-2xl bg-green-600 hover:bg-green-700 row-span-2" onClick={handleEquals}>=</Button>
+
+              {/* Row 5 */}
+              <Button variant="outline" className="h-14 text-xl rounded-2xl col-span-2" onClick={() => handleNumber('0')}>0</Button>
+              <Button variant="outline" className="h-14 text-xl rounded-2xl" onClick={handleDecimal}>.</Button>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
   );
 };

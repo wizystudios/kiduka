@@ -1,17 +1,12 @@
-
 import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { Navigate } from 'react-router-dom';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { KidukaLogo } from '@/components/KidukaLogo';
-import { Mail, Lock, User, Building, AlertCircle } from 'lucide-react';
+import { Mail, Lock, User, Eye, EyeOff } from 'lucide-react';
 import { toast } from 'sonner';
 import { EmailConfirmationPage } from '@/components/EmailConfirmationPage';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 
 export const AuthPage = () => {
   const { user, signIn, signUp } = useAuth();
@@ -19,105 +14,57 @@ export const AuthPage = () => {
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [registeredEmail, setRegisteredEmail] = useState('');
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
+  const [showPassword, setShowPassword] = useState(false);
   
-  // Multi-step form states
-  const [step, setStep] = useState(1);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
-  const [businessName, setBusinessName] = useState('');
 
   if (user?.email_confirmed_at) {
     return <Navigate to="/dashboard" replace />;
   }
 
-  const validateEmail = (email: string) => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
-  };
-
-  const validatePassword = (password: string) => {
-    return password.length >= 6;
-  };
-
-  const handleNextStep = () => {
-    if (mode === 'signin') {
-      if (step === 1 && !validateEmail(email)) {
-        toast.error('Tafadhali ingiza barua pepe sahihi');
-        return;
-      }
-      if (step === 2 && !validatePassword(password)) {
-        toast.error('Nywila lazima iwe angalau herufi 6');
-        return;
-      }
-    } else {
-      if (step === 1 && !fullName.trim()) {
-        toast.error('Tafadhali ingiza jina lako kamili');
-        return;
-      }
-      if (step === 3 && !validateEmail(email)) {
-        toast.error('Tafadhali ingiza barua pepe sahihi');
-        return;
-      }
-      if (step === 4 && !validatePassword(password)) {
-        toast.error('Nywila lazima iwe angalau herufi 6');
-        return;
-      }
+  const handleSignIn = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email || !password) {
+      toast.error('Tafadhali jaza barua pepe na nywila');
+      return;
     }
-    
-    if (mode === 'signin' && step === 2) {
-      handleSignIn();
-    } else if (mode === 'signup' && step === 4) {
-      handleSignUp();
-    } else {
-      setStep(step + 1);
-    }
-  };
-
-  const handleBackStep = () => {
-    if (step > 1) {
-      setStep(step - 1);
-    }
-  };
-
-  const handleSignIn = async () => {
     setLoading(true);
     try {
       await signIn(email, password);
-      toast.success('Karibu tena Kiduka!');
+      toast.success('Karibu tena!');
     } catch (error: any) {
-      console.error('Sign in error:', error);
       toast.error(error.message);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSignUp = async () => {
+  const handleSignUp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!fullName || !email || !password) {
+      toast.error('Tafadhali jaza taarifa zote');
+      return;
+    }
+    if (password.length < 6) {
+      toast.error('Nywila lazima iwe angalau herufi 6');
+      return;
+    }
     setLoading(true);
     try {
-      await signUp(email, password, fullName, businessName);
+      await signUp(email, password, fullName);
     } catch (error: any) {
-      console.error('Sign up error:', error);
       if (error.message === 'CONFIRMATION_REQUIRED') {
         setRegisteredEmail(email);
         setShowConfirmation(true);
-        toast.success('Akaunti imeundwa! Tafadhali thibitisha barua pepe yako.');
+        toast.success('Akaunti imeundwa!');
       } else {
         toast.error(error.message);
       }
     } finally {
       setLoading(false);
     }
-  };
-
-  const switchMode = () => {
-    setMode(mode === 'signin' ? 'signup' : 'signin');
-    setStep(1);
-    setEmail('');
-    setPassword('');
-    setFullName('');
-    setBusinessName('');
   };
 
   if (showConfirmation) {
@@ -133,220 +80,80 @@ export const AuthPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-50 flex items-center justify-center p-6">
-      <div className="w-full max-w-lg">
-        <div className="flex justify-center mb-8">
+    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-secondary/10 flex items-center justify-center p-4">
+      <div className="w-full max-w-sm space-y-8">
+        {/* Logo */}
+        <div className="flex justify-center">
           <KidukaLogo size="lg" />
         </div>
-        
-        <div className="bg-white rounded-2xl shadow-2xl p-8">
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">
-              {mode === 'signin' ? 'Karibu Tena' : 'Unda Akaunti'}
-            </h1>
-            <p className="text-lg text-gray-600">
-              {mode === 'signin' ? 'Ingia kwenye akaunti yako' : 'Jisajili ili kuanza'}
-            </p>
-          </div>
 
-          {mode === 'signin' ? (
-            // SIGN IN FLOW
-            <div className="space-y-6">
-              {step === 1 && (
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-lg font-medium text-gray-700 mb-3">
-                      Barua Pepe
-                    </label>
-                    <div className="relative">
-                      <Mail className="absolute left-4 top-4 h-5 w-5 text-gray-400" />
-                      <Input
-                        type="email"
-                        placeholder="mfano@example.com"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        className="pl-12 h-14 text-lg"
-                        autoFocus
-                        onKeyPress={(e) => e.key === 'Enter' && handleNextStep()}
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {step === 2 && (
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-lg font-medium text-gray-700 mb-3">
-                      Nywila
-                    </label>
-                    <div className="relative">
-                      <Lock className="absolute left-4 top-4 h-5 w-5 text-gray-400" />
-                      <Input
-                        type="password"
-                        placeholder="Ingiza nywila yako"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        className="pl-12 h-14 text-lg"
-                        autoFocus
-                        onKeyPress={(e) => e.key === 'Enter' && handleNextStep()}
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          ) : (
-            // SIGN UP FLOW
-            <div className="space-y-6">
-              {step === 1 && (
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-lg font-medium text-gray-700 mb-3">
-                      Jina Lako Kamili
-                    </label>
-                    <div className="relative">
-                      <User className="absolute left-4 top-4 h-5 w-5 text-gray-400" />
-                      <Input
-                        type="text"
-                        placeholder="Jina na Ukoo"
-                        value={fullName}
-                        onChange={(e) => setFullName(e.target.value)}
-                        className="pl-12 h-14 text-lg"
-                        autoFocus
-                        onKeyPress={(e) => e.key === 'Enter' && handleNextStep()}
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {step === 2 && (
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-lg font-medium text-gray-700 mb-3">
-                      Jina la Biashara (Si Lazima)
-                    </label>
-                    <div className="relative">
-                      <Building className="absolute left-4 top-4 h-5 w-5 text-gray-400" />
-                      <Input
-                        type="text"
-                        placeholder="Duka lako"
-                        value={businessName}
-                        onChange={(e) => setBusinessName(e.target.value)}
-                        className="pl-12 h-14 text-lg"
-                        autoFocus
-                        onKeyPress={(e) => e.key === 'Enter' && handleNextStep()}
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {step === 3 && (
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-lg font-medium text-gray-700 mb-3">
-                      Barua Pepe
-                    </label>
-                    <div className="relative">
-                      <Mail className="absolute left-4 top-4 h-5 w-5 text-gray-400" />
-                      <Input
-                        type="email"
-                        placeholder="mfano@example.com"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        className="pl-12 h-14 text-lg"
-                        autoFocus
-                        onKeyPress={(e) => e.key === 'Enter' && handleNextStep()}
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {step === 4 && (
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-lg font-medium text-gray-700 mb-3">
-                      Nywila
-                    </label>
-                    <div className="relative">
-                      <Lock className="absolute left-4 top-4 h-5 w-5 text-gray-400" />
-                      <Input
-                        type="password"
-                        placeholder="Angalau herufi 6"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        className="pl-12 h-14 text-lg"
-                        autoFocus
-                        onKeyPress={(e) => e.key === 'Enter' && handleNextStep()}
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
+        {/* Form */}
+        <form onSubmit={mode === 'signin' ? handleSignIn : handleSignUp} className="space-y-4">
+          {mode === 'signup' && (
+            <div className="relative">
+              <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+              <Input
+                type="text"
+                placeholder="Jina lako"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                className="pl-10 h-12 bg-background/50 backdrop-blur border-border/50 rounded-xl"
+              />
             </div>
           )}
 
-          {/* Action Buttons */}
-          <div className="mt-8 space-y-4">
-            <div className="flex gap-3">
-              {step > 1 && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={handleBackStep}
-                  className="flex-1 h-14 text-lg"
-                  disabled={loading}
-                >
-                  Rudi
-                </Button>
-              )}
-              <Button
-                type="button"
-                onClick={handleNextStep}
-                className="flex-1 h-14 text-lg bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
-                disabled={loading}
-              >
-                {loading ? (
-                  <span className="flex items-center">
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                    Inasubiri...
-                  </span>
-                ) : mode === 'signin' && step === 2 ? (
-                  'Ingia'
-                ) : mode === 'signup' && step === 4 ? (
-                  'Jisajili'
-                ) : (
-                  'Endelea'
-                )}
-              </Button>
-            </div>
-
-            {/* Progress Indicator */}
-            <div className="flex justify-center gap-2 mt-6">
-              {Array.from({ length: mode === 'signin' ? 2 : 4 }).map((_, i) => (
-                <div
-                  key={i}
-                  className={`h-2 rounded-full transition-all ${
-                    i + 1 === step ? 'w-8 bg-blue-600' : 'w-2 bg-gray-300'
-                  }`}
-                />
-              ))}
-            </div>
-
-            {/* Switch Mode */}
-            <div className="text-center pt-6 border-t">
-              <button
-                type="button"
-                onClick={switchMode}
-                className="text-lg text-blue-600 hover:text-blue-700 font-medium"
-              >
-                {mode === 'signin' ? 'Unda akaunti mpya' : 'Tayari una akaunti? Ingia'}
-              </button>
-            </div>
+          <div className="relative">
+            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+            <Input
+              type="email"
+              placeholder="Barua pepe"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="pl-10 h-12 bg-background/50 backdrop-blur border-border/50 rounded-xl"
+            />
           </div>
+
+          <div className="relative">
+            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+            <Input
+              type={showPassword ? 'text' : 'password'}
+              placeholder="Nywila"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="pl-10 pr-10 h-12 bg-background/50 backdrop-blur border-border/50 rounded-xl"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+            >
+              {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+            </button>
+          </div>
+
+          <Button
+            type="submit"
+            className="w-full h-12 rounded-xl text-base font-medium"
+            disabled={loading}
+          >
+            {loading ? 'Inasubiri...' : mode === 'signin' ? 'Ingia' : 'Jisajili'}
+          </Button>
+        </form>
+
+        {/* Switch Mode */}
+        <div className="text-center">
+          <button
+            type="button"
+            onClick={() => {
+              setMode(mode === 'signin' ? 'signup' : 'signin');
+              setEmail('');
+              setPassword('');
+              setFullName('');
+            }}
+            className="text-primary hover:underline text-sm"
+          >
+            {mode === 'signin' ? 'Unda akaunti mpya' : 'Tayari una akaunti? Ingia'}
+          </button>
         </div>
       </div>
     </div>
