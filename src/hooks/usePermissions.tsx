@@ -13,12 +13,14 @@ export interface AssistantPermissions {
   can_view_reports: boolean;
   can_view_inventory: boolean;
   can_edit_inventory: boolean;
+  owner_id?: string;
 }
 
 export const usePermissions = () => {
   const { user, userProfile } = useAuth();
   const [permissions, setPermissions] = useState<AssistantPermissions | null>(null);
   const [loading, setLoading] = useState(true);
+  const [ownerId, setOwnerId] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchPermissions = async () => {
@@ -27,7 +29,7 @@ export const usePermissions = () => {
         return;
       }
 
-      // Owners have all permissions
+      // Owners and super_admins have all permissions
       if (userProfile.role === 'owner' || userProfile.role === 'super_admin') {
         setPermissions({
           can_view_products: true,
@@ -41,11 +43,12 @@ export const usePermissions = () => {
           can_view_inventory: true,
           can_edit_inventory: true,
         });
+        setOwnerId(user.id); // Owner is their own owner
         setLoading(false);
         return;
       }
 
-      // For assistants, fetch their specific permissions
+      // For assistants, fetch their specific permissions and owner_id
       if (userProfile.role === 'assistant') {
         try {
           const { data, error } = await supabase
@@ -68,7 +71,9 @@ export const usePermissions = () => {
               can_view_reports: data.can_view_reports,
               can_view_inventory: data.can_view_inventory,
               can_edit_inventory: data.can_edit_inventory,
+              owner_id: data.owner_id,
             });
+            setOwnerId(data.owner_id); // Set the owner_id for data access
           } else {
             // Default permissions for assistants without explicit permissions
             setPermissions({
@@ -95,5 +100,15 @@ export const usePermissions = () => {
     fetchPermissions();
   }, [user, userProfile]);
 
-  return { permissions, loading };
+  // Helper function to get the effective owner_id for data queries
+  // For owners: use their own id
+  // For assistants: use their linked owner_id
+  const getEffectiveOwnerId = () => {
+    if (userProfile?.role === 'owner' || userProfile?.role === 'super_admin') {
+      return user?.id;
+    }
+    return ownerId;
+  };
+
+  return { permissions, loading, ownerId, getEffectiveOwnerId };
 };

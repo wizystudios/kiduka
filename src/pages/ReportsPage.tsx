@@ -3,15 +3,17 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line } from 'recharts';
-import { Calendar, Download, TrendingUp, Package, DollarSign } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
+import { Download, TrendingUp, TrendingDown, Package, DollarSign, Wallet, Receipt } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
+import { toast } from 'sonner';
 
 interface SalesData {
   date: string;
   sales: number;
   revenue: number;
+  quickSales: number;
 }
 
 interface TopProduct {
@@ -25,16 +27,27 @@ export const ReportsPage = () => {
   const [topProducts, setTopProducts] = useState<TopProduct[]>([]);
   const [selectedPeriod, setSelectedPeriod] = useState('week');
   const [loading, setLoading] = useState(true);
-  const { toast } = useToast();
+  const [stats, setStats] = useState({
+    totalRevenue: 0,
+    totalExpenses: 0,
+    totalProfit: 0,
+    totalSales: 0,
+    quickSalesRevenue: 0,
+    productCosts: 0
+  });
+  const { user } = useAuth();
 
   useEffect(() => {
-    fetchReportsData();
-  }, [selectedPeriod]);
+    if (user?.id) {
+      fetchReportsData();
+    }
+  }, [selectedPeriod, user?.id]);
 
   const fetchReportsData = async () => {
+    if (!user?.id) return;
     setLoading(true);
+    
     try {
-      // Get date range based on selected period
       const now = new Date();
       const endOfToday = new Date(now);
       endOfToday.setHours(23, 59, 59, 999);
@@ -43,7 +56,7 @@ export const ReportsPage = () => {
       
       if (selectedPeriod === 'week') {
         startDate = new Date(now);
-        startDate.setDate(now.getDate() - 6); // Last 7 days including today
+        startDate.setDate(now.getDate() - 6);
         startDate.setHours(0, 0, 0, 0);
       } else if (selectedPeriod === 'month') {
         startDate = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -53,18 +66,48 @@ export const ReportsPage = () => {
         startDate.setHours(0, 0, 0, 0);
       }
 
-      // Fetch sales data with proper user filtering
+      // Fetch regular sales
       const { data: sales, error: salesError } = await supabase
         .from('sales')
-        .select('created_at, total_amount, owner_id')
+        .select('created_at, total_amount')
+        .eq('owner_id', user.id)
         .gte('created_at', startDate.toISOString())
         .lte('created_at', endOfToday.toISOString())
         .order('created_at', { ascending: true });
 
       if (salesError) throw salesError;
 
-      // Fetch top products with proper filtering
+      // Fetch quick sales (mauzo ya haraka)
+      const { data: quickSales, error: quickSalesError } = await supabase
+        .from('customer_transactions')
+        .select('transaction_date, total_amount')
+        .eq('owner_id', user.id)
+        .eq('transaction_type', 'sale')
+        .gte('transaction_date', startDate.toISOString().split('T')[0])
+        .lte('transaction_date', endOfToday.toISOString().split('T')[0]);
+
+      if (quickSalesError) throw quickSalesError;
+
+      // Fetch expenses
+      const { data: expenses, error: expensesError } = await supabase
+        .from('expenses')
+        .select('expense_date, amount')
+        .eq('owner_id', user.id)
+        .gte('expense_date', startDate.toISOString().split('T')[0])
+        .lte('expense_date', endOfToday.toISOString().split('T')[0]);
+
+      if (expensesError) throw expensesError;
+
+      // Fetch product costs
       const { data: products, error: productsError } = await supabase
+        .from('products')
+        .select('cost_price, stock_quantity')
+        .eq('owner_id', user.id);
+
+      if (productsError) throw productsError;
+
+      // Fetch top products
+      const { data: salesItems, error: itemsError } = await supabase
         .from('sales_items')
         .select(`
           quantity,
@@ -72,35 +115,64 @@ export const ReportsPage = () => {
           products (name),
           sales!inner (created_at, owner_id)
         `)
+        .eq('sales.owner_id', user.id)
         .gte('sales.created_at', startDate.toISOString())
         .lte('sales.created_at', endOfToday.toISOString());
 
-      if (productsError) throw productsError;
+      if (itemsError) throw itemsError;
 
-      // Process sales data for charts
-      const dailySales: { [key: string]: { sales: number; revenue: number } } = {};
+      // Process daily data
+      const dailyData: { [key: string]: { sales: number; revenue: number; quickSales: number } } = {};
       
       sales?.forEach(sale => {
         const date = new Date(sale.created_at).toISOString().split('T')[0];
-        if (!dailySales[date]) {
-          dailySales[date] = { sales: 0, revenue: 0 };
+        if (!dailyData[date]) {
+          dailyData[date] = { sales: 0, revenue: 0, quickSales: 0 };
         }
-        dailySales[date].sales += 1;
-        dailySales[date].revenue += Number(sale.total_amount);
+        dailyData[date].sales += 1;
+        dailyData[date].revenue += Number(sale.total_amount);
       });
 
-      const chartData = Object.entries(dailySales).map(([date, data]) => ({
-        date: new Date(date).toLocaleDateString(),
-        sales: data.sales,
-        revenue: data.revenue
-      }));
+      quickSales?.forEach(sale => {
+        const date = sale.transaction_date;
+        if (!dailyData[date]) {
+          dailyData[date] = { sales: 0, revenue: 0, quickSales: 0 };
+        }
+        dailyData[date].quickSales += Number(sale.total_amount);
+        dailyData[date].revenue += Number(sale.total_amount);
+      });
+
+      const chartData = Object.entries(dailyData)
+        .map(([date, data]) => ({
+          date: new Date(date).toLocaleDateString('sw-TZ', { day: '2-digit', month: 'short' }),
+          sales: data.sales,
+          revenue: data.revenue,
+          quickSales: data.quickSales
+        }))
+        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
       setSalesData(chartData);
+
+      // Calculate totals
+      const totalSalesRevenue = sales?.reduce((sum, s) => sum + Number(s.total_amount), 0) || 0;
+      const totalQuickSalesRevenue = quickSales?.reduce((sum, s) => sum + Number(s.total_amount), 0) || 0;
+      const totalExpenses = expenses?.reduce((sum, e) => sum + Number(e.amount), 0) || 0;
+      const productCosts = products?.reduce((sum, p) => sum + ((p.cost_price || 0) * (p.stock_quantity || 0)), 0) || 0;
+      const totalRevenue = totalSalesRevenue + totalQuickSalesRevenue;
+
+      setStats({
+        totalRevenue,
+        totalExpenses,
+        totalProfit: totalRevenue - totalExpenses,
+        totalSales: sales?.length || 0,
+        quickSalesRevenue: totalQuickSalesRevenue,
+        productCosts
+      });
 
       // Process top products
       const productStats: { [key: string]: { total_sold: number; revenue: number } } = {};
       
-      products?.forEach((item: any) => {
+      salesItems?.forEach((item: any) => {
         const productName = item.products?.name || 'Unknown';
         if (!productStats[productName]) {
           productStats[productName] = { total_sold: 0, revenue: 0 };
@@ -122,108 +194,124 @@ export const ReportsPage = () => {
 
     } catch (error) {
       console.error('Error fetching reports data:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to load reports data',
-        variant: 'destructive'
-      });
+      toast.error('Imeshindwa kupakia ripoti');
     } finally {
       setLoading(false);
     }
   };
 
   const periodOptions = [
-    { id: 'week', label: 'Last 7 Days' },
-    { id: 'month', label: 'This Month' },
-    { id: 'year', label: 'This Year' }
+    { id: 'week', label: 'Wiki' },
+    { id: 'month', label: 'Mwezi' },
+    { id: 'year', label: 'Mwaka' }
   ];
 
-  const totalRevenue = salesData.reduce((sum, day) => sum + day.revenue, 0);
-  const totalSales = salesData.reduce((sum, day) => sum + day.sales, 0);
-  const averageDaily = totalRevenue / (salesData.length || 1);
+  const COLORS = ['#16a34a', '#2563eb', '#9333ea', '#f59e0b', '#ef4444'];
 
   if (loading) {
     return (
       <div className="p-4 space-y-4">
         {[...Array(3)].map((_, i) => (
-          <div key={i} className="h-64 bg-gray-200 rounded-lg animate-pulse" />
+          <div key={i} className="h-48 bg-muted rounded-lg animate-pulse" />
         ))}
       </div>
     );
   }
 
   return (
-    <div className="p-4 space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">Sales Reports</h2>
-          <p className="text-gray-600">Analyze your business performance</p>
-        </div>
-        <div className="flex gap-2">
-          {periodOptions.map((period) => (
-            <Button
-              key={period.id}
-              variant={selectedPeriod === period.id ? "default" : "outline"}
-              onClick={() => setSelectedPeriod(period.id)}
-              size="sm"
-            >
-              {period.label}
-            </Button>
-          ))}
-        </div>
+    <div className="p-4 space-y-4 pb-24">
+      {/* Period Selection */}
+      <div className="flex gap-2 overflow-x-auto pb-2">
+        {periodOptions.map((period) => (
+          <Button
+            key={period.id}
+            variant={selectedPeriod === period.id ? "default" : "outline"}
+            onClick={() => setSelectedPeriod(period.id)}
+            size="sm"
+          >
+            {period.label}
+          </Button>
+        ))}
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Total Revenue</p>
-                <p className="text-2xl font-bold text-green-600">${totalRevenue.toFixed(2)}</p>
-              </div>
-              <DollarSign className="h-8 w-8 text-green-600" />
+      <div className="grid grid-cols-2 gap-2">
+        <Card className="bg-green-500/10">
+          <CardContent className="p-3">
+            <div className="flex items-center gap-2">
+              <TrendingUp className="h-4 w-4 text-green-600" />
+              <span className="text-xs text-muted-foreground">Mapato</span>
             </div>
+            <p className="text-lg font-bold text-green-600">
+              TZS {stats.totalRevenue.toLocaleString()}
+            </p>
           </CardContent>
         </Card>
         
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Total Sales</p>
-                <p className="text-2xl font-bold text-blue-600">{totalSales}</p>
-              </div>
-              <TrendingUp className="h-8 w-8 text-blue-600" />
+        <Card className="bg-red-500/10">
+          <CardContent className="p-3">
+            <div className="flex items-center gap-2">
+              <TrendingDown className="h-4 w-4 text-red-600" />
+              <span className="text-xs text-muted-foreground">Matumizi</span>
             </div>
+            <p className="text-lg font-bold text-red-600">
+              TZS {stats.totalExpenses.toLocaleString()}
+            </p>
           </CardContent>
         </Card>
         
-        <Card>
-          <CardContent className="p-4">
-            <div>
-              <p className="text-sm text-gray-600">Daily Average</p>
-              <p className="text-2xl font-bold text-purple-600">${averageDaily.toFixed(2)}</p>
+        <Card className="bg-blue-500/10">
+          <CardContent className="p-3">
+            <div className="flex items-center gap-2">
+              <Wallet className="h-4 w-4 text-blue-600" />
+              <span className="text-xs text-muted-foreground">Faida</span>
             </div>
+            <p className={`text-lg font-bold ${stats.totalProfit >= 0 ? 'text-blue-600' : 'text-red-600'}`}>
+              TZS {stats.totalProfit.toLocaleString()}
+            </p>
+          </CardContent>
+        </Card>
+        
+        <Card className="bg-orange-500/10">
+          <CardContent className="p-3">
+            <div className="flex items-center gap-2">
+              <Receipt className="h-4 w-4 text-orange-600" />
+              <span className="text-xs text-muted-foreground">Mauzo Haraka</span>
+            </div>
+            <p className="text-lg font-bold text-orange-600">
+              TZS {stats.quickSalesRevenue.toLocaleString()}
+            </p>
           </CardContent>
         </Card>
       </div>
 
+      {/* Product Costs Card */}
+      <Card className="bg-purple-500/10">
+        <CardContent className="p-3">
+          <div className="flex items-center gap-2">
+            <Package className="h-4 w-4 text-purple-600" />
+            <span className="text-xs text-muted-foreground">Gharama za Bidhaa (Stock)</span>
+          </div>
+          <p className="text-lg font-bold text-purple-600">
+            TZS {stats.productCosts.toLocaleString()}
+          </p>
+        </CardContent>
+      </Card>
+
       {/* Revenue Chart */}
       <Card>
-        <CardHeader>
-          <CardTitle>Revenue Trend</CardTitle>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm">Mwenendo wa Mapato</CardTitle>
         </CardHeader>
         <CardContent>
-          <ResponsiveContainer width="100%" height={300}>
+          <ResponsiveContainer width="100%" height={200}>
             <LineChart data={salesData}>
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="date" />
-              <YAxis />
-              <Tooltip formatter={(value, name) => [`$${Number(value).toFixed(2)}`, 'Revenue']} />
+              <XAxis dataKey="date" tick={{ fontSize: 10 }} />
+              <YAxis tick={{ fontSize: 10 }} />
+              <Tooltip formatter={(value) => [`TZS ${Number(value).toLocaleString()}`, '']} />
               <Legend />
-              <Line type="monotone" dataKey="revenue" stroke="#16a34a" strokeWidth={2} />
+              <Line type="monotone" dataKey="revenue" name="Mapato" stroke="#16a34a" strokeWidth={2} />
             </LineChart>
           </ResponsiveContainer>
         </CardContent>
@@ -231,18 +319,18 @@ export const ReportsPage = () => {
 
       {/* Sales Volume Chart */}
       <Card>
-        <CardHeader>
-          <CardTitle>Sales Volume</CardTitle>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm">Idadi ya Mauzo</CardTitle>
         </CardHeader>
         <CardContent>
-          <ResponsiveContainer width="100%" height={300}>
+          <ResponsiveContainer width="100%" height={200}>
             <BarChart data={salesData}>
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="date" />
-              <YAxis />
+              <XAxis dataKey="date" tick={{ fontSize: 10 }} />
+              <YAxis tick={{ fontSize: 10 }} />
               <Tooltip />
               <Legend />
-              <Bar dataKey="sales" fill="#2563eb" />
+              <Bar dataKey="sales" name="Mauzo" fill="#2563eb" />
             </BarChart>
           </ResponsiveContainer>
         </CardContent>
@@ -250,29 +338,24 @@ export const ReportsPage = () => {
 
       {/* Top Products */}
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Top Selling Products</CardTitle>
-          <Button variant="outline" size="sm">
-            <Download className="h-4 w-4 mr-2" />
-            Export
-          </Button>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm">Bidhaa Zinazouzwa Zaidi</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
+          <div className="space-y-2">
             {topProducts.map((product, index) => (
-              <div key={product.name} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <div className="flex items-center space-x-3">
-                  <Badge variant="outline" className="w-8 h-8 rounded-full flex items-center justify-center">
+              <div key={product.name} className="flex items-center justify-between p-2 bg-muted/50 rounded-lg">
+                <div className="flex items-center space-x-2">
+                  <Badge variant="outline" className="w-6 h-6 rounded-full flex items-center justify-center text-xs">
                     {index + 1}
                   </Badge>
                   <div>
-                    <h4 className="font-medium">{product.name}</h4>
-                    <p className="text-sm text-gray-600">{product.total_sold} units sold</p>
+                    <h4 className="font-medium text-sm">{product.name}</h4>
+                    <p className="text-xs text-muted-foreground">{product.total_sold} vipande</p>
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="font-bold text-green-600">${product.revenue.toFixed(2)}</p>
-                  <p className="text-sm text-gray-500">Revenue</p>
+                  <p className="font-bold text-green-600 text-sm">TZS {product.revenue.toLocaleString()}</p>
                 </div>
               </div>
             ))}
@@ -280,8 +363,8 @@ export const ReportsPage = () => {
           
           {topProducts.length === 0 && (
             <div className="text-center py-8">
-              <Package className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-600">No sales data available for this period</p>
+              <Package className="h-10 w-10 text-muted-foreground mx-auto mb-2" />
+              <p className="text-muted-foreground text-sm">Hakuna data ya mauzo</p>
             </div>
           )}
         </CardContent>
