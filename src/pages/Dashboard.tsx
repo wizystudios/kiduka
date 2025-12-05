@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useDataAccess } from '@/hooks/useDataAccess';
 import { useNavigate } from 'react-router-dom';
 import { 
   TrendingUp, 
@@ -32,7 +33,8 @@ import { ExpensesDashboardWidget } from '@/components/ExpensesDashboardWidget';
 import { StockAlertSystem } from '@/components/StockAlertSystem';
 
 export const Dashboard = () => {
-  const { user, userProfile, loading: authLoading } = useAuth();
+  const { userProfile, loading: authLoading } = useAuth();
+  const { dataOwnerId, ownerBusinessName, isReady, isAssistant } = useDataAccess();
   const navigate = useNavigate();
   const [metrics, setMetrics] = useState({
     todaysSales: 0,
@@ -44,7 +46,7 @@ export const Dashboard = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (user && userProfile && !authLoading) {
+    if (isReady && dataOwnerId && !authLoading) {
       fetchDashboardData();
       
       // Auto-refresh every 30 seconds
@@ -54,10 +56,10 @@ export const Dashboard = () => {
       
       return () => clearInterval(interval);
     }
-  }, [user, userProfile, authLoading]);
+  }, [isReady, dataOwnerId, authLoading]);
 
   const fetchDashboardData = async () => {
-    if (!user?.id) return setLoading(false);
+    if (!dataOwnerId) return setLoading(false);
 
     try {
       const today = new Date();
@@ -67,14 +69,14 @@ export const Dashboard = () => {
       const { data: todaysSales } = await supabase
         .from('sales')
         .select('total_amount')
-        .eq('owner_id', user.id)
+        .eq('owner_id', dataOwnerId)
         .gte('created_at', startOfDay.toISOString())
         .lt('created_at', endOfDay.toISOString());
 
       const { data: products } = await supabase
         .from('products')
         .select('*')
-        .eq('owner_id', user.id);
+        .eq('owner_id', dataOwnerId);
 
       const totalSales = todaysSales?.reduce((sum, sale) => sum + Number(sale.total_amount || 0), 0) || 0;
       const totalProducts = products?.length || 0;

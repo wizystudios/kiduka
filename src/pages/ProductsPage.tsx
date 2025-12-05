@@ -4,10 +4,10 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Search, Edit, Trash2, Package, Loader2, Scale, ChevronDown, ChevronUp, ShoppingCart, Pause, Play, FileSpreadsheet, Download } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, Package, Loader2, Scale, ChevronDown, ChevronUp, ShoppingCart, FileSpreadsheet, Download } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/hooks/useAuth';
+import { useDataAccess } from '@/hooks/useDataAccess';
 import { toast } from 'sonner';
 import * as XLSX from 'xlsx';
 import { WeightQuantitySelector } from '@/components/WeightQuantitySelector';
@@ -39,22 +39,22 @@ export const ProductsPage = () => {
   const [selectedWeightProduct, setSelectedWeightProduct] = useState<Product | null>(null);
   const [expandedProduct, setExpandedProduct] = useState<string | null>(null);
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { dataOwnerId, isReady } = useDataAccess();
 
   const fetchProducts = async () => {
-    if (!user?.id) {
-      console.log('No user ID available');
+    if (!dataOwnerId) {
+      console.log('No data owner ID available');
       setLoading(false);
       return;
     }
 
     try {
-      console.log('Fetching products for user:', user.id);
+      console.log('Fetching products for owner:', dataOwnerId);
       
       const { data, error } = await supabase
         .from('products')
         .select('*')
-        .eq('owner_id', user.id)
+        .eq('owner_id', dataOwnerId)
         .order('created_at', { ascending: false });
 
       if (error) {
@@ -76,15 +76,15 @@ export const ProductsPage = () => {
   };
 
   useEffect(() => {
-    if (user?.id) {
-      console.log('User available, fetching products...');
+    if (isReady && dataOwnerId) {
+      console.log('Data access ready, fetching products...');
       setLoading(true);
       fetchProducts();
-    } else if (user === null) {
-      console.log('No user logged in');
+    } else if (isReady && !dataOwnerId) {
+      console.log('No data owner found');
       setLoading(false);
     }
-  }, [user?.id]);
+  }, [isReady, dataOwnerId]);
 
   const handleRefresh = () => {
     setRefreshing(true);
@@ -100,19 +100,22 @@ export const ProductsPage = () => {
     if (!confirm(`Je, una uhakika unataka kufuta bidhaa "${productName}"?`)) return;
 
     try {
+      // Delete using only product id - RLS will handle owner check
       const { error } = await supabase
         .from('products')
         .delete()
-        .eq('id', id)
-        .eq('owner_id', user?.id);
+        .eq('id', id);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Delete error:', error);
+        throw error;
+      }
 
       setProducts(prev => prev.filter(p => p.id !== id));
       toast.success('Bidhaa imefutwa');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error deleting product:', error);
-      toast.error('Imeshindwa kufuta bidhaa');
+      toast.error('Imeshindwa kufuta bidhaa: ' + (error?.message || 'Kosa lisilojulikana'));
     }
   };
 
