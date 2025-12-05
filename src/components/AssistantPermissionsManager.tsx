@@ -62,10 +62,27 @@ export const AssistantPermissionsManager = () => {
 
     setLoading(true);
     try {
+      // First get assistant IDs from permissions table for this owner
+      const { data: permissions, error: permError } = await supabase
+        .from('assistant_permissions')
+        .select('assistant_id')
+        .eq('owner_id', user.id);
+
+      if (permError) throw permError;
+
+      const assistantIds = permissions?.map(p => p.assistant_id) || [];
+      
+      if (assistantIds.length === 0) {
+        setAssistants([]);
+        setLoading(false);
+        return;
+      }
+
+      // Then fetch profiles for these assistants
       const { data, error } = await supabase
         .from('profiles')
         .select('id, email, full_name')
-        .eq('role', 'assistant');
+        .in('id', assistantIds);
 
       if (error) throw error;
       setAssistants(data || []);

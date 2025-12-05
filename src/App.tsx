@@ -53,6 +53,11 @@ import { VoicePOSPage } from '@/pages/VoicePOSPage';
 import { SuperAdminPage } from '@/pages/SuperAdminPage';
 import { WhatsAppPage } from '@/pages/WhatsAppPage';
 
+// New Feature Pages
+import SalesForecastingPage from '@/pages/SalesForecastingPage';
+import { CustomerLoyaltyPage } from '@/pages/CustomerLoyaltyPage';
+import { InventoryAutomationPage } from '@/pages/InventoryAutomationPage';
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -333,6 +338,33 @@ export default function App() {
                 <ProtectedRoute>
                   <AppLayout>
                     <VoicePOSPage />
+                  </AppLayout>
+                </ProtectedRoute>
+              } />
+              
+              {/* Forecasting */}
+              <Route path="/forecasting" element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <SalesForecastingPage />
+                  </AppLayout>
+                </ProtectedRoute>
+              } />
+              
+              {/* Customer Loyalty */}
+              <Route path="/loyalty" element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <CustomerLoyaltyPage />
+                  </AppLayout>
+                </ProtectedRoute>
+              } />
+              
+              {/* Inventory Automation */}
+              <Route path="/inventory-automation" element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <InventoryAutomationPage />
                   </AppLayout>
                 </ProtectedRoute>
               } />
