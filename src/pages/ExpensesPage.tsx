@@ -9,7 +9,7 @@ import { Plus, Trash2, Download } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
-import { PageHeader } from '@/components/PageHeader';
+// PageHeader removed for cleaner UI
 import { format } from 'date-fns';
 
 interface Expense {
@@ -130,10 +130,6 @@ export default function ExpensesPage() {
 
   return (
     <div className="page-container p-4 pb-24 md:p-6 space-y-4">
-      <PageHeader 
-        title="Matumizi"
-        subtitle="Simamia gharama za biashara"
-      />
 
       <div className="grid gap-4 md:grid-cols-3">
         <Card>

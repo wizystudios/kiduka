@@ -12,7 +12,7 @@ import { PaymentMethodDialog } from '@/components/PaymentMethodDialog';
 import { EnhancedReceiptPrinter } from '@/components/EnhancedReceiptPrinter';
 import { WeightSelector } from '@/components/WeightSelector';
 import { DigitalReceiptService } from '@/components/DigitalReceiptService';
-import { PageHeader } from '@/components/PageHeader';
+// PageHeader removed for cleaner UI
 
 interface Product {
   id: string;
@@ -360,8 +360,7 @@ export const ScannerPage = () => {
 
   return (
     <div className="page-container">
-      <PageHeader title="Muuzo wa Haraka" subtitle="Tafuta na uze bidhaa kwa haraka" backTo="/dashboard" />
-      
+
       <div className="bg-gradient-to-r from-blue-50 to-purple-50 p-2 rounded mb-2">
         <h2 className="text-sm font-bold text-gray-900 mb-1">💰 Muuzo wa Haraka</h2>
         <p className="text-xs text-gray-700">Tafuta bidhaa</p>

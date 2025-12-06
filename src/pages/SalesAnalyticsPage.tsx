@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { PageHeader } from '@/components/PageHeader';
+// PageHeader removed for cleaner UI
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -162,11 +162,6 @@ export default function SalesAnalyticsPage() {
 
   return (
     <div className="page-container">
-      <PageHeader
-        title="Takwimu za Mauzo"
-        subtitle="Uchambuzi wa mauzo na bidhaa"
-        backTo="/dashboard"
-      />
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">

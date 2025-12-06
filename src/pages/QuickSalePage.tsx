@@ -10,7 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
-import { PageHeader } from '@/components/PageHeader';
+// PageHeader removed for cleaner UI
 import { InvoiceGenerator } from '@/components/InvoiceGenerator';
 
 interface Customer {
@@ -144,8 +144,7 @@ export const QuickSalePage = () => {
 
   return (
     <div className="page-container">
-      <PageHeader title="Mauzo ya Haraka" subtitle="Rekodi mauzo kwa haraka" backTo="/dashboard" />
-      
+
       {showInvoice && lastSaleData ? (
         <div className="space-y-4">
           <InvoiceGenerator {...lastSaleData} />
