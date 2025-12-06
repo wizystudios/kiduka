@@ -23,7 +23,6 @@ export const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
     const [userProfile, setUserProfile] = useState<any>(null);
     const [loading, setLoading] = useState(true);
 
-  // Clean-up any stale Supabase auth state to prevent limbo sessions
   const cleanupAuthState = () => {
     try {
       Object.keys(localStorage).forEach((key) => {
@@ -43,9 +42,9 @@ export const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
     }
   };
 
-  const createProfile = async (userId: string, email: string, fullName?: string, businessName?: string) => {
+  const createProfile = async (userId: string, email: string, fullName?: string, businessName?: string, role?: string) => {
     try {
-      console.log('Creating profile for user:', userId);
+      console.log('Creating profile for user:', userId, 'with role:', role);
       const { data: newProfile, error } = await supabase
         .from('profiles')
         .insert([
@@ -54,7 +53,7 @@ export const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
             email: email,
             full_name: fullName || '',
             business_name: businessName || '',
-            role: 'owner'
+            role: role || 'owner' // Use provided role or default to owner
           }
         ])
         .select()
@@ -73,7 +72,9 @@ export const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
     }
   };
 
-  const fetchUserProfile = async (userId: string) => {
+  const fetchUserProfile = async (userId: string, currentUser?: User | null) => {
+    const userRef = currentUser || user;
+    
     try {
       const { data: profile, error } = await supabase
         .from('profiles')
@@ -87,41 +88,49 @@ export const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
       }
       
       if (!profile) {
-        // Create profile without waiting - let it happen in background
+        // Get role from user metadata (important for assistants)
+        const metadataRole = userRef?.user_metadata?.role;
+        const isAssistant = metadataRole === 'assistant';
+        
+        console.log('No profile found, creating one. Role from metadata:', metadataRole);
+        
+        // Create profile with correct role from metadata
         createProfile(
           userId,
-          user?.email || '',
-          user?.user_metadata?.full_name,
-          user?.user_metadata?.business_name
+          userRef?.email || '',
+          userRef?.user_metadata?.full_name,
+          userRef?.user_metadata?.business_name,
+          isAssistant ? 'assistant' : 'owner'
         ).catch(err => console.error('Background profile creation failed:', err));
         
-        // Return minimal profile immediately so user can proceed
+        // Return minimal profile with correct role
         return {
           id: userId,
-          email: user?.email || '',
-          full_name: user?.user_metadata?.full_name || '',
-          business_name: user?.user_metadata?.business_name || '',
-          role: 'owner'
+          email: userRef?.email || '',
+          full_name: userRef?.user_metadata?.full_name || '',
+          business_name: userRef?.user_metadata?.business_name || '',
+          role: isAssistant ? 'assistant' : 'owner'
         };
       }
       
+      console.log('Profile fetched:', profile.email, 'Role:', profile.role);
       return profile;
     } catch (error) {
       console.error('Error in fetchUserProfile:', error);
-      // Return minimal profile on error so user isn't blocked
+      const metadataRole = userRef?.user_metadata?.role;
       return {
         id: userId,
-        email: user?.email || '',
-        full_name: user?.user_metadata?.full_name || '',
-        business_name: user?.user_metadata?.business_name || '',
-        role: 'owner'
+        email: userRef?.email || '',
+        full_name: userRef?.user_metadata?.full_name || '',
+        business_name: userRef?.user_metadata?.business_name || '',
+        role: metadataRole === 'assistant' ? 'assistant' : 'owner'
       };
     }
   };
 
   const refreshProfile = useCallback(async () => {
     if (user?.id) {
-      const profile = await fetchUserProfile(user.id);
+      const profile = await fetchUserProfile(user.id, user);
       setUserProfile(profile);
     }
   }, [user?.id]);
@@ -176,8 +185,7 @@ export const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
       }
       
       if (session?.user && mounted) {
-        // Don't block on profile fetch - load it in background
-        fetchUserProfile(session.user.id)
+        fetchUserProfile(session.user.id, session.user)
           .then(profile => {
             if (mounted) {
               setUserProfile(profile);
@@ -206,7 +214,6 @@ export const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
       } catch (error) {
         console.error('Error getting session:', error);
         if (mounted) {
-          console.log('Auth init error, setting loading to false');
           setLoading(false);
         }
       }
@@ -214,7 +221,6 @@ export const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
 
     try {
       const authListener = supabase.auth.onAuthStateChange((event, session) => {
-        // Prevent re-initialization on auth state changes
         if (event !== 'INITIAL_SESSION') {
           handleAuthStateChange(event, session);
         }
@@ -238,12 +244,11 @@ export const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
 
   const signIn = async (email: string, password: string) => {
     try {
-      // Clean up any stale auth and attempt a global sign out to avoid limbo
       cleanupAuthState();
       try {
         await supabase.auth.signOut({ scope: 'global' });
       } catch (err) {
-        // ignore errors here
+        // ignore
       }
 
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -255,13 +260,13 @@ export const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
         if (error.message.includes('Invalid login credentials')) {
           throw new Error('Barua pepe au nywila si sahihi. Tafadhali jaribu tena.');
         } else if (error.message.includes('Email not confirmed')) {
-          throw new Error('Barua pepe yako haijathibitishwa bado. Tafadhali kagua barua pepe yako na ubonyeze kiungo cha uthibitisho.');
+          throw new Error('Barua pepe yako haijathibitishwa bado.');
         } else {
           throw new Error(error.message);
         }
       }
 
-      // Force a clean reload into the app after successful login
+      // Redirect to dashboard after successful login
       window.location.href = '/dashboard';
     } catch (error: any) {
       throw error;
@@ -276,6 +281,7 @@ export const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
         data: {
           full_name: fullName,
           business_name: businessName,
+          role: 'owner' // Explicit role for new signups
         },
         emailRedirectTo: `${window.location.origin}/`
       },
@@ -283,7 +289,7 @@ export const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
     
     if (error) {
       if (error.message.includes('User already registered')) {
-        throw new Error('Barua pepe hii tayari imesajiliwa. Tafadhali jaribu kuingia au tumia barua pepe nyingine.');
+        throw new Error('Barua pepe hii tayari imesajiliwa.');
       } else {
         throw new Error(error.message);
       }
@@ -318,7 +324,7 @@ export const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
       signOut,
       refreshProfile,
       updateProfile,
-    }), [user, session, userProfile, loading, signIn, signUp, signOut, refreshProfile, updateProfile]);
+    }), [user, session, userProfile, loading, refreshProfile, updateProfile]);
 
     return (
       <AuthContext.Provider value={contextValue}>
@@ -327,7 +333,6 @@ export const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
     );
   } catch (error) {
     console.error('AuthProvider error:', error);
-    // Return minimal provider to prevent crashes
     return (
       <AuthContext.Provider value={{
         user: null,
@@ -355,7 +360,6 @@ export const useAuth = () => {
     return context;
   } catch (error) {
     console.warn('useAuth hook error:', error);
-    // Return fallback context to prevent crashes
     return {
       user: null,
       session: null,

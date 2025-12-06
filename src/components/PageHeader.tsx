@@ -1,16 +1,19 @@
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { ReactNode } from 'react';
 
 interface PageHeaderProps {
-  title: string;
+  title?: string;
   subtitle?: string;
   backTo?: string;
+  showTitle?: boolean;
 }
 
-export const PageHeader = ({ title, subtitle, backTo }: PageHeaderProps) => {
+// Simplified PageHeader - just back button, no titles for clean UI
+export const PageHeader = ({ backTo, showTitle = false, title, subtitle }: PageHeaderProps) => {
   const navigate = useNavigate();
+
+  if (!backTo && !showTitle) return null;
 
   return (
     <div className="flex items-start gap-2 mb-3">
@@ -24,12 +27,14 @@ export const PageHeader = ({ title, subtitle, backTo }: PageHeaderProps) => {
           <ArrowLeft className="h-4 w-4" />
         </Button>
       )}
-      <div className="flex-1 min-w-0">
-        <h1 className="text-lg font-bold text-foreground">{title}</h1>
-        {subtitle && (
-          <p className="text-xs text-muted-foreground">{subtitle}</p>
-        )}
-      </div>
+      {showTitle && title && (
+        <div className="flex-1 min-w-0">
+          <h1 className="text-lg font-bold text-foreground">{title}</h1>
+          {subtitle && (
+            <p className="text-xs text-muted-foreground">{subtitle}</p>
+          )}
+        </div>
+      )}
     </div>
   );
 };
