@@ -11,7 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
-import { PageHeader } from './PageHeader';
+// PageHeader removed for cleaner UI
 
 interface MicroLoan {
   id: string;
@@ -207,8 +207,7 @@ export const MicroLoanManagement = () => {
 
   return (
     <div className="page-container">
-      <PageHeader title="Mikopo Midogo" subtitle="Simamia mikopo ya wateja" />
-      
+
       <div className="space-y-3">
         {/* Header Actions */}
         <div className="flex flex-col sm:flex-row gap-2">

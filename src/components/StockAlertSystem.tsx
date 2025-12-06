@@ -1,11 +1,10 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { AlertTriangle, Bell, BellOff } from 'lucide-react';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { AlertTriangle, ChevronDown, ChevronUp } from 'lucide-react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 
@@ -22,7 +21,7 @@ export const StockAlertSystem = () => {
   const navigate = useNavigate();
   const [lowStockProducts, setLowStockProducts] = useState<LowStockProduct[]>([]);
   const [loading, setLoading] = useState(true);
-  const [alertsEnabled, setAlertsEnabled] = useState(true);
+  const [expanded, setExpanded] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -46,83 +45,57 @@ export const StockAlertSystem = () => {
       setLowStockProducts(lowStock);
     } catch (error: any) {
       console.error('Error fetching low stock products:', error);
-      toast.error('Hitilafu kuonyesha bidhaa za chini');
     } finally {
       setLoading(false);
     }
   };
 
-  const toggleAlerts = () => {
-    setAlertsEnabled(!alertsEnabled);
-    toast.success(alertsEnabled ? 'Arifa zimezimwa' : 'Arifa zimewashwa');
-  };
-
   const getStockLevel = (product: LowStockProduct) => {
+    if (product.stock_quantity === 0) return { label: 'Imeisha', color: 'bg-red-500 text-white' };
     const percentage = (product.stock_quantity / (product.low_stock_threshold || 10)) * 100;
-    if (percentage <= 25) return { label: 'Hatari', variant: 'destructive' as const };
-    if (percentage <= 50) return { label: 'Chini', variant: 'default' as const };
-    return { label: 'Kuzingatiwa', variant: 'secondary' as const };
+    if (percentage <= 25) return { label: 'Hatari', color: 'bg-red-100 text-red-800' };
+    if (percentage <= 50) return { label: 'Chini', color: 'bg-yellow-100 text-yellow-800' };
+    return { label: 'Angalia', color: 'bg-orange-100 text-orange-800' };
   };
 
-  if (loading) {
-    return null;
-  }
-
-  if (!alertsEnabled || lowStockProducts.length === 0) {
+  if (loading || lowStockProducts.length === 0) {
     return null;
   }
 
   return (
-    <Card className="border-yellow-200 bg-yellow-50 dark:bg-yellow-950 dark:border-yellow-800">
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-lg flex items-center gap-2">
-            <AlertTriangle className="h-5 w-5 text-yellow-600" />
-            Arifa za Stock ({lowStockProducts.length})
-          </CardTitle>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={toggleAlerts}
-            className="h-8 w-8 p-0"
-          >
-            {alertsEnabled ? (
-              <Bell className="h-4 w-4" />
-            ) : (
-              <BellOff className="h-4 w-4" />
-            )}
-          </Button>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-2">
-        {lowStockProducts.slice(0, 5).map((product) => {
-          const level = getStockLevel(product);
-          return (
-            <Alert key={product.id} className="py-2">
-              <AlertDescription className="flex items-center justify-between">
-                <div className="flex-1">
-                  <p className="font-medium">{product.name}</p>
-                  <p className="text-sm text-muted-foreground">
-                    Stock: {product.stock_quantity} / {product.low_stock_threshold || 10}
-                    {product.category && ` • ${product.category}`}
-                  </p>
+    <Collapsible open={expanded} onOpenChange={setExpanded}>
+      <div className="flex items-center justify-between p-2 bg-yellow-50 dark:bg-yellow-950 rounded-lg border border-yellow-200 dark:border-yellow-800">
+        <CollapsibleTrigger className="flex items-center gap-2 flex-1">
+          <AlertTriangle className="h-4 w-4 text-yellow-600" />
+          <span className="text-xs font-medium">Stock Ndogo</span>
+          <Badge variant="outline" className="text-xs bg-yellow-100 text-yellow-800 border-yellow-300">
+            {lowStockProducts.length}
+          </Badge>
+          {expanded ? <ChevronUp className="h-3 w-3 ml-auto" /> : <ChevronDown className="h-3 w-3 ml-auto" />}
+        </CollapsibleTrigger>
+      </div>
+      
+      <CollapsibleContent>
+        <div className="mt-1 p-2 bg-yellow-50/50 dark:bg-yellow-950/50 rounded-lg space-y-1">
+          {lowStockProducts.slice(0, 5).map((product) => {
+            const level = getStockLevel(product);
+            return (
+              <div key={product.id} className="flex justify-between items-center p-1.5 bg-background rounded text-xs">
+                <span className="truncate flex-1">{product.name}</span>
+                <div className="flex items-center gap-1">
+                  <span className="text-muted-foreground">{product.stock_quantity}</span>
+                  <Badge className={`${level.color} text-[10px] px-1 py-0`}>{level.label}</Badge>
                 </div>
-                <Badge variant={level.variant}>{level.label}</Badge>
-              </AlertDescription>
-            </Alert>
-          );
-        })}
-        {lowStockProducts.length > 5 && (
-          <Button
-            variant="outline"
-            size="sm"
-            className="w-full mt-2"
-            onClick={() => navigate('/products')}
-          >
-            Tazama zote ({lowStockProducts.length})
-          </Button>
-        )}
-      </CardContent>
-    </Card>
+              </div>
+            );
+          })}
+          {lowStockProducts.length > 5 && (
+            <Button variant="ghost" size="sm" className="w-full h-6 text-xs" onClick={() => navigate('/products')}>
+              Tazama zote ({lowStockProducts.length})
+            </Button>
+          )}
+        </div>
+      </CollapsibleContent>
+    </Collapsible>
   );
 };

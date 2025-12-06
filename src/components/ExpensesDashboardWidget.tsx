@@ -1,14 +1,14 @@
 import { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
-import { Wallet, Plus, TrendingDown } from 'lucide-react';
+import { Wallet, Plus, TrendingDown, ChevronDown, ChevronUp } from 'lucide-react';
 
 interface ExpenseCategory {
   name: string;
@@ -20,6 +20,7 @@ export const ExpensesDashboardWidget = () => {
   const [expenses, setExpenses] = useState<ExpenseCategory[]>([]);
   const [totalExpenses, setTotalExpenses] = useState(0);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [expanded, setExpanded] = useState(false);
   const [loading, setLoading] = useState(false);
   const { user } = useAuth();
 
@@ -51,7 +52,6 @@ export const ExpensesDashboardWidget = () => {
 
       if (error) throw error;
 
-      // Group by category
       const categoryMap = new Map<string, { amount: number; count: number }>();
       let total = 0;
 
@@ -99,12 +99,7 @@ export const ExpensesDashboardWidget = () => {
 
       toast.success('Matumizi yameongezwa!');
       setDialogOpen(false);
-      setFormData({
-        category: '',
-        amount: '',
-        description: '',
-        payment_method: 'cash'
-      });
+      setFormData({ category: '', amount: '', description: '', payment_method: 'cash' });
       fetchTodaysExpenses();
     } catch (error) {
       console.error('Error adding expense:', error);
@@ -114,141 +109,65 @@ export const ExpensesDashboardWidget = () => {
     }
   };
 
-  const expenseCategories = [
-    'Rent',
-    'Utilities',
-    'Salaries',
-    'Supplies',
-    'Transport',
-    'Marketing',
-    'Maintenance',
-    'Other'
-  ];
+  const expenseCategories = ['Rent', 'Utilities', 'Salaries', 'Supplies', 'Transport', 'Marketing', 'Maintenance', 'Other'];
 
   return (
     <>
-      <Card className="border-red-200">
-        <CardHeader className="pb-2 pt-3 px-3">
-          <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center text-red-700 text-sm">
-              <TrendingDown className="h-4 w-4 mr-2" />
-              Matumizi Leo
-            </CardTitle>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => setDialogOpen(true)}
-              className="h-7 text-xs"
-            >
-              <Plus className="h-3 w-3 mr-1" />
-              Ongeza
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent className="p-3 pt-2">
-          <div className="mb-3">
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-gray-600">Jumla:</span>
-              <span className="text-lg font-bold text-red-600">
-                TZS {totalExpenses.toLocaleString()}
-              </span>
-            </div>
-          </div>
-
-          {expenses.length > 0 ? (
-            <div className="space-y-2">
-              {expenses.slice(0, 3).map((expense, index) => (
-                <div
-                  key={index}
-                  className="flex justify-between items-center p-2 bg-red-50 rounded border-l-2 border-l-red-400"
-                >
-                  <div>
-                    <p className="text-xs font-medium">{expense.name}</p>
-                    <p className="text-xs text-gray-600">{expense.count} miamala</p>
-                  </div>
-                  <span className="text-sm font-bold text-red-600">
-                    TZS {expense.amount.toLocaleString()}
-                  </span>
+      <Collapsible open={expanded} onOpenChange={setExpanded}>
+        <div className="flex items-center justify-between p-2 bg-red-50 dark:bg-red-950 rounded-lg border border-red-200 dark:border-red-800">
+          <CollapsibleTrigger className="flex items-center gap-2 flex-1">
+            <TrendingDown className="h-4 w-4 text-red-600" />
+            <span className="text-xs font-medium">Matumizi</span>
+            <span className="text-sm font-bold text-red-600">TZS {totalExpenses.toLocaleString()}</span>
+            {expanded ? <ChevronUp className="h-3 w-3 ml-auto" /> : <ChevronDown className="h-3 w-3 ml-auto" />}
+          </CollapsibleTrigger>
+          <Button size="sm" variant="ghost" onClick={() => setDialogOpen(true)} className="h-6 w-6 p-0 ml-1">
+            <Plus className="h-3 w-3" />
+          </Button>
+        </div>
+        
+        <CollapsibleContent>
+          <div className="mt-1 p-2 bg-red-50/50 dark:bg-red-950/50 rounded-lg space-y-1">
+            {expenses.length > 0 ? (
+              expenses.slice(0, 3).map((expense, index) => (
+                <div key={index} className="flex justify-between items-center p-1.5 bg-background rounded text-xs">
+                  <span>{expense.name} ({expense.count})</span>
+                  <span className="font-medium text-red-600">TZS {expense.amount.toLocaleString()}</span>
                 </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-xs text-gray-500 text-center py-2">
-              Hakuna matumizi leo
-            </p>
-          )}
-        </CardContent>
-      </Card>
+              ))
+            ) : (
+              <p className="text-xs text-muted-foreground text-center py-1">Hakuna matumizi leo</p>
+            )}
+          </div>
+        </CollapsibleContent>
+      </Collapsible>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Ongeza Matumizi</DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleQuickAdd} className="space-y-4">
+          <form onSubmit={handleQuickAdd} className="space-y-3">
             <div>
-              <Label htmlFor="category">Aina</Label>
-              <Select
-                value={formData.category}
-                onValueChange={(value) => setFormData({ ...formData, category: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Chagua aina" />
-                </SelectTrigger>
+              <Label>Aina</Label>
+              <Select value={formData.category} onValueChange={(value) => setFormData({ ...formData, category: value })}>
+                <SelectTrigger><SelectValue placeholder="Chagua aina" /></SelectTrigger>
                 <SelectContent>
-                  {expenseCategories.map((cat) => (
-                    <SelectItem key={cat} value={cat}>
-                      {cat}
-                    </SelectItem>
-                  ))}
+                  {expenseCategories.map((cat) => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
-
             <div>
-              <Label htmlFor="amount">Kiasi (TZS)</Label>
-              <Input
-                id="amount"
-                type="number"
-                step="any"
-                min="0"
-                value={formData.amount}
-                onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-                required
-              />
+              <Label>Kiasi (TZS)</Label>
+              <Input type="number" value={formData.amount} onChange={(e) => setFormData({ ...formData, amount: e.target.value })} required />
             </div>
-
             <div>
-              <Label htmlFor="description">Maelezo</Label>
-              <Input
-                id="description"
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                placeholder="Eleza matumizi..."
-                required
-              />
+              <Label>Maelezo</Label>
+              <Input value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} placeholder="Eleza matumizi..." required />
             </div>
-
-            <div>
-              <Label htmlFor="payment_method">Njia ya Malipo</Label>
-              <Select
-                value={formData.payment_method}
-                onValueChange={(value) => setFormData({ ...formData, payment_method: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="cash">Taslimu</SelectItem>
-                  <SelectItem value="mobile_money">Pesa za Simu</SelectItem>
-                  <SelectItem value="bank">Benki</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
             <Button type="submit" className="w-full" disabled={loading}>
               <Wallet className="h-4 w-4 mr-2" />
-              Ongeza Matumizi
+              Ongeza
             </Button>
           </form>
         </DialogContent>

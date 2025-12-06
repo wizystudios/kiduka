@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { PageHeader } from '@/components/PageHeader';
+// PageHeader removed for cleaner UI
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -156,11 +156,6 @@ export const ProductReportsPage = () => {
 
   return (
     <div className="page-container p-4 space-y-4">
-      <PageHeader
-        title="Ripoti za Bidhaa"
-        subtitle="Angalia mauzo na faida kwa kila bidhaa"
-        backTo="/dashboard"
-      />
 
       <Card>
         <CardHeader className="pb-3">
