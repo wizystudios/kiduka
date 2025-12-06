@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -6,23 +5,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Search, Edit, Trash2, Users as UsersIcon, Mail, Settings as SettingsIcon, Shield, Building } from 'lucide-react';
+import { Plus, Search, Trash2, Users as UsersIcon, Mail, Settings as SettingsIcon, Shield, Building, RefreshCw } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { AssistantPermissionsManager } from '@/components/AssistantPermissionsManager';
-
-interface UserProfile {
-  id: string;
-  email: string;
-  full_name: string;
-  business_name?: string;
-  role: string;
-  created_at: string;
-}
 
 interface Assistant {
   id: string;
@@ -33,6 +22,7 @@ interface Assistant {
     email: string;
     full_name: string;
     role: string;
+    business_name: string;
   };
 }
 
@@ -53,39 +43,62 @@ export const UsersPage = () => {
   useEffect(() => {
     if (userProfile?.role === 'owner' && user?.id) {
       fetchAssistants();
+    } else {
+      setLoading(false);
     }
   }, [userProfile, user?.id]);
 
   const fetchAssistants = async () => {
+    if (!user?.id) return;
+    
     try {
-      // Fetch assistants linked to this owner via assistant_permissions
+      console.log('Fetching assistants for owner:', user.id);
+      
+      // Fetch assistants linked to this owner
       const { data: permissions, error } = await supabase
         .from('assistant_permissions')
         .select('*')
-        .eq('owner_id', user?.id);
+        .eq('owner_id', user.id);
 
-      if (error) throw error;
+      console.log('Permissions found:', permissions);
+
+      if (error) {
+        console.error('Error fetching permissions:', error);
+        throw error;
+      }
+
+      if (!permissions || permissions.length === 0) {
+        console.log('No assistants found for this owner');
+        setAssistants([]);
+        setLoading(false);
+        return;
+      }
 
       // Fetch profiles for each assistant
-      const assistantIds = permissions?.map(p => p.assistant_id) || [];
+      const assistantIds = permissions.map(p => p.assistant_id);
       
-      if (assistantIds.length > 0) {
-        const { data: profiles, error: profilesError } = await supabase
-          .from('profiles')
-          .select('*')
-          .in('id', assistantIds);
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('*')
+        .in('id', assistantIds);
 
-        if (profilesError) throw profilesError;
-
-        const assistantsWithProfiles = permissions?.map(perm => ({
-          ...perm,
-          profile: profiles?.find(p => p.id === perm.assistant_id)
-        })) || [];
-
-        setAssistants(assistantsWithProfiles);
-      } else {
-        setAssistants([]);
+      if (profilesError) {
+        console.error('Error fetching profiles:', profilesError);
       }
+
+      console.log('Profiles found:', profiles);
+
+      const assistantsWithProfiles = permissions.map(perm => ({
+        ...perm,
+        profile: profiles?.find(p => p.id === perm.assistant_id) || {
+          email: 'N/A',
+          full_name: 'N/A',
+          role: 'assistant',
+          business_name: ''
+        }
+      }));
+
+      setAssistants(assistantsWithProfiles);
     } catch (error) {
       console.error('Error fetching assistants:', error);
       toast.error('Imeshindwa kupakia wasaidizi');
@@ -106,100 +119,132 @@ export const UsersPage = () => {
       return;
     }
 
-    if (!user?.id || !userProfile) {
+    if (!user?.id || !userProfile || !session) {
       toast.error('Tafadhali ingia kwanza');
       return;
     }
 
     setCreating(true);
     
-    // Store current session to restore after
-    const currentSession = session;
+    // Store current session tokens BEFORE signup
+    const ownerAccessToken = session.access_token;
+    const ownerRefreshToken = session.refresh_token;
+    const ownerId = user.id;
+    const ownerBusinessName = userProfile.business_name || '';
+
+    console.log('Creating assistant for owner:', ownerId);
+    console.log('Owner business:', ownerBusinessName);
 
     try {
-      // Create the assistant user
+      // Step 1: Create the assistant user (this will auto-login as new user!)
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: newUser.email,
         password: newUser.password,
         options: {
-          emailRedirectTo: `${window.location.origin}/auth`,
           data: {
             full_name: newUser.full_name,
-            business_name: userProfile.business_name || '',
+            business_name: ownerBusinessName, // Inherit owner's business
             role: 'assistant',
-            owner_id: user.id
+            owner_id: ownerId
           }
         }
       });
 
       if (authError) {
+        console.error('Signup error:', authError);
         toast.error('Imeshindwa kusajili: ' + authError.message);
         setCreating(false);
         return;
       }
 
-      if (authData.user) {
-        // Create profile for assistant with owner's business name
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .upsert([{
-            id: authData.user.id,
-            email: newUser.email,
-            full_name: newUser.full_name,
-            business_name: userProfile.business_name || '', // Same business as owner
-            role: 'assistant'
-          }]);
-
-        if (profileError) {
-          console.error('Profile error:', profileError);
-        }
-
-        // Create permissions record linking assistant to owner
-        const { error: permError } = await supabase
-          .from('assistant_permissions')
-          .upsert([{
-            assistant_id: authData.user.id,
-            owner_id: user.id,
-            can_view_products: true,
-            can_edit_products: false,
-            can_delete_products: false,
-            can_view_sales: true,
-            can_create_sales: true,
-            can_view_customers: true,
-            can_edit_customers: false,
-            can_view_reports: false,
-            can_view_inventory: true,
-            can_edit_inventory: false
-          }]);
-
-        if (permError) {
-          console.error('Permissions error:', permError);
-        }
-
-        // IMPORTANT: Restore owner's session immediately
-        // The signUp auto-logs in the new user, we need to restore owner
-        if (currentSession?.access_token && currentSession?.refresh_token) {
-          await supabase.auth.setSession({
-            access_token: currentSession.access_token,
-            refresh_token: currentSession.refresh_token
-          });
-        }
-
-        toast.success(`Msaidizi "${newUser.full_name}" ameongezwa! Anaweza sasa kuingia na barua pepe: ${newUser.email}`);
-        setNewUser({ email: '', password: '', full_name: '' });
-        setDialogOpen(false);
-        fetchAssistants();
+      if (!authData.user) {
+        toast.error('Imeshindwa kuunda account');
+        setCreating(false);
+        return;
       }
+
+      const assistantId = authData.user.id;
+      console.log('Assistant created with ID:', assistantId);
+
+      // Step 2: IMMEDIATELY restore owner session BEFORE any database operations
+      // This is critical because RLS policies check auth.uid()
+      console.log('Restoring owner session...');
+      const { error: sessionError } = await supabase.auth.setSession({
+        access_token: ownerAccessToken,
+        refresh_token: ownerRefreshToken
+      });
+
+      if (sessionError) {
+        console.error('Failed to restore owner session:', sessionError);
+        toast.error('Tatizo la session. Tafadhali refresh page.');
+        setCreating(false);
+        return;
+      }
+
+      console.log('Owner session restored. Now creating profile and permissions...');
+
+      // Step 3: Create profile for assistant with owner's business name
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .upsert([{
+          id: assistantId,
+          email: newUser.email,
+          full_name: newUser.full_name,
+          business_name: ownerBusinessName, // Same business as owner
+          role: 'assistant'
+        }], { onConflict: 'id' });
+
+      if (profileError) {
+        console.error('Profile creation error:', profileError);
+        // Continue anyway - profile might exist
+      } else {
+        console.log('Profile created successfully');
+      }
+
+      // Step 4: Create permissions record linking assistant to owner
+      const { error: permError } = await supabase
+        .from('assistant_permissions')
+        .upsert([{
+          assistant_id: assistantId,
+          owner_id: ownerId,
+          can_view_products: true,
+          can_edit_products: false,
+          can_delete_products: false,
+          can_view_sales: true,
+          can_create_sales: true,
+          can_view_customers: true,
+          can_edit_customers: false,
+          can_view_reports: false,
+          can_view_inventory: true,
+          can_edit_inventory: false
+        }], { onConflict: 'assistant_id' });
+
+      if (permError) {
+        console.error('Permissions creation error:', permError);
+        toast.error('Msaidizi ameundwa lakini ruhusa hazijawekwa. Tafadhali refresh.');
+      } else {
+        console.log('Permissions created successfully');
+        toast.success(`Msaidizi "${newUser.full_name}" ameongezwa kwenye "${ownerBusinessName}"! Anaweza kuingia na: ${newUser.email}`);
+      }
+
+      setNewUser({ email: '', password: '', full_name: '' });
+      setDialogOpen(false);
+      
+      // Refresh the list
+      await fetchAssistants();
+
     } catch (error: any) {
       console.error('Create assistant error:', error);
-      toast.error('Imeshindwa kuongeza msaidizi');
+      toast.error('Imeshindwa kuongeza msaidizi: ' + (error.message || 'Unknown error'));
       
       // Try to restore session on error too
-      if (currentSession?.access_token && currentSession?.refresh_token) {
+      try {
         await supabase.auth.setSession({
-          access_token: currentSession.access_token,
-          refresh_token: currentSession.refresh_token
+          access_token: ownerAccessToken,
+          refresh_token: ownerRefreshToken
         });
+      } catch (e) {
+        console.error('Failed to restore session on error:', e);
       }
     } finally {
       setCreating(false);
@@ -210,7 +255,6 @@ export const UsersPage = () => {
     if (!confirm(`Je, una uhakika unataka kumfuta msaidizi "${assistantName}"?`)) return;
 
     try {
-      // Delete permissions first
       const { error: permError } = await supabase
         .from('assistant_permissions')
         .delete()
@@ -219,7 +263,6 @@ export const UsersPage = () => {
 
       if (permError) throw permError;
 
-      // Update assistants list
       setAssistants(assistants.filter(a => a.assistant_id !== assistantId));
       toast.success('Msaidizi amefutwa');
     } catch (error) {
@@ -238,7 +281,7 @@ export const UsersPage = () => {
     return name.split(' ').map(word => word.charAt(0).toUpperCase()).join('').slice(0, 2);
   };
 
-  if (userProfile?.role !== 'owner') {
+  if (userProfile?.role !== 'owner' && userProfile?.role !== 'super_admin') {
     return (
       <div className="page-container p-4">
         <Card>
@@ -256,7 +299,7 @@ export const UsersPage = () => {
     return (
       <div className="p-4 space-y-4">
         <div className="text-center py-8">
-          <p className="text-gray-600">Inapakia...</p>
+          <p className="text-muted-foreground">Inapakia...</p>
         </div>
       </div>
     );
@@ -264,8 +307,8 @@ export const UsersPage = () => {
 
   return (
     <div className="page-container p-4 space-y-4 pb-24">
-      {/* Business Info */}
-      <Card className="bg-gradient-to-r from-blue-500 to-purple-600 text-white">
+      {/* Business Info - NO PAGE HEADER */}
+      <Card className="bg-gradient-to-r from-primary to-primary/80 text-primary-foreground">
         <CardContent className="p-4">
           <div className="flex items-center gap-3">
             <Building className="h-10 w-10" />
@@ -304,8 +347,8 @@ export const UsersPage = () => {
                   <DialogTitle>Ongeza Msaidizi Mpya</DialogTitle>
                 </DialogHeader>
                 <div className="space-y-3">
-                  <div className="p-3 bg-blue-50 rounded-lg text-sm">
-                    <p className="text-blue-800">
+                  <div className="p-3 bg-primary/10 rounded-lg text-sm">
+                    <p className="text-foreground">
                       Msaidizi ataingizwa kwenye biashara yako "<strong>{userProfile?.business_name}</strong>" 
                       na ataweza kuaccess data kulingana na ruhusa ulizompa.
                     </p>
@@ -346,10 +389,14 @@ export const UsersPage = () => {
                 </div>
               </DialogContent>
             </Dialog>
+            
+            <Button variant="outline" size="sm" onClick={fetchAssistants}>
+              <RefreshCw className="h-4 w-4" />
+            </Button>
           </div>
 
           <div className="relative">
-            <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-400" />
+            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Tafuta msaidizi..."
               value={searchTerm}
@@ -365,7 +412,6 @@ export const UsersPage = () => {
                   <div className="flex justify-between items-start">
                     <div className="flex items-center space-x-3 flex-1">
                       <Avatar className="h-10 w-10">
-                        <AvatarImage src="" />
                         <AvatarFallback className="bg-gradient-to-br from-green-500 to-blue-600 text-white text-xs">
                           {getInitials(assistant.profile?.full_name || '')}
                         </AvatarFallback>
@@ -373,26 +419,27 @@ export const UsersPage = () => {
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-0.5">
                           <h3 className="font-semibold text-sm">{assistant.profile?.full_name || 'N/A'}</h3>
-                          <Badge className="bg-green-100 text-green-800 text-xs">
+                          <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100 text-xs">
                             Msaidizi
                           </Badge>
                         </div>
-                        <div className="flex items-center gap-1 text-xs text-gray-600">
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
                           <Mail className="h-3 w-3" />
                           <span>{assistant.profile?.email || 'N/A'}</span>
                         </div>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          Biashara: {assistant.profile?.business_name || userProfile?.business_name || 'N/A'}
+                        </p>
                       </div>
                     </div>
-                    <div className="flex space-x-1">
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        onClick={() => handleDeleteAssistant(assistant.assistant_id, assistant.profile?.full_name || '')}
-                        className="h-7 w-7 p-0 text-red-500"
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
-                    </div>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => handleDeleteAssistant(assistant.assistant_id, assistant.profile?.full_name || '')}
+                      className="h-7 w-7 p-0 text-destructive hover:text-destructive"
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
                   </div>
                 </CardContent>
               </Card>
@@ -402,9 +449,9 @@ export const UsersPage = () => {
           {filteredAssistants.length === 0 && (
             <Card className="text-center py-8">
               <CardContent>
-                <UsersIcon className="h-10 w-10 text-gray-400 mx-auto mb-2" />
+                <UsersIcon className="h-10 w-10 text-muted-foreground mx-auto mb-2" />
                 <h3 className="text-sm font-semibold mb-1">Hakuna wasaidizi</h3>
-                <p className="text-xs text-gray-600 mb-3">
+                <p className="text-xs text-muted-foreground mb-3">
                   {searchTerm ? "Hakuna matokeo" : "Ongeza msaidizi wa kwanza"}
                 </p>
                 {!searchTerm && (

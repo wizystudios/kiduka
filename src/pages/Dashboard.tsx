@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useDataAccess } from '@/hooks/useDataAccess';
+import { useRealTimeNotifications } from '@/hooks/useRealTimeNotifications';
 import { useNavigate } from 'react-router-dom';
 import { 
   TrendingUp, 
@@ -28,13 +29,13 @@ import {
   Calculator,
   Wallet
 } from 'lucide-react';
-import { format } from 'date-fns';
 import { ExpensesDashboardWidget } from '@/components/ExpensesDashboardWidget';
 import { StockAlertSystem } from '@/components/StockAlertSystem';
 
 export const Dashboard = () => {
   const { userProfile, loading: authLoading } = useAuth();
-  const { dataOwnerId, ownerBusinessName, isReady, isAssistant } = useDataAccess();
+  const { dataOwnerId, isReady, isAssistant } = useDataAccess();
+  const { notifications, unreadCount } = useRealTimeNotifications();
   const navigate = useNavigate();
   const [metrics, setMetrics] = useState({
     todaysSales: 0,
