@@ -7,6 +7,9 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useAuth } from '@/hooks/useAuth';
 import { useRealTimeNotifications, NotificationIcon } from '@/hooks/useRealTimeNotifications';
+import { useDataAccess } from '@/hooks/useDataAccess';
+import { useOfflineSync } from '@/hooks/useOfflineSync';
+import { OfflineIndicator } from '@/components/OfflineIndicator';
 import { useNavigate } from 'react-router-dom';
 import { KidukaLogo } from './KidukaLogo';
 import { LogOut, Settings, Crown, Smartphone, Package, ShoppingCart, AlertTriangle, CheckCheck } from 'lucide-react';
@@ -14,6 +17,8 @@ import { LogOut, Settings, Crown, Smartphone, Package, ShoppingCart, AlertTriang
 export const TopNavbar = () => {
   const { user, userProfile, signOut } = useAuth();
   const { notifications, unreadCount, markAllAsRead } = useRealTimeNotifications();
+  const { dataOwnerId } = useDataAccess();
+  const offlineSync = useOfflineSync(dataOwnerId);
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -74,7 +79,16 @@ export const TopNavbar = () => {
           <KidukaLogo size="sm" showText={false} />
         </div>
         
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1">
+          {/* Offline Indicator */}
+          <OfflineIndicator
+            isOnline={offlineSync.isOnline}
+            isSyncing={offlineSync.isSyncing}
+            pendingChanges={offlineSync.pendingChanges}
+            lastSync={offlineSync.lastSync}
+            onSync={offlineSync.syncData}
+          />
+
           {/* Notification Bell */}
           <Popover>
             <PopoverTrigger asChild>

@@ -86,7 +86,17 @@ export const useDataAccess = () => {
             if (metadataOwnerId) {
               console.log('useDataAccess: Fallback to metadata owner_id:', metadataOwnerId);
               setDataOwnerId(metadataOwnerId);
+              
+              // Try to fetch owner's business name
+              const { data: ownerProfile } = await supabase
+                .from('profiles')
+                .select('business_name')
+                .eq('id', metadataOwnerId)
+                .maybeSingle();
+              
+              setOwnerBusinessName(ownerProfile?.business_name || user.user_metadata?.business_name || null);
             } else {
+              console.log('useDataAccess: No owner_id in metadata either, assistant cannot access data');
               setDataOwnerId(null);
             }
           }

@@ -57,6 +57,7 @@ import { WhatsAppPage } from '@/pages/WhatsAppPage';
 import SalesForecastingPage from '@/pages/SalesForecastingPage';
 import { CustomerLoyaltyPage } from '@/pages/CustomerLoyaltyPage';
 import { InventoryAutomationPage } from '@/pages/InventoryAutomationPage';
+import SokoniMarketplace from '@/components/SokoniMarketplace';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -367,6 +368,11 @@ export default function App() {
                     <InventoryAutomationPage />
                   </AppLayout>
                 </ProtectedRoute>
+              } />
+              
+              {/* Sokoni Marketplace - Public access for customers */}
+              <Route path="/sokoni" element={
+                <SokoniMarketplace />
               } />
               
               {/* Super Admin */}
