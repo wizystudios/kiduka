@@ -126,24 +126,22 @@ export const UsersPage = () => {
 
     setCreating(true);
     
-    // Store current session tokens BEFORE signup
     const ownerAccessToken = session.access_token;
     const ownerRefreshToken = session.refresh_token;
     const ownerId = user.id;
     const ownerBusinessName = userProfile.business_name || '';
 
-    console.log('Creating assistant for owner:', ownerId);
-    console.log('Owner business:', ownerBusinessName);
+    console.log('Creating assistant for owner:', ownerId, 'Business:', ownerBusinessName);
 
     try {
-      // Step 1: Create the assistant user (this will auto-login as new user!)
+      // Step 1: Create the assistant user
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: newUser.email,
         password: newUser.password,
         options: {
           data: {
             full_name: newUser.full_name,
-            business_name: ownerBusinessName, // Inherit owner's business
+            business_name: ownerBusinessName,
             role: 'assistant',
             owner_id: ownerId
           }
@@ -166,8 +164,7 @@ export const UsersPage = () => {
       const assistantId = authData.user.id;
       console.log('Assistant created with ID:', assistantId);
 
-      // Step 2: IMMEDIATELY restore owner session BEFORE any database operations
-      // This is critical because RLS policies check auth.uid()
+      // Step 2: Restore owner session
       console.log('Restoring owner session...');
       const { error: sessionError } = await supabase.auth.setSession({
         access_token: ownerAccessToken,
@@ -181,49 +178,19 @@ export const UsersPage = () => {
         return;
       }
 
-      console.log('Owner session restored. Now creating profile and permissions...');
+      // Step 3: Use the secure RPC function to add permissions (bypasses RLS)
+      console.log('Adding assistant permissions via RPC...');
+      const { data: rpcResult, error: rpcError } = await supabase.rpc('add_assistant_permission', {
+        p_assistant_id: assistantId,
+        p_owner_id: ownerId,
+        p_business_name: ownerBusinessName
+      });
 
-      // Step 3: Create profile for assistant with owner's business name
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .upsert([{
-          id: assistantId,
-          email: newUser.email,
-          full_name: newUser.full_name,
-          business_name: ownerBusinessName, // Same business as owner
-          role: 'assistant'
-        }], { onConflict: 'id' });
-
-      if (profileError) {
-        console.error('Profile creation error:', profileError);
-        // Continue anyway - profile might exist
+      if (rpcError) {
+        console.error('RPC error:', rpcError);
+        toast.error('Msaidizi ameundwa lakini ruhusa hazijawekwa. Jaribu tena.');
       } else {
-        console.log('Profile created successfully');
-      }
-
-      // Step 4: Create permissions record linking assistant to owner
-      const { error: permError } = await supabase
-        .from('assistant_permissions')
-        .upsert([{
-          assistant_id: assistantId,
-          owner_id: ownerId,
-          can_view_products: true,
-          can_edit_products: false,
-          can_delete_products: false,
-          can_view_sales: true,
-          can_create_sales: true,
-          can_view_customers: true,
-          can_edit_customers: false,
-          can_view_reports: false,
-          can_view_inventory: true,
-          can_edit_inventory: false
-        }], { onConflict: 'assistant_id' });
-
-      if (permError) {
-        console.error('Permissions creation error:', permError);
-        toast.error('Msaidizi ameundwa lakini ruhusa hazijawekwa. Tafadhali refresh.');
-      } else {
-        console.log('Permissions created successfully');
+        console.log('RPC result:', rpcResult);
         toast.success(`Msaidizi "${newUser.full_name}" ameongezwa kwenye "${ownerBusinessName}"! Anaweza kuingia na: ${newUser.email}`);
       }
 
@@ -237,7 +204,7 @@ export const UsersPage = () => {
       console.error('Create assistant error:', error);
       toast.error('Imeshindwa kuongeza msaidizi: ' + (error.message || 'Unknown error'));
       
-      // Try to restore session on error too
+      // Try to restore session on error
       try {
         await supabase.auth.setSession({
           access_token: ownerAccessToken,
