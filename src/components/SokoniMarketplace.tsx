@@ -65,12 +65,6 @@ interface MarketListing {
   contact_info: any;
   created_at: string;
 }
-  contact_info: {
-    phone?: string;
-    business_name?: string;
-  } | null;
-  created_at: string;
-}
 
 export const SokoniMarketplace = () => {
   const [listings, setListings] = useState<MarketListing[]>([]);
