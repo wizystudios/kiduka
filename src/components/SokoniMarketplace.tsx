@@ -27,11 +27,13 @@ import {
   Minus,
   Trash2,
   Package,
-  CreditCard,
-  Truck
+  Truck,
+  ArrowLeft
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useNavigate } from 'react-router-dom';
+import { MobileMoneyPayment } from './MobileMoneyPayment';
 
 interface MarketProduct {
   id: string;
@@ -67,14 +69,16 @@ interface MarketListing {
 }
 
 export const SokoniMarketplace = () => {
+  const navigate = useNavigate();
   const [listings, setListings] = useState<MarketListing[]>([]);
-  const [products, setProducts] = useState<MarketProduct[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
   const [cart, setCart] = useState<CartItem[]>([]);
-  const [selectedProduct, setSelectedProduct] = useState<MarketProduct | null>(null);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const [paymentOpen, setPaymentOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('browse');
+  const [customerPhone, setCustomerPhone] = useState('');
+  const [deliveryAddress, setDeliveryAddress] = useState('');
 
   useEffect(() => {
     fetchMarketData();
@@ -82,7 +86,6 @@ export const SokoniMarketplace = () => {
 
   const fetchMarketData = async () => {
     try {
-      // Fetch marketplace listings
       const { data: listingsData, error: listingsError } = await supabase
         .from('marketplace_listings')
         .select('*')
@@ -141,33 +144,20 @@ export const SokoniMarketplace = () => {
     listing.location?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleCheckout = async () => {
-    // Group cart items by seller
-    const ordersBySeller = cart.reduce((acc, item) => {
-      const sellerId = item.owner_id;
-      if (!acc[sellerId]) {
-        acc[sellerId] = {
-          seller_id: sellerId,
-          business_name: item.owner_business_name || 'Duka',
-          items: [],
-          total: 0
-        };
-      }
-      acc[sellerId].items.push(item);
-      acc[sellerId].total += item.price * item.quantity;
-      return acc;
-    }, {} as Record<string, any>);
-
+  const handlePaymentComplete = (transactionId: string, method: string) => {
     toast.success('Oda yako imepokewa! Wafanyabiashara watawasiliana nawe.');
     setCart([]);
+    setPaymentOpen(false);
     setCheckoutOpen(false);
   };
 
   if (loading) {
     return (
-      <div className="p-4 text-center">
-        <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mx-auto"></div>
-        <p className="mt-2 text-muted-foreground">Inapakia Sokoni...</p>
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center">
+          <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mx-auto"></div>
+          <p className="mt-2 text-muted-foreground">Inapakia Sokoni...</p>
+        </div>
       </div>
     );
   }
@@ -175,9 +165,17 @@ export const SokoniMarketplace = () => {
   return (
     <div className="min-h-screen bg-background pb-24">
       {/* Header */}
-      <div className="bg-gradient-to-r from-primary to-primary/80 text-primary-foreground p-4">
+      <div className="bg-gradient-to-r from-primary to-primary/80 text-primary-foreground p-4 sticky top-0 z-10">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="text-primary-foreground hover:bg-white/20"
+              onClick={() => navigate('/')}
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
             <Store className="h-6 w-6" />
             <h1 className="text-xl font-bold">Kiduka Sokoni</h1>
           </div>
@@ -187,7 +185,7 @@ export const SokoniMarketplace = () => {
               <Button variant="secondary" size="sm" className="relative">
                 <ShoppingCart className="h-4 w-4" />
                 {cartCount > 0 && (
-                  <Badge className="absolute -top-2 -right-2 h-5 w-5 p-0 flex items-center justify-center text-xs">
+                  <Badge className="absolute -top-2 -right-2 h-5 w-5 p-0 flex items-center justify-center text-xs bg-red-500">
                     {cartCount}
                   </Badge>
                 )}
@@ -260,8 +258,8 @@ export const SokoniMarketplace = () => {
                         size="lg"
                         onClick={() => setCheckoutOpen(true)}
                       >
-                        <CreditCard className="h-4 w-4 mr-2" />
-                        Endelea Kulipa
+                        <Phone className="h-4 w-4 mr-2" />
+                        Endelea Kuoda
                       </Button>
                     </div>
                   </>
@@ -338,7 +336,6 @@ export const SokoniMarketplace = () => {
                       size="sm" 
                       className="w-full mt-2"
                       onClick={() => {
-                        // Convert listing to product format for cart
                         const productForCart: MarketProduct = {
                           id: listing.id,
                           name: listing.product_name,
@@ -387,10 +384,10 @@ export const SokoniMarketplace = () => {
       </Tabs>
 
       {/* Checkout Dialog */}
-      <Dialog open={checkoutOpen} onOpenChange={setCheckoutOpen}>
+      <Dialog open={checkoutOpen && !paymentOpen} onOpenChange={setCheckoutOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Maliza Oda</DialogTitle>
+            <DialogTitle>Maelezo ya Oda</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div className="p-3 bg-muted rounded-lg">
@@ -400,24 +397,44 @@ export const SokoniMarketplace = () => {
             
             <div>
               <label className="text-sm font-medium">Namba ya Simu *</label>
-              <Input placeholder="07xx xxx xxx" className="mt-1" />
+              <Input 
+                placeholder="07xx xxx xxx" 
+                className="mt-1" 
+                value={customerPhone}
+                onChange={(e) => setCustomerPhone(e.target.value)}
+              />
             </div>
             
             <div>
-              <label className="text-sm font-medium">Mahali pa Kupeleka</label>
-              <Input placeholder="Eneo, mtaa, namba ya nyumba" className="mt-1" />
+              <label className="text-sm font-medium">Mahali pa Kupeleka *</label>
+              <Input 
+                placeholder="Eneo, mtaa, namba ya nyumba" 
+                className="mt-1"
+                value={deliveryAddress}
+                onChange={(e) => setDeliveryAddress(e.target.value)}
+              />
             </div>
             
-            <div>
-              <label className="text-sm font-medium">Maelezo ya Ziada</label>
-              <Input placeholder="Maagizo maalum..." className="mt-1" />
-            </div>
-            
-            <Button className="w-full" size="lg" onClick={handleCheckout}>
-              <CreditCard className="h-4 w-4 mr-2" />
-              Tuma Oda
+            <Button 
+              className="w-full" 
+              size="lg" 
+              onClick={() => setPaymentOpen(true)}
+              disabled={!customerPhone || !deliveryAddress}
+            >
+              Endelea Kulipa
             </Button>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Payment Dialog */}
+      <Dialog open={paymentOpen} onOpenChange={setPaymentOpen}>
+        <DialogContent className="max-w-md">
+          <MobileMoneyPayment
+            amount={cartTotal}
+            onPaymentComplete={handlePaymentComplete}
+            onCancel={() => setPaymentOpen(false)}
+          />
         </DialogContent>
       </Dialog>
     </div>
