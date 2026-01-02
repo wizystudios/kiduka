@@ -4,13 +4,14 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Search, Edit, Trash2, Package, Loader2, Scale, ChevronDown, ChevronUp, ShoppingCart, FileSpreadsheet, Download } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, Package, Loader2, Scale, ChevronDown, ChevronUp, ShoppingCart, FileSpreadsheet, Download, Store } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useDataAccess } from '@/hooks/useDataAccess';
 import { toast } from 'sonner';
 import * as XLSX from 'xlsx';
 import { WeightQuantitySelector } from '@/components/WeightQuantitySelector';
+import { PublishToSokoni } from '@/components/PublishToSokoni';
 import {
   Collapsible,
   CollapsibleContent,
@@ -378,6 +379,12 @@ export const ProductsPage = () => {
                           <Trash2 className="h-3 w-3 mr-1" />
                           Futa
                         </Button>
+                        
+                        {/* Publish to Sokoni */}
+                        <PublishToSokoni 
+                          product={product}
+                          onPublished={() => toast.success('Bidhaa imetumwa Sokoni')}
+                        />
                         
                         {product.is_weight_based && (
                           <Button
