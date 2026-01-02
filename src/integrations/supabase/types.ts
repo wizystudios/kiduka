@@ -824,6 +824,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      add_assistant_permission: {
+        Args: {
+          p_assistant_id: string
+          p_business_name?: string
+          p_owner_id: string
+        }
+        Returns: Json
+      }
       can_access_owner_data: {
         Args: { target_owner_id: string }
         Returns: boolean
