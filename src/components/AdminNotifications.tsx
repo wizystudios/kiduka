@@ -41,16 +41,14 @@ export const AdminNotifications = () => {
   };
 
   const generateSystemNotifications = async () => {
-    // Remove hardcoded admin notifications - only generate real system alerts when needed
+    // Only generate real system alerts when needed
     try {
-      // Check for critical system issues only
-      const { data: profiles, error } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('role', 'super_admin');
-
-      // Only add real critical system notifications if needed
-      // This function can be used for actual system monitoring
+      // Example: check if there is at least one super admin role
+      await supabase
+        .from('user_roles')
+        .select('user_id')
+        .eq('role', 'super_admin')
+        .limit(1);
     } catch (error) {
       console.error('Error checking system status:', error);
     }

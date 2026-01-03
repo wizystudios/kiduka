@@ -112,8 +112,23 @@ class OfflineDatabase {
     });
   }
 
-  async save<T extends { id: string }>(storeName: string, data: T, addToSyncQueue = true): Promise<T> {
+  async save<T extends { id: string }>(
+    storeName: string,
+    data: T,
+    addToSyncQueue = true
+  ): Promise<T> {
     await this.init();
+
+    // Determine if this is an insert vs update for sync purposes
+    let action: SyncRecord['action'] = 'update';
+    try {
+      const existing = await this.getById<any>(storeName, data.id);
+      action = existing ? 'update' : 'insert';
+    } catch {
+      // If lookup fails, treat as update
+      action = 'update';
+    }
+
     return new Promise((resolve, reject) => {
       const transaction = this.db!.transaction(storeName, 'readwrite');
       const store = transaction.objectStore(storeName);
@@ -121,7 +136,7 @@ class OfflineDatabase {
 
       request.onsuccess = async () => {
         if (addToSyncQueue) {
-          await this.addToSyncQueue(storeName, 'update', data);
+          await this.addToSyncQueue(storeName, action, data);
         }
         resolve(data);
       };
@@ -192,8 +207,10 @@ class OfflineDatabase {
       const request = store.getAll();
 
       request.onsuccess = () => {
-        // Filter for unsynced items
-        const results = (request.result as SyncRecord[]).filter(item => !item.synced);
+        // Filter for unsynced items and keep deterministic order
+        const results = (request.result as SyncRecord[])
+          .filter(item => !item.synced)
+          .sort((a, b) => a.timestamp - b.timestamp);
         resolve(results);
       };
       request.onerror = () => reject(request.error);

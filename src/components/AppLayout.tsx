@@ -3,6 +3,7 @@ import { AppSidebar } from "@/components/AppSidebar";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { TopNavbar } from "@/components/TopNavbar";
 import { UserInfoBar } from "@/components/UserInfoBar";
+import OfflineSyncBootstrap from "@/components/OfflineSyncBootstrap";
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -12,6 +13,7 @@ export function AppLayout({ children }: AppLayoutProps) {
   return (
     <SidebarProvider>
       <TopNavbar />
+      <OfflineSyncBootstrap />
       <div className="flex min-h-screen w-full">
         <AppSidebar />
         <SidebarInset className="flex-1">

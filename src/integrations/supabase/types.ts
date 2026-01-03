@@ -639,7 +639,6 @@ export type Database = {
           email: string | null
           full_name: string | null
           id: string
-          role: string | null
           updated_at: string
         }
         Insert: {
@@ -648,7 +647,6 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id: string
-          role?: string | null
           updated_at?: string
         }
         Update: {
@@ -657,7 +655,6 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id?: string
-          role?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -792,6 +789,72 @@ export type Database = {
           },
         ]
       }
+      sokoni_orders: {
+        Row: {
+          created_at: string
+          customer_phone: string
+          delivery_address: string
+          id: string
+          items: Json
+          order_status: string
+          payment_method: string | null
+          payment_status: string
+          seller_id: string
+          total_amount: number
+          transaction_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          customer_phone: string
+          delivery_address: string
+          id?: string
+          items: Json
+          order_status?: string
+          payment_method?: string | null
+          payment_status?: string
+          seller_id: string
+          total_amount: number
+          transaction_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          customer_phone?: string
+          delivery_address?: string
+          id?: string
+          items?: Json
+          order_status?: string
+          payment_method?: string | null
+          payment_status?: string
+          seller_id?: string
+          total_amount?: number
+          transaction_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
       voice_commands: {
         Row: {
           command_text: string
@@ -837,9 +900,16 @@ export type Database = {
         Returns: boolean
       }
       get_user_role: { Args: { _user_id: string }; Returns: string }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "owner" | "assistant" | "super_admin"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -966,6 +1036,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["owner", "assistant", "super_admin"],
+    },
   },
 } as const

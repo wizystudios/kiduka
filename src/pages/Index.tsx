@@ -73,6 +73,13 @@ const Index = () => {
           >
             Anza Kutumia Kiduka
           </button>
+
+          <button
+            onClick={() => navigate('/sokoni')}
+            className="w-full bg-gradient-to-r from-primary to-primary/80 text-primary-foreground py-3 px-6 rounded-lg text-base font-semibold hover:opacity-90 transition-all"
+          >
+            Tembelea Sokoni
+          </button>
           
           <button
             onClick={() => setShowOnboarding(true)}
