@@ -42,28 +42,27 @@ export const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
     }
   };
 
-  const createProfile = async (userId: string, email: string, fullName?: string, businessName?: string, role?: string) => {
+  const createProfile = async (userId: string, email: string, fullName?: string, businessName?: string) => {
     try {
-      console.log('Creating profile for user:', userId, 'with role:', role);
+      console.log('Creating profile for user:', userId);
       const { data: newProfile, error } = await supabase
         .from('profiles')
         .insert([
           {
             id: userId,
-            email: email,
+            email,
             full_name: fullName || '',
-            business_name: businessName || '',
-            role: role || 'owner' // Use provided role or default to owner
+            business_name: businessName || ''
           }
         ])
         .select()
         .single();
-      
+
       if (error) {
         console.error('Error creating profile:', error);
         return null;
       }
-      
+
       console.log('Profile created successfully:', newProfile);
       return newProfile;
     } catch (error) {
@@ -74,56 +73,63 @@ export const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
 
   const fetchUserProfile = async (userId: string, currentUser?: User | null) => {
     const userRef = currentUser || user;
-    
+
+    // Resolve role from backend roles table (fallback to user metadata)
+    const resolveRole = async () => {
+      const metadataRole = userRef?.user_metadata?.role;
+      try {
+        const { data, error } = await supabase.rpc('get_user_role', { _user_id: userId });
+        if (!error && data) return data;
+      } catch {
+        // ignore
+      }
+      return metadataRole === 'assistant' ? 'assistant' : 'owner';
+    };
+
     try {
       const { data: profile, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
         .maybeSingle();
-      
+
       if (error) {
         console.error('Error fetching profile:', error);
         return null;
       }
-      
+
+      const role = await resolveRole();
+
       if (!profile) {
-        // Get role from user metadata (important for assistants)
-        const metadataRole = userRef?.user_metadata?.role;
-        const isAssistant = metadataRole === 'assistant';
-        
-        console.log('No profile found, creating one. Role from metadata:', metadataRole);
-        
-        // Create profile with correct role from metadata
+        console.log('No profile found, creating one.');
+
         createProfile(
           userId,
           userRef?.email || '',
           userRef?.user_metadata?.full_name,
-          userRef?.user_metadata?.business_name,
-          isAssistant ? 'assistant' : 'owner'
+          userRef?.user_metadata?.business_name
         ).catch(err => console.error('Background profile creation failed:', err));
-        
-        // Return minimal profile with correct role
+
         return {
           id: userId,
           email: userRef?.email || '',
           full_name: userRef?.user_metadata?.full_name || '',
           business_name: userRef?.user_metadata?.business_name || '',
-          role: isAssistant ? 'assistant' : 'owner'
+          role
         };
       }
-      
-      console.log('Profile fetched:', profile.email, 'Role:', profile.role);
-      return profile;
+
+      console.log('Profile fetched:', profile.email, 'Role:', role);
+      return { ...profile, role };
     } catch (error) {
       console.error('Error in fetchUserProfile:', error);
-      const metadataRole = userRef?.user_metadata?.role;
+      const role = await resolveRole();
       return {
         id: userId,
         email: userRef?.email || '',
         full_name: userRef?.user_metadata?.full_name || '',
         business_name: userRef?.user_metadata?.business_name || '',
-        role: metadataRole === 'assistant' ? 'assistant' : 'owner'
+        role
       };
     }
   };

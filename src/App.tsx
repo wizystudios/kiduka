@@ -58,6 +58,7 @@ import SalesForecastingPage from '@/pages/SalesForecastingPage';
 import { CustomerLoyaltyPage } from '@/pages/CustomerLoyaltyPage';
 import { InventoryAutomationPage } from '@/pages/InventoryAutomationPage';
 import SokoniMarketplace from '@/components/SokoniMarketplace';
+import SokoniOrdersPage from '@/pages/SokoniOrdersPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -371,8 +372,15 @@ export default function App() {
               } />
               
               {/* Sokoni Marketplace - Public access for customers */}
-              <Route path="/sokoni" element={
-                <SokoniMarketplace />
+              <Route path="/sokoni" element={<SokoniMarketplace />} />
+
+              {/* Sokoni Orders (seller dashboard) */}
+              <Route path="/sokoni-orders" element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <SokoniOrdersPage />
+                  </AppLayout>
+                </ProtectedRoute>
               } />
               
               {/* Super Admin */}

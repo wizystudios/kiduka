@@ -53,6 +53,7 @@ const navigationItems = [
   { id: 'quick-sale', label: 'Mauzo Haraka', icon: Zap, href: '/quick-sale', permission: 'can_create_sales' },
   { id: 'sales', label: 'Mauzo', icon: ShoppingCart, href: '/sales', permission: 'can_view_sales' },
   { id: 'sokoni', label: 'Sokoni', icon: Store, href: '/sokoni', permission: null },
+  { id: 'sokoni-orders', label: 'Oda za Sokoni', icon: ClipboardList, href: '/sokoni-orders', permission: 'can_view_sales' },
   { id: 'inventory-snapshots', label: 'Hesabu ya Stock', icon: ClipboardList, href: '/inventory-snapshots', permission: 'can_view_inventory' },
   { id: 'inventory-automation', label: 'Auto-Oda', icon: Package, href: '/inventory-automation', permission: 'can_edit_inventory' },
   { id: 'customers', label: 'Wateja', icon: Users, href: '/customers', permission: 'can_view_customers' },

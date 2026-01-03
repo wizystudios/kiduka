@@ -19,10 +19,9 @@ interface Assistant {
   owner_id: string;
   created_at: string;
   profile?: {
-    email: string;
-    full_name: string;
-    role: string;
-    business_name: string;
+    email?: string;
+    full_name?: string;
+    business_name?: string;
   };
 }
 
@@ -93,7 +92,6 @@ export const UsersPage = () => {
         profile: profiles?.find(p => p.id === perm.assistant_id) || {
           email: 'N/A',
           full_name: 'N/A',
-          role: 'assistant',
           business_name: ''
         }
       }));

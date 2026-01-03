@@ -16,7 +16,7 @@ interface UserProfile {
   id: string;
   email: string;
   full_name: string;
-  role: string;
+  role?: string;
   business_name: string;
   created_at: string;
 }
@@ -41,13 +41,33 @@ export const UsersManagementPage = () => {
 
   const fetchUsers = async () => {
     try {
-      const { data, error } = await supabase
+      const { data: profiles, error } = await supabase
         .from('profiles')
         .select('*')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setUsers(data || []);
+
+      // Try to enrich profiles with roles (works for super_admin; otherwise roles may be unavailable)
+      let roleMap = new Map<string, string>();
+      try {
+        const { data: rolesData } = await supabase
+          .from('user_roles')
+          .select('user_id, role');
+
+        (rolesData || []).forEach((r: any) => {
+          if (r?.user_id && r?.role) roleMap.set(r.user_id, r.role);
+        });
+      } catch {
+        // ignore
+      }
+
+      const enriched = (profiles || []).map((p: any) => ({
+        ...p,
+        role: roleMap.get(p.id)
+      }));
+
+      setUsers(enriched);
     } catch (error) {
       console.error('Error fetching users:', error);
       toast({
