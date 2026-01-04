@@ -10,6 +10,7 @@ import { ArrowLeft, Save, Loader2, WifiOff, Cloud } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useDataAccess } from '@/hooks/useDataAccess';
 import { useOfflineProducts } from '@/hooks/useOfflineProducts';
+import { ProductImageUpload } from '@/components/ProductImageUpload';
 import { toast } from 'sonner';
 
 export const AddProductPage = () => {
@@ -25,7 +26,8 @@ export const AddProductPage = () => {
     low_stock_threshold: '10',
     is_weight_based: false,
     unit_type: 'piece',
-    min_quantity: '0.1'
+    min_quantity: '0.1',
+    image_url: null as string | null
   });
   
   const navigate = useNavigate();
@@ -73,6 +75,7 @@ export const AddProductPage = () => {
         is_weight_based: formData.is_weight_based,
         unit_type: formData.unit_type,
         min_quantity: parseFloat(formData.min_quantity) || 0.1,
+        image_url: formData.image_url,
         owner_id: dataOwnerId
       };
 
@@ -99,7 +102,8 @@ export const AddProductPage = () => {
         low_stock_threshold: '10',
         is_weight_based: false,
         unit_type: 'piece',
-        min_quantity: '0.1'
+        min_quantity: '0.1',
+        image_url: null
       });
       
       navigate('/products');
@@ -158,6 +162,12 @@ export const AddProductPage = () => {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-3">
+            {/* Product Image Upload */}
+            <ProductImageUpload
+              currentImageUrl={formData.image_url}
+              onImageChange={(url) => setFormData({...formData, image_url: url})}
+            />
+            
             <div>
               <Label htmlFor="name" className="text-xs">Jina la Bidhaa *</Label>
               <Input
