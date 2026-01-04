@@ -79,6 +79,7 @@ export const SokoniMarketplace = () => {
   const [activeTab, setActiveTab] = useState('browse');
   const [customerPhone, setCustomerPhone] = useState('');
   const [deliveryAddress, setDeliveryAddress] = useState('');
+  const [submittingOrder, setSubmittingOrder] = useState(false);
 
   useEffect(() => {
     fetchMarketData();
@@ -144,11 +145,62 @@ export const SokoniMarketplace = () => {
     listing.location?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handlePaymentComplete = (transactionId: string, method: string) => {
-    toast.success('Oda yako imepokewa! Wafanyabiashara watawasiliana nawe.');
-    setCart([]);
-    setPaymentOpen(false);
-    setCheckoutOpen(false);
+  const handlePaymentComplete = async (transactionId: string, method: string) => {
+    if (submittingOrder) return;
+    setSubmittingOrder(true);
+
+    try {
+      // Group cart items by seller
+      const sellerGroups = cart.reduce((acc, item) => {
+        const sellerId = item.owner_id;
+        if (!acc[sellerId]) acc[sellerId] = [];
+        acc[sellerId].push(item);
+        return acc;
+      }, {} as Record<string, CartItem[]>);
+
+      // Create orders for each seller
+      for (const [sellerId, items] of Object.entries(sellerGroups)) {
+        const orderItems = items.map(item => ({
+          product_name: item.name,
+          quantity: item.quantity,
+          unit_price: item.price,
+          listing_id: item.id
+        }));
+
+        const orderTotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+
+        const { error: orderError } = await supabase
+          .from('sokoni_orders')
+          .insert({
+            seller_id: sellerId,
+            customer_phone: customerPhone,
+            delivery_address: deliveryAddress,
+            items: orderItems,
+            total_amount: orderTotal,
+            payment_method: method,
+            payment_status: 'paid',
+            order_status: 'new',
+            transaction_id: transactionId
+          });
+
+        if (orderError) {
+          console.error('Order error:', orderError);
+          throw orderError;
+        }
+      }
+
+      toast.success('Oda yako imepokewa! Wafanyabiashara watawasiliana nawe.');
+      setCart([]);
+      setCustomerPhone('');
+      setDeliveryAddress('');
+      setPaymentOpen(false);
+      setCheckoutOpen(false);
+    } catch (error) {
+      console.error('Error creating order:', error);
+      toast.error('Imeshindwa kutuma oda. Jaribu tena.');
+    } finally {
+      setSubmittingOrder(false);
+    }
   };
 
   if (loading) {
@@ -164,20 +216,20 @@ export const SokoniMarketplace = () => {
 
   return (
     <div className="min-h-screen bg-background pb-24">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-primary to-primary/80 text-primary-foreground p-4 sticky top-0 z-10">
+      {/* Header - Matching Kiduka design */}
+      <div className="bg-primary text-primary-foreground p-4 sticky top-0 z-10">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <Button 
               variant="ghost" 
               size="icon" 
-              className="text-primary-foreground hover:bg-white/20"
+              className="text-primary-foreground hover:bg-primary-foreground/20"
               onClick={() => navigate('/')}
             >
               <ArrowLeft className="h-5 w-5" />
             </Button>
             <Store className="h-6 w-6" />
-            <h1 className="text-xl font-bold">Kiduka Sokoni</h1>
+            <h1 className="text-lg font-bold">Kiduka Sokoni</h1>
           </div>
           
           <Sheet>
@@ -185,7 +237,7 @@ export const SokoniMarketplace = () => {
               <Button variant="secondary" size="sm" className="relative">
                 <ShoppingCart className="h-4 w-4" />
                 {cartCount > 0 && (
-                  <Badge className="absolute -top-2 -right-2 h-5 w-5 p-0 flex items-center justify-center text-xs bg-red-500">
+                  <Badge className="absolute -top-2 -right-2 h-5 w-5 p-0 flex items-center justify-center text-xs bg-destructive text-destructive-foreground">
                     {cartCount}
                   </Badge>
                 )}
@@ -208,10 +260,10 @@ export const SokoniMarketplace = () => {
                 ) : (
                   <>
                     {cart.map(item => (
-                      <Card key={item.id}>
+                      <Card key={item.id} className="border-border">
                         <CardContent className="p-3 flex items-center gap-3">
                           <div className="flex-1">
-                            <p className="font-medium text-sm">{item.name}</p>
+                            <p className="font-medium text-sm text-foreground">{item.name}</p>
                             <p className="text-xs text-muted-foreground">{item.owner_business_name}</p>
                             <p className="text-sm font-semibold text-primary">
                               TSh {(item.price * item.quantity).toLocaleString()}
@@ -248,7 +300,7 @@ export const SokoniMarketplace = () => {
                       </Card>
                     ))}
                     
-                    <div className="border-t pt-3 mt-4">
+                    <div className="border-t border-border pt-3 mt-4">
                       <div className="flex justify-between text-lg font-bold">
                         <span>Jumla:</span>
                         <span className="text-primary">TSh {cartTotal.toLocaleString()}</span>
@@ -275,23 +327,23 @@ export const SokoniMarketplace = () => {
             placeholder="Tafuta bidhaa, duka, eneo..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-9 bg-white/20 border-white/30 text-primary-foreground placeholder:text-primary-foreground/70"
+            className="pl-9 bg-primary-foreground/20 border-primary-foreground/30 text-primary-foreground placeholder:text-primary-foreground/70"
           />
         </div>
       </div>
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="w-full grid grid-cols-3 m-2 mx-4" style={{ width: 'calc(100% - 32px)' }}>
-          <TabsTrigger value="browse">
+        <TabsList className="w-full grid grid-cols-3 mx-4 mt-2" style={{ width: 'calc(100% - 32px)' }}>
+          <TabsTrigger value="browse" className="text-xs">
             <Package className="h-4 w-4 mr-1" />
             Bidhaa
           </TabsTrigger>
-          <TabsTrigger value="stores">
+          <TabsTrigger value="stores" className="text-xs">
             <Store className="h-4 w-4 mr-1" />
             Maduka
           </TabsTrigger>
-          <TabsTrigger value="orders">
+          <TabsTrigger value="orders" className="text-xs">
             <Truck className="h-4 w-4 mr-1" />
             Oda Zangu
           </TabsTrigger>
@@ -301,7 +353,7 @@ export const SokoniMarketplace = () => {
           {filteredListings.length === 0 ? (
             <div className="text-center py-12">
               <Store className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-semibold mb-2">Hakuna bidhaa sokoni</h3>
+              <h3 className="text-lg font-semibold mb-2 text-foreground">Hakuna bidhaa sokoni</h3>
               <p className="text-muted-foreground text-sm">
                 {searchTerm ? 'Hakuna matokeo ya utafutaji' : 'Wafanyabiashara hawajaongeza bidhaa bado'}
               </p>
@@ -309,12 +361,12 @@ export const SokoniMarketplace = () => {
           ) : (
             <div className="grid grid-cols-2 gap-3">
               {filteredListings.map(listing => (
-                <Card key={listing.id} className="overflow-hidden">
+                <Card key={listing.id} className="overflow-hidden border-border">
                   <div className="aspect-square bg-muted flex items-center justify-center">
                     <Package className="h-12 w-12 text-muted-foreground/50" />
                   </div>
                   <CardContent className="p-3">
-                    <h3 className="font-semibold text-sm line-clamp-1">{listing.product_name}</h3>
+                    <h3 className="font-semibold text-sm line-clamp-1 text-foreground">{listing.product_name}</h3>
                     <p className="text-xs text-muted-foreground line-clamp-1">
                       {listing.contact_info?.business_name || 'Duka'}
                     </p>
@@ -365,7 +417,7 @@ export const SokoniMarketplace = () => {
         <TabsContent value="stores" className="px-4 mt-2">
           <div className="text-center py-12">
             <Store className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-lg font-semibold mb-2">Maduka</h3>
+            <h3 className="text-lg font-semibold mb-2 text-foreground">Maduka</h3>
             <p className="text-muted-foreground text-sm">
               Orodha ya maduka itaonyeshwa hapa
             </p>
@@ -375,7 +427,7 @@ export const SokoniMarketplace = () => {
         <TabsContent value="orders" className="px-4 mt-2">
           <div className="text-center py-12">
             <Truck className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-lg font-semibold mb-2">Oda Zangu</h3>
+            <h3 className="text-lg font-semibold mb-2 text-foreground">Oda Zangu</h3>
             <p className="text-muted-foreground text-sm">
               Oda zako zitaonyeshwa hapa baada ya kununua
             </p>
@@ -419,7 +471,7 @@ export const SokoniMarketplace = () => {
               className="w-full" 
               size="lg" 
               onClick={() => setPaymentOpen(true)}
-              disabled={!customerPhone || !deliveryAddress}
+              disabled={!customerPhone || customerPhone.length < 9 || !deliveryAddress}
             >
               Endelea Kulipa
             </Button>

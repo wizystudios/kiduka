@@ -1,15 +1,14 @@
-
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Calendar, Search, Download, Eye, DollarSign, Receipt, X, FileSpreadsheet } from 'lucide-react';
+import { Calendar, Search, Download, Eye, DollarSign, Receipt, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/hooks/useAuth';
+import { useDataAccess } from '@/hooks/useDataAccess';
 import { toast } from 'sonner';
-import { exportToExcel, exportToCSV, ExportColumn } from '@/utils/exportUtils';
+import { exportToExcel, ExportColumn } from '@/utils/exportUtils';
 
 interface Sale {
   id: string;
@@ -43,10 +42,10 @@ export const SalesPage = () => {
   const [loading, setLoading] = useState(true);
   const [selectedSale, setSelectedSale] = useState<Sale | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const { user } = useAuth();
+  const { dataOwnerId, loading: dataLoading } = useDataAccess();
 
   const fetchSales = useCallback(async () => {
-    if (!user?.id) {
+    if (!dataOwnerId) {
       setLoading(false);
       return;
     }
@@ -79,10 +78,9 @@ export const SalesPage = () => {
             email
           )
         `)
-        .eq('owner_id', user.id)
+        .eq('owner_id', dataOwnerId)
         .order('created_at', { ascending: false });
 
-      // Filter by period
       const now = new Date();
       if (selectedPeriod === 'today') {
         const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -112,10 +110,10 @@ export const SalesPage = () => {
     } finally {
       setLoading(false);
     }
-  }, [user?.id, selectedPeriod]);
+  }, [dataOwnerId, selectedPeriod]);
 
   useEffect(() => {
-    if (user?.id) {
+    if (dataOwnerId) {
       fetchSales();
     }
   }, [fetchSales]);
@@ -188,28 +186,27 @@ export const SalesPage = () => {
     toast.success('Mauzo yamehamishwa kwa mafanikio');
   };
 
-  if (loading) {
+  if (dataLoading || loading) {
     return (
       <div className="p-4 space-y-4">
         <div className="text-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Inapakia historia ya mauzo...</p>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Inapakia historia ya mauzo...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="p-4 space-y-6">
-      {/* Header */}
+    <div className="p-4 space-y-6 pb-24">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Historia ya Mauzo</h2>
-          <p className="text-gray-600">Fuatilia mauzo na miamala yako</p>
+          <h2 className="text-2xl font-bold text-foreground">Historia ya Mauzo</h2>
+          <p className="text-muted-foreground">Fuatilia mauzo na miamala yako</p>
         </div>
         <Button 
           variant="outline" 
-          className="flex items-center text-blue-600 border-blue-600 hover:bg-blue-50"
+          className="flex items-center"
           onClick={handleExportSales}
           disabled={filteredSales.length === 0}
         >
@@ -218,46 +215,44 @@ export const SalesPage = () => {
         </Button>
       </div>
 
-      {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
+        <Card className="border-border">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Jumla ya Mapato</p>
-                <p className="text-2xl font-bold text-green-600">TZS {Number(getSalesStats.totalRevenue).toLocaleString()}</p>
+                <p className="text-sm text-muted-foreground">Jumla ya Mapato</p>
+                <p className="text-2xl font-bold text-green-600 dark:text-green-400">TZS {Number(getSalesStats.totalRevenue).toLocaleString()}</p>
               </div>
-              <DollarSign className="h-8 w-8 text-green-600" />
+              <DollarSign className="h-8 w-8 text-green-600 dark:text-green-400" />
             </div>
           </CardContent>
         </Card>
         
-        <Card>
+        <Card className="border-border">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Miamala</p>
-                <p className="text-2xl font-bold text-blue-600">{getSalesStats.totalTransactions}</p>
+                <p className="text-sm text-muted-foreground">Miamala</p>
+                <p className="text-2xl font-bold text-primary">{getSalesStats.totalTransactions}</p>
               </div>
-              <Receipt className="h-8 w-8 text-blue-600" />
+              <Receipt className="h-8 w-8 text-primary" />
             </div>
           </CardContent>
         </Card>
         
-        <Card>
+        <Card className="border-border">
           <CardContent className="p-4">
             <div>
-              <p className="text-sm text-gray-600">Wastani wa Muamala</p>
-              <p className="text-2xl font-bold text-purple-600">TZS {Number(getSalesStats.averageTicket).toLocaleString()}</p>
+              <p className="text-sm text-muted-foreground">Wastani wa Muamala</p>
+              <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">TZS {Number(getSalesStats.averageTicket).toLocaleString()}</p>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-4">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+          <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Tafuta kwa nambari ya muamala au bidhaa..."
             value={searchTerm}
@@ -272,7 +267,6 @@ export const SalesPage = () => {
               variant={selectedPeriod === period.id ? "default" : "outline"}
               onClick={() => setSelectedPeriod(period.id)}
               size="sm"
-              className={selectedPeriod === period.id ? "bg-blue-600 hover:bg-blue-700" : ""}
             >
               {period.label}
             </Button>
@@ -280,23 +274,22 @@ export const SalesPage = () => {
         </div>
       </div>
 
-      {/* Sales List */}
       <div className="space-y-4">
         {filteredSales.map((sale) => (
-          <Card key={sale.id} className="hover:shadow-md transition-shadow">
+          <Card key={sale.id} className="hover:shadow-md transition-shadow border-border">
             <CardContent className="p-4">
               <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-2">
-                    <h3 className="font-semibold text-lg">#{sale.id.slice(0, 8).toUpperCase()}</h3>
-                    <Badge variant="outline" className="text-green-600 border-green-200">
+                    <h3 className="font-semibold text-lg text-foreground">#{sale.id.slice(0, 8).toUpperCase()}</h3>
+                    <Badge variant="outline">
                       {sale.payment_method || 'Taslimu'}
                     </Badge>
                   </div>
-                  <p className="text-sm text-gray-600 mb-3">{formatDate(sale.created_at)}</p>
+                  <p className="text-sm text-muted-foreground mb-3">{formatDate(sale.created_at)}</p>
                   
                   {sale.customers && (
-                    <p className="text-sm text-gray-600 mb-3">
+                    <p className="text-sm text-muted-foreground mb-3">
                       Mteja: {sale.customers.name}
                       {sale.customers.phone && ` (${sale.customers.phone})`}
                     </p>
@@ -305,12 +298,12 @@ export const SalesPage = () => {
                   <div className="space-y-1">
                     {sale.sales_items.slice(0, 3).map((item, index) => (
                       <div key={index} className="flex justify-between text-sm">
-                        <span>{item.quantity}x {item.products.name}</span>
-                        <span className="font-medium">TZS {item.subtotal.toLocaleString()}</span>
+                        <span className="text-foreground">{item.quantity}x {item.products.name}</span>
+                        <span className="font-medium text-foreground">TZS {item.subtotal.toLocaleString()}</span>
                       </div>
                     ))}
                     {sale.sales_items.length > 3 && (
-                      <p className="text-sm text-gray-500">
+                      <p className="text-sm text-muted-foreground">
                         ...na mengine {sale.sales_items.length - 3}
                       </p>
                     )}
@@ -319,17 +312,16 @@ export const SalesPage = () => {
                 
                 <div className="flex flex-col lg:items-end gap-3">
                   <div className="text-right">
-                    <p className="text-sm text-gray-600">Jumla</p>
-                    <p className="text-2xl font-bold text-gray-900">TZS {sale.total_amount.toLocaleString()}</p>
+                    <p className="text-sm text-muted-foreground">Jumla</p>
+                    <p className="text-2xl font-bold text-foreground">TZS {sale.total_amount.toLocaleString()}</p>
                     {sale.discount_amount && sale.discount_amount > 0 && (
-                      <p className="text-sm text-red-600">Punguzo: -TZS {sale.discount_amount.toLocaleString()}</p>
+                      <p className="text-sm text-destructive">Punguzo: -TZS {sale.discount_amount.toLocaleString()}</p>
                     )}
                   </div>
                   <Button 
                     variant="outline" 
                     size="sm"
                     onClick={() => handleViewDetails(sale)}
-                    className="text-blue-600 border-blue-600 hover:bg-blue-50"
                   >
                     <Eye className="h-4 w-4 mr-2" />
                     Ona Maelezo
@@ -342,23 +334,22 @@ export const SalesPage = () => {
       </div>
 
       {filteredSales.length === 0 && (
-        <Card className="text-center py-12">
+        <Card className="text-center py-12 border-border">
           <CardContent>
-            <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Hakuna mauzo yaliyopatikana</h3>
-            <p className="text-gray-600">
+            <Calendar className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-foreground mb-2">Hakuna mauzo yaliyopatikana</h3>
+            <p className="text-muted-foreground">
               {searchTerm ? "Jaribu kubadilisha maneno ya utafutaji" : "Hakuna mauzo ya kipindi hiki"}
             </p>
           </CardContent>
         </Card>
       )}
 
-      {/* Sale Details Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <div className="flex items-center justify-between">
-              <DialogTitle>Maelezo ya Muamala #{selectedSale?.id.slice(0, 8).toUpperCase()}</DialogTitle>
+              <DialogTitle className="text-foreground">Maelezo ya Muamala #{selectedSale?.id.slice(0, 8).toUpperCase()}</DialogTitle>
               <Button
                 variant="ghost"
                 size="sm"
@@ -372,69 +363,66 @@ export const SalesPage = () => {
           
           {selectedSale && (
             <div className="space-y-6">
-              {/* Sale Info */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <p className="text-sm text-gray-600">Tarehe</p>
-                  <p className="font-medium">{formatDate(selectedSale.created_at)}</p>
+                  <p className="text-sm text-muted-foreground">Tarehe</p>
+                  <p className="font-medium text-foreground">{formatDate(selectedSale.created_at)}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600">Njia ya Malipo</p>
-                  <p className="font-medium">{selectedSale.payment_method || 'Taslimu'}</p>
+                  <p className="text-sm text-muted-foreground">Njia ya Malipo</p>
+                  <p className="font-medium text-foreground">{selectedSale.payment_method || 'Taslimu'}</p>
                 </div>
                 {selectedSale.customers && (
                   <>
                     <div>
-                      <p className="text-sm text-gray-600">Mteja</p>
-                      <p className="font-medium">{selectedSale.customers.name}</p>
+                      <p className="text-sm text-muted-foreground">Mteja</p>
+                      <p className="font-medium text-foreground">{selectedSale.customers.name}</p>
                     </div>
                     {selectedSale.customers.phone && (
                       <div>
-                        <p className="text-sm text-gray-600">Simu</p>
-                        <p className="font-medium">{selectedSale.customers.phone}</p>
+                        <p className="text-sm text-muted-foreground">Simu</p>
+                        <p className="font-medium text-foreground">{selectedSale.customers.phone}</p>
                       </div>
                     )}
                   </>
                 )}
               </div>
 
-              {/* Items */}
               <div>
-                <h4 className="font-semibold mb-3">Bidhaa Zilizouzwa</h4>
+                <h4 className="font-semibold mb-3 text-foreground">Bidhaa Zilizouzwa</h4>
                 <div className="space-y-2">
                   {selectedSale.sales_items.map((item, index) => (
-                    <div key={index} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                    <div key={index} className="flex justify-between items-center p-3 bg-muted rounded-lg">
                       <div className="flex-1">
-                        <p className="font-medium">{item.products.name}</p>
+                        <p className="font-medium text-foreground">{item.products.name}</p>
                         {item.products.category && (
-                          <p className="text-sm text-gray-600">{item.products.category}</p>
+                          <p className="text-sm text-muted-foreground">{item.products.category}</p>
                         )}
                       </div>
                       <div className="text-right">
-                        <p className="font-medium">{item.quantity} x TZS {item.unit_price.toLocaleString()}</p>
-                        <p className="text-sm text-gray-600">= TZS {item.subtotal.toLocaleString()}</p>
+                        <p className="font-medium text-foreground">{item.quantity} x TZS {item.unit_price.toLocaleString()}</p>
+                        <p className="text-sm text-muted-foreground">= TZS {item.subtotal.toLocaleString()}</p>
                       </div>
                     </div>
                   ))}
                 </div>
               </div>
 
-              {/* Totals */}
-              <div className="border-t pt-4">
+              <div className="border-t border-border pt-4">
                 <div className="space-y-2">
                   <div className="flex justify-between">
-                    <span>Jumla ya Bidhaa:</span>
-                    <span>TZS {selectedSale.sales_items.reduce((sum, item) => sum + item.subtotal, 0).toLocaleString()}</span>
+                    <span className="text-foreground">Jumla ya Bidhaa:</span>
+                    <span className="text-foreground">TZS {selectedSale.sales_items.reduce((sum, item) => sum + item.subtotal, 0).toLocaleString()}</span>
                   </div>
                   {selectedSale.discount_amount && selectedSale.discount_amount > 0 && (
-                    <div className="flex justify-between text-red-600">
+                    <div className="flex justify-between text-destructive">
                       <span>Punguzo:</span>
                       <span>-TZS {selectedSale.discount_amount.toLocaleString()}</span>
                     </div>
                   )}
-                  <div className="flex justify-between text-lg font-bold border-t pt-2">
-                    <span>Jumla ya Malipo:</span>
-                    <span>TZS {selectedSale.total_amount.toLocaleString()}</span>
+                  <div className="flex justify-between text-lg font-bold border-t border-border pt-2">
+                    <span className="text-foreground">Jumla ya Malipo:</span>
+                    <span className="text-primary">TZS {selectedSale.total_amount.toLocaleString()}</span>
                   </div>
                 </div>
               </div>

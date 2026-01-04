@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { ArrowLeft, Save, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/hooks/useAuth';
+import { useDataAccess } from '@/hooks/useDataAccess';
 import { toast } from 'sonner';
 
 export const AddProductPage = () => {
@@ -29,7 +28,7 @@ export const AddProductPage = () => {
   });
   
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { dataOwnerId, loading: dataLoading } = useDataAccess();
 
   const generateBarcode = () => {
     const barcode = '8' + Date.now().toString().slice(-11);
@@ -45,35 +44,33 @@ export const AddProductPage = () => {
       return;
     }
 
-    if (!user?.id) {
-      toast.error('Hitilafu ya uthibitishaji');
+    if (!dataOwnerId) {
+      toast.error('Hakuna data ya biashara. Jaribu tena.');
       return;
     }
 
     setLoading(true);
     try {
-      console.log('Adding product for user:', user.id);
-      console.log('Product data:', formData);
+      console.log('Adding product for dataOwnerId:', dataOwnerId);
       
-      // Generate barcode if none provided
       let barcodeToUse = formData.barcode;
       if (!barcodeToUse) {
         barcodeToUse = '8' + Date.now().toString().slice(-11);
       }
       
-       const productData = {
-         name: formData.name.trim(),
-         barcode: barcodeToUse,
-         price: parseFloat(formData.price),
-         stock_quantity: parseFloat(formData.stock_quantity),
-         category: formData.category?.trim() || null,
-         description: formData.description?.trim() || null,
-         low_stock_threshold: parseInt(formData.low_stock_threshold),
-         is_weight_based: formData.is_weight_based,
-         unit_type: formData.unit_type,
-         min_quantity: parseFloat(formData.min_quantity) || 0.1,
-         owner_id: user.id
-       };
+      const productData = {
+        name: formData.name.trim(),
+        barcode: barcodeToUse,
+        price: parseFloat(formData.price),
+        stock_quantity: parseFloat(formData.stock_quantity),
+        category: formData.category?.trim() || null,
+        description: formData.description?.trim() || null,
+        low_stock_threshold: parseInt(formData.low_stock_threshold),
+        is_weight_based: formData.is_weight_based,
+        unit_type: formData.unit_type,
+        min_quantity: parseFloat(formData.min_quantity) || 0.1,
+        owner_id: dataOwnerId
+      };
 
       console.log('Inserting product:', productData);
       
@@ -96,7 +93,6 @@ export const AddProductPage = () => {
       console.log('Product added successfully:', data);
       toast.success('Bidhaa imeongezwa kwa mafanikio');
       
-      // Clear form
       setFormData({
         name: '',
         barcode: '',
@@ -120,9 +116,16 @@ export const AddProductPage = () => {
     }
   };
 
+  if (dataLoading) {
+    return (
+      <div className="p-4 flex items-center justify-center">
+        <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div>
+      </div>
+    );
+  }
+
   return (
     <div className="p-2 space-y-3 pb-16">
-      {/* Header */}
       <div className="flex items-center gap-2 mb-3">
         <Button 
           variant="ghost" 
@@ -134,14 +137,14 @@ export const AddProductPage = () => {
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <div>
-          <h2 className="text-lg font-bold text-gray-900">Ongeza Bidhaa</h2>
-          <p className="text-xs text-gray-600">Unda bidhaa mpya</p>
+          <h2 className="text-lg font-bold text-foreground">Ongeza Bidhaa</h2>
+          <p className="text-xs text-muted-foreground">Unda bidhaa mpya</p>
         </div>
       </div>
 
-      <Card className="shadow-sm">
+      <Card className="shadow-sm border-border">
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm">Maelezo ya Bidhaa</CardTitle>
+          <CardTitle className="text-sm text-foreground">Maelezo ya Bidhaa</CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-3">
@@ -210,10 +213,10 @@ export const AddProductPage = () => {
             <div className="grid grid-cols-2 gap-2">
               <div>
                 <Label htmlFor="stock" className="text-xs">Idadi ya Stock *</Label>
-                 <Input
-                   id="stock"
-                   type="number"
-                   step={formData.is_weight_based ? "0.1" : "1"}
+                <Input
+                  id="stock"
+                  type="number"
+                  step={formData.is_weight_based ? "0.1" : "1"}
                   value={formData.stock_quantity}
                   onChange={(e) => setFormData({...formData, stock_quantity: e.target.value})}
                   placeholder="0"
@@ -222,10 +225,7 @@ export const AddProductPage = () => {
                 />
               </div>
               <div>
-                <Label htmlFor="threshold" className="text-xs">
-                  Kiwango cha Stock Ndogo
-                  <span className="text-muted-foreground ml-1">(Chaguo, Default: 10)</span>
-                </Label>
+                <Label htmlFor="threshold" className="text-xs">Kiwango cha Stock Ndogo</Label>
                 <Input
                   id="threshold"
                   type="number"
@@ -234,9 +234,6 @@ export const AddProductPage = () => {
                   placeholder="10"
                   className="text-sm h-8"
                 />
-                <p className="text-xs text-muted-foreground mt-1">
-                  Utapata onyo wakati stock inafikia kiwango hiki
-                </p>
               </div>
             </div>
 
@@ -263,8 +260,7 @@ export const AddProductPage = () => {
               />
             </div>
 
-            {/* Weight-Based Product Settings */}
-            <div className="border-t pt-3">
+            <div className="border-t border-border pt-3">
               <div className="flex items-center space-x-2 mb-3">
                 <input
                   type="checkbox"
@@ -324,7 +320,7 @@ export const AddProductPage = () => {
               <Button
                 type="submit"
                 disabled={loading}
-                className="flex-1 bg-blue-600 hover:bg-blue-700 text-xs h-8"
+                className="flex-1 text-xs h-8"
               >
                 {loading ? (
                   <>

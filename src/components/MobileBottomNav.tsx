@@ -17,20 +17,18 @@ import {
   Package,
   QrCode,
   ShoppingCart,
-  User,
   Settings,
   LogOut,
   Bell,
   Users,
   CreditCard,
   Percent,
-  Store,
-  Brain,
   TrendingUp,
   BarChart3,
   Download,
   Calculator as CalcIcon,
-  Receipt
+  Receipt,
+  Store
 } from 'lucide-react';
 import { NotificationCenter } from '@/components/NotificationCenter';
 
@@ -51,6 +49,7 @@ export const MobileBottomNav = () => {
   const { user, userProfile, signOut } = useAuth();
   const { permissions } = usePermissions();
 
+  // Always show 4 main items + profile
   const mainNavItems: BottomNavItem[] = [
     { id: 'home', label: 'Home', icon: Home, href: '/dashboard', permission: null },
     { id: 'products', label: 'Bidhaa', icon: Package, href: '/products', permission: 'can_view_products' },
@@ -64,6 +63,7 @@ export const MobileBottomNav = () => {
 
   const allProfileMenuItems: BottomNavItem[] = [
     { id: 'quick-sale', label: 'Mauzo Haraka', icon: ShoppingCart, href: '/quick-sale', permission: 'can_create_sales' },
+    { id: 'sokoni-orders', label: 'Oda za Sokoni', icon: Store, href: '/sokoni-orders', permission: null },
     { id: 'customers', label: 'Wateja', icon: Users, href: '/customers', permission: 'can_view_customers' },
     { id: 'discounts', label: 'Punguzo', icon: Percent, href: '/discounts', permission: null },
     { id: 'credit', label: 'Mikopo', icon: CreditCard, href: '/credit-management', permission: null },
@@ -76,13 +76,17 @@ export const MobileBottomNav = () => {
     { id: 'calculator', label: 'Kikokotoo', icon: CalcIcon, href: '/calculator', permission: null },
     { id: 'pwa', label: 'Sakinisha App', icon: Download, href: '/pwa-install', permission: null },
     { id: 'settings', label: 'Mipangilio', icon: Settings, href: '/settings', permission: null },
-    ...(userProfile?.role === 'owner' ? [
-      { id: 'users', label: 'Watumiaji', icon: Users, href: '/users', permission: null }
-    ] : []),
-    ...(userProfile?.role === 'super_admin' ? [
-      { id: 'super-admin', label: 'Super Admin', icon: User, href: '/super-admin', permission: null }
-    ] : []),
   ];
+
+  // Add owner-specific items
+  if (userProfile?.role === 'owner') {
+    allProfileMenuItems.push({ id: 'users', label: 'Watumiaji', icon: Users, href: '/users', permission: null });
+  }
+
+  // Add super admin items
+  if (userProfile?.role === 'super_admin') {
+    allProfileMenuItems.push({ id: 'super-admin', label: 'Super Admin', icon: Settings, href: '/super-admin', permission: null });
+  }
 
   const profileMenuItems = allProfileMenuItems.filter(item => {
     if (userProfile?.role === 'owner' || userProfile?.role === 'super_admin') return true;
@@ -90,9 +94,7 @@ export const MobileBottomNav = () => {
     return permissions?.[item.permission as keyof typeof permissions];
   });
 
-  // Mock notification count - replace with actual data
   useEffect(() => {
-    // This should fetch real notification count
     setUnreadCount(3);
   }, []);
 
@@ -104,7 +106,7 @@ export const MobileBottomNav = () => {
     
     return displayName
       .split(' ')
-      .map(n => n.charAt(0).toUpperCase())
+      .map((n: string) => n.charAt(0).toUpperCase())
       .join('')
       .slice(0, 2);
   };
@@ -151,32 +153,32 @@ export const MobileBottomNav = () => {
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-background border-t border-border z-50 md:hidden">
       <div className="flex items-center justify-center h-16 px-2">
-        <div className="grid grid-cols-5 gap-1 max-w-md">
-          {mainNavItems.map((item) => {
+        <div className="grid grid-cols-5 gap-1 max-w-md w-full">
+          {mainNavItems.slice(0, 4).map((item) => {
             const Icon = item.icon;
             const active = isActive(item.href);
             return (
               <button
                 key={item.id}
                 onClick={() => handleNavigation(item.href)}
-                className={`flex flex-col items-center justify-center p-2 rounded-lg transition-all min-w-[70px] ${
+                className={`flex flex-col items-center justify-center p-2 rounded-lg transition-all ${
                   active 
                     ? 'text-primary bg-primary/10' 
                     : 'text-muted-foreground hover:text-foreground hover:bg-muted'
                 }`}
               >
                 <Icon className={`h-5 w-5 ${active ? 'scale-110' : ''}`} />
-                <span className={`text-[10px] mt-0.5 font-medium ${active ? '' : ''}`}>
+                <span className={`text-[10px] mt-0.5 font-medium`}>
                   {item.label}
                 </span>
               </button>
             );
           })}
 
-          {/* Profile Sheet Trigger */}
+          {/* Profile Sheet Trigger - Always visible */}
           <Sheet open={profileSheetOpen} onOpenChange={setProfileSheetOpen}>
             <SheetTrigger asChild>
-              <button className="flex flex-col items-center justify-center p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-all min-w-[70px]">
+              <button className="flex flex-col items-center justify-center p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-all">
                 <div className="relative">
                   <Avatar className="h-5 w-5">
                     <AvatarImage src={userProfile?.avatar_url} />
@@ -185,7 +187,7 @@ export const MobileBottomNav = () => {
                     </AvatarFallback>
                   </Avatar>
                   {unreadCount > 0 && (
-                    <Badge className="absolute -top-1 -right-1 h-3 w-3 p-0 bg-red-500 text-white text-[8px] flex items-center justify-center">
+                    <Badge className="absolute -top-1 -right-1 h-3 w-3 p-0 bg-destructive text-destructive-foreground text-[8px] flex items-center justify-center">
                       {unreadCount}
                     </Badge>
                   )}
@@ -205,7 +207,7 @@ export const MobileBottomNav = () => {
                   </Avatar>
                   <div className="text-left">
                     <h3 className="font-semibold text-lg">{getDisplayName()}</h3>
-                    <p className="text-sm text-gray-600">{user.email}</p>
+                    <p className="text-sm text-muted-foreground">{user.email}</p>
                     <Badge variant="outline" className="text-xs">
                       {getUserRole()}
                     </Badge>
@@ -221,7 +223,7 @@ export const MobileBottomNav = () => {
                       <div className="relative mr-3">
                         <Bell className="h-5 w-5" />
                         {unreadCount > 0 && (
-                          <Badge className="absolute -top-1 -right-1 h-4 w-4 p-0 bg-red-500 text-white text-xs flex items-center justify-center">
+                          <Badge className="absolute -top-1 -right-1 h-4 w-4 p-0 bg-destructive text-destructive-foreground text-xs flex items-center justify-center">
                             {unreadCount}
                           </Badge>
                         )}
@@ -259,10 +261,10 @@ export const MobileBottomNav = () => {
                 })}
 
                 {/* Sign Out */}
-                <div className="pt-4 border-t">
+                <div className="pt-4 border-t border-border">
                   <Button
                     variant="ghost"
-                    className="w-full justify-start h-12 text-red-600 hover:text-red-700 hover:bg-red-50"
+                    className="w-full justify-start h-12 text-destructive hover:text-destructive hover:bg-destructive/10"
                     onClick={handleSignOut}
                   >
                     <LogOut className="h-5 w-5 mr-3" />
