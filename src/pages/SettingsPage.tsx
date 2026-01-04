@@ -6,9 +6,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-import { User, Mail, Building, Shield, Calendar, Download, Save, Eye, EyeOff } from 'lucide-react';
+import { User, Mail, Building, Shield, Download, Save, Eye, EyeOff, Phone, Loader2 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 export const SettingsPage = () => {
@@ -16,10 +16,12 @@ export const SettingsPage = () => {
   const [formData, setFormData] = useState({
     full_name: '',
     business_name: '',
+    phone: '',
     newPassword: '',
     confirmPassword: ''
   });
   const [updating, setUpdating] = useState(false);
+  const [savingPhone, setSavingPhone] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
@@ -28,11 +30,40 @@ export const SettingsPage = () => {
       setFormData({
         full_name: userProfile.full_name || '',
         business_name: userProfile.business_name || '',
+        phone: userProfile.phone || '',
         newPassword: '',
         confirmPassword: ''
       });
     }
   }, [userProfile]);
+
+  // Format phone number for display
+  const formatPhoneDisplay = (phone: string) => {
+    // Remove non-digits
+    const digits = phone.replace(/\D/g, '');
+    if (digits.length === 10 && digits.startsWith('0')) {
+      return digits.replace(/(\d{4})(\d{3})(\d{3})/, '$1 $2 $3');
+    }
+    if (digits.length === 12 && digits.startsWith('255')) {
+      return '+' + digits.replace(/(\d{3})(\d{3})(\d{3})(\d{3})/, '$1 $2 $3 $4');
+    }
+    return phone;
+  };
+
+  // Normalize phone number for storage (e.g., 0712345678 -> 255712345678)
+  const normalizePhone = (phone: string) => {
+    const digits = phone.replace(/\D/g, '');
+    if (digits.length === 10 && digits.startsWith('0')) {
+      return '255' + digits.slice(1);
+    }
+    if (digits.length === 12 && digits.startsWith('255')) {
+      return digits;
+    }
+    if (digits.length === 9) {
+      return '255' + digits;
+    }
+    return digits;
+  };
 
   const handleUpdateProfile = async () => {
     if (!formData.full_name.trim()) {
@@ -56,6 +87,61 @@ export const SettingsPage = () => {
     }
   };
 
+  const handleSavePhone = async () => {
+    if (!user?.id) return;
+
+    const normalizedPhone = normalizePhone(formData.phone);
+    
+    if (formData.phone && normalizedPhone.length < 9) {
+      toast.error('Namba ya simu si sahihi');
+      return;
+    }
+
+    setSavingPhone(true);
+    try {
+      // Check if phone is already used by another user
+      if (normalizedPhone) {
+        const { data: existing, error: checkError } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('phone', normalizedPhone)
+          .neq('id', user.id)
+          .maybeSingle();
+
+        if (checkError) {
+          console.error('Error checking phone:', checkError);
+        }
+
+        if (existing) {
+          toast.error('Namba hii ya simu tayari imetumika na mtumiaji mwingine');
+          setSavingPhone(false);
+          return;
+        }
+      }
+
+      const { error } = await supabase
+        .from('profiles')
+        .update({ 
+          phone: normalizedPhone || null,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', user.id);
+
+      if (error) throw error;
+
+      toast.success('Namba ya simu imehifadhiwa! Unaweza kutumia namba hii kuingia.');
+    } catch (error: any) {
+      console.error('Error saving phone:', error);
+      if (error.code === '23505') {
+        toast.error('Namba hii ya simu tayari imetumika');
+      } else {
+        toast.error('Imeshindwa kuhifadhi namba ya simu');
+      }
+    } finally {
+      setSavingPhone(false);
+    }
+  };
+
   const handlePasswordChange = async () => {
     if (!formData.newPassword || !formData.confirmPassword) {
       toast.error('Tafadhali jaza nywila zote');
@@ -74,9 +160,7 @@ export const SettingsPage = () => {
 
     setUpdating(true);
     try {
-      const { error } = await import('@/integrations/supabase/client').then(
-        ({ supabase }) => supabase.auth.updateUser({ password: formData.newPassword })
-      );
+      const { error } = await supabase.auth.updateUser({ password: formData.newPassword });
 
       if (error) throw error;
 
@@ -92,7 +176,6 @@ export const SettingsPage = () => {
 
   const handleExportData = async () => {
     try {
-      // Export user data
       const exportData = {
         profile: userProfile,
         exported_at: new Date().toISOString(),
@@ -138,8 +221,8 @@ export const SettingsPage = () => {
     return (
       <div className="p-4 space-y-4">
         <div className="text-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Inapakia mipangilio...</p>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Inapakia mipangilio...</p>
         </div>
       </div>
     );
@@ -151,11 +234,11 @@ export const SettingsPage = () => {
                      'Mtumiaji';
 
   return (
-    <div className="p-4 space-y-6 max-w-4xl mx-auto">
+    <div className="p-4 space-y-6 max-w-4xl mx-auto pb-24">
       {/* Header */}
       <div>
-        <h2 className="text-2xl font-bold text-gray-900">Mipangilio</h2>
-        <p className="text-gray-600">Simamia akaunti na mipangilio ya biashara yako</p>
+        <h2 className="text-2xl font-bold text-foreground">Mipangilio</h2>
+        <p className="text-muted-foreground">Simamia akaunti na mipangilio ya biashara yako</p>
       </div>
 
       {/* Profile Information */}
@@ -177,11 +260,11 @@ export const SettingsPage = () => {
             <div className="flex-1">
               <h3 className="text-xl font-semibold">{displayName}</h3>
               <div className="flex items-center gap-2 mt-1">
-                <Badge variant="outline" className="text-purple-600 border-purple-200">
+                <Badge variant="outline" className="text-primary border-primary/30">
                   {getRoleLabel(userProfile?.role || 'owner')}
                 </Badge>
                 {userProfile?.business_name && (
-                  <Badge variant="outline" className="text-blue-600 border-blue-200">
+                  <Badge variant="outline" className="text-secondary-foreground border-border">
                     {userProfile.business_name}
                   </Badge>
                 )}
@@ -213,20 +296,65 @@ export const SettingsPage = () => {
               <Input
                 value={user?.email || ''}
                 disabled
-                className="bg-gray-100"
+                className="bg-muted"
               />
-              <p className="text-xs text-gray-500 mt-1">Barua pepe haiwezi kubadilishwa</p>
+              <p className="text-xs text-muted-foreground mt-1">Barua pepe haiwezi kubadilishwa</p>
             </div>
           </div>
 
           <Button 
             onClick={handleUpdateProfile}
             disabled={updating}
-            className="bg-blue-600 hover:bg-blue-700"
           >
             <Save className="h-4 w-4 mr-2" />
             {updating ? 'Inasasisha...' : 'Sasisha Profaili'}
           </Button>
+        </CardContent>
+      </Card>
+
+      {/* Phone Number for Login */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center">
+            <Phone className="h-5 w-5 mr-2" />
+            Namba ya Simu (Kwa Kuingia)
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            Ongeza namba yako ya simu ili uweze kuingia kwa namba badala ya barua pepe.
+          </p>
+          
+          <div className="flex gap-2">
+            <div className="flex-1">
+              <Input
+                type="tel"
+                value={formData.phone}
+                onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
+                placeholder="0712 345 678"
+              />
+            </div>
+            <Button 
+              onClick={handleSavePhone}
+              disabled={savingPhone}
+              variant="outline"
+            >
+              {savingPhone ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <>
+                  <Save className="h-4 w-4 mr-1" />
+                  Hifadhi
+                </>
+              )}
+            </Button>
+          </div>
+          
+          {formData.phone && (
+            <p className="text-xs text-muted-foreground">
+              Fomu iliyohifadhiwa: {formatPhoneDisplay(formData.phone)}
+            </p>
+          )}
         </CardContent>
       </Card>
 
@@ -288,7 +416,6 @@ export const SettingsPage = () => {
             onClick={handlePasswordChange}
             disabled={updating || !formData.newPassword || !formData.confirmPassword}
             variant="outline"
-            className="text-blue-600 border-blue-600 hover:bg-blue-50"
           >
             Badilisha Nywila
           </Button>
@@ -305,10 +432,10 @@ export const SettingsPage = () => {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-muted-foreground">
               • Kuhamisha kunajumuisha bidhaa zote, mauzo, na data ya biashara
             </p>
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-muted-foreground">
               • Data imehamishwa katika muundo wa JSON kwa ajili ya kuhifadhi
             </p>
           </div>
@@ -316,7 +443,6 @@ export const SettingsPage = () => {
           <Button 
             onClick={handleExportData}
             variant="outline"
-            className="text-green-600 border-green-600 hover:bg-green-50"
           >
             <Download className="h-4 w-4 mr-2" />
             Hamisha Data
@@ -335,11 +461,11 @@ export const SettingsPage = () => {
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <Label className="text-sm text-gray-600">Jukumu</Label>
+              <Label className="text-sm text-muted-foreground">Jukumu</Label>
               <p className="font-medium">{getRoleLabel(userProfile?.role || 'owner')}</p>
             </div>
             <div>
-              <Label className="text-sm text-gray-600">Mwanachama Tangu</Label>
+              <Label className="text-sm text-muted-foreground">Mwanachama Tangu</Label>
               <p className="font-medium">
                 {userProfile?.created_at 
                   ? new Date(userProfile.created_at).toLocaleDateString('sw-TZ')
@@ -348,8 +474,8 @@ export const SettingsPage = () => {
               </p>
             </div>
             <div className="md:col-span-2">
-              <Label className="text-sm text-gray-600">Kitambulisho cha Mtumiaji</Label>
-              <p className="font-mono text-sm text-gray-500 break-all">
+              <Label className="text-sm text-muted-foreground">Kitambulisho cha Mtumiaji</Label>
+              <p className="font-mono text-sm text-muted-foreground break-all">
                 {user?.id?.slice(0, 8)}...
               </p>
             </div>

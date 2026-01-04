@@ -82,8 +82,32 @@ export const AuthPage = () => {
     }
     setLoading(true);
     try {
-      // For phone login, we'll use phone as email format (phone@kiduka.app)
-      const loginEmail = authMethod === 'phone' ? `${phone.replace(/\D/g, '')}@kiduka.phone` : email;
+      let loginEmail = email;
+      
+      if (authMethod === 'phone') {
+        // Normalize phone and find user by phone in profiles
+        const normalizedPhone = phone.replace(/\D/g, '');
+        const phoneForLookup = normalizedPhone.startsWith('255') ? normalizedPhone : 
+                               normalizedPhone.startsWith('0') ? '255' + normalizedPhone.slice(1) : 
+                               '255' + normalizedPhone;
+        
+        // Try to find user by phone
+        const { data: profileData } = await import('@/integrations/supabase/client').then(
+          ({ supabase }) => supabase
+            .from('profiles')
+            .select('email')
+            .eq('phone', phoneForLookup)
+            .maybeSingle()
+        );
+        
+        if (profileData?.email) {
+          loginEmail = profileData.email;
+        } else {
+          // Fallback to phone@kiduka.phone format for users registered with phone
+          loginEmail = `${phoneForLookup}@kiduka.phone`;
+        }
+      }
+      
       await signIn(loginEmail, password);
       toast.success('Karibu tena!');
     } catch (error: any) {

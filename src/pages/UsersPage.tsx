@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Plus, Search, Trash2, Users as UsersIcon, Mail, Settings as SettingsIcon, Shield, Building, RefreshCw } from 'lucide-react';
+import { Plus, Search, Trash2, Users as UsersIcon, Mail, Settings as SettingsIcon, Shield, Building, RefreshCw, UserPlus, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
@@ -30,7 +30,9 @@ export const UsersPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [linkDialogOpen, setLinkDialogOpen] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [linking, setLinking] = useState(false);
   const { user, userProfile, session } = useAuth();
   
   const [newUser, setNewUser] = useState({
@@ -38,6 +40,8 @@ export const UsersPage = () => {
     password: '',
     full_name: '',
   });
+
+  const [linkEmail, setLinkEmail] = useState('');
 
   useEffect(() => {
     if (userProfile?.role === 'owner' && user?.id) {
@@ -53,7 +57,6 @@ export const UsersPage = () => {
     try {
       console.log('Fetching assistants for owner:', user.id);
       
-      // Fetch assistants linked to this owner
       const { data: permissions, error } = await supabase
         .from('assistant_permissions')
         .select('*')
@@ -73,7 +76,6 @@ export const UsersPage = () => {
         return;
       }
 
-      // Fetch profiles for each assistant
       const assistantIds = permissions.map(p => p.assistant_id);
       
       const { data: profiles, error: profilesError } = await supabase
@@ -176,7 +178,7 @@ export const UsersPage = () => {
         return;
       }
 
-      // Step 3: Use the secure RPC function to add permissions (bypasses RLS)
+      // Step 3: Use the secure RPC function to add permissions
       console.log('Adding assistant permissions via RPC...');
       const { data: rpcResult, error: rpcError } = await supabase.rpc('add_assistant_permission', {
         p_assistant_id: assistantId,
@@ -189,20 +191,18 @@ export const UsersPage = () => {
         toast.error('Msaidizi ameundwa lakini ruhusa hazijawekwa. Jaribu tena.');
       } else {
         console.log('RPC result:', rpcResult);
-        toast.success(`Msaidizi "${newUser.full_name}" ameongezwa kwenye "${ownerBusinessName}"! Anaweza kuingia na: ${newUser.email}`);
+        toast.success(`Msaidizi "${newUser.full_name}" ameongezwa! Anaweza kuingia na: ${newUser.email}`);
       }
 
       setNewUser({ email: '', password: '', full_name: '' });
       setDialogOpen(false);
       
-      // Refresh the list
       await fetchAssistants();
 
     } catch (error: any) {
       console.error('Create assistant error:', error);
       toast.error('Imeshindwa kuongeza msaidizi: ' + (error.message || 'Unknown error'));
       
-      // Try to restore session on error
       try {
         await supabase.auth.setSession({
           access_token: ownerAccessToken,
@@ -213,6 +213,56 @@ export const UsersPage = () => {
       }
     } finally {
       setCreating(false);
+    }
+  };
+
+  const handleLinkExistingAssistant = async () => {
+    if (!linkEmail.trim()) {
+      toast.error('Tafadhali ingiza barua pepe ya msaidizi');
+      return;
+    }
+
+    if (!user?.id) {
+      toast.error('Tafadhali ingia kwanza');
+      return;
+    }
+
+    setLinking(true);
+
+    try {
+      console.log('Linking existing assistant by email:', linkEmail);
+      
+      const { data: result, error } = await supabase.rpc('add_assistant_permission_by_email', {
+        p_assistant_email: linkEmail.trim(),
+        p_owner_id: user.id,
+        p_business_name: userProfile?.business_name || ''
+      });
+
+      if (error) {
+        console.error('Link error:', error);
+        throw error;
+      }
+
+      console.log('Link result:', result);
+
+      // Type-safe result handling
+      const resultObj = result as { success?: boolean; error?: string } | null;
+      
+      if (resultObj?.success) {
+        toast.success(`Msaidizi "${linkEmail}" amefungwa na biashara yako!`);
+        setLinkEmail('');
+        setLinkDialogOpen(false);
+        await fetchAssistants();
+      } else if (resultObj?.error === 'assistant_not_found') {
+        toast.error('Hakuna mtumiaji aliye na barua pepe hii. Mtumiaji lazima ajisajili kwanza.');
+      } else {
+        toast.error('Imeshindwa kufunga msaidizi');
+      }
+    } catch (error: any) {
+      console.error('Link assistant error:', error);
+      toast.error('Imeshindwa kufunga msaidizi: ' + (error.message || 'Kosa lisilojulikana'));
+    } finally {
+      setLinking(false);
     }
   };
 
@@ -264,6 +314,7 @@ export const UsersPage = () => {
     return (
       <div className="p-4 space-y-4">
         <div className="text-center py-8">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
           <p className="text-muted-foreground">Inapakia...</p>
         </div>
       </div>
@@ -272,7 +323,7 @@ export const UsersPage = () => {
 
   return (
     <div className="page-container p-4 space-y-4 pb-24">
-      {/* Business Info - NO PAGE HEADER */}
+      {/* Business Info */}
       <Card className="bg-gradient-to-r from-primary to-primary/80 text-primary-foreground">
         <CardContent className="p-4">
           <div className="flex items-center gap-3">
@@ -299,23 +350,23 @@ export const UsersPage = () => {
         </TabsList>
 
         <TabsContent value="assistants" className="space-y-3 mt-4">
-          <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            {/* Create New Assistant */}
             <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
               <DialogTrigger asChild>
                 <Button size="sm">
                   <Plus className="h-4 w-4 mr-1" />
-                  Ongeza Msaidizi
+                  Unda Mpya
                 </Button>
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
-                  <DialogTitle>Ongeza Msaidizi Mpya</DialogTitle>
+                  <DialogTitle>Unda Msaidizi Mpya</DialogTitle>
                 </DialogHeader>
                 <div className="space-y-3">
                   <div className="p-3 bg-primary/10 rounded-lg text-sm">
                     <p className="text-foreground">
-                      Msaidizi ataingizwa kwenye biashara yako "<strong>{userProfile?.business_name}</strong>" 
-                      na ataweza kuaccess data kulingana na ruhusa ulizompa.
+                      Msaidizi ataingizwa kwenye biashara yako "<strong>{userProfile?.business_name}</strong>"
                     </p>
                   </div>
                   <div>
@@ -349,7 +400,62 @@ export const UsersPage = () => {
                     className="w-full"
                     disabled={creating}
                   >
-                    {creating ? 'Inaongeza...' : 'Ongeza Msaidizi'}
+                    {creating ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Inaunda...
+                      </>
+                    ) : (
+                      'Unda Msaidizi'
+                    )}
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+
+            {/* Link Existing User */}
+            <Dialog open={linkDialogOpen} onOpenChange={setLinkDialogOpen}>
+              <DialogTrigger asChild>
+                <Button size="sm" variant="outline">
+                  <UserPlus className="h-4 w-4 mr-1" />
+                  Funga Aliyepo
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Funga Msaidizi Aliyepo</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-3">
+                  <div className="p-3 bg-muted rounded-lg text-sm">
+                    <p className="text-muted-foreground">
+                      Kama mtu tayari ana account ya Kiduka, unaweza kumfunga na biashara yako kwa kutumia barua pepe yake.
+                    </p>
+                  </div>
+                  <div>
+                    <Label>Barua Pepe ya Msaidizi *</Label>
+                    <Input
+                      type="email"
+                      value={linkEmail}
+                      onChange={(e) => setLinkEmail(e.target.value)}
+                      placeholder="msaidizi@example.com"
+                    />
+                  </div>
+                  <Button 
+                    onClick={handleLinkExistingAssistant} 
+                    className="w-full"
+                    disabled={linking}
+                  >
+                    {linking ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Inafunga...
+                      </>
+                    ) : (
+                      <>
+                        <UserPlus className="h-4 w-4 mr-2" />
+                        Funga Msaidizi
+                      </>
+                    )}
                   </Button>
                 </div>
               </DialogContent>
@@ -417,13 +523,19 @@ export const UsersPage = () => {
                 <UsersIcon className="h-10 w-10 text-muted-foreground mx-auto mb-2" />
                 <h3 className="text-sm font-semibold mb-1">Hakuna wasaidizi</h3>
                 <p className="text-xs text-muted-foreground mb-3">
-                  {searchTerm ? "Hakuna matokeo" : "Ongeza msaidizi wa kwanza"}
+                  {searchTerm ? "Hakuna matokeo" : "Ongeza msaidizi wa kwanza au funga aliyepo"}
                 </p>
                 {!searchTerm && (
-                  <Button size="sm" onClick={() => setDialogOpen(true)}>
-                    <Plus className="h-4 w-4 mr-1" />
-                    Ongeza Msaidizi
-                  </Button>
+                  <div className="flex gap-2 justify-center">
+                    <Button size="sm" onClick={() => setDialogOpen(true)}>
+                      <Plus className="h-4 w-4 mr-1" />
+                      Unda Mpya
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => setLinkDialogOpen(true)}>
+                      <UserPlus className="h-4 w-4 mr-1" />
+                      Funga Aliyepo
+                    </Button>
+                  </div>
                 )}
               </CardContent>
             </Card>
