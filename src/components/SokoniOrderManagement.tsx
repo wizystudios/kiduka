@@ -20,87 +20,86 @@ import {
   Eye,
   RefreshCw
 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { useAuth } from '@/hooks/useAuth';
+import { useDataAccess } from '@/hooks/useDataAccess';
+
+interface OrderItem {
+  product_name: string;
+  quantity: number;
+  unit_price: number;
+  listing_id?: string;
+}
 
 export interface SokoniOrder {
   id: string;
-  customer_name: string;
   customer_phone: string;
   delivery_address: string;
-  items: Array<{
-    product_name: string;
-    quantity: number;
-    unit_price: number;
-  }>;
+  items: OrderItem[];
   total_amount: number;
-  payment_method: string;
-  payment_status: 'pending' | 'paid' | 'failed';
-  order_status: 'new' | 'confirmed' | 'preparing' | 'ready' | 'delivered' | 'cancelled';
+  payment_method: string | null;
+  payment_status: string;
+  order_status: string;
   transaction_id?: string;
-  notes?: string;
   created_at: string;
   updated_at: string;
 }
 
-// Mock orders for demonstration (will be replaced with real data)
-const mockOrders: SokoniOrder[] = [
-  {
-    id: 'ORD-001',
-    customer_name: 'John Doe',
-    customer_phone: '+255712345678',
-    delivery_address: 'Kinondoni, Dar es Salaam',
-    items: [
-      { product_name: 'Sukari 1kg', quantity: 2, unit_price: 3500 },
-      { product_name: 'Mchele 5kg', quantity: 1, unit_price: 15000 }
-    ],
-    total_amount: 22000,
-    payment_method: 'mpesa',
-    payment_status: 'paid',
-    order_status: 'new',
-    transaction_id: 'MPESA-123456',
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString()
-  },
-  {
-    id: 'ORD-002',
-    customer_name: 'Jane Smith',
-    customer_phone: '+255698765432',
-    delivery_address: 'Mikocheni, Dar es Salaam',
-    items: [
-      { product_name: 'Unga 2kg', quantity: 3, unit_price: 4000 }
-    ],
-    total_amount: 12000,
-    payment_method: 'tigopesa',
-    payment_status: 'pending',
-    order_status: 'new',
-    notes: 'Peleka haraka sana',
-    created_at: new Date(Date.now() - 3600000).toISOString(),
-    updated_at: new Date(Date.now() - 3600000).toISOString()
-  }
-];
-
 export const SokoniOrderManagement = () => {
-  const { user } = useAuth();
-  const [orders, setOrders] = useState<SokoniOrder[]>(mockOrders);
+  const { dataOwnerId, loading: dataLoading } = useDataAccess();
+  const [orders, setOrders] = useState<SokoniOrder[]>([]);
   const [selectedOrder, setSelectedOrder] = useState<SokoniOrder | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('new');
 
-  const getStatusColor = (status: SokoniOrder['order_status']) => {
-    const colors = {
-      new: 'bg-blue-100 text-blue-700',
-      confirmed: 'bg-yellow-100 text-yellow-700',
-      preparing: 'bg-orange-100 text-orange-700',
-      ready: 'bg-purple-100 text-purple-700',
-      delivered: 'bg-green-100 text-green-700',
-      cancelled: 'bg-red-100 text-red-700'
-    };
-    return colors[status] || 'bg-gray-100 text-gray-700';
+  useEffect(() => {
+    if (dataOwnerId) {
+      fetchOrders();
+    }
+  }, [dataOwnerId]);
+
+  const fetchOrders = async () => {
+    if (!dataOwnerId) return;
+
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('sokoni_orders')
+        .select('*')
+        .eq('seller_id', dataOwnerId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      // Parse items JSON properly
+      const parsedOrders = (data || []).map(order => ({
+        ...order,
+        items: Array.isArray(order.items) ? order.items : JSON.parse(order.items as string || '[]')
+      }));
+
+      setOrders(parsedOrders);
+    } catch (error) {
+      console.error('Error fetching orders:', error);
+      toast.error('Imeshindwa kupakia oda');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const getStatusLabel = (status: SokoniOrder['order_status']) => {
-    const labels = {
+  const getStatusColor = (status: string) => {
+    const colors: Record<string, string> = {
+      new: 'bg-primary/10 text-primary',
+      confirmed: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100',
+      preparing: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-100',
+      ready: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-100',
+      delivered: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100',
+      cancelled: 'bg-destructive/10 text-destructive'
+    };
+    return colors[status] || 'bg-muted text-muted-foreground';
+  };
+
+  const getStatusLabel = (status: string) => {
+    const labels: Record<string, string> = {
       new: 'Mpya',
       confirmed: 'Imethibitishwa',
       preparing: 'Inaandaliwa',
@@ -111,24 +110,36 @@ export const SokoniOrderManagement = () => {
     return labels[status] || status;
   };
 
-  const getPaymentStatusBadge = (status: SokoniOrder['payment_status']) => {
+  const getPaymentStatusBadge = (status: string) => {
     if (status === 'paid') {
-      return <Badge className="bg-green-100 text-green-700">Imelipwa</Badge>;
+      return <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100">Imelipwa</Badge>;
     } else if (status === 'pending') {
-      return <Badge className="bg-yellow-100 text-yellow-700">Inasubiri</Badge>;
+      return <Badge className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100">Inasubiri</Badge>;
     }
-    return <Badge className="bg-red-100 text-red-700">Imeshindikana</Badge>;
+    return <Badge className="bg-destructive/10 text-destructive">Imeshindikana</Badge>;
   };
 
-  const updateOrderStatus = (orderId: string, newStatus: SokoniOrder['order_status']) => {
-    setOrders(prev => prev.map(order => 
-      order.id === orderId 
-        ? { ...order, order_status: newStatus, updated_at: new Date().toISOString() }
-        : order
-    ));
-    
-    toast.success(`Oda ${orderId} imebadilishwa kuwa "${getStatusLabel(newStatus)}"`);
-    setSelectedOrder(null);
+  const updateOrderStatus = async (orderId: string, newStatus: string) => {
+    try {
+      const { error } = await supabase
+        .from('sokoni_orders')
+        .update({ order_status: newStatus, updated_at: new Date().toISOString() })
+        .eq('id', orderId);
+
+      if (error) throw error;
+
+      setOrders(prev => prev.map(order => 
+        order.id === orderId 
+          ? { ...order, order_status: newStatus, updated_at: new Date().toISOString() }
+          : order
+      ));
+      
+      toast.success(`Oda imebadilishwa kuwa "${getStatusLabel(newStatus)}"`);
+      setSelectedOrder(null);
+    } catch (error) {
+      console.error('Error updating order:', error);
+      toast.error('Imeshindwa kubadilisha hali ya oda');
+    }
   };
 
   const filteredOrders = orders.filter(order => {
@@ -149,16 +160,24 @@ export const SokoniOrderManagement = () => {
     return date.toLocaleDateString('sw-TZ');
   };
 
+  if (dataLoading || loading) {
+    return (
+      <div className="flex items-center justify-center py-8">
+        <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
-      <Card>
-        <CardHeader>
+      <Card className="border-border">
+        <CardHeader className="pb-2">
           <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2">
-              <Package className="h-5 w-5" />
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Package className="h-5 w-5 text-primary" />
               Oda za Sokoni
             </CardTitle>
-            <Button variant="outline" size="sm" onClick={() => setLoading(true)}>
+            <Button variant="outline" size="sm" onClick={fetchOrders}>
               <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
               Refresh
             </Button>
@@ -167,16 +186,16 @@ export const SokoniOrderManagement = () => {
         <CardContent>
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList className="grid grid-cols-3 mb-4">
-              <TabsTrigger value="new" className="relative">
+              <TabsTrigger value="new" className="relative text-xs">
                 Mpya
                 {orders.filter(o => o.order_status === 'new').length > 0 && (
-                  <Badge className="absolute -top-2 -right-2 h-5 w-5 p-0 flex items-center justify-center text-xs bg-red-500">
+                  <Badge className="absolute -top-2 -right-2 h-5 w-5 p-0 flex items-center justify-center text-xs bg-destructive text-destructive-foreground">
                     {orders.filter(o => o.order_status === 'new').length}
                   </Badge>
                 )}
               </TabsTrigger>
-              <TabsTrigger value="active">Zinaendelea</TabsTrigger>
-              <TabsTrigger value="completed">Zimekamilika</TabsTrigger>
+              <TabsTrigger value="active" className="text-xs">Zinaendelea</TabsTrigger>
+              <TabsTrigger value="completed" className="text-xs">Zimekamilika</TabsTrigger>
             </TabsList>
 
             <TabsContent value={activeTab} className="space-y-3">
@@ -187,18 +206,17 @@ export const SokoniOrderManagement = () => {
                 </div>
               ) : (
                 filteredOrders.map(order => (
-                  <Card key={order.id} className="cursor-pointer hover:shadow-md transition-shadow">
+                  <Card key={order.id} className="cursor-pointer hover:shadow-md transition-shadow border-border">
                     <CardContent className="p-4">
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="font-semibold">{order.id}</span>
+                          <div className="flex items-center gap-2 mb-1 flex-wrap">
+                            <span className="font-semibold text-foreground">#{order.id.slice(0, 8).toUpperCase()}</span>
                             <Badge className={getStatusColor(order.order_status)}>
                               {getStatusLabel(order.order_status)}
                             </Badge>
                             {getPaymentStatusBadge(order.payment_status)}
                           </div>
-                          <p className="text-sm font-medium">{order.customer_name}</p>
                           <p className="text-xs text-muted-foreground flex items-center gap-1">
                             <Phone className="h-3 w-3" />
                             {order.customer_phone}
@@ -208,7 +226,7 @@ export const SokoniOrderManagement = () => {
                             {order.delivery_address}
                           </p>
                           <div className="mt-2">
-                            <p className="text-sm">
+                            <p className="text-sm text-foreground">
                               {order.items.length} bidhaa • 
                               <span className="font-semibold text-primary ml-1">
                                 TSh {order.total_amount.toLocaleString()}
@@ -241,21 +259,20 @@ export const SokoniOrderManagement = () => {
       <Dialog open={!!selectedOrder} onOpenChange={() => setSelectedOrder(null)}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Maelezo ya Oda {selectedOrder?.id}</DialogTitle>
+            <DialogTitle>Maelezo ya Oda #{selectedOrder?.id.slice(0, 8).toUpperCase()}</DialogTitle>
           </DialogHeader>
           
           {selectedOrder && (
             <div className="space-y-4">
               {/* Customer Info */}
               <div className="p-3 bg-muted rounded-lg space-y-2">
-                <p className="font-medium">{selectedOrder.customer_name}</p>
-                <p className="text-sm flex items-center gap-2">
+                <p className="text-sm flex items-center gap-2 text-foreground">
                   <Phone className="h-4 w-4" />
                   <a href={`tel:${selectedOrder.customer_phone}`} className="text-primary">
                     {selectedOrder.customer_phone}
                   </a>
                 </p>
-                <p className="text-sm flex items-center gap-2">
+                <p className="text-sm flex items-center gap-2 text-foreground">
                   <MapPin className="h-4 w-4" />
                   {selectedOrder.delivery_address}
                 </p>
@@ -263,16 +280,16 @@ export const SokoniOrderManagement = () => {
 
               {/* Items */}
               <div>
-                <h4 className="font-medium mb-2">Bidhaa</h4>
+                <h4 className="font-medium mb-2 text-foreground">Bidhaa</h4>
                 <div className="space-y-2">
                   {selectedOrder.items.map((item, idx) => (
                     <div key={idx} className="flex justify-between text-sm p-2 bg-muted/50 rounded">
-                      <span>{item.product_name} x{item.quantity}</span>
-                      <span className="font-medium">TSh {(item.unit_price * item.quantity).toLocaleString()}</span>
+                      <span className="text-foreground">{item.product_name} x{item.quantity}</span>
+                      <span className="font-medium text-foreground">TSh {(item.unit_price * item.quantity).toLocaleString()}</span>
                     </div>
                   ))}
-                  <div className="flex justify-between font-bold pt-2 border-t">
-                    <span>Jumla</span>
+                  <div className="flex justify-between font-bold pt-2 border-t border-border">
+                    <span className="text-foreground">Jumla</span>
                     <span className="text-primary">TSh {selectedOrder.total_amount.toLocaleString()}</span>
                   </div>
                 </div>
@@ -282,7 +299,7 @@ export const SokoniOrderManagement = () => {
               <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
                 <div>
                   <p className="text-sm text-muted-foreground">Njia ya Malipo</p>
-                  <p className="font-medium capitalize">{selectedOrder.payment_method}</p>
+                  <p className="font-medium capitalize text-foreground">{selectedOrder.payment_method || 'N/A'}</p>
                 </div>
                 {getPaymentStatusBadge(selectedOrder.payment_status)}
               </div>
@@ -293,20 +310,13 @@ export const SokoniOrderManagement = () => {
                 </div>
               )}
 
-              {selectedOrder.notes && (
-                <div className="p-3 bg-yellow-50 rounded-lg">
-                  <p className="text-sm font-medium text-yellow-800">Maelezo:</p>
-                  <p className="text-sm text-yellow-700">{selectedOrder.notes}</p>
-                </div>
-              )}
-
               {/* Action Buttons */}
               <div className="grid grid-cols-2 gap-2 pt-2">
                 {selectedOrder.order_status === 'new' && (
                   <>
                     <Button 
                       variant="outline" 
-                      className="text-red-600"
+                      className="text-destructive border-destructive hover:bg-destructive/10"
                       onClick={() => updateOrderStatus(selectedOrder.id, 'cancelled')}
                     >
                       <XCircle className="h-4 w-4 mr-2" />

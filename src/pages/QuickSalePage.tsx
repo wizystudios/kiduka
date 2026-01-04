@@ -5,12 +5,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { ShoppingBag, Plus, DollarSign } from 'lucide-react';
+import { ShoppingBag, Plus } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/hooks/useAuth';
+import { useDataAccess } from '@/hooks/useDataAccess';
 import { toast } from 'sonner';
-import { useNavigate } from 'react-router-dom';
-// PageHeader removed for cleaner UI
 import { InvoiceGenerator } from '@/components/InvoiceGenerator';
 
 interface Customer {
@@ -23,8 +21,7 @@ export const QuickSalePage = () => {
   const [loading, setLoading] = useState(false);
   const [showInvoice, setShowInvoice] = useState(false);
   const [lastSaleData, setLastSaleData] = useState<any>(null);
-  const { user, userProfile } = useAuth();
-  const navigate = useNavigate();
+  const { dataOwnerId, ownerBusinessName, loading: dataLoading } = useDataAccess();
 
   const [formData, setFormData] = useState({
     customer_name: '',
@@ -39,16 +36,18 @@ export const QuickSalePage = () => {
   });
 
   useEffect(() => {
-    fetchCustomers();
-  }, [user?.id]);
+    if (dataOwnerId) {
+      fetchCustomers();
+    }
+  }, [dataOwnerId]);
 
   const fetchCustomers = async () => {
-    if (!user?.id) return;
+    if (!dataOwnerId) return;
     try {
       const { data, error } = await supabase
         .from('customers')
         .select('id, name')
-        .eq('owner_id', user.id)
+        .eq('owner_id', dataOwnerId)
         .order('name');
 
       if (error) throw error;
@@ -60,7 +59,10 @@ export const QuickSalePage = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user?.id) return;
+    if (!dataOwnerId) {
+      toast.error('Hakuna data ya biashara. Jaribu tena.');
+      return;
+    }
 
     try {
       setLoading(true);
@@ -74,7 +76,7 @@ export const QuickSalePage = () => {
       const balance = total_amount - amount_paid;
 
       const transactionData = {
-        owner_id: user.id,
+        owner_id: dataOwnerId,
         customer_id: formData.customer_id || null,
         customer_name: formData.customer_name,
         transaction_type: 'sale',
@@ -95,7 +97,6 @@ export const QuickSalePage = () => {
 
       if (error) throw error;
 
-      // Update customer balance if customer selected
       if (formData.customer_id && balance > 0) {
         const { data: customer } = await supabase
           .from('customers')
@@ -110,7 +111,6 @@ export const QuickSalePage = () => {
           .eq('id', formData.customer_id);
       }
 
-      // Prepare invoice data
       setLastSaleData({
         customer_name: formData.customer_name,
         items: [{
@@ -142,9 +142,16 @@ export const QuickSalePage = () => {
     return qty * price;
   };
 
+  if (dataLoading) {
+    return (
+      <div className="page-container flex items-center justify-center">
+        <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div>
+      </div>
+    );
+  }
+
   return (
     <div className="page-container">
-
       {showInvoice && lastSaleData ? (
         <div className="space-y-4">
           <InvoiceGenerator {...lastSaleData} />
@@ -169,172 +176,172 @@ export const QuickSalePage = () => {
           </Button>
         </div>
       ) : (
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-3">
-            <ShoppingBag className="h-6 w-6 text-primary" />
-            <div>
-              <CardTitle>Mauzo ya Haraka</CardTitle>
-              <p className="text-sm text-muted-foreground">Rekodi mauzo kwa haraka</p>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <Label htmlFor="customer">Mteja (Optional)</Label>
-              <Select
-                value={formData.customer_id}
-                onValueChange={(value) => {
-                  const customer = customers.find(c => c.id === value);
-                  setFormData({
-                    ...formData,
-                    customer_id: value,
-                    customer_name: customer?.name || ''
-                  });
-                }}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Chagua mteja" />
-                </SelectTrigger>
-                <SelectContent>
-                  {customers.map((customer) => (
-                    <SelectItem key={customer.id} value={customer.id}>
-                      {customer.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {!formData.customer_id && (
+        <Card className="border-border">
+          <CardHeader>
+            <div className="flex items-center gap-3">
+              <ShoppingBag className="h-6 w-6 text-primary" />
               <div>
-                <Label htmlFor="customer_name">Jina la Mteja</Label>
+                <CardTitle className="text-foreground">Mauzo ya Haraka</CardTitle>
+                <p className="text-sm text-muted-foreground">Rekodi mauzo kwa haraka</p>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <Label htmlFor="customer">Mteja (Optional)</Label>
+                <Select
+                  value={formData.customer_id}
+                  onValueChange={(value) => {
+                    const customer = customers.find(c => c.id === value);
+                    setFormData({
+                      ...formData,
+                      customer_id: value,
+                      customer_name: customer?.name || ''
+                    });
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Chagua mteja" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {customers.map((customer) => (
+                      <SelectItem key={customer.id} value={customer.id}>
+                        {customer.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {!formData.customer_id && (
+                <div>
+                  <Label htmlFor="customer_name">Jina la Mteja</Label>
+                  <Input
+                    id="customer_name"
+                    value={formData.customer_name}
+                    onChange={(e) => setFormData({ ...formData, customer_name: e.target.value })}
+                    placeholder="Walk-in customer"
+                    required
+                  />
+                </div>
+              )}
+
+              <div>
+                <Label htmlFor="product_name">Bidhaa</Label>
                 <Input
-                  id="customer_name"
-                  value={formData.customer_name}
-                  onChange={(e) => setFormData({ ...formData, customer_name: e.target.value })}
-                  placeholder="Walk-in customer"
+                  id="product_name"
+                  value={formData.product_name}
+                  onChange={(e) => setFormData({ ...formData, product_name: e.target.value })}
                   required
                 />
               </div>
-            )}
 
-            <div>
-              <Label htmlFor="product_name">Bidhaa</Label>
-              <Input
-                id="product_name"
-                value={formData.product_name}
-                onChange={(e) => setFormData({ ...formData, product_name: e.target.value })}
-                required
-              />
-            </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="quantity">Kiasi</Label>
+                  <Input
+                    id="quantity"
+                    type="number"
+                    step="any"
+                    min="0"
+                    value={formData.quantity}
+                    onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="unit_price">Bei (TZS)</Label>
+                  <Input
+                    id="unit_price"
+                    type="number"
+                    step="any"
+                    min="0"
+                    value={formData.unit_price}
+                    onChange={(e) => setFormData({ ...formData, unit_price: e.target.value })}
+                    required
+                  />
+                </div>
+              </div>
 
-            <div className="grid grid-cols-2 gap-4">
+              <div className="p-4 bg-primary/10 rounded-lg">
+                <div className="flex items-center justify-between">
+                  <span className="font-medium text-foreground">Jumla:</span>
+                  <span className="text-2xl font-bold text-primary">
+                    TZS {getTotalAmount().toLocaleString()}
+                  </span>
+                </div>
+              </div>
+
               <div>
-                <Label htmlFor="quantity">Kiasi</Label>
-                <Input
-                  id="quantity"
-                  type="number"
-                  step="any"
-                  min="0"
-                  value={formData.quantity}
-                  onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
-                  required
+                <Label htmlFor="payment_status">Hali ya Malipo</Label>
+                <Select
+                  value={formData.payment_status}
+                  onValueChange={(value: 'paid' | 'partial' | 'unpaid') => 
+                    setFormData({ ...formData, payment_status: value })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="paid">Amelipa Yote</SelectItem>
+                    <SelectItem value="partial">Amelipa Sehemu</SelectItem>
+                    <SelectItem value="unpaid">Hajalipa</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {formData.payment_status === 'partial' && (
+                <div>
+                  <Label htmlFor="amount_paid">Kiasi Alicholipa (TZS)</Label>
+                  <Input
+                    id="amount_paid"
+                    type="number"
+                    step="any"
+                    min="0"
+                    value={formData.amount_paid}
+                    onChange={(e) => setFormData({ ...formData, amount_paid: e.target.value })}
+                    required
+                  />
+                </div>
+              )}
+
+              <div>
+                <Label htmlFor="payment_method">Njia ya Malipo</Label>
+                <Select
+                  value={formData.payment_method}
+                  onValueChange={(value) => setFormData({ ...formData, payment_method: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="cash">Taslimu</SelectItem>
+                    <SelectItem value="mobile_money">Pesa za Simu</SelectItem>
+                    <SelectItem value="bank">Benki</SelectItem>
+                    <SelectItem value="credit">Mkopo</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label htmlFor="notes">Maelezo (Optional)</Label>
+                <Textarea
+                  id="notes"
+                  value={formData.notes}
+                  onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                  rows={3}
                 />
               </div>
-              <div>
-                <Label htmlFor="unit_price">Bei (TZS)</Label>
-                <Input
-                  id="unit_price"
-                  type="number"
-                  step="any"
-                  min="0"
-                  value={formData.unit_price}
-                  onChange={(e) => setFormData({ ...formData, unit_price: e.target.value })}
-                  required
-                />
-              </div>
-            </div>
 
-            <div className="p-4 bg-primary/10 rounded-lg">
-              <div className="flex items-center justify-between">
-                <span className="font-medium">Jumla:</span>
-                <span className="text-2xl font-bold text-primary">
-                  TZS {getTotalAmount().toLocaleString()}
-                </span>
-              </div>
-            </div>
-
-            <div>
-              <Label htmlFor="payment_status">Hali ya Malipo</Label>
-              <Select
-                value={formData.payment_status}
-                onValueChange={(value: 'paid' | 'partial' | 'unpaid') => 
-                  setFormData({ ...formData, payment_status: value })
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="paid">Amelipa Yote</SelectItem>
-                  <SelectItem value="partial">Amelipa Sehemu</SelectItem>
-                  <SelectItem value="unpaid">Hajalipa</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {formData.payment_status === 'partial' && (
-              <div>
-                <Label htmlFor="amount_paid">Kiasi Alicholipa (TZS)</Label>
-                <Input
-                  id="amount_paid"
-                  type="number"
-                  step="any"
-                  min="0"
-                  value={formData.amount_paid}
-                  onChange={(e) => setFormData({ ...formData, amount_paid: e.target.value })}
-                  required
-                />
-              </div>
-            )}
-
-            <div>
-              <Label htmlFor="payment_method">Njia ya Malipo</Label>
-              <Select
-                value={formData.payment_method}
-                onValueChange={(value) => setFormData({ ...formData, payment_method: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="cash">Taslimu</SelectItem>
-                  <SelectItem value="mobile_money">Pesa za Simu</SelectItem>
-                  <SelectItem value="bank">Benki</SelectItem>
-                  <SelectItem value="credit">Mkopo</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <Label htmlFor="notes">Maelezo (Optional)</Label>
-              <Textarea
-                id="notes"
-                value={formData.notes}
-                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                rows={3}
-              />
-            </div>
-
-            <Button type="submit" className="w-full" disabled={loading}>
-              <Plus className="h-4 w-4 mr-2" />
-              Rekodi Mauzo
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+              <Button type="submit" className="w-full" disabled={loading}>
+                <Plus className="h-4 w-4 mr-2" />
+                Rekodi Mauzo
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
       )}
     </div>
   );

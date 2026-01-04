@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,12 +7,12 @@ import { Camera, Search, Plus, Minus, ShoppingCart } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
+import { useDataAccess } from '@/hooks/useDataAccess';
 import { CameraScanner } from '@/components/CameraScanner';
 import { PaymentMethodDialog } from '@/components/PaymentMethodDialog';
 import { EnhancedReceiptPrinter } from '@/components/EnhancedReceiptPrinter';
 import { WeightSelector } from '@/components/WeightSelector';
 import { DigitalReceiptService } from '@/components/DigitalReceiptService';
-// PageHeader removed for cleaner UI
 
 interface Product {
   id: string;
@@ -61,6 +61,7 @@ export const ScannerPage = () => {
   } | null>(null);
   const { toast } = useToast();
   const { user, userProfile } = useAuth();
+  const { dataOwnerId, ownerBusinessName, loading: dataLoading } = useDataAccess();
 
   const handleSearchProduct = async (query: string) => {
     if (!query.trim()) {
@@ -68,10 +69,10 @@ export const ScannerPage = () => {
       return;
     }
     
-    if (!user?.id) {
+    if (!dataOwnerId) {
       toast({
         title: 'Error',
-        description: 'User not authenticated',
+        description: 'Hakuna data ya biashara. Jaribu tena.',
         variant: 'destructive'
       });
       return;
@@ -79,7 +80,7 @@ export const ScannerPage = () => {
     
     setLoading(true);
     try {
-      console.log('Searching for products with user ID:', user.id);
+      console.log('Searching for products with dataOwnerId:', dataOwnerId);
       let searchQuery;
       
       if (searchType === 'barcode') {
@@ -87,13 +88,13 @@ export const ScannerPage = () => {
           .from('products')
           .select('*')
           .eq('barcode', query.trim())
-          .eq('owner_id', user.id);
+          .eq('owner_id', dataOwnerId);
       } else {
         searchQuery = supabase
           .from('products')
           .select('*')
           .ilike('name', `%${query.trim()}%`)
-          .eq('owner_id', user.id)
+          .eq('owner_id', dataOwnerId)
           .limit(10);
       }
 
@@ -111,13 +112,13 @@ export const ScannerPage = () => {
           setScannedProduct(data[0]);
           setSearchResults([]);
           toast({
-            title: 'Product Found!',
+            title: 'Bidhaa Imepatikana!',
             description: `${data[0].name} - TZS ${data[0].price.toLocaleString()}`
           });
         } else {
           toast({
-            title: 'Product Not Found',
-            description: 'No product found with this barcode',
+            title: 'Bidhaa Haipatikani',
+            description: 'Hakuna bidhaa yenye barcode hii',
             variant: 'destructive'
           });
           setScannedProduct(null);
@@ -128,13 +129,13 @@ export const ScannerPage = () => {
         setScannedProduct(null);
         if (data && data.length > 0) {
           toast({
-            title: 'Products Found',
-            description: `${data.length} product(s) found`
+            title: 'Bidhaa Zimepatikana',
+            description: `${data.length} bidhaa zimepatikana`
           });
         } else {
           toast({
-            title: 'No Products Found',
-            description: 'No products match your search',
+            title: 'Hakuna Bidhaa',
+            description: 'Hakuna bidhaa zinazofanana na utafutaji',
             variant: 'destructive'
           });
         }
@@ -166,7 +167,6 @@ export const ScannerPage = () => {
   };
 
   const addToCart = (product: Product) => {
-    // Check if this is a weight-based product using the database field
     if (product.is_weight_based) {
       setSelectedProductForWeight(product);
       setShowWeightSelector(true);
@@ -175,8 +175,8 @@ export const ScannerPage = () => {
 
     if (product.stock_quantity <= 0) {
       toast({
-        title: 'Out of Stock',
-        description: 'This product is currently out of stock',
+        title: 'Hakuna Stock',
+        description: 'Bidhaa hii haina stock',
         variant: 'destructive'
       });
       return;
@@ -186,8 +186,8 @@ export const ScannerPage = () => {
     if (existingItem) {
       if (existingItem.quantity >= product.stock_quantity) {
         toast({
-          title: 'Insufficient Stock',
-          description: 'Cannot add more items than available in stock',
+          title: 'Stock Haitoshi',
+          description: 'Haiwezekani kuongeza zaidi ya stock iliyopo',
           variant: 'destructive'
         });
         return;
@@ -202,8 +202,8 @@ export const ScannerPage = () => {
     }
     
     toast({
-      title: 'Added to Cart',
-      description: `${product.name} added to cart`
+      title: 'Imeongezwa',
+      description: `${product.name} imeongezwa kwenye kikapu`
     });
   };
 
@@ -218,7 +218,7 @@ export const ScannerPage = () => {
     setCart(prev => [...prev, cartItem]);
     
     toast({
-      title: 'Added to Cart',
+      title: 'Imeongezwa',
       description: `${weightData.weight}${weightData.unit} ${product.name} - TZS ${weightData.totalPrice.toLocaleString()}`
     });
   };
@@ -241,19 +241,15 @@ export const ScannerPage = () => {
     return cart.reduce((total, item) => total + (item.price * item.quantity), 0);
   };
 
-  const getTotalAmount = () => {
-    return getSubtotal();
-  };
-
   const handlePaymentComplete = async (paymentData: PaymentData) => {
-    if (cart.length === 0) return;
+    if (cart.length === 0 || !dataOwnerId) return;
 
     setLoading(true);
     try {
       const { data: sale, error: saleError } = await supabase
         .from('sales')
         .insert({
-          owner_id: user?.id,
+          owner_id: dataOwnerId,
           total_amount: getSubtotal(),
           payment_method: paymentData.method
         })
@@ -276,15 +272,14 @@ export const ScannerPage = () => {
 
       if (itemsError) throw itemsError;
 
-      // Update product stock quantities after successful sale
+      // Update product stock quantities
       try {
         const updates = cart.map(async (item) => {
-          // Fetch latest stock to avoid stale values
           const { data: latest, error: fetchErr } = await supabase
             .from('products')
             .select('stock_quantity, is_weight_based')
             .eq('id', item.id)
-            .eq('owner_id', user?.id)
+            .eq('owner_id', dataOwnerId)
             .single();
           if (fetchErr) throw fetchErr;
 
@@ -297,7 +292,7 @@ export const ScannerPage = () => {
             .from('products')
             .update({ stock_quantity: newQty })
             .eq('id', item.id)
-            .eq('owner_id', user?.id);
+            .eq('owner_id', dataOwnerId);
           if (updateErr) throw updateErr;
         });
         await Promise.all(updates);
@@ -319,12 +314,12 @@ export const ScannerPage = () => {
         vatAmount: 0,
         total: getSubtotal(),
         paymentData,
-        businessName: userProfile?.business_name || 'KIDUKA STORE'
+        businessName: ownerBusinessName || userProfile?.business_name || 'KIDUKA STORE'
       });
 
       toast({
-        title: 'Sale Completed!',
-        description: `Total: TZS ${getSubtotal().toLocaleString()}`
+        title: 'Mauzo Yamekamilika!',
+        description: `Jumla: TZS ${getSubtotal().toLocaleString()}`
       });
       
       setShowPayment(false);
@@ -335,14 +330,11 @@ export const ScannerPage = () => {
       setSearchResults([]);
     } catch (error: any) {
       console.error('Error completing sale:', error);
-      const errorMessage = error?.message || 'Kosa la kutarajwa. Jaribu tena.';
       toast({
         title: 'Hitilafu ya Mauzo',
-        description: errorMessage,
+        description: error?.message || 'Kosa la kutarajwa. Jaribu tena.',
         variant: 'destructive'
       });
-      
-      // Don't clear cart on error so user can retry
     } finally {
       setLoading(false);
     }
@@ -358,27 +350,32 @@ export const ScannerPage = () => {
     setCompletedSale(null);
   };
 
+  if (dataLoading) {
+    return (
+      <div className="page-container flex items-center justify-center">
+        <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div>
+      </div>
+    );
+  }
+
   return (
     <div className="page-container">
-
-      <div className="bg-gradient-to-r from-blue-50 to-purple-50 p-2 rounded mb-2">
-        <h2 className="text-sm font-bold text-gray-900 mb-1">💰 Muuzo wa Haraka</h2>
-        <p className="text-xs text-gray-700">Tafuta bidhaa</p>
-        <div className="mt-1 p-1.5 bg-green-50 border-l-2 border-green-500 rounded">
-          <p className="text-xs text-green-800">
+      <div className="bg-gradient-to-r from-primary/10 to-primary/5 p-2 rounded mb-2">
+        <h2 className="text-sm font-bold text-foreground mb-1">💰 Muuzo wa Haraka</h2>
+        <p className="text-xs text-muted-foreground">Tafuta bidhaa</p>
+        <div className="mt-1 p-1.5 bg-green-50 dark:bg-green-900/20 border-l-2 border-green-500 rounded">
+          <p className="text-xs text-green-800 dark:text-green-200">
             💡 Tumia jina kwa haraka!
           </p>
         </div>
       </div>
 
-      {/* Camera Scanner Component */}
       <CameraScanner
         isOpen={showCamera}
         onScan={handleCameraScan}
         onClose={() => setShowCamera(false)}
       />
 
-      {/* Weight Selector Modal */}
       {showWeightSelector && selectedProductForWeight && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <WeightSelector
@@ -392,7 +389,6 @@ export const ScannerPage = () => {
         </div>
       )}
 
-      {/* Payment Modal */}
       <PaymentMethodDialog
         open={showPayment}
         onOpenChange={setShowPayment}
@@ -400,11 +396,10 @@ export const ScannerPage = () => {
         onPaymentComplete={handlePaymentComplete}
       />
 
-      {/* Receipt Modal */}
       {showReceipt && completedSale && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg p-6 max-w-sm w-full">
-            <h3 className="text-lg font-bold mb-4 text-center">Sale Complete!</h3>
+          <div className="bg-background rounded-lg p-6 max-w-sm w-full">
+            <h3 className="text-lg font-bold mb-4 text-center text-foreground">Mauzo Yamekamilika!</h3>
             <EnhancedReceiptPrinter
               items={completedSale.items}
               subtotal={completedSale.subtotal}
@@ -420,13 +415,12 @@ export const ScannerPage = () => {
               variant="outline"
               className="w-full mt-4"
             >
-              Continue to Digital Receipt
+              Endelea
             </Button>
           </div>
         </div>
       )}
 
-      {/* Digital Receipt Modal */}
       {showDigitalReceipt && completedSale && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <DigitalReceiptService
@@ -445,24 +439,22 @@ export const ScannerPage = () => {
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Scanner Section */}
         <div className="space-y-4">
-          <Card className="shadow-lg">
+          <Card className="shadow-lg border-border">
             <CardHeader>
-              <CardTitle className="flex items-center text-lg">
+              <CardTitle className="flex items-center text-lg text-foreground">
                 <Search className="h-6 w-6 mr-2" />
                 Tafuta Bidhaa
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {/* Search Type Toggle */}
               <div className="flex space-x-2">
                 <Button
                   variant={searchType === "name" ? "default" : "outline"}
                   onClick={() => setSearchType("name")}
-                  className="flex-1 h-12 text-base bg-green-600 hover:bg-green-700"
+                  className="flex-1 h-12 text-base"
                 >
-                  📝 Jina (Haraka)
+                  📝 Jina
                 </Button>
                 <Button
                   variant={searchType === "barcode" ? "default" : "outline"}
@@ -485,7 +477,7 @@ export const ScannerPage = () => {
                 <div className="flex gap-2">
                   <Button 
                     onClick={() => handleSearchProduct(searchQuery)}
-                    className="flex-1 h-14 text-base bg-blue-600 hover:bg-blue-700"
+                    className="flex-1 h-14 text-base"
                     disabled={!searchQuery || loading}
                   >
                     <Search className="h-5 w-5 mr-2" />
@@ -502,161 +494,134 @@ export const ScannerPage = () => {
                   )}
                 </div>
               </div>
-            </CardContent>
-          </Card>
 
-          {/* Search Results for Name Search */}
-          {searchResults.length > 0 && (
-            <Card className="shadow-lg">
-              <CardHeader>
-                <CardTitle className="text-blue-800 text-lg">Matokeo ({searchResults.length})</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {searchResults.map((product) => (
-                  <div key={product.id} className="p-4 bg-blue-50 rounded-lg border-l-4 border-blue-500 shadow">
-                    <div className="flex justify-between items-start gap-3">
-                      <div className="flex-1">
-                        <h3 className="font-semibold text-base mb-1">{product.name}</h3>
-                        <p className="text-blue-600 font-bold text-lg mb-1">TZS {product.price.toLocaleString()}</p>
-                        <p className="text-sm text-gray-600">{product.category}</p>
+              {searchResults.length > 0 && (
+                <div className="space-y-2 mt-4">
+                  <h4 className="font-medium text-sm text-foreground">Matokeo ({searchResults.length})</h4>
+                  {searchResults.map((product) => (
+                    <Card 
+                      key={product.id} 
+                      className="cursor-pointer hover:shadow-md transition-shadow border-border"
+                      onClick={() => selectProduct(product)}
+                    >
+                      <CardContent className="p-3 flex justify-between items-center">
+                        <div>
+                          <p className="font-medium text-foreground">{product.name}</p>
+                          <p className="text-sm text-muted-foreground">{product.category}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-bold text-primary">TZS {product.price.toLocaleString()}</p>
+                          <Badge variant={product.stock_quantity > 0 ? "default" : "destructive"}>
+                            Stock: {product.stock_quantity}
+                          </Badge>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+
+              {scannedProduct && (
+                <Card className="border-2 border-primary bg-primary/5">
+                  <CardContent className="p-4">
+                    <div className="flex justify-between items-start mb-3">
+                      <div>
+                        <h3 className="font-bold text-lg text-foreground">{scannedProduct.name}</h3>
+                        <p className="text-sm text-muted-foreground">{scannedProduct.category}</p>
+                        {scannedProduct.barcode && (
+                          <p className="text-xs text-muted-foreground">Barcode: {scannedProduct.barcode}</p>
+                        )}
                       </div>
-                      <div className="text-right space-y-2">
-                        <Badge variant="outline" className="text-blue-600 text-sm">
-                          Stock: {product.stock_quantity}
+                      <div className="text-right">
+                        <p className="text-2xl font-bold text-primary">
+                          TZS {scannedProduct.price.toLocaleString()}
+                        </p>
+                        <Badge variant={scannedProduct.stock_quantity > 0 ? "default" : "destructive"}>
+                          Stock: {scannedProduct.stock_quantity}
                         </Badge>
-                        <Button 
-                          onClick={() => {
-                            selectProduct(product);
-                            addToCart(product);
-                          }}
-                          size="lg"
-                          className="bg-green-600 hover:bg-green-700 w-full"
-                        >
-                          ➕ Ongeza
-                        </Button>
                       </div>
                     </div>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Scanned Product */}
-          {scannedProduct && (
-            <Card className="border-green-200 bg-green-50">
-              <CardHeader>
-                <CardTitle className="text-green-800">Product Selected</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <div>
-                    <h3 className="font-semibold text-lg">{scannedProduct.name}</h3>
-                    <p className="text-green-600 font-bold text-xl">TZS {scannedProduct.price.toLocaleString()}</p>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <Badge variant="outline" className="text-blue-600">
-                      Stock: {scannedProduct.stock_quantity}
-                    </Badge>
                     <Button 
+                      className="w-full h-12"
                       onClick={() => addToCart(scannedProduct)}
                       disabled={scannedProduct.stock_quantity <= 0}
-                      className="bg-green-600 hover:bg-green-700"
                     >
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add to Cart
+                      <Plus className="h-5 w-5 mr-2" />
+                      Ongeza kwenye Kikapu
+                    </Button>
+                  </CardContent>
+                </Card>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        <div>
+          <Card className="shadow-lg border-border">
+            <CardHeader>
+              <CardTitle className="flex items-center text-foreground">
+                <ShoppingCart className="h-5 w-5 mr-2" />
+                Kikapu ({cart.length})
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {cart.length === 0 ? (
+                <p className="text-muted-foreground text-center py-8">Kikapu ni tupu</p>
+              ) : (
+                <div className="space-y-3">
+                  {cart.map((item) => (
+                    <div key={item.id} className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                      <div className="flex-1">
+                        <p className="font-medium text-sm text-foreground">{item.name}</p>
+                        <p className="text-sm text-primary">
+                          TZS {item.price.toLocaleString()} × {item.quantity}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button 
+                          variant="outline" 
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() => updateQuantity(item.id, -1)}
+                        >
+                          <Minus className="h-4 w-4" />
+                        </Button>
+                        <span className="w-8 text-center font-medium text-foreground">{item.quantity}</span>
+                        <Button 
+                          variant="outline" 
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() => updateQuantity(item.id, 1)}
+                        >
+                          <Plus className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      <p className="w-24 text-right font-bold text-foreground">
+                        TZS {(item.price * item.quantity).toLocaleString()}
+                      </p>
+                    </div>
+                  ))}
+                  
+                  <div className="border-t border-border pt-4 mt-4">
+                    <div className="flex justify-between text-xl font-bold">
+                      <span className="text-foreground">Jumla:</span>
+                      <span className="text-primary">TZS {getSubtotal().toLocaleString()}</span>
+                    </div>
+                    <Button 
+                      className="w-full mt-4 h-14 text-lg"
+                      onClick={() => setShowPayment(true)}
+                    >
+                      Lipa Sasa
                     </Button>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-          )}
+              )}
+            </CardContent>
+          </Card>
         </div>
-
-        {/* Cart Section */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <ShoppingCart className="h-5 w-5 mr-2" />
-              Shopping Cart ({cart.length})
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {cart.length === 0 ? (
-              <div className="text-center py-8">
-                <ShoppingCart className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-600">Cart is empty</p>
-                <p className="text-sm text-gray-500">Search products to add them</p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {cart.map((item) => (
-                  <div key={item.id} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                    <div className="flex-1">
-                      <h4 className="font-medium">{item.name}</h4>
-                      <p className="text-sm text-gray-600">
-                        TZS {item.price.toLocaleString()} {item.weightInfo ? `per ${item.weightInfo.unit}` : 'each'}
-                      </p>
-                      {item.weightInfo && (
-                        <p className="text-xs text-blue-600">Weight: {item.weightInfo.weight}{item.weightInfo.unit}</p>
-                      )}
-                    </div>
-                    {!item.weightInfo && (
-                      <div className="flex items-center space-x-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => updateQuantity(item.id, -1)}
-                          className="h-8 w-8 p-0"
-                        >
-                          <Minus className="h-3 w-3" />
-                        </Button>
-                        <span className="w-8 text-center font-medium">{item.quantity}</span>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => updateQuantity(item.id, 1)}
-                          className="h-8 w-8 p-0"
-                          disabled={item.quantity >= item.stock_quantity}
-                        >
-                          <Plus className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    )}
-                    <div className="text-right ml-4">
-                      <p className="font-bold">TZS {(item.price * item.quantity).toLocaleString()}</p>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => removeFromCart(item.id)}
-                        className="text-red-500 text-xs"
-                      >
-                        Remove
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-                
-                <div className="border-t pt-4">
-                  <div className="space-y-2 mb-4">
-                    <div className="flex justify-between items-center border-t pt-2">
-                      <span className="text-xl font-bold">Total:</span>
-                      <span className="text-2xl font-bold text-green-600">TZS {getSubtotal().toLocaleString()}</span>
-                    </div>
-                  </div>
-                  <Button 
-                    onClick={() => setShowPayment(true)}
-                    disabled={loading}
-                    className="w-full bg-green-600 hover:bg-green-700 text-white py-3"
-                  >
-                    {loading ? 'Processing...' : 'Proceed to Payment'}
-                  </Button>
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
       </div>
     </div>
   );
 };
+
+export default ScannerPage;
