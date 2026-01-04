@@ -57,7 +57,7 @@ import { WhatsAppPage } from '@/pages/WhatsAppPage';
 import SalesForecastingPage from '@/pages/SalesForecastingPage';
 import { CustomerLoyaltyPage } from '@/pages/CustomerLoyaltyPage';
 import { InventoryAutomationPage } from '@/pages/InventoryAutomationPage';
-import SokoniMarketplace from '@/components/SokoniMarketplace';
+import { SokoniMarketplace } from '@/components/SokoniMarketplace';
 import SokoniOrdersPage from '@/pages/SokoniOrdersPage';
 
 const queryClient = new QueryClient({
