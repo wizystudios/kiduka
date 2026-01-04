@@ -62,13 +62,13 @@ export const NotificationsPage = () => {
             timestamp: new Date(),
             data: order
           };
-          
+
           setNotifications(prev => {
             const updated = [newNotif, ...prev.filter(n => n.id !== newNotif.id)];
             saveNotifications(updated);
             return updated;
           });
-          
+
           toast.success('Oda Mpya ya Sokoni!', {
             description: newNotif.message,
             action: {
@@ -76,6 +76,22 @@ export const NotificationsPage = () => {
               onClick: () => window.location.href = '/sokoni-orders'
             }
           });
+
+          // Optional external notification (SMS/WhatsApp) - will be simulated if no provider keys are set
+          const sellerPhone = userProfile?.phone;
+          if (sellerPhone) {
+            const msg = `Oda mpya ya Sokoni: TSh ${Number(order.total_amount).toLocaleString()} (Tracking: ${order.tracking_code || order.id?.slice(0, 8)})`;
+            Promise.allSettled([
+              supabase.functions.invoke('send-whatsapp', {
+                body: { phoneNumber: sellerPhone, message: msg, messageType: 'sokoni_order' }
+              }),
+              supabase.functions.invoke('send-sms', {
+                body: { phoneNumber: sellerPhone, message: msg }
+              }),
+            ]).catch(() => {
+              // ignore
+            });
+          }
         }
       )
       .subscribe();
@@ -83,7 +99,7 @@ export const NotificationsPage = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [dataOwnerId, isReady]);
+  }, [dataOwnerId, isReady, userProfile?.phone]);
 
   // Listen to sync history changes
   useEffect(() => {
