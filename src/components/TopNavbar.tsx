@@ -80,13 +80,15 @@ export const TopNavbar = () => {
         </div>
         
         <div className="flex items-center gap-1">
-          {/* Offline Indicator */}
+          {/* Offline Indicator with Sync History */}
           <OfflineIndicator
             isOnline={offlineSync.isOnline}
             isSyncing={offlineSync.isSyncing}
             pendingChanges={offlineSync.pendingChanges}
             lastSync={offlineSync.lastSync}
             onSync={offlineSync.syncData}
+            syncHistory={offlineSync.syncHistory}
+            onClearHistory={offlineSync.clearHistory}
           />
 
           {/* Notification Bell */}
