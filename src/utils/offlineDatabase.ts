@@ -4,7 +4,7 @@
  */
 
 const DB_NAME = 'KidukaPOS_Offline';
-const DB_VERSION = 1;
+const DB_VERSION = 2; // Bumped for sync_history store
 
 interface SyncRecord {
   id: string;
@@ -13,6 +13,16 @@ interface SyncRecord {
   data: any;
   timestamp: number;
   synced: boolean;
+}
+
+export interface SyncLogEntry {
+  id: string;
+  timestamp: number;
+  type: 'download' | 'upload' | 'conflict' | 'error';
+  table: string;
+  itemCount: number;
+  status: 'success' | 'partial' | 'failed';
+  details?: string;
 }
 
 class OfflineDatabase {
@@ -71,6 +81,13 @@ class OfflineDatabase {
           const syncStore = db.createObjectStore('sync_queue', { keyPath: 'id' });
           syncStore.createIndex('synced', 'synced', { unique: false });
           syncStore.createIndex('table', 'table', { unique: false });
+        }
+
+        // Sync history store - for tracking sync operations
+        if (!db.objectStoreNames.contains('sync_history')) {
+          const historyStore = db.createObjectStore('sync_history', { keyPath: 'id' });
+          historyStore.createIndex('timestamp', 'timestamp', { unique: false });
+          historyStore.createIndex('type', 'type', { unique: false });
         }
 
         // Metadata store - for tracking last sync times
@@ -229,6 +246,53 @@ class OfflineDatabase {
     });
   }
 
+  // Sync history management
+  async addSyncLog(entry: Omit<SyncLogEntry, 'id'>): Promise<void> {
+    await this.init();
+    const logEntry: SyncLogEntry = {
+      ...entry,
+      id: `sync_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`
+    };
+
+    return new Promise((resolve, reject) => {
+      const transaction = this.db!.transaction('sync_history', 'readwrite');
+      const store = transaction.objectStore('sync_history');
+      const request = store.add(logEntry);
+
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error);
+    });
+  }
+
+  async getSyncHistory(limit = 50): Promise<SyncLogEntry[]> {
+    await this.init();
+    return new Promise((resolve, reject) => {
+      const transaction = this.db!.transaction('sync_history', 'readonly');
+      const store = transaction.objectStore('sync_history');
+      const request = store.getAll();
+
+      request.onsuccess = () => {
+        const results = (request.result as SyncLogEntry[])
+          .sort((a, b) => b.timestamp - a.timestamp)
+          .slice(0, limit);
+        resolve(results);
+      };
+      request.onerror = () => reject(request.error);
+    });
+  }
+
+  async clearSyncHistory(): Promise<void> {
+    await this.init();
+    return new Promise((resolve, reject) => {
+      const transaction = this.db!.transaction('sync_history', 'readwrite');
+      const store = transaction.objectStore('sync_history');
+      const request = store.clear();
+
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error);
+    });
+  }
+
   // Metadata management
   async setMetadata(key: string, value: any): Promise<void> {
     await this.init();
@@ -268,7 +332,7 @@ class OfflineDatabase {
   // Clear all data (for logout)
   async clearAll(): Promise<void> {
     await this.init();
-    const stores = ['products', 'sales', 'sales_items', 'customers', 'sync_queue', 'metadata'];
+    const stores = ['products', 'sales', 'sales_items', 'customers', 'sync_queue', 'sync_history', 'metadata'];
     
     return new Promise((resolve, reject) => {
       const transaction = this.db!.transaction(stores, 'readwrite');
