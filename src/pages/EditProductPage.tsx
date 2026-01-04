@@ -10,6 +10,7 @@ import { ArrowLeft, Save, Scan } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { ProductImageUpload } from '@/components/ProductImageUpload';
 
 export const EditProductPage = () => {
   const [loading, setLoading] = useState(false);
@@ -25,7 +26,8 @@ export const EditProductPage = () => {
     low_stock_threshold: '10',
     is_weight_based: false,
     unit_type: 'piece',
-    min_quantity: '0.1'
+    min_quantity: '0.1',
+    image_url: null as string | null
   });
   
   const navigate = useNavigate();
@@ -52,14 +54,15 @@ export const EditProductPage = () => {
         name: data.name || '',
         barcode: data.barcode || '',
         price: data.price?.toString() || '',
-        cost_price: '',
+        cost_price: data.cost_price?.toString() || '',
         stock_quantity: data.stock_quantity?.toString() || '',
         category: data.category || '',
         description: data.description || '',
         low_stock_threshold: data.low_stock_threshold?.toString() || '10',
         is_weight_based: data.is_weight_based || false,
         unit_type: data.unit_type || 'piece',
-        min_quantity: data.min_quantity?.toString() || '0.1'
+        min_quantity: data.min_quantity?.toString() || '0.1',
+        image_url: data.image_url || null
       });
     } catch (error) {
       console.error('Error fetching product:', error);
@@ -93,15 +96,17 @@ export const EditProductPage = () => {
       const updateData = {
         name: formData.name.trim(),
         barcode: formData.barcode?.trim() || null,
-         price: parseFloat(formData.price),
-         stock_quantity: parseFloat(formData.stock_quantity),
-         category: formData.category?.trim() || null,
-         description: formData.description?.trim() || null,
-         low_stock_threshold: parseInt(formData.low_stock_threshold),
-         is_weight_based: formData.is_weight_based,
-         unit_type: formData.unit_type,
-         min_quantity: parseFloat(formData.min_quantity) || 0.1,
-         updated_at: new Date().toISOString()
+        price: parseFloat(formData.price),
+        cost_price: formData.cost_price ? parseFloat(formData.cost_price) : null,
+        stock_quantity: parseFloat(formData.stock_quantity),
+        category: formData.category?.trim() || null,
+        description: formData.description?.trim() || null,
+        low_stock_threshold: parseInt(formData.low_stock_threshold),
+        is_weight_based: formData.is_weight_based,
+        unit_type: formData.unit_type,
+        min_quantity: parseFloat(formData.min_quantity) || 0.1,
+        image_url: formData.image_url,
+        updated_at: new Date().toISOString()
       };
       
       const { data, error } = await supabase
@@ -171,6 +176,13 @@ export const EditProductPage = () => {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Product Image Upload */}
+            <ProductImageUpload
+              currentImageUrl={formData.image_url}
+              onImageChange={(url) => setFormData({...formData, image_url: url})}
+              productId={id}
+            />
+            
             <div>
               <Label htmlFor="name">Jina la Bidhaa *</Label>
               <Input

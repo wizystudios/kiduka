@@ -799,11 +799,13 @@ export type Database = {
           delivery_address: string
           id: string
           items: Json
+          linked_sale_id: string | null
           order_status: string
           payment_method: string | null
           payment_status: string
           seller_id: string
           total_amount: number
+          tracking_code: string | null
           transaction_id: string | null
           updated_at: string
         }
@@ -813,11 +815,13 @@ export type Database = {
           delivery_address: string
           id?: string
           items: Json
+          linked_sale_id?: string | null
           order_status?: string
           payment_method?: string | null
           payment_status?: string
           seller_id: string
           total_amount: number
+          tracking_code?: string | null
           transaction_id?: string | null
           updated_at?: string
         }
@@ -827,15 +831,25 @@ export type Database = {
           delivery_address?: string
           id?: string
           items?: Json
+          linked_sale_id?: string | null
           order_status?: string
           payment_method?: string | null
           payment_status?: string
           seller_id?: string
           total_amount?: number
+          tracking_code?: string | null
           transaction_id?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "sokoni_orders_linked_sale_id_fkey"
+            columns: ["linked_sale_id"]
+            isOneToOne: false
+            referencedRelation: "sales"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
@@ -910,6 +924,7 @@ export type Database = {
         Args: { target_owner_id: string }
         Returns: boolean
       }
+      generate_tracking_code: { Args: never; Returns: string }
       get_user_role: { Args: { _user_id: string }; Returns: string }
       has_role: {
         Args: {
@@ -917,6 +932,23 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      process_sokoni_order_to_sale: {
+        Args: { order_id: string }
+        Returns: string
+      }
+      track_sokoni_order: {
+        Args: { p_phone: string; p_tracking_code: string }
+        Returns: {
+          created_at: string
+          id: string
+          items: Json
+          order_status: string
+          payment_status: string
+          total_amount: number
+          tracking_code: string
+          updated_at: string
+        }[]
       }
     }
     Enums: {

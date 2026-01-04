@@ -28,7 +28,9 @@ import {
   UserCheck,
   Home,
   Calculator,
-  Wallet
+  Wallet,
+  Store,
+  Bell
 } from 'lucide-react';
 import { ExpensesDashboardWidget } from '@/components/ExpensesDashboardWidget';
 import { StockAlertSystem } from '@/components/StockAlertSystem';
@@ -44,7 +46,8 @@ export const Dashboard = () => {
     todaysSales: 0,
     totalProducts: 0,
     todaysTransactions: 0,
-    lowStockItems: 0
+    lowStockItems: 0,
+    pendingSokoniOrders: 0
   });
   const [lowStockProducts, setLowStockProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -82,6 +85,13 @@ export const Dashboard = () => {
         .select('*')
         .eq('owner_id', dataOwnerId);
 
+      // Fetch pending Sokoni orders
+      const { data: sokoniOrders } = await supabase
+        .from('sokoni_orders')
+        .select('id')
+        .eq('seller_id', dataOwnerId)
+        .in('order_status', ['new', 'confirmed', 'preparing']);
+
       const totalSales = todaysSales?.reduce((sum, sale) => sum + Number(sale.total_amount || 0), 0) || 0;
       const totalProducts = products?.length || 0;
       const transactionCount = todaysSales?.length || 0;
@@ -91,7 +101,8 @@ export const Dashboard = () => {
         todaysSales: totalSales,
         totalProducts,
         todaysTransactions: transactionCount,
-        lowStockItems: lowStock.length
+        lowStockItems: lowStock.length,
+        pendingSokoniOrders: sokoniOrders?.length || 0
       });
       setLowStockProducts(lowStock.slice(0, 3));
     } catch (error) {
@@ -121,6 +132,8 @@ export const Dashboard = () => {
   const quickActions = [
     { title: "Dashboard", icon: Home, color: "text-blue-600", bg: "bg-blue-50", action: () => navigate('/dashboard') },
     { title: "Bidhaa", icon: Package, color: "text-purple-600", bg: "bg-purple-50", action: () => navigate('/products') },
+    { title: "Sokoni Oda", icon: Store, color: "text-pink-600", bg: "bg-pink-50", action: () => navigate('/sokoni-orders'), badge: metrics.pendingSokoniOrders },
+    { title: "Arifa", icon: Bell, color: "text-amber-600", bg: "bg-amber-50", action: () => navigate('/notifications'), badge: unreadCount },
     { title: "Calculator", icon: Calculator, color: "text-cyan-600", bg: "bg-cyan-50", action: () => navigate('/calculator') },
     { title: "Matumizi", icon: Wallet, color: "text-red-600", bg: "bg-red-50", action: () => navigate('/expenses') },
     { title: "Scanner", icon: Scan, color: "text-green-600", bg: "bg-green-50", action: () => navigate('/scanner') },
@@ -129,8 +142,7 @@ export const Dashboard = () => {
     { title: "Hesabu", icon: ClipboardCheck, color: "text-yellow-600", bg: "bg-yellow-50", action: () => navigate('/inventory-snapshots') },
     { title: "Wateja", icon: Users, color: "text-indigo-600", bg: "bg-indigo-50", action: () => navigate('/customers') },
     { title: "Punguzo", icon: Percent, color: "text-pink-600", bg: "bg-pink-50", action: () => navigate('/discounts') },
-    { title: "Mikopo", icon: CreditCard, color: "text-teal-600", bg: "bg-teal-50", action: () => navigate('/credit-management') },
-    { title: "Mikopo Midogo", icon: Banknote, color: "text-lime-600", bg: "bg-lime-50", action: () => navigate('/micro-loans') },
+    { title: "Mikopo", icon: Banknote, color: "text-lime-600", bg: "bg-lime-50", action: () => navigate('/micro-loans') },
     { title: "Ripoti", icon: BarChart3, color: "text-purple-600", bg: "bg-purple-50", action: () => navigate('/reports') },
     { title: "Faida/Hasara", icon: TrendingUp, color: "text-emerald-600", bg: "bg-emerald-50", action: () => navigate('/profit-loss') },
     { title: "Ingiza Bidhaa", icon: FileSpreadsheet, color: "text-orange-600", bg: "bg-orange-50", action: () => navigate('/products/import') },
@@ -186,9 +198,14 @@ export const Dashboard = () => {
             <Button
               key={i}
               onClick={a.action}
-              className={`p-2 h-auto text-center ${a.bg} ${a.color} hover:opacity-80 border rounded-md`}
+              className={`p-2 h-auto text-center ${a.bg} ${a.color} hover:opacity-80 border rounded-md relative`}
               variant="outline"
             >
+              {a.badge && a.badge > 0 && (
+                <Badge className="absolute -top-1 -right-1 h-4 w-4 p-0 flex items-center justify-center text-[10px] bg-destructive text-destructive-foreground">
+                  {a.badge > 9 ? '9+' : a.badge}
+                </Badge>
+              )}
               <a.icon className="h-4 w-4 mx-auto mb-1" />
               <p className="text-[11px] font-medium truncate">{a.title}</p>
             </Button>

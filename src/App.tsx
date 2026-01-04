@@ -59,6 +59,8 @@ import { CustomerLoyaltyPage } from '@/pages/CustomerLoyaltyPage';
 import { InventoryAutomationPage } from '@/pages/InventoryAutomationPage';
 import { SokoniMarketplace } from '@/components/SokoniMarketplace';
 import SokoniOrdersPage from '@/pages/SokoniOrdersPage';
+import NotificationsPage from '@/pages/NotificationsPage';
+import OrderTrackingPage from '@/pages/OrderTrackingPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -228,12 +230,12 @@ export default function App() {
               <Route path="/notifications" element={
                 <ProtectedRoute>
                   <AppLayout>
-                    <NotificationSettingsPage />
+                    <NotificationsPage />
                   </AppLayout>
                 </ProtectedRoute>
               } />
               
-              <Route path="/notifications" element={
+              <Route path="/notification-settings" element={
                 <ProtectedRoute>
                   <AppLayout>
                     <NotificationSettingsPage />
@@ -373,6 +375,9 @@ export default function App() {
               
               {/* Sokoni Marketplace - Public access for customers */}
               <Route path="/sokoni" element={<SokoniMarketplace />} />
+              
+              {/* Order Tracking - Public access */}
+              <Route path="/track-order" element={<OrderTrackingPage />} />
 
               {/* Sokoni Orders (seller dashboard) */}
               <Route path="/sokoni-orders" element={

@@ -74,6 +74,21 @@ export const AuthPage = () => {
     }
   };
 
+  // Normalize phone to +255 format
+  const normalizePhone = (phoneInput: string): string => {
+    const digits = phoneInput.replace(/\D/g, '');
+    if (digits.length === 10 && digits.startsWith('0')) {
+      return '255' + digits.slice(1);
+    }
+    if (digits.length === 9) {
+      return '255' + digits;
+    }
+    if (digits.length === 12 && digits.startsWith('255')) {
+      return digits;
+    }
+    return digits;
+  };
+
   const handleSignIn = async () => {
     const identifier = getIdentifier();
     if (!identifier || !password) {
@@ -85,26 +100,27 @@ export const AuthPage = () => {
       let loginEmail = email;
       
       if (authMethod === 'phone') {
-        // Normalize phone and find user by phone in profiles
-        const normalizedPhone = phone.replace(/\D/g, '');
-        const phoneForLookup = normalizedPhone.startsWith('255') ? normalizedPhone : 
-                               normalizedPhone.startsWith('0') ? '255' + normalizedPhone.slice(1) : 
-                               '255' + normalizedPhone;
+        const normalizedPhone = normalizePhone(phone);
         
-        // Try to find user by phone
+        // Try multiple phone formats for lookup
         const { data: profileData } = await import('@/integrations/supabase/client').then(
-          ({ supabase }) => supabase
-            .from('profiles')
-            .select('email')
-            .eq('phone', phoneForLookup)
-            .maybeSingle()
+          async ({ supabase }) => {
+            // Try exact match first
+            const { data } = await supabase
+              .from('profiles')
+              .select('email')
+              .or(`phone.eq.${normalizedPhone},phone.eq.+${normalizedPhone},phone.eq.0${normalizedPhone.slice(3)}`)
+              .limit(1)
+              .maybeSingle();
+            return { data };
+          }
         );
         
         if (profileData?.email) {
           loginEmail = profileData.email;
         } else {
-          // Fallback to phone@kiduka.phone format for users registered with phone
-          loginEmail = `${phoneForLookup}@kiduka.phone`;
+          // Fallback to phone@kiduka.phone format
+          loginEmail = `${normalizedPhone}@kiduka.phone`;
         }
       }
       
@@ -129,9 +145,20 @@ export const AuthPage = () => {
     }
     setLoading(true);
     try {
-      // For phone signup, create email format from phone
-      const signupEmail = authMethod === 'phone' ? `${phone.replace(/\D/g, '')}@kiduka.phone` : email;
+      // For phone signup, normalize and create email format
+      const normalizedPhone = authMethod === 'phone' ? normalizePhone(phone) : null;
+      const signupEmail = authMethod === 'phone' ? `${normalizedPhone}@kiduka.phone` : email;
+      
       await signUp(signupEmail, password, fullName);
+      
+      // If phone auth, save phone to profile after signup
+      if (authMethod === 'phone' && normalizedPhone) {
+        const { supabase } = await import('@/integrations/supabase/client');
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          await supabase.from('profiles').update({ phone: normalizedPhone }).eq('id', user.id);
+        }
+      }
     } catch (error: any) {
       if (error.message === 'CONFIRMATION_REQUIRED') {
         setRegisteredEmail(email);
