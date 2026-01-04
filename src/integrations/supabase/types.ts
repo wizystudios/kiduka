@@ -898,6 +898,14 @@ export type Database = {
         }
         Returns: Json
       }
+      add_assistant_permission_by_email: {
+        Args: {
+          p_assistant_email: string
+          p_business_name?: string
+          p_owner_id: string
+        }
+        Returns: Json
+      }
       can_access_owner_data: {
         Args: { target_owner_id: string }
         Returns: boolean
