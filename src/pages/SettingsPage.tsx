@@ -6,10 +6,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { User, Mail, Building, Shield, Download, Save, Eye, EyeOff, Phone, Loader2 } from 'lucide-react';
+import { User, Mail, Building, Shield, Download, Save, Eye, EyeOff, Phone, Loader2, Store } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { SokoniOrderNotificationSettings } from '@/components/SokoniOrderNotificationSettings';
 
 export const SettingsPage = () => {
   const { user, userProfile, updateProfile, loading } = useAuth();
@@ -482,6 +483,9 @@ export const SettingsPage = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Sokoni Order Notification Settings */}
+      <SokoniOrderNotificationSettings />
     </div>
   );
 };

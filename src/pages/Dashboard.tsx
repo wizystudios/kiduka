@@ -126,6 +126,7 @@ export const Dashboard = () => {
     { title: "Mauzo Leo", value: `TZS ${metrics.todaysSales.toLocaleString()}`, icon: DollarSign, color: "text-green-600", bg: "bg-green-50", border: "border-l-green-500" },
     { title: "Bidhaa", value: metrics.totalProducts, icon: Package, color: "text-purple-600", bg: "bg-purple-50", border: "border-l-purple-500" },
     { title: "Miamala", value: metrics.todaysTransactions, icon: ShoppingCart, color: "text-blue-600", bg: "bg-blue-50", border: "border-l-blue-500" },
+    { title: "Oda Sokoni", value: metrics.pendingSokoniOrders, icon: Store, color: "text-pink-600", bg: "bg-pink-50", border: "border-l-pink-500", action: () => navigate('/sokoni-orders') },
     { title: "Stock Ndogo", value: metrics.lowStockItems, icon: AlertTriangle, color: "text-orange-600", bg: "bg-orange-50", border: "border-l-orange-500" },
   ];
 
@@ -157,7 +158,11 @@ export const Dashboard = () => {
       {/* Metrics */}
       <div className="grid grid-cols-2 gap-2">
         {dashboardMetrics.map((m, i) => (
-          <Card key={i} className={`border-0 border-l-2 ${m.border}`}>
+          <Card 
+            key={i} 
+            className={`border-0 border-l-2 ${m.border} ${m.action ? 'cursor-pointer hover:shadow-md transition-shadow' : ''}`}
+            onClick={m.action}
+          >
             <CardContent className="p-2">
               <div className="flex items-center justify-between">
                 <div>
