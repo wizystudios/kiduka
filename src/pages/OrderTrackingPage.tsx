@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,6 +13,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { KidukaLogo } from '@/components/KidukaLogo';
 import { normalizeTzPhoneDigits } from '@/utils/phoneUtils';
+
 interface TrackedOrder {
   id: string;
   tracking_code: string;
@@ -24,11 +26,60 @@ interface TrackedOrder {
 }
 
 export const OrderTrackingPage = () => {
+  const [searchParams] = useSearchParams();
   const [phone, setPhone] = useState('');
   const [trackingCode, setTrackingCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [order, setOrder] = useState<TrackedOrder | null>(null);
   const [notFound, setNotFound] = useState(false);
+
+  // Auto-fill from URL params
+  useEffect(() => {
+    const codeParam = searchParams.get('code');
+    const phoneParam = searchParams.get('phone');
+    
+    if (codeParam) setTrackingCode(codeParam.toUpperCase());
+    if (phoneParam) setPhone(phoneParam);
+    
+    // Auto-search if both params are provided
+    if (codeParam && phoneParam) {
+      setTimeout(() => {
+        handleTrackWithParams(phoneParam, codeParam);
+      }, 500);
+    }
+  }, [searchParams]);
+
+  const handleTrackWithParams = async (phoneValue: string, codeValue: string) => {
+    const normalizedPhone = normalizeTzPhoneDigits(phoneValue);
+    if (!normalizedPhone) return;
+
+    setLoading(true);
+    setNotFound(false);
+    setOrder(null);
+
+    try {
+      const { data, error } = await supabase.rpc('track_sokoni_order', {
+        p_phone: normalizedPhone,
+        p_tracking_code: codeValue.toUpperCase()
+      });
+
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        const result = data[0];
+        setOrder({
+          ...result,
+          items: typeof result.items === 'string' ? JSON.parse(result.items) : result.items
+        });
+      } else {
+        setNotFound(true);
+      }
+    } catch (error) {
+      console.error('Error tracking order:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleTrack = async () => {
     if (!phone || !trackingCode) {

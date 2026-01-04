@@ -29,14 +29,15 @@ import {
   Package,
   Truck,
   ArrowLeft,
-  ImageIcon,
-  User
+  ClipboardList
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { MobileMoneyPayment } from './MobileMoneyPayment';
 import { normalizeTzPhoneDigits } from '@/utils/phoneUtils';
+import { OrderReceiptDialog } from './OrderReceiptDialog';
+
 interface MarketProduct {
   id: string;
   name: string;
@@ -60,10 +61,19 @@ interface SellerProfile {
   phone: string | null;
 }
 
-// Local storage key for guest cart
-const GUEST_CART_KEY = 'sokoni_guest_cart';
+interface GuestOrder {
+  tracking_code: string;
+  customer_phone: string;
+  order_date: string;
+  total_amount: number;
+  items: { product_name: string; quantity: number; unit_price: number }[];
+}
 
-// Helper to get/set guest cart
+// Local storage keys
+const GUEST_CART_KEY = 'sokoni_guest_cart';
+const GUEST_ORDERS_KEY = 'sokoni_guest_orders';
+
+// Helper functions for localStorage
 const getGuestCart = (): CartItem[] => {
   try {
     const stored = localStorage.getItem(GUEST_CART_KEY);
@@ -78,6 +88,26 @@ const setGuestCart = (cart: CartItem[]) => {
     localStorage.setItem(GUEST_CART_KEY, JSON.stringify(cart));
   } catch (e) {
     console.error('Failed to save cart:', e);
+  }
+};
+
+const getGuestOrders = (): GuestOrder[] => {
+  try {
+    const stored = localStorage.getItem(GUEST_ORDERS_KEY);
+    return stored ? JSON.parse(stored) : [];
+  } catch {
+    return [];
+  }
+};
+
+const saveGuestOrder = (order: GuestOrder) => {
+  try {
+    const orders = getGuestOrders();
+    orders.unshift(order); // Add to beginning
+    // Keep only last 20 orders
+    localStorage.setItem(GUEST_ORDERS_KEY, JSON.stringify(orders.slice(0, 20)));
+  } catch (e) {
+    console.error('Failed to save order:', e);
   }
 };
 
@@ -96,6 +126,18 @@ export const SokoniMarketplace = () => {
   const [submittingOrder, setSubmittingOrder] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [isSeller, setIsSeller] = useState(false);
+  const [guestOrders, setGuestOrders] = useState<GuestOrder[]>(() => getGuestOrders());
+  
+  // Receipt dialog state
+  const [receiptOpen, setReceiptOpen] = useState(false);
+  const [receiptData, setReceiptData] = useState<{
+    trackingCodes: string[];
+    customerPhone: string;
+    deliveryAddress: string;
+    items: { product_name: string; quantity: number; unit_price: number }[];
+    totalAmount: number;
+    paymentMethod: string;
+  } | null>(null);
 
   const generateTrackingCode = () => {
     const rand = Math.random().toString(16).slice(2, 8).toUpperCase();
@@ -250,6 +292,7 @@ export const SokoniMarketplace = () => {
       }, {} as Record<string, CartItem[]>);
 
       const trackingCodes: string[] = [];
+      const allOrderItems: { product_name: string; quantity: number; unit_price: number }[] = [];
 
       // Create orders for each seller
       for (const [sellerId, items] of Object.entries(sellerGroups)) {
@@ -259,6 +302,12 @@ export const SokoniMarketplace = () => {
           quantity: item.quantity,
           unit_price: item.price
         }));
+        
+        allOrderItems.push(...orderItems.map(i => ({
+          product_name: i.product_name,
+          quantity: i.quantity,
+          unit_price: i.unit_price
+        })));
 
         const orderTotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
         const trackingCode = generateTrackingCode();
@@ -285,9 +334,26 @@ export const SokoniMarketplace = () => {
         }
       }
 
-      toast.success('Oda yako imepokewa!', {
-        description: `Namba za ufuatiliaji: ${trackingCodes.join(', ')} (Fuatilia: /track-order)`
+      // Save order to localStorage for guest tracking
+      saveGuestOrder({
+        tracking_code: trackingCodes.join(', '),
+        customer_phone: normalizedCustomerPhone,
+        order_date: new Date().toISOString(),
+        total_amount: cartTotal,
+        items: allOrderItems
       });
+      setGuestOrders(getGuestOrders());
+
+      // Show receipt dialog
+      setReceiptData({
+        trackingCodes,
+        customerPhone: normalizedCustomerPhone,
+        deliveryAddress,
+        items: allOrderItems,
+        totalAmount: cartTotal,
+        paymentMethod: method
+      });
+      setReceiptOpen(true);
 
       setCart([]);
       setCustomerPhone('');
@@ -461,7 +527,7 @@ export const SokoniMarketplace = () => {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="w-full grid grid-cols-2 mx-4 mt-2" style={{ width: 'calc(100% - 32px)' }}>
+        <TabsList className="w-full grid grid-cols-3 mx-4 mt-2" style={{ width: 'calc(100% - 32px)' }}>
           <TabsTrigger value="browse" className="text-xs">
             <Package className="h-4 w-4 mr-1" />
             Bidhaa
@@ -469,6 +535,15 @@ export const SokoniMarketplace = () => {
           <TabsTrigger value="stores" className="text-xs">
             <Store className="h-4 w-4 mr-1" />
             Maduka
+          </TabsTrigger>
+          <TabsTrigger value="myorders" className="text-xs relative">
+            <ClipboardList className="h-4 w-4 mr-1" />
+            Oda Zangu
+            {guestOrders.length > 0 && (
+              <Badge className="absolute -top-1 -right-1 h-4 w-4 p-0 flex items-center justify-center text-[10px] bg-primary text-primary-foreground">
+                {guestOrders.length}
+              </Badge>
+            )}
           </TabsTrigger>
         </TabsList>
 
@@ -589,6 +664,67 @@ export const SokoniMarketplace = () => {
             </div>
           )}
         </TabsContent>
+
+        {/* My Orders Tab (Guest) */}
+        <TabsContent value="myorders" className="px-4 mt-2">
+          {guestOrders.length === 0 ? (
+            <div className="text-center py-12">
+              <ClipboardList className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-lg font-semibold mb-2 text-foreground">Hakuna oda zako</h3>
+              <p className="text-muted-foreground text-sm">
+                Oda ulizowahi kuagiza zitaonekana hapa
+              </p>
+              <Button 
+                onClick={() => setActiveTab('browse')} 
+                className="mt-4"
+                variant="outline"
+              >
+                <ShoppingCart className="h-4 w-4 mr-2" />
+                Anza Kununua
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {guestOrders.map((order, index) => (
+                <Card key={index} className="overflow-hidden">
+                  <CardContent className="p-3">
+                    <div className="flex justify-between items-start mb-2">
+                      <div>
+                        <code className="font-mono text-sm font-bold text-primary">
+                          {order.tracking_code}
+                        </code>
+                        <p className="text-xs text-muted-foreground">
+                          {new Date(order.order_date).toLocaleDateString('sw-TZ', {
+                            day: 'numeric',
+                            month: 'short',
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </p>
+                      </div>
+                      <Badge variant="secondary" className="text-xs">
+                        TSh {order.total_amount.toLocaleString()}
+                      </Badge>
+                    </div>
+                    <div className="text-xs text-muted-foreground mb-2">
+                      {order.items.map(i => i.product_name).join(', ')}
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="w-full"
+                      onClick={() => navigate(`/track-order?code=${encodeURIComponent(order.tracking_code.split(', ')[0])}&phone=${encodeURIComponent(order.customer_phone)}`)}
+                    >
+                      <Package className="h-3 w-3 mr-1" />
+                      Fuatilia
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </TabsContent>
       </Tabs>
 
       {/* Checkout Dialog */}
@@ -648,6 +784,23 @@ export const SokoniMarketplace = () => {
           />
         </DialogContent>
       </Dialog>
+
+      {/* Order Receipt Dialog */}
+      {receiptData && (
+        <OrderReceiptDialog
+          open={receiptOpen}
+          onClose={() => {
+            setReceiptOpen(false);
+            setReceiptData(null);
+          }}
+          trackingCodes={receiptData.trackingCodes}
+          customerPhone={receiptData.customerPhone}
+          deliveryAddress={receiptData.deliveryAddress}
+          items={receiptData.items}
+          totalAmount={receiptData.totalAmount}
+          paymentMethod={receiptData.paymentMethod}
+        />
+      )}
     </div>
   );
 };
