@@ -6,6 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useDataAccess } from '@/hooks/useDataAccess';
 import { useRealTimeNotifications } from '@/hooks/useRealTimeNotifications';
+import { useOfflineSync } from '@/hooks/useOfflineSync';
 import { useNavigate } from 'react-router-dom';
 import { 
   TrendingUp, 
@@ -31,11 +32,13 @@ import {
 } from 'lucide-react';
 import { ExpensesDashboardWidget } from '@/components/ExpensesDashboardWidget';
 import { StockAlertSystem } from '@/components/StockAlertSystem';
+import { SyncStatusCard } from '@/components/OfflineIndicator';
 
 export const Dashboard = () => {
   const { userProfile, loading: authLoading } = useAuth();
   const { dataOwnerId, isReady, isAssistant } = useDataAccess();
   const { notifications, unreadCount } = useRealTimeNotifications();
+  const offlineSync = useOfflineSync(dataOwnerId);
   const navigate = useNavigate();
   const [metrics, setMetrics] = useState({
     todaysSales: 0,
@@ -157,6 +160,15 @@ export const Dashboard = () => {
           </Card>
         ))}
       </div>
+
+      {/* Sync Status Widget */}
+      <SyncStatusCard
+        isOnline={offlineSync.isOnline}
+        isSyncing={offlineSync.isSyncing}
+        pendingChanges={offlineSync.pendingChanges}
+        lastSync={offlineSync.lastSync}
+        onSync={offlineSync.syncData}
+      />
 
       {/* Compact Widgets - Stock & Expenses */}
       <div className="space-y-2">

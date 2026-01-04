@@ -100,18 +100,27 @@ export const ProductsPage = () => {
   const handleDeleteProduct = async (id: string, productName: string) => {
     if (!confirm(`Je, una uhakika unataka kufuta bidhaa "${productName}"?`)) return;
 
+    if (!dataOwnerId) {
+      toast.error('Hakuna data ya biashara.');
+      return;
+    }
+
     try {
-      // Delete using only product id - RLS will handle owner check
-      const { error } = await supabase
+      console.log('Deleting product:', id, 'for owner:', dataOwnerId);
+      
+      // Delete using product id and owner_id for RLS compliance
+      const { error, count } = await supabase
         .from('products')
         .delete()
-        .eq('id', id);
+        .eq('id', id)
+        .eq('owner_id', dataOwnerId);
 
       if (error) {
         console.error('Delete error:', error);
         throw error;
       }
 
+      console.log('Delete result count:', count);
       setProducts(prev => prev.filter(p => p.id !== id));
       toast.success('Bidhaa imefutwa');
     } catch (error: any) {

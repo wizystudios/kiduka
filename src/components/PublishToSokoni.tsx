@@ -3,7 +3,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Switch } from '@/components/ui/switch';
 import {
   Dialog,
   DialogContent,
@@ -11,9 +10,10 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { Store, MapPin, Phone } from 'lucide-react';
+import { Store, MapPin, Phone, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useDataAccess } from '@/hooks/useDataAccess';
 import { toast } from 'sonner';
 
 interface PublishToSokoniProps {
@@ -28,7 +28,8 @@ interface PublishToSokoniProps {
 }
 
 export const PublishToSokoni = ({ product, onPublished }: PublishToSokoniProps) => {
-  const { user, userProfile } = useAuth();
+  const { userProfile } = useAuth();
+  const { dataOwnerId, isReady } = useDataAccess();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -40,17 +41,24 @@ export const PublishToSokoni = ({ product, onPublished }: PublishToSokoniProps) 
   });
 
   const handlePublish = async () => {
-    if (!user || !formData.quantity || !formData.price) {
+    if (!dataOwnerId) {
+      toast.error('Hakuna data ya biashara. Jaribu tena.');
+      return;
+    }
+
+    if (!formData.quantity || !formData.price) {
       toast.error('Tafadhali jaza sehemu zote zinazohitajika');
       return;
     }
 
     setLoading(true);
     try {
+      console.log('Publishing to Sokoni with seller_id:', dataOwnerId);
+      
       const { error } = await supabase
         .from('marketplace_listings')
         .insert({
-          seller_id: user.id,
+          seller_id: dataOwnerId, // Use dataOwnerId for proper owner tracking
           product_name: product.name,
           description: formData.description || product.description,
           price: parseFloat(formData.price),
@@ -65,23 +73,30 @@ export const PublishToSokoni = ({ product, onPublished }: PublishToSokoniProps) 
           }
         });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Sokoni insert error:', error);
+        throw error;
+      }
 
       toast.success(`"${product.name}" imeongezwa Sokoni!`);
       setOpen(false);
       onPublished?.();
     } catch (error: any) {
       console.error('Error publishing to Sokoni:', error);
-      toast.error('Imeshindwa kutuma Sokoni: ' + error.message);
+      toast.error('Imeshindwa kutuma Sokoni: ' + (error.message || 'Kosa lisilojulikana'));
     } finally {
       setLoading(false);
     }
   };
 
+  if (!isReady) {
+    return null;
+  }
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm" className="text-primary">
+        <Button variant="outline" size="sm" className="h-6 text-xs px-2 text-primary">
           <Store className="h-3 w-3 mr-1" />
           Sokoni
         </Button>
@@ -160,9 +175,16 @@ export const PublishToSokoni = ({ product, onPublished }: PublishToSokoniProps) 
           <Button 
             className="w-full" 
             onClick={handlePublish}
-            disabled={loading}
+            disabled={loading || !dataOwnerId}
           >
-            {loading ? 'Inatuma...' : 'Tuma Sokoni'}
+            {loading ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Inatuma...
+              </>
+            ) : (
+              'Tuma Sokoni'
+            )}
           </Button>
         </div>
       </DialogContent>
