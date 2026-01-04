@@ -11,7 +11,7 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { KidukaLogo } from '@/components/KidukaLogo';
-
+import { normalizeTzPhoneDigits } from '@/utils/phoneUtils';
 interface TrackedOrder {
   id: string;
   tracking_code: string;
@@ -36,13 +36,19 @@ export const OrderTrackingPage = () => {
       return;
     }
 
+    const normalizedPhone = normalizeTzPhoneDigits(phone);
+    if (!normalizedPhone) {
+      toast.error('Namba ya simu si sahihi');
+      return;
+    }
+
     setLoading(true);
     setNotFound(false);
     setOrder(null);
 
     try {
       const { data, error } = await supabase.rpc('track_sokoni_order', {
-        p_phone: phone,
+        p_phone: normalizedPhone,
         p_tracking_code: trackingCode.toUpperCase()
       });
 

@@ -36,7 +36,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { MobileMoneyPayment } from './MobileMoneyPayment';
-
+import { normalizeTzPhoneDigits } from '@/utils/phoneUtils';
 interface MarketProduct {
   id: string;
   name: string;
@@ -97,6 +97,11 @@ export const SokoniMarketplace = () => {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [isSeller, setIsSeller] = useState(false);
 
+  const generateTrackingCode = () => {
+    const rand = Math.random().toString(16).slice(2, 8).toUpperCase();
+    return `SKN-${rand}`;
+  };
+
   // Persist cart to localStorage whenever it changes
   useEffect(() => {
     setGuestCart(cart);
@@ -111,14 +116,14 @@ export const SokoniMarketplace = () => {
       // Check if user is logged in (seller vs customer)
       const { data: { user } } = await supabase.auth.getUser();
       setCurrentUser(user);
-      
+
       if (user) {
         // Check if user has products (is a seller)
         const { count } = await supabase
           .from('products')
           .select('*', { count: 'exact', head: true })
           .eq('owner_id', user.id);
-        
+
         setIsSeller((count || 0) > 0);
       }
 
@@ -136,31 +141,31 @@ export const SokoniMarketplace = () => {
 
       // Get unique seller IDs
       const sellerIds = [...new Set(productsData?.map(p => p.owner_id) || [])];
-      
-      // Fetch seller profiles
+
+      // Fetch seller profiles (best-effort; may be blocked by privacy rules)
+      let profilesData: SellerProfile[] = [];
       if (sellerIds.length > 0) {
-        const { data: profilesData } = await supabase
+        const { data, error } = await supabase
           .from('profiles')
           .select('id, business_name, phone')
           .in('id', sellerIds);
-        
-        setSellers(profilesData || []);
-        
-        // Enrich products with seller info
-        const enrichedProducts = (productsData || []).map(product => {
-          const seller = profilesData?.find(p => p.id === product.owner_id);
-          return {
-            ...product,
-            owner_business_name: seller?.business_name || 'Duka',
-            owner_phone: seller?.phone || undefined
-          };
-        });
-        
-        setProducts(enrichedProducts);
-      } else {
-        setProducts([]);
+
+        if (!error && data) profilesData = data as any;
       }
-      
+
+      setSellers(profilesData);
+
+      // Enrich products with seller info (fallback to generic names)
+      const enrichedProducts = (productsData || []).map(product => {
+        const seller = profilesData?.find(p => p.id === product.owner_id);
+        return {
+          ...product,
+          owner_business_name: seller?.business_name || 'Duka',
+          owner_phone: seller?.phone || undefined
+        };
+      });
+
+      setProducts(enrichedProducts);
       setLoading(false);
     } catch (error) {
       console.error('Error fetching market data:', error);
@@ -226,6 +231,13 @@ export const SokoniMarketplace = () => {
 
   const handlePaymentComplete = async (transactionId: string, method: string) => {
     if (submittingOrder) return;
+
+    const normalizedCustomerPhone = normalizeTzPhoneDigits(customerPhone);
+    if (!normalizedCustomerPhone) {
+      toast.error('Namba ya simu si sahihi');
+      return;
+    }
+
     setSubmittingOrder(true);
 
     try {
@@ -237,6 +249,8 @@ export const SokoniMarketplace = () => {
         return acc;
       }, {} as Record<string, CartItem[]>);
 
+      const trackingCodes: string[] = [];
+
       // Create orders for each seller
       for (const [sellerId, items] of Object.entries(sellerGroups)) {
         const orderItems = items.map(item => ({
@@ -247,19 +261,22 @@ export const SokoniMarketplace = () => {
         }));
 
         const orderTotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+        const trackingCode = generateTrackingCode();
+        trackingCodes.push(trackingCode);
 
         const { error: orderError } = await supabase
           .from('sokoni_orders')
           .insert({
             seller_id: sellerId,
-            customer_phone: customerPhone,
+            customer_phone: normalizedCustomerPhone,
             delivery_address: deliveryAddress,
             items: orderItems,
             total_amount: orderTotal,
             payment_method: method,
             payment_status: 'paid',
             order_status: 'new',
-            transaction_id: transactionId
+            transaction_id: transactionId,
+            tracking_code: trackingCode,
           });
 
         if (orderError) {
@@ -268,7 +285,10 @@ export const SokoniMarketplace = () => {
         }
       }
 
-      toast.success('Oda yako imepokewa! Wafanyabiashara watawasiliana nawe.');
+      toast.success('Oda yako imepokewa!', {
+        description: `Namba za ufuatiliaji: ${trackingCodes.join(', ')} (Fuatilia: /track-order)`
+      });
+
       setCart([]);
       setCustomerPhone('');
       setDeliveryAddress('');
@@ -323,6 +343,16 @@ export const SokoniMarketplace = () => {
                 Oda Zangu
               </Button>
             )}
+
+            {/* Customer tracking */}
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => navigate('/track-order')}
+            >
+              <Package className="h-4 w-4 mr-1" />
+              Fuatilia Oda
+            </Button>
             
             {/* Cart - For customers */}
             <Sheet>

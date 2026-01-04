@@ -7,7 +7,7 @@ import { KidukaLogo } from '@/components/KidukaLogo';
 import { Mail, Lock, User, Eye, EyeOff, Phone, ArrowRight, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
 import { EmailConfirmationPage } from '@/components/EmailConfirmationPage';
-
+import { normalizeTzPhoneDigits } from '@/utils/phoneUtils';
 type AuthStep = 'method' | 'identifier' | 'password' | 'name';
 
 export const AuthPage = () => {
@@ -74,56 +74,25 @@ export const AuthPage = () => {
     }
   };
 
-  // Normalize phone to +255 format
-  const normalizePhone = (phoneInput: string): string => {
-    const digits = phoneInput.replace(/\D/g, '');
-    if (digits.length === 10 && digits.startsWith('0')) {
-      return '255' + digits.slice(1);
-    }
-    if (digits.length === 9) {
-      return '255' + digits;
-    }
-    if (digits.length === 12 && digits.startsWith('255')) {
-      return digits;
-    }
-    return digits;
-  };
-
   const handleSignIn = async () => {
     const identifier = getIdentifier();
     if (!identifier || !password) {
       toast.error('Tafadhali jaza taarifa zote');
       return;
     }
+
+    const normalizedPhone = authMethod === 'phone' ? normalizeTzPhoneDigits(phone) : '';
+    if (authMethod === 'phone' && !normalizedPhone) {
+      toast.error('Namba ya simu si sahihi');
+      return;
+    }
+
     setLoading(true);
     try {
-      let loginEmail = email;
-      
-      if (authMethod === 'phone') {
-        const normalizedPhone = normalizePhone(phone);
-        
-        // Try multiple phone formats for lookup
-        const { data: profileData } = await import('@/integrations/supabase/client').then(
-          async ({ supabase }) => {
-            // Try exact match first
-            const { data } = await supabase
-              .from('profiles')
-              .select('email')
-              .or(`phone.eq.${normalizedPhone},phone.eq.+${normalizedPhone},phone.eq.0${normalizedPhone.slice(3)}`)
-              .limit(1)
-              .maybeSingle();
-            return { data };
-          }
-        );
-        
-        if (profileData?.email) {
-          loginEmail = profileData.email;
-        } else {
-          // Fallback to phone@kiduka.phone format
-          loginEmail = `${normalizedPhone}@kiduka.phone`;
-        }
-      }
-      
+      const loginEmail = authMethod === 'phone'
+        ? `${normalizedPhone}@kiduka.phone`
+        : email;
+
       await signIn(loginEmail, password);
       toast.success('Karibu tena!');
     } catch (error: any) {
@@ -143,15 +112,22 @@ export const AuthPage = () => {
       toast.error('Nywila lazima iwe angalau herufi 6');
       return;
     }
+
+    const normalizedPhone = authMethod === 'phone' ? normalizeTzPhoneDigits(phone) : '';
+    if (authMethod === 'phone' && !normalizedPhone) {
+      toast.error('Namba ya simu si sahihi');
+      return;
+    }
+
+    const signupEmail = authMethod === 'phone'
+      ? `${normalizedPhone}@kiduka.phone`
+      : email;
+
     setLoading(true);
     try {
-      // For phone signup, normalize and create email format
-      const normalizedPhone = authMethod === 'phone' ? normalizePhone(phone) : null;
-      const signupEmail = authMethod === 'phone' ? `${normalizedPhone}@kiduka.phone` : email;
-      
       await signUp(signupEmail, password, fullName);
-      
-      // If phone auth, save phone to profile after signup
+
+      // Save phone to profile (best-effort)
       if (authMethod === 'phone' && normalizedPhone) {
         const { supabase } = await import('@/integrations/supabase/client');
         const { data: { user } } = await supabase.auth.getUser();
@@ -161,7 +137,7 @@ export const AuthPage = () => {
       }
     } catch (error: any) {
       if (error.message === 'CONFIRMATION_REQUIRED') {
-        setRegisteredEmail(email);
+        setRegisteredEmail(signupEmail);
         setShowConfirmation(true);
         toast.success('Akaunti imeundwa!');
       } else {

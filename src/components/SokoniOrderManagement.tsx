@@ -40,6 +40,8 @@ export interface SokoniOrder {
   payment_method: string | null;
   payment_status: string;
   order_status: string;
+  tracking_code?: string | null;
+  linked_sale_id?: string | null;
   transaction_id?: string;
   created_at: string;
   updated_at: string;
@@ -128,12 +130,31 @@ export const SokoniOrderManagement = () => {
 
       if (error) throw error;
 
-      setOrders(prev => prev.map(order => 
-        order.id === orderId 
+      // If seller confirms, convert to sale + sales_items and decrement stock
+      if (newStatus === 'confirmed') {
+        const current = orders.find(o => o.id === orderId);
+        if (!current?.linked_sale_id) {
+          const { data: saleId, error: saleError } = await supabase.rpc('process_sokoni_order_to_sale', {
+            order_id: orderId,
+          });
+
+          if (saleError) {
+            console.error('Sale processing error:', saleError);
+            toast.error('Oda imethibitishwa, lakini imeshindwa kuingia kwenye mauzo. Jaribu tena.');
+          } else if (saleId) {
+            // Link sale back to order (best-effort)
+            await supabase.from('sokoni_orders').update({ linked_sale_id: saleId }).eq('id', orderId);
+            toast.success('Mauzo ya Sokoni yameongezwa kwenye mfumo!');
+          }
+        }
+      }
+
+      setOrders(prev => prev.map(order =>
+        order.id === orderId
           ? { ...order, order_status: newStatus, updated_at: new Date().toISOString() }
           : order
       ));
-      
+
       toast.success(`Oda imebadilishwa kuwa "${getStatusLabel(newStatus)}"`);
       setSelectedOrder(null);
     } catch (error) {
@@ -221,6 +242,11 @@ export const SokoniOrderManagement = () => {
                             <Phone className="h-3 w-3" />
                             {order.customer_phone}
                           </p>
+                          {order.tracking_code && (
+                            <p className="text-xs text-muted-foreground mt-1">
+                              Tracking: <span className="font-mono font-semibold">{order.tracking_code}</span>
+                            </p>
+                          )}
                           <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
                             <MapPin className="h-3 w-3" />
                             {order.delivery_address}
@@ -262,21 +288,41 @@ export const SokoniOrderManagement = () => {
             <DialogTitle>Maelezo ya Oda #{selectedOrder?.id.slice(0, 8).toUpperCase()}</DialogTitle>
           </DialogHeader>
           
-          {selectedOrder && (
-            <div className="space-y-4">
-              {/* Customer Info */}
-              <div className="p-3 bg-muted rounded-lg space-y-2">
-                <p className="text-sm flex items-center gap-2 text-foreground">
-                  <Phone className="h-4 w-4" />
-                  <a href={`tel:${selectedOrder.customer_phone}`} className="text-primary">
-                    {selectedOrder.customer_phone}
-                  </a>
-                </p>
-                <p className="text-sm flex items-center gap-2 text-foreground">
-                  <MapPin className="h-4 w-4" />
-                  {selectedOrder.delivery_address}
-                </p>
-              </div>
+            {selectedOrder && (
+              <div className="space-y-4">
+                {/* Customer Info */}
+                <div className="p-3 bg-muted rounded-lg space-y-2">
+                  <p className="text-sm flex items-center gap-2 text-foreground">
+                    <Phone className="h-4 w-4" />
+                    <a href={`tel:${selectedOrder.customer_phone}`} className="text-primary">
+                      {selectedOrder.customer_phone}
+                    </a>
+                  </p>
+
+                  {selectedOrder.tracking_code && (
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm text-foreground">
+                        Tracking: <span className="font-mono font-semibold">{selectedOrder.tracking_code}</span>
+                      </p>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          navigator.clipboard.writeText(selectedOrder.tracking_code || '');
+                          toast.success('Namba ya ufuatiliaji imenakiliwa');
+                        }}
+                      >
+                        Nakili
+                      </Button>
+                    </div>
+                  )}
+
+                  <p className="text-sm flex items-center gap-2 text-foreground">
+                    <MapPin className="h-4 w-4" />
+                    {selectedOrder.delivery_address}
+                  </p>
+                </div>
 
               {/* Items */}
               <div>
