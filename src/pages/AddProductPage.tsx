@@ -5,10 +5,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowLeft, Save, Loader2 } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { ArrowLeft, Save, Loader2, WifiOff, Cloud } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
 import { useDataAccess } from '@/hooks/useDataAccess';
+import { useOfflineProducts } from '@/hooks/useOfflineProducts';
 import { toast } from 'sonner';
 
 export const AddProductPage = () => {
@@ -28,7 +29,10 @@ export const AddProductPage = () => {
   });
   
   const navigate = useNavigate();
-  const { dataOwnerId, loading: dataLoading } = useDataAccess();
+  const { dataOwnerId, loading: dataLoading, isReady } = useDataAccess();
+  
+  // Use offline-first products hook
+  const { createProduct, isOffline } = useOfflineProducts(isReady ? dataOwnerId : null);
 
   const generateBarcode = () => {
     const barcode = '8' + Date.now().toString().slice(-11);
@@ -72,26 +76,17 @@ export const AddProductPage = () => {
         owner_id: dataOwnerId
       };
 
-      console.log('Inserting product:', productData);
+      console.log('Creating product via offline-first hook:', productData);
       
-      const { data, error } = await supabase
-        .from('products')
-        .insert(productData)
-        .select()
-        .single();
-
-      if (error) {
-        console.error('Error adding product:', error);
-        if (error.code === '23505') {
-          toast.error('Barcode tayari imetumiwa. Tafadhali tumia barcode tofauti');
-        } else {
-          toast.error('Imeshindwa kuongeza bidhaa: ' + error.message);
-        }
+      // Use offline-first create
+      const result = await createProduct(productData);
+      
+      if (!result) {
+        // createProduct already shows toast on error
         return;
       }
 
-      console.log('Product added successfully:', data);
-      toast.success('Bidhaa imeongezwa kwa mafanikio');
+      console.log('Product added successfully:', result);
       
       setFormData({
         name: '',
@@ -126,20 +121,35 @@ export const AddProductPage = () => {
 
   return (
     <div className="p-2 space-y-3 pb-16">
-      <div className="flex items-center gap-2 mb-3">
-        <Button 
-          variant="ghost" 
-          size="sm" 
-          onClick={() => navigate('/products')}
-          className="h-8 w-8 p-0"
-          disabled={loading}
-        >
-          <ArrowLeft className="h-4 w-4" />
-        </Button>
-        <div>
-          <h2 className="text-lg font-bold text-foreground">Ongeza Bidhaa</h2>
-          <p className="text-xs text-muted-foreground">Unda bidhaa mpya</p>
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={() => navigate('/products')}
+            className="h-8 w-8 p-0"
+            disabled={loading}
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <div>
+            <h2 className="text-lg font-bold text-foreground">Ongeza Bidhaa</h2>
+            <p className="text-xs text-muted-foreground">Unda bidhaa mpya</p>
+          </div>
         </div>
+        
+        {/* Offline Status Badge */}
+        {isOffline ? (
+          <Badge variant="outline" className="text-orange-600 border-orange-300 bg-orange-50 text-xs">
+            <WifiOff className="h-3 w-3 mr-1" />
+            Offline
+          </Badge>
+        ) : (
+          <Badge variant="outline" className="text-green-600 border-green-300 bg-green-50 text-xs">
+            <Cloud className="h-3 w-3 mr-1" />
+            Online
+          </Badge>
+        )}
       </div>
 
       <Card className="shadow-sm border-border">
