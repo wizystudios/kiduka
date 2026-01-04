@@ -1,13 +1,12 @@
-
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Search, Edit, Trash2, Package, Loader2, Scale, ChevronDown, ChevronUp, ShoppingCart, FileSpreadsheet, Download, Store } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, Package, Loader2, Scale, ChevronDown, ChevronUp, ShoppingCart, FileSpreadsheet, Download, Store, WifiOff, Cloud } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
 import { useDataAccess } from '@/hooks/useDataAccess';
+import { useOfflineProducts } from '@/hooks/useOfflineProducts';
 import { toast } from 'sonner';
 import * as XLSX from 'xlsx';
 import { WeightQuantitySelector } from '@/components/WeightQuantitySelector';
@@ -18,78 +17,42 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 
-interface Product {
+interface ProductLocal {
   id: string;
   name: string;
-  barcode?: string;
+  barcode?: string | null;
   price: number;
   stock_quantity: number;
-  category?: string;
-  description?: string;
-  low_stock_threshold: number;
-  is_weight_based?: boolean;
-  unit_type?: string;
-  min_quantity?: number;
+  category?: string | null;
+  description?: string | null;
+  low_stock_threshold?: number | null;
+  is_weight_based?: boolean | null;
+  unit_type?: string | null;
+  min_quantity?: number | null;
 }
 
 export const ProductsPage = () => {
-  const [products, setProducts] = useState<Product[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [selectedWeightProduct, setSelectedWeightProduct] = useState<Product | null>(null);
+  const [selectedWeightProduct, setSelectedWeightProduct] = useState<ProductLocal | null>(null);
   const [expandedProduct, setExpandedProduct] = useState<string | null>(null);
   const navigate = useNavigate();
   const { dataOwnerId, isReady } = useDataAccess();
+  
+  // Use offline-first products hook
+  const {
+    products,
+    loading,
+    isOffline,
+    deleteProduct,
+    refreshProducts
+  } = useOfflineProducts(isReady ? dataOwnerId : null);
 
-  const fetchProducts = async () => {
-    if (!dataOwnerId) {
-      console.log('No data owner ID available');
-      setLoading(false);
-      return;
-    }
+  const [refreshing, setRefreshing] = useState(false);
 
-    try {
-      console.log('Fetching products for owner:', dataOwnerId);
-      
-      const { data, error } = await supabase
-        .from('products')
-        .select('*')
-        .eq('owner_id', dataOwnerId)
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        console.error('Error fetching products:', error);
-        toast.error('Imeshindwa kupakia bidhaa');
-        setProducts([]);
-      } else {
-        console.log('Products loaded successfully:', data?.length || 0);
-        setProducts(data || []);
-      }
-    } catch (error) {
-      console.error('Unexpected error fetching products:', error);
-      toast.error('Kosa la kutarajwa');
-      setProducts([]);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  };
-
-  useEffect(() => {
-    if (isReady && dataOwnerId) {
-      console.log('Data access ready, fetching products...');
-      setLoading(true);
-      fetchProducts();
-    } else if (isReady && !dataOwnerId) {
-      console.log('No data owner found');
-      setLoading(false);
-    }
-  }, [isReady, dataOwnerId]);
-
-  const handleRefresh = () => {
+  const handleRefresh = async () => {
     setRefreshing(true);
-    fetchProducts();
+    await refreshProducts();
+    setRefreshing(false);
   };
 
   const handleAddProduct = () => {
@@ -105,39 +68,19 @@ export const ProductsPage = () => {
       return;
     }
 
-    try {
-      console.log('Deleting product:', id, 'for owner:', dataOwnerId);
-      
-      // Delete using product id and owner_id for RLS compliance
-      const { error, count } = await supabase
-        .from('products')
-        .delete()
-        .eq('id', id)
-        .eq('owner_id', dataOwnerId);
-
-      if (error) {
-        console.error('Delete error:', error);
-        throw error;
-      }
-
-      console.log('Delete result count:', count);
-      setProducts(prev => prev.filter(p => p.id !== id));
-      toast.success('Bidhaa imefutwa');
-    } catch (error: any) {
-      console.error('Error deleting product:', error);
-      toast.error('Imeshindwa kufuta bidhaa: ' + (error?.message || 'Kosa lisilojulikana'));
-    }
+    // Use the offline-first delete
+    await deleteProduct(id);
   };
 
-  const handleWeightProductSelect = (product: Product) => {
+  const handleWeightProductSelect = (product: ProductLocal) => {
     setSelectedWeightProduct(product);
   };
 
-  const handleAddToCart = (product: Product, quantity: number) => {
+  const handleAddToCart = (product: ProductLocal, quantity: number) => {
     toast.success(`Imeongezwa: ${quantity} ${product.unit_type} ya ${product.name}`);
   };
 
-  const handleSellProduct = (product: Product) => {
+  const handleSellProduct = (product: ProductLocal) => {
     navigate('/scanner', { state: { selectedProduct: product } });
   };
 
@@ -229,12 +172,28 @@ export const ProductsPage = () => {
     <div className="p-2 space-y-2 pb-16">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-        <div className="flex items-center gap-1">
-          <Package className="h-4 w-4 text-blue-600" />
-          <div>
-            <h2 className="text-sm font-bold text-gray-900">Bidhaa</h2>
-            <p className="text-xs text-gray-600">{products.length} bidhaa</p>
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
+            <Package className="h-4 w-4 text-blue-600" />
+            <div>
+              <h2 className="text-sm font-bold text-gray-900">Bidhaa</h2>
+              <p className="text-xs text-gray-600">{products.length} bidhaa</p>
+            </div>
           </div>
+          
+          {/* Offline Status Badge */}
+          {isOffline && (
+            <Badge variant="outline" className="text-orange-600 border-orange-300 bg-orange-50 text-xs">
+              <WifiOff className="h-3 w-3 mr-1" />
+              Offline
+            </Badge>
+          )}
+          {!isOffline && (
+            <Badge variant="outline" className="text-green-600 border-green-300 bg-green-50 text-xs">
+              <Cloud className="h-3 w-3 mr-1" />
+              Online
+            </Badge>
+          )}
         </div>
         
         <div className="flex gap-1 w-full sm:w-auto">
