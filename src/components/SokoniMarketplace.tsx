@@ -28,7 +28,9 @@ import {
   Trash2,
   Package,
   Truck,
-  ArrowLeft
+  ArrowLeft,
+  ImageIcon,
+  User
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -46,55 +48,118 @@ interface MarketProduct {
   owner_id: string;
   owner_business_name?: string;
   owner_phone?: string;
-  owner_location?: string;
 }
 
 interface CartItem extends MarketProduct {
   quantity: number;
 }
 
-interface MarketListing {
+interface SellerProfile {
   id: string;
-  product_name: string;
-  description: string | null;
-  price: number | null;
-  quantity: number;
-  unit: string | null;
-  location: string | null;
-  status: string | null;
-  listing_type: string;
-  seller_id: string;
-  contact_info: any;
-  created_at: string;
+  business_name: string | null;
+  phone: string | null;
 }
+
+// Local storage key for guest cart
+const GUEST_CART_KEY = 'sokoni_guest_cart';
+
+// Helper to get/set guest cart
+const getGuestCart = (): CartItem[] => {
+  try {
+    const stored = localStorage.getItem(GUEST_CART_KEY);
+    return stored ? JSON.parse(stored) : [];
+  } catch {
+    return [];
+  }
+};
+
+const setGuestCart = (cart: CartItem[]) => {
+  try {
+    localStorage.setItem(GUEST_CART_KEY, JSON.stringify(cart));
+  } catch (e) {
+    console.error('Failed to save cart:', e);
+  }
+};
 
 export const SokoniMarketplace = () => {
   const navigate = useNavigate();
-  const [listings, setListings] = useState<MarketListing[]>([]);
+  const [products, setProducts] = useState<MarketProduct[]>([]);
+  const [sellers, setSellers] = useState<SellerProfile[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
-  const [cart, setCart] = useState<CartItem[]>([]);
+  const [cart, setCart] = useState<CartItem[]>(() => getGuestCart());
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [paymentOpen, setPaymentOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('browse');
   const [customerPhone, setCustomerPhone] = useState('');
   const [deliveryAddress, setDeliveryAddress] = useState('');
   const [submittingOrder, setSubmittingOrder] = useState(false);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [isSeller, setIsSeller] = useState(false);
+
+  // Persist cart to localStorage whenever it changes
+  useEffect(() => {
+    setGuestCart(cart);
+  }, [cart]);
 
   useEffect(() => {
-    fetchMarketData();
+    checkUserAndFetchData();
   }, []);
 
-  const fetchMarketData = async () => {
+  const checkUserAndFetchData = async () => {
     try {
-      const { data: listingsData, error: listingsError } = await supabase
-        .from('marketplace_listings')
-        .select('*')
-        .eq('status', 'active')
+      // Check if user is logged in (seller vs customer)
+      const { data: { user } } = await supabase.auth.getUser();
+      setCurrentUser(user);
+      
+      if (user) {
+        // Check if user has products (is a seller)
+        const { count } = await supabase
+          .from('products')
+          .select('*', { count: 'exact', head: true })
+          .eq('owner_id', user.id);
+        
+        setIsSeller((count || 0) > 0);
+      }
+
+      // Fetch products directly from products table (public read via RLS)
+      const { data: productsData, error: productsError } = await supabase
+        .from('products')
+        .select('id, name, price, description, category, stock_quantity, image_url, owner_id')
+        .gt('stock_quantity', 0)
         .order('created_at', { ascending: false });
 
-      if (listingsError) throw listingsError;
-      setListings(listingsData || []);
+      if (productsError) {
+        console.error('Products fetch error:', productsError);
+        throw productsError;
+      }
+
+      // Get unique seller IDs
+      const sellerIds = [...new Set(productsData?.map(p => p.owner_id) || [])];
+      
+      // Fetch seller profiles
+      if (sellerIds.length > 0) {
+        const { data: profilesData } = await supabase
+          .from('profiles')
+          .select('id, business_name, phone')
+          .in('id', sellerIds);
+        
+        setSellers(profilesData || []);
+        
+        // Enrich products with seller info
+        const enrichedProducts = (productsData || []).map(product => {
+          const seller = profilesData?.find(p => p.id === product.owner_id);
+          return {
+            ...product,
+            owner_business_name: seller?.business_name || 'Duka',
+            owner_phone: seller?.phone || undefined
+          };
+        });
+        
+        setProducts(enrichedProducts);
+      } else {
+        setProducts([]);
+      }
       
       setLoading(false);
     } catch (error) {
@@ -139,11 +204,25 @@ export const SokoniMarketplace = () => {
   const cartTotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
-  const filteredListings = listings.filter(listing =>
-    listing.product_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    listing.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    listing.location?.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredProducts = products.filter(product =>
+    product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    product.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    product.category?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    product.owner_business_name?.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  // Group products by seller for "Maduka" tab
+  const productsBySeller = products.reduce((acc, product) => {
+    const sellerId = product.owner_id;
+    if (!acc[sellerId]) {
+      acc[sellerId] = {
+        seller: sellers.find(s => s.id === sellerId) || { id: sellerId, business_name: 'Duka', phone: null },
+        products: []
+      };
+    }
+    acc[sellerId].products.push(product);
+    return acc;
+  }, {} as Record<string, { seller: SellerProfile; products: MarketProduct[] }>);
 
   const handlePaymentComplete = async (transactionId: string, method: string) => {
     if (submittingOrder) return;
@@ -161,10 +240,10 @@ export const SokoniMarketplace = () => {
       // Create orders for each seller
       for (const [sellerId, items] of Object.entries(sellerGroups)) {
         const orderItems = items.map(item => ({
+          product_id: item.id,
           product_name: item.name,
           quantity: item.quantity,
-          unit_price: item.price,
-          listing_id: item.id
+          unit_price: item.price
         }));
 
         const orderTotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
@@ -216,7 +295,7 @@ export const SokoniMarketplace = () => {
 
   return (
     <div className="min-h-screen bg-background pb-24">
-      {/* Header - Matching Kiduka design */}
+      {/* Header */}
       <div className="bg-primary text-primary-foreground p-4 sticky top-0 z-10">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
@@ -232,99 +311,117 @@ export const SokoniMarketplace = () => {
             <h1 className="text-lg font-bold">Kiduka Sokoni</h1>
           </div>
           
-          <Sheet>
-            <SheetTrigger asChild>
-              <Button variant="secondary" size="sm" className="relative">
-                <ShoppingCart className="h-4 w-4" />
-                {cartCount > 0 && (
-                  <Badge className="absolute -top-2 -right-2 h-5 w-5 p-0 flex items-center justify-center text-xs bg-destructive text-destructive-foreground">
-                    {cartCount}
-                  </Badge>
-                )}
+          <div className="flex items-center gap-2">
+            {/* Show seller dashboard link for sellers */}
+            {isSeller && (
+              <Button 
+                variant="secondary" 
+                size="sm"
+                onClick={() => navigate('/sokoni-orders')}
+              >
+                <Truck className="h-4 w-4 mr-1" />
+                Oda Zangu
               </Button>
-            </SheetTrigger>
-            <SheetContent className="w-full sm:max-w-md">
-              <SheetHeader>
-                <SheetTitle className="flex items-center gap-2">
-                  <ShoppingCart className="h-5 w-5" />
-                  Kikapu ({cartCount})
-                </SheetTitle>
-              </SheetHeader>
-              
-              <div className="mt-4 space-y-3">
-                {cart.length === 0 ? (
-                  <div className="text-center py-8">
-                    <ShoppingCart className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
-                    <p className="text-muted-foreground">Kikapu chako ni tupu</p>
-                  </div>
-                ) : (
-                  <>
-                    {cart.map(item => (
-                      <Card key={item.id} className="border-border">
-                        <CardContent className="p-3 flex items-center gap-3">
-                          <div className="flex-1">
-                            <p className="font-medium text-sm text-foreground">{item.name}</p>
-                            <p className="text-xs text-muted-foreground">{item.owner_business_name}</p>
-                            <p className="text-sm font-semibold text-primary">
-                              TSh {(item.price * item.quantity).toLocaleString()}
-                            </p>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <Button 
-                              variant="outline" 
-                              size="icon" 
-                              className="h-7 w-7"
-                              onClick={() => updateCartQuantity(item.id, -1)}
-                            >
-                              <Minus className="h-3 w-3" />
-                            </Button>
-                            <span className="w-8 text-center text-sm">{item.quantity}</span>
-                            <Button 
-                              variant="outline" 
-                              size="icon" 
-                              className="h-7 w-7"
-                              onClick={() => updateCartQuantity(item.id, 1)}
-                            >
-                              <Plus className="h-3 w-3" />
-                            </Button>
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
-                              className="h-7 w-7 text-destructive"
-                              onClick={() => removeFromCart(item.id)}
-                            >
-                              <Trash2 className="h-3 w-3" />
-                            </Button>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                    
-                    <div className="border-t border-border pt-3 mt-4">
-                      <div className="flex justify-between text-lg font-bold">
-                        <span>Jumla:</span>
-                        <span className="text-primary">TSh {cartTotal.toLocaleString()}</span>
-                      </div>
-                      <Button 
-                        className="w-full mt-3" 
-                        size="lg"
-                        onClick={() => setCheckoutOpen(true)}
-                      >
-                        <Phone className="h-4 w-4 mr-2" />
-                        Endelea Kuoda
-                      </Button>
+            )}
+            
+            {/* Cart - For customers */}
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button variant="secondary" size="sm" className="relative">
+                  <ShoppingCart className="h-4 w-4" />
+                  {cartCount > 0 && (
+                    <Badge className="absolute -top-2 -right-2 h-5 w-5 p-0 flex items-center justify-center text-xs bg-destructive text-destructive-foreground">
+                      {cartCount}
+                    </Badge>
+                  )}
+                </Button>
+              </SheetTrigger>
+              <SheetContent className="w-full sm:max-w-md">
+                <SheetHeader>
+                  <SheetTitle className="flex items-center gap-2">
+                    <ShoppingCart className="h-5 w-5" />
+                    Kikapu ({cartCount})
+                  </SheetTitle>
+                </SheetHeader>
+                
+                <div className="mt-4 space-y-3">
+                  {cart.length === 0 ? (
+                    <div className="text-center py-8">
+                      <ShoppingCart className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
+                      <p className="text-muted-foreground">Kikapu chako ni tupu</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Ongeza bidhaa kutoka sokoni
+                      </p>
                     </div>
-                  </>
-                )}
-              </div>
-            </SheetContent>
-          </Sheet>
+                  ) : (
+                    <>
+                      {cart.map(item => (
+                        <Card key={item.id} className="border-border">
+                          <CardContent className="p-3 flex items-center gap-3">
+                            <div className="flex-1">
+                              <p className="font-medium text-sm text-foreground">{item.name}</p>
+                              <p className="text-xs text-muted-foreground">{item.owner_business_name}</p>
+                              <p className="text-sm font-semibold text-primary">
+                                TSh {(item.price * item.quantity).toLocaleString()}
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <Button 
+                                variant="outline" 
+                                size="icon" 
+                                className="h-7 w-7"
+                                onClick={() => updateCartQuantity(item.id, -1)}
+                              >
+                                <Minus className="h-3 w-3" />
+                              </Button>
+                              <span className="w-8 text-center text-sm">{item.quantity}</span>
+                              <Button 
+                                variant="outline" 
+                                size="icon" 
+                                className="h-7 w-7"
+                                onClick={() => updateCartQuantity(item.id, 1)}
+                              >
+                                <Plus className="h-3 w-3" />
+                              </Button>
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="h-7 w-7 text-destructive"
+                                onClick={() => removeFromCart(item.id)}
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                      
+                      <div className="border-t border-border pt-3 mt-4">
+                        <div className="flex justify-between text-lg font-bold">
+                          <span>Jumla:</span>
+                          <span className="text-primary">TSh {cartTotal.toLocaleString()}</span>
+                        </div>
+                        <Button 
+                          className="w-full mt-3" 
+                          size="lg"
+                          onClick={() => setCheckoutOpen(true)}
+                        >
+                          <Phone className="h-4 w-4 mr-2" />
+                          Endelea Kuoda
+                        </Button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </SheetContent>
+            </Sheet>
+          </div>
         </div>
 
         <div className="relative">
           <Search className="absolute left-3 top-2.5 h-4 w-4 text-primary-foreground/70" />
           <Input
-            placeholder="Tafuta bidhaa, duka, eneo..."
+            placeholder="Tafuta bidhaa, duka..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-9 bg-primary-foreground/20 border-primary-foreground/30 text-primary-foreground placeholder:text-primary-foreground/70"
@@ -334,7 +431,7 @@ export const SokoniMarketplace = () => {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="w-full grid grid-cols-3 mx-4 mt-2" style={{ width: 'calc(100% - 32px)' }}>
+        <TabsList className="w-full grid grid-cols-2 mx-4 mt-2" style={{ width: 'calc(100% - 32px)' }}>
           <TabsTrigger value="browse" className="text-xs">
             <Package className="h-4 w-4 mr-1" />
             Bidhaa
@@ -343,14 +440,11 @@ export const SokoniMarketplace = () => {
             <Store className="h-4 w-4 mr-1" />
             Maduka
           </TabsTrigger>
-          <TabsTrigger value="orders" className="text-xs">
-            <Truck className="h-4 w-4 mr-1" />
-            Oda Zangu
-          </TabsTrigger>
         </TabsList>
 
+        {/* Products Tab */}
         <TabsContent value="browse" className="px-4 mt-2">
-          {filteredListings.length === 0 ? (
+          {filteredProducts.length === 0 ? (
             <div className="text-center py-12">
               <Store className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
               <h3 className="text-lg font-semibold mb-2 text-foreground">Hakuna bidhaa sokoni</h3>
@@ -360,49 +454,46 @@ export const SokoniMarketplace = () => {
             </div>
           ) : (
             <div className="grid grid-cols-2 gap-3">
-              {filteredListings.map(listing => (
-                <Card key={listing.id} className="overflow-hidden border-border">
-                  <div className="aspect-square bg-muted flex items-center justify-center">
-                    <Package className="h-12 w-12 text-muted-foreground/50" />
+              {filteredProducts.map(product => (
+                <Card key={product.id} className="overflow-hidden border-border">
+                  <div className="aspect-square bg-muted flex items-center justify-center relative">
+                    {product.image_url ? (
+                      <img 
+                        src={product.image_url} 
+                        alt={product.name}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <Package className="h-12 w-12 text-muted-foreground/50" />
+                    )}
+                    {product.category && (
+                      <Badge variant="secondary" className="absolute top-2 left-2 text-xs">
+                        {product.category}
+                      </Badge>
+                    )}
                   </div>
                   <CardContent className="p-3">
-                    <h3 className="font-semibold text-sm line-clamp-1 text-foreground">{listing.product_name}</h3>
+                    <h3 className="font-semibold text-sm line-clamp-1 text-foreground">{product.name}</h3>
                     <p className="text-xs text-muted-foreground line-clamp-1">
-                      {listing.contact_info?.business_name || 'Duka'}
+                      {product.owner_business_name}
                     </p>
-                    {listing.location && (
-                      <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
-                        <MapPin className="h-3 w-3" />
-                        <span className="line-clamp-1">{listing.location}</span>
-                      </div>
+                    {product.description && (
+                      <p className="text-xs text-muted-foreground line-clamp-2 mt-1">
+                        {product.description}
+                      </p>
                     )}
                     <div className="flex items-center justify-between mt-2">
                       <span className="font-bold text-primary">
-                        TSh {listing.price?.toLocaleString() || '---'}
+                        TSh {product.price.toLocaleString()}
                       </span>
                       <Badge variant="outline" className="text-xs">
-                        {listing.quantity} {listing.unit || 'pcs'}
+                        {product.stock_quantity} pcs
                       </Badge>
                     </div>
                     <Button 
                       size="sm" 
                       className="w-full mt-2"
-                      onClick={() => {
-                        const productForCart: MarketProduct = {
-                          id: listing.id,
-                          name: listing.product_name,
-                          price: listing.price || 0,
-                          description: listing.description,
-                          category: null,
-                          stock_quantity: listing.quantity,
-                          image_url: null,
-                          owner_id: listing.seller_id,
-                          owner_business_name: listing.contact_info?.business_name,
-                          owner_phone: listing.contact_info?.phone,
-                          owner_location: listing.location || undefined
-                        };
-                        addToCart(productForCart);
-                      }}
+                      onClick={() => addToCart(product)}
                     >
                       <ShoppingCart className="h-3 w-3 mr-1" />
                       Ongeza
@@ -414,24 +505,59 @@ export const SokoniMarketplace = () => {
           )}
         </TabsContent>
 
+        {/* Stores Tab */}
         <TabsContent value="stores" className="px-4 mt-2">
-          <div className="text-center py-12">
-            <Store className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-lg font-semibold mb-2 text-foreground">Maduka</h3>
-            <p className="text-muted-foreground text-sm">
-              Orodha ya maduka itaonyeshwa hapa
-            </p>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="orders" className="px-4 mt-2">
-          <div className="text-center py-12">
-            <Truck className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-lg font-semibold mb-2 text-foreground">Oda Zangu</h3>
-            <p className="text-muted-foreground text-sm">
-              Oda zako zitaonyeshwa hapa baada ya kununua
-            </p>
-          </div>
+          {Object.keys(productsBySeller).length === 0 ? (
+            <div className="text-center py-12">
+              <Store className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-lg font-semibold mb-2 text-foreground">Hakuna maduka</h3>
+              <p className="text-muted-foreground text-sm">
+                Maduka yataonekana hapa
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {Object.entries(productsBySeller).map(([sellerId, { seller, products: sellerProducts }]) => (
+                <Card key={sellerId} className="overflow-hidden">
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+                        <Store className="h-6 w-6 text-primary" />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold">{seller.business_name || 'Duka'}</h3>
+                        <p className="text-xs text-muted-foreground">
+                          {sellerProducts.length} bidhaa
+                        </p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex gap-2 overflow-x-auto pb-2">
+                      {sellerProducts.slice(0, 4).map(product => (
+                        <div key={product.id} className="flex-shrink-0 w-24">
+                          <div className="aspect-square bg-muted rounded-md flex items-center justify-center">
+                            {product.image_url ? (
+                              <img 
+                                src={product.image_url} 
+                                alt={product.name}
+                                className="w-full h-full object-cover rounded-md"
+                              />
+                            ) : (
+                              <Package className="h-6 w-6 text-muted-foreground/50" />
+                            )}
+                          </div>
+                          <p className="text-xs mt-1 line-clamp-1">{product.name}</p>
+                          <p className="text-xs font-semibold text-primary">
+                            TSh {product.price.toLocaleString()}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
         </TabsContent>
       </Tabs>
 
@@ -461,7 +587,7 @@ export const SokoniMarketplace = () => {
               <label className="text-sm font-medium">Mahali pa Kupeleka *</label>
               <Input 
                 placeholder="Eneo, mtaa, namba ya nyumba" 
-                className="mt-1"
+                className="mt-1" 
                 value={deliveryAddress}
                 onChange={(e) => setDeliveryAddress(e.target.value)}
               />
@@ -469,9 +595,9 @@ export const SokoniMarketplace = () => {
             
             <Button 
               className="w-full" 
-              size="lg" 
+              size="lg"
+              disabled={!customerPhone || !deliveryAddress || customerPhone.length < 9}
               onClick={() => setPaymentOpen(true)}
-              disabled={!customerPhone || customerPhone.length < 9 || !deliveryAddress}
             >
               Endelea Kulipa
             </Button>
@@ -482,7 +608,10 @@ export const SokoniMarketplace = () => {
       {/* Payment Dialog */}
       <Dialog open={paymentOpen} onOpenChange={setPaymentOpen}>
         <DialogContent className="max-w-md">
-          <MobileMoneyPayment
+          <DialogHeader>
+            <DialogTitle>Lipa kwa Simu</DialogTitle>
+          </DialogHeader>
+          <MobileMoneyPayment 
             amount={cartTotal}
             onPaymentComplete={handlePaymentComplete}
             onCancel={() => setPaymentOpen(false)}
@@ -492,5 +621,3 @@ export const SokoniMarketplace = () => {
     </div>
   );
 };
-
-export default SokoniMarketplace;

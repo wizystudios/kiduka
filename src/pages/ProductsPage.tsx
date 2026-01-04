@@ -10,7 +10,7 @@ import { useOfflineProducts } from '@/hooks/useOfflineProducts';
 import { toast } from 'sonner';
 import * as XLSX from 'xlsx';
 import { WeightQuantitySelector } from '@/components/WeightQuantitySelector';
-import { PublishToSokoni } from '@/components/PublishToSokoni';
+
 import {
   Collapsible,
   CollapsibleContent,
@@ -348,11 +348,13 @@ export const ProductsPage = () => {
                           Futa
                         </Button>
                         
-                        {/* Publish to Sokoni */}
-                        <PublishToSokoni 
-                          product={product}
-                          onPublished={() => toast.success('Bidhaa imetumwa Sokoni')}
-                        />
+                        {/* Auto-listed on Sokoni indicator */}
+                        {product.stock_quantity > 0 && (
+                          <Badge variant="secondary" className="h-6 text-xs px-2 bg-purple-100 text-purple-700 border-purple-300">
+                            <Store className="h-3 w-3 mr-1" />
+                            Sokoni
+                          </Badge>
+                        )}
                         
                         {product.is_weight_based && (
                           <Button
