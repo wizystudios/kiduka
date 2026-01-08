@@ -18,6 +18,7 @@ interface Product {
   unit_type?: string | null;
   min_quantity?: number | null;
   image_url?: string | null;
+  is_archived?: boolean | null;
   created_at?: string;
   updated_at?: string;
 }

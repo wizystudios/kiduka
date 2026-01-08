@@ -123,6 +123,7 @@ export const SokoniMarketplace = () => {
   const [activeTab, setActiveTab] = useState('browse');
   const [customerPhone, setCustomerPhone] = useState('');
   const [deliveryAddress, setDeliveryAddress] = useState('');
+  const [paymentTiming, setPaymentTiming] = useState<'now' | 'on_delivery'>('now');
   const [submittingOrder, setSubmittingOrder] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [isSeller, setIsSeller] = useState(false);
@@ -758,14 +759,46 @@ export const SokoniMarketplace = () => {
                 onChange={(e) => setDeliveryAddress(e.target.value)}
               />
             </div>
+
+            {/* Payment Timing Choice */}
+            <div>
+              <label className="text-sm font-medium mb-2 block">Malipo</label>
+              <div className="grid grid-cols-2 gap-2">
+                <Button
+                  type="button"
+                  variant={paymentTiming === 'now' ? 'default' : 'outline'}
+                  className="h-12 flex-col gap-1"
+                  onClick={() => setPaymentTiming('now')}
+                >
+                  <span className="text-xs">💵 Lipa Sasa</span>
+                  <span className="text-[10px] opacity-70">M-Pesa / Tigo Pesa</span>
+                </Button>
+                <Button
+                  type="button"
+                  variant={paymentTiming === 'on_delivery' ? 'default' : 'outline'}
+                  className="h-12 flex-col gap-1"
+                  onClick={() => setPaymentTiming('on_delivery')}
+                >
+                  <span className="text-xs">📦 Lipa Unapopokea</span>
+                  <span className="text-[10px] opacity-70">Cash on Delivery</span>
+                </Button>
+              </div>
+            </div>
             
             <Button 
               className="w-full" 
               size="lg"
               disabled={!customerPhone || !deliveryAddress || customerPhone.length < 9}
-              onClick={() => setPaymentOpen(true)}
+              onClick={() => {
+                if (paymentTiming === 'on_delivery') {
+                  // Skip payment dialog, create order directly
+                  handlePaymentComplete('COD-' + Date.now(), 'cash_on_delivery');
+                } else {
+                  setPaymentOpen(true);
+                }
+              }}
             >
-              Endelea Kulipa
+              {paymentTiming === 'on_delivery' ? 'Tuma Oda' : 'Endelea Kulipa'}
             </Button>
           </div>
         </DialogContent>
