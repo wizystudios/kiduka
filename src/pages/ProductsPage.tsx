@@ -3,7 +3,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Search, Edit, Trash2, Package, Loader2, Scale, ChevronDown, ChevronUp, ShoppingCart, FileSpreadsheet, Download, Store, WifiOff, Cloud } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, Package, Loader2, Scale, ChevronDown, ChevronUp, ShoppingCart, FileSpreadsheet, Download, Store, WifiOff, Cloud, Archive, Eye, EyeOff } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useDataAccess } from '@/hooks/useDataAccess';
 import { useOfflineProducts } from '@/hooks/useOfflineProducts';
@@ -29,12 +29,14 @@ interface ProductLocal {
   is_weight_based?: boolean | null;
   unit_type?: string | null;
   min_quantity?: number | null;
+  is_archived?: boolean | null;
 }
 
 export const ProductsPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedWeightProduct, setSelectedWeightProduct] = useState<ProductLocal | null>(null);
   const [expandedProduct, setExpandedProduct] = useState<string | null>(null);
+  const [showArchived, setShowArchived] = useState(false);
   const navigate = useNavigate();
   const { dataOwnerId, isReady } = useDataAccess();
   
@@ -48,6 +50,7 @@ export const ProductsPage = () => {
   } = useOfflineProducts(isReady ? dataOwnerId : null);
 
   const [refreshing, setRefreshing] = useState(false);
+  const [archiving, setArchiving] = useState<string | null>(null);
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -61,7 +64,7 @@ export const ProductsPage = () => {
   };
 
   const handleDeleteProduct = async (id: string, productName: string) => {
-    if (!confirm(`Je, una uhakika unataka kufuta bidhaa "${productName}"?`)) return;
+    if (!confirm(`Je, una uhakika unataka kufuta bidhaa "${productName}" kabisa? Rekodi za mauzo zitabaki salama.`)) return;
 
     if (!dataOwnerId) {
       toast.error('Hakuna data ya biashara.');
@@ -70,6 +73,33 @@ export const ProductsPage = () => {
 
     // Use the offline-first delete
     await deleteProduct(id);
+  };
+
+  const handleArchiveProduct = async (id: string, productName: string, currentArchived: boolean) => {
+    if (!dataOwnerId) {
+      toast.error('Hakuna data ya biashara.');
+      return;
+    }
+
+    setArchiving(id);
+    try {
+      const { supabase } = await import('@/integrations/supabase/client');
+      const { error } = await supabase
+        .from('products')
+        .update({ is_archived: !currentArchived })
+        .eq('id', id)
+        .eq('owner_id', dataOwnerId);
+
+      if (error) throw error;
+      
+      toast.success(currentArchived ? `"${productName}" imerejeshwa` : `"${productName}" imehifadhiwa`);
+      await refreshProducts();
+    } catch (error: any) {
+      console.error('Archive error:', error);
+      toast.error('Imeshindwa kubadilisha hali ya bidhaa');
+    } finally {
+      setArchiving(null);
+    }
   };
 
   const handleWeightProductSelect = (product: ProductLocal) => {
@@ -140,15 +170,19 @@ export const ProductsPage = () => {
   };
 
   const filteredProducts = useMemo(() => {
-    if (!searchTerm.trim()) return products;
+    let filtered = products.filter(p => showArchived ? p.is_archived : !p.is_archived);
+    
+    if (!searchTerm.trim()) return filtered;
     
     const searchLower = searchTerm.toLowerCase();
-    return products.filter(product =>
+    return filtered.filter(product =>
       product.name?.toLowerCase().includes(searchLower) ||
       product.barcode?.toLowerCase().includes(searchLower) ||
       product.category?.toLowerCase().includes(searchLower)
     );
-  }, [products, searchTerm]);
+  }, [products, searchTerm, showArchived]);
+
+  const archivedCount = useMemo(() => products.filter(p => p.is_archived).length, [products]);
 
   const getStockStatus = (stock: number, threshold: number) => {
     if (stock <= 0) return { color: 'bg-red-100 text-red-800', label: 'Hazipatikani' };
@@ -239,15 +273,26 @@ export const ProductsPage = () => {
         </div>
       </div>
 
-      {/* Search */}
-      <div className="relative">
-        <Search className="absolute left-2 top-1.5 h-3 w-3 text-gray-400" />
-        <Input
-          placeholder="Tafuta..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="pl-7 text-xs h-7"
-        />
+      {/* Search + Archive Toggle */}
+      <div className="flex gap-2">
+        <div className="relative flex-1">
+          <Search className="absolute left-2 top-1.5 h-3 w-3 text-gray-400" />
+          <Input
+            placeholder="Tafuta..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-7 text-xs h-7"
+          />
+        </div>
+        <Button
+          variant={showArchived ? "default" : "outline"}
+          size="sm"
+          className="h-7 text-xs px-2"
+          onClick={() => setShowArchived(!showArchived)}
+        >
+          {showArchived ? <Eye className="h-3 w-3 mr-1" /> : <EyeOff className="h-3 w-3 mr-1" />}
+          {showArchived ? 'Onyesha Hai' : `Zilizohifadhiwa (${archivedCount})`}
+        </Button>
       </div>
 
       {/* Products List */}
@@ -340,6 +385,26 @@ export const ProductsPage = () => {
                           variant="outline"
                           onClick={(e) => {
                             e.stopPropagation();
+                            handleArchiveProduct(product.id, product.name, product.is_archived || false);
+                          }}
+                          disabled={archiving === product.id}
+                          className={`h-6 text-xs px-2 ${product.is_archived ? 'text-green-600 hover:text-green-700 hover:bg-green-50' : 'text-yellow-600 hover:text-yellow-700 hover:bg-yellow-50'}`}
+                        >
+                          {archiving === product.id ? (
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                          ) : (
+                            <>
+                              <Archive className="h-3 w-3 mr-1" />
+                              {product.is_archived ? 'Rejesha' : 'Hifadhi'}
+                            </>
+                          )}
+                        </Button>
+                        
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={(e) => {
+                            e.stopPropagation();
                             handleDeleteProduct(product.id, product.name);
                           }}
                           className="h-6 text-xs px-2 text-red-600 hover:text-red-700 hover:bg-red-50"
@@ -349,7 +414,7 @@ export const ProductsPage = () => {
                         </Button>
                         
                         {/* Auto-listed on Sokoni indicator */}
-                        {product.stock_quantity > 0 && (
+                        {product.stock_quantity > 0 && !product.is_archived && (
                           <Badge variant="secondary" className="h-6 text-xs px-2 bg-purple-100 text-purple-700 border-purple-300">
                             <Store className="h-3 w-3 mr-1" />
                             Sokoni

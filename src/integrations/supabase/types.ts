@@ -318,7 +318,7 @@ export type Database = {
           movement_type: string
           notes: string | null
           owner_id: string
-          product_id: string
+          product_id: string | null
           quantity_after: number
           quantity_before: number
           quantity_change: number
@@ -333,7 +333,7 @@ export type Database = {
           movement_type: string
           notes?: string | null
           owner_id: string
-          product_id: string
+          product_id?: string | null
           quantity_after: number
           quantity_before: number
           quantity_change: number
@@ -348,7 +348,7 @@ export type Database = {
           movement_type?: string
           notes?: string | null
           owner_id?: string
-          product_id?: string
+          product_id?: string | null
           quantity_after?: number
           quantity_before?: number
           quantity_change?: number
@@ -567,6 +567,7 @@ export type Database = {
           description: string | null
           id: string
           image_url: string | null
+          is_archived: boolean | null
           is_weight_based: boolean | null
           low_stock_threshold: number | null
           min_quantity: number | null
@@ -588,6 +589,7 @@ export type Database = {
           description?: string | null
           id?: string
           image_url?: string | null
+          is_archived?: boolean | null
           is_weight_based?: boolean | null
           low_stock_threshold?: number | null
           min_quantity?: number | null
@@ -609,6 +611,7 @@ export type Database = {
           description?: string | null
           id?: string
           image_url?: string | null
+          is_archived?: boolean | null
           is_weight_based?: boolean | null
           low_stock_threshold?: number | null
           min_quantity?: number | null
@@ -710,7 +713,7 @@ export type Database = {
         Row: {
           created_at: string
           id: string
-          product_id: string
+          product_id: string | null
           quantity: number
           sale_id: string
           subtotal: number
@@ -719,7 +722,7 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
-          product_id: string
+          product_id?: string | null
           quantity: number
           sale_id: string
           subtotal: number
@@ -728,7 +731,7 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
-          product_id?: string
+          product_id?: string | null
           quantity?: number
           sale_id?: string
           subtotal?: number
