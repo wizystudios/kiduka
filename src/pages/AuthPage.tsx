@@ -216,30 +216,44 @@ export const AuthPage = () => {
           {step === 'identifier' && (
             <>
               {authMethod === 'email' ? (
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                  <Input
-                    type="email"
-                    placeholder="Barua pepe"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && handleNextStep()}
-                    className="pl-10 h-14 bg-background/50 backdrop-blur border-border/50 rounded-xl text-lg"
-                    autoFocus
-                  />
+                <div className="space-y-1">
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                    <Input
+                      type="email"
+                      placeholder="Barua pepe"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      onKeyPress={(e) => e.key === 'Enter' && handleNextStep()}
+                      className={`pl-10 h-14 bg-background/50 backdrop-blur border-border/50 rounded-xl text-lg ${
+                        email && !email.includes('@') ? 'border-red-500' : ''
+                      }`}
+                      autoFocus
+                    />
+                  </div>
+                  {email && !email.includes('@') && (
+                    <p className="text-xs text-red-500 pl-2">Barua pepe lazima iwe na @</p>
+                  )}
                 </div>
               ) : (
-                <div className="relative">
-                  <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                  <Input
-                    type="tel"
-                    placeholder="07XX XXX XXX"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && handleNextStep()}
-                    className="pl-10 h-14 bg-background/50 backdrop-blur border-border/50 rounded-xl text-lg"
-                    autoFocus
-                  />
+                <div className="space-y-1">
+                  <div className="relative">
+                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                    <Input
+                      type="tel"
+                      placeholder="07XX XXX XXX"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      onKeyPress={(e) => e.key === 'Enter' && handleNextStep()}
+                      className={`pl-10 h-14 bg-background/50 backdrop-blur border-border/50 rounded-xl text-lg ${
+                        phone && phone.length < 9 ? 'border-red-500' : ''
+                      }`}
+                      autoFocus
+                    />
+                  </div>
+                  {phone && phone.length < 9 && (
+                    <p className="text-xs text-red-500 pl-2">Namba ya simu lazima iwe angalau tarakimu 9</p>
+                  )}
                 </div>
               )}
               
@@ -265,24 +279,34 @@ export const AuthPage = () => {
           )}
 
           {step === 'password' && (
-            <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-              <Input
-                type={showPassword ? 'text' : 'password'}
-                placeholder="Nywila"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && handleNextStep()}
-                className="pl-10 pr-10 h-14 bg-background/50 backdrop-blur border-border/50 rounded-xl text-lg"
-                autoFocus
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
-              >
-                {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-              </button>
+            <div className="space-y-1">
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                <Input
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="Nywila"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && handleNextStep()}
+                  className={`pl-10 pr-10 h-14 bg-background/50 backdrop-blur border-border/50 rounded-xl text-lg ${
+                    password && password.length < 6 ? 'border-red-500' : password.length >= 6 ? 'border-green-500' : ''
+                  }`}
+                  autoFocus
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                >
+                  {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                </button>
+              </div>
+              {password && password.length < 6 && (
+                <p className="text-xs text-red-500 pl-2">Nywila lazima iwe angalau herufi 6 ({password.length}/6)</p>
+              )}
+              {password && password.length >= 6 && (
+                <p className="text-xs text-green-500 pl-2">✓ Nywila imekubalika</p>
+              )}
             </div>
           )}
 
