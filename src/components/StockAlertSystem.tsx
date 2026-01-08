@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useDataAccess } from '@/hooks/useDataAccess';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -22,18 +23,23 @@ export const StockAlertSystem = () => {
   const [lowStockProducts, setLowStockProducts] = useState<LowStockProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState(false);
+  const { dataOwnerId, isReady } = useDataAccess();
 
   useEffect(() => {
-    if (user) {
+    if (isReady && dataOwnerId) {
       fetchLowStockProducts();
     }
-  }, [user]);
+  }, [isReady, dataOwnerId]);
 
   const fetchLowStockProducts = async () => {
+    if (!dataOwnerId) return;
+    
     try {
+      // CRITICAL: Filter by owner_id to only show user's own products
       const { data: allProducts, error: allError } = await supabase
         .from('products')
         .select('id, name, stock_quantity, low_stock_threshold, category')
+        .eq('owner_id', dataOwnerId)
         .order('stock_quantity', { ascending: true });
 
       if (allError) throw allError;
