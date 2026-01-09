@@ -29,7 +29,8 @@ import {
   Package,
   Truck,
   ArrowLeft,
-  ClipboardList
+  ClipboardList,
+  Eye
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -37,6 +38,7 @@ import { useNavigate } from 'react-router-dom';
 import { MobileMoneyPayment } from './MobileMoneyPayment';
 import { normalizeTzPhoneDigits } from '@/utils/phoneUtils';
 import { OrderReceiptDialog } from './OrderReceiptDialog';
+import { SokoniProductDetail } from './SokoniProductDetail';
 
 interface MarketProduct {
   id: string;
@@ -128,6 +130,8 @@ export const SokoniMarketplace = () => {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [isSeller, setIsSeller] = useState(false);
   const [guestOrders, setGuestOrders] = useState<GuestOrder[]>(() => getGuestOrders());
+  const [selectedProduct, setSelectedProduct] = useState<MarketProduct | null>(null);
+  const [productDetailOpen, setProductDetailOpen] = useState(false);
   
   // Receipt dialog state
   const [receiptOpen, setReceiptOpen] = useState(false);
@@ -217,19 +221,30 @@ export const SokoniMarketplace = () => {
     }
   };
 
-  const addToCart = (product: MarketProduct) => {
+  const addToCart = (product: MarketProduct, qty: number = 1) => {
     setCart(prev => {
       const existing = prev.find(item => item.id === product.id);
       if (existing) {
         return prev.map(item =>
           item.id === product.id
-            ? { ...item, quantity: item.quantity + 1 }
+            ? { ...item, quantity: item.quantity + qty }
             : item
         );
       }
-      return [...prev, { ...product, quantity: 1 }];
+      return [...prev, { ...product, quantity: qty }];
     });
     toast.success(`${product.name} imeongezwa kwenye kikapu`);
+  };
+
+  const openProductDetail = (product: MarketProduct) => {
+    setSelectedProduct(product);
+    setProductDetailOpen(true);
+  };
+
+  const getRelatedProducts = (product: MarketProduct) => {
+    return products
+      .filter(p => p.owner_id === product.owner_id && p.id !== product.id)
+      .slice(0, 6);
   };
 
   const updateCartQuantity = (productId: string, change: number) => {
@@ -561,26 +576,39 @@ export const SokoniMarketplace = () => {
           ) : (
             <div className="grid grid-cols-2 gap-3">
               {filteredProducts.map(product => (
-                <Card key={product.id} className="overflow-hidden border-border">
-                  <div className="aspect-square bg-muted flex items-center justify-center relative">
+                <Card 
+                  key={product.id} 
+                  className="overflow-hidden border-border cursor-pointer hover:shadow-lg transition-all duration-300 hover:scale-[1.02] group"
+                  onClick={() => openProductDetail(product)}
+                >
+                  <div className="aspect-square bg-muted flex items-center justify-center relative overflow-hidden">
                     {product.image_url ? (
                       <img 
                         src={product.image_url} 
                         alt={product.name}
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                       />
                     ) : (
                       <Package className="h-12 w-12 text-muted-foreground/50" />
                     )}
                     {product.category && (
-                      <Badge variant="secondary" className="absolute top-2 left-2 text-xs">
+                      <Badge variant="secondary" className="absolute top-2 left-2 text-xs shadow-sm">
                         {product.category}
                       </Badge>
                     )}
+                    {/* Quick view overlay */}
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                      <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="bg-white rounded-full p-2 shadow-lg">
+                          <Eye className="h-5 w-5 text-primary" />
+                        </div>
+                      </div>
+                    </div>
                   </div>
                   <CardContent className="p-3">
                     <h3 className="font-semibold text-sm line-clamp-1 text-foreground">{product.name}</h3>
-                    <p className="text-xs text-muted-foreground line-clamp-1">
+                    <p className="text-xs text-muted-foreground line-clamp-1 flex items-center gap-1">
+                      <Store className="h-3 w-3" />
                       {product.owner_business_name}
                     </p>
                     {product.description && (
@@ -598,8 +626,11 @@ export const SokoniMarketplace = () => {
                     </div>
                     <Button 
                       size="sm" 
-                      className="w-full mt-2"
-                      onClick={() => addToCart(product)}
+                      className="w-full mt-2 group-hover:bg-primary/90"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        addToCart(product, 1);
+                      }}
                     >
                       <ShoppingCart className="h-3 w-3 mr-1" />
                       Ongeza
@@ -834,6 +865,21 @@ export const SokoniMarketplace = () => {
           paymentMethod={receiptData.paymentMethod}
         />
       )}
+
+      {/* Product Detail Modal */}
+      <SokoniProductDetail
+        product={selectedProduct}
+        open={productDetailOpen}
+        onClose={() => {
+          setProductDetailOpen(false);
+          setSelectedProduct(null);
+        }}
+        onAddToCart={addToCart}
+        relatedProducts={selectedProduct ? getRelatedProducts(selectedProduct) : []}
+        onSelectProduct={(product) => {
+          setSelectedProduct(product);
+        }}
+      />
     </div>
   );
 };
