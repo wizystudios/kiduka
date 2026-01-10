@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,11 +10,20 @@ import { ArrowLeft, Save, Loader2, WifiOff, Cloud } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useDataAccess } from '@/hooks/useDataAccess';
 import { useOfflineProducts } from '@/hooks/useOfflineProducts';
-import { ProductImageUpload } from '@/components/ProductImageUpload';
+import { MultiImageUpload } from '@/components/MultiImageUpload';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+
+interface ProductImage {
+  id?: string;
+  image_url: string;
+  display_order: number;
+  is_primary: boolean;
+}
 
 export const AddProductPage = () => {
   const [loading, setLoading] = useState(false);
+  const [productImages, setProductImages] = useState<ProductImage[]>([]);
   const [formData, setFormData] = useState({
     name: '',
     barcode: '',
@@ -27,7 +36,6 @@ export const AddProductPage = () => {
     is_weight_based: false,
     unit_type: 'piece',
     min_quantity: '0.1',
-    image_url: null as string | null
   });
   
   const navigate = useNavigate();
@@ -64,6 +72,9 @@ export const AddProductPage = () => {
         barcodeToUse = '8' + Date.now().toString().slice(-11);
       }
       
+      // Get primary image URL from productImages
+      const primaryImage = productImages.find(img => img.is_primary) || productImages[0];
+      
       const productData = {
         name: formData.name.trim(),
         barcode: barcodeToUse,
@@ -75,7 +86,7 @@ export const AddProductPage = () => {
         is_weight_based: formData.is_weight_based,
         unit_type: formData.unit_type,
         min_quantity: parseFloat(formData.min_quantity) || 0.1,
-        image_url: formData.image_url,
+        image_url: primaryImage?.image_url || null,
         owner_id: dataOwnerId
       };
 
@@ -87,6 +98,18 @@ export const AddProductPage = () => {
       if (!result) {
         // createProduct already shows toast on error
         return;
+      }
+
+      // Save additional images to product_images table
+      if (productImages.length > 0 && result.id) {
+        for (const img of productImages) {
+          await supabase.from('product_images').insert({
+            product_id: result.id,
+            image_url: img.image_url,
+            display_order: img.display_order,
+            is_primary: img.is_primary,
+          });
+        }
       }
 
       console.log('Product added successfully:', result);
@@ -103,8 +126,8 @@ export const AddProductPage = () => {
         is_weight_based: false,
         unit_type: 'piece',
         min_quantity: '0.1',
-        image_url: null
       });
+      setProductImages([]);
       
       navigate('/products');
     } catch (error: any) {
@@ -162,10 +185,11 @@ export const AddProductPage = () => {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-3">
-            {/* Product Image Upload */}
-            <ProductImageUpload
-              currentImageUrl={formData.image_url}
-              onImageChange={(url) => setFormData({...formData, image_url: url})}
+            {/* Product Images Upload */}
+            <MultiImageUpload
+              existingImages={productImages}
+              onImagesChange={setProductImages}
+              maxImages={5}
             />
             
             <div>

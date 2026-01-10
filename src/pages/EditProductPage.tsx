@@ -10,11 +10,19 @@ import { ArrowLeft, Save, Scan } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { ProductImageUpload } from '@/components/ProductImageUpload';
+import { MultiImageUpload } from '@/components/MultiImageUpload';
+
+interface ProductImage {
+  id?: string;
+  image_url: string;
+  display_order: number;
+  is_primary: boolean;
+}
 
 export const EditProductPage = () => {
   const [loading, setLoading] = useState(false);
   const [fetchLoading, setFetchLoading] = useState(true);
+  const [productImages, setProductImages] = useState<ProductImage[]>([]);
   const [formData, setFormData] = useState({
     name: '',
     barcode: '',
@@ -27,7 +35,6 @@ export const EditProductPage = () => {
     is_weight_based: false,
     unit_type: 'piece',
     min_quantity: '0.1',
-    image_url: null as string | null
   });
   
   const navigate = useNavigate();
@@ -62,8 +69,25 @@ export const EditProductPage = () => {
         is_weight_based: data.is_weight_based || false,
         unit_type: data.unit_type || 'piece',
         min_quantity: data.min_quantity?.toString() || '0.1',
-        image_url: data.image_url || null
       });
+
+      // Fetch product images
+      const { data: imagesData } = await supabase
+        .from('product_images')
+        .select('*')
+        .eq('product_id', id)
+        .order('display_order', { ascending: true });
+
+      if (imagesData && imagesData.length > 0) {
+        setProductImages(imagesData);
+      } else if (data.image_url) {
+        // Fallback to main image_url if no product_images
+        setProductImages([{
+          image_url: data.image_url,
+          display_order: 0,
+          is_primary: true,
+        }]);
+      }
     } catch (error) {
       console.error('Error fetching product:', error);
       toast({
@@ -93,6 +117,9 @@ export const EditProductPage = () => {
     try {
       console.log('Updating product:', id, formData);
       
+      // Get primary image URL from productImages
+      const primaryImage = productImages.find(img => img.is_primary) || productImages[0];
+      
       const updateData = {
         name: formData.name.trim(),
         barcode: formData.barcode?.trim() || null,
@@ -105,7 +132,7 @@ export const EditProductPage = () => {
         is_weight_based: formData.is_weight_based,
         unit_type: formData.unit_type,
         min_quantity: parseFloat(formData.min_quantity) || 0.1,
-        image_url: formData.image_url,
+        image_url: primaryImage?.image_url || null,
         updated_at: new Date().toISOString()
       };
       
@@ -128,6 +155,22 @@ export const EditProductPage = () => {
           throw error;
         }
         return;
+      }
+
+      // Update product_images table
+      // First, delete existing images for this product
+      await supabase.from('product_images').delete().eq('product_id', id);
+      
+      // Then insert new images
+      if (productImages.length > 0) {
+        for (const img of productImages) {
+          await supabase.from('product_images').insert({
+            product_id: id,
+            image_url: img.image_url,
+            display_order: img.display_order,
+            is_primary: img.is_primary,
+          });
+        }
       }
 
       console.log('Product updated successfully:', data);
@@ -176,11 +219,12 @@ export const EditProductPage = () => {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Product Image Upload */}
-            <ProductImageUpload
-              currentImageUrl={formData.image_url}
-              onImageChange={(url) => setFormData({...formData, image_url: url})}
+            {/* Product Images Upload */}
+            <MultiImageUpload
               productId={id}
+              existingImages={productImages}
+              onImagesChange={setProductImages}
+              maxImages={5}
             />
             
             <div>

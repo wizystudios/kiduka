@@ -30,7 +30,8 @@ import {
   Truck,
   ArrowLeft,
   ClipboardList,
-  Eye
+  Eye,
+  Heart
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -39,6 +40,7 @@ import { MobileMoneyPayment } from './MobileMoneyPayment';
 import { normalizeTzPhoneDigits } from '@/utils/phoneUtils';
 import { OrderReceiptDialog } from './OrderReceiptDialog';
 import { SokoniProductDetail } from './SokoniProductDetail';
+import { useWishlist } from '@/hooks/useWishlist';
 
 interface MarketProduct {
   id: string;
@@ -115,6 +117,7 @@ const saveGuestOrder = (order: GuestOrder) => {
 
 export const SokoniMarketplace = () => {
   const navigate = useNavigate();
+  const { wishlistCount } = useWishlist();
   const [products, setProducts] = useState<MarketProduct[]>([]);
   const [sellers, setSellers] = useState<SellerProfile[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -425,6 +428,21 @@ export const SokoniMarketplace = () => {
                 Oda Zangu
               </Button>
             )}
+
+            {/* Favorites */}
+            <Button
+              variant="secondary"
+              size="sm"
+              className="relative"
+              onClick={() => navigate('/sokoni/favorites')}
+            >
+              <Heart className="h-4 w-4" />
+              {wishlistCount > 0 && (
+                <Badge className="absolute -top-2 -right-2 h-5 w-5 p-0 flex items-center justify-center text-xs bg-red-500 text-white">
+                  {wishlistCount}
+                </Badge>
+              )}
+            </Button>
 
             {/* Customer tracking */}
             <Button
