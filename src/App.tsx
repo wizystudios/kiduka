@@ -61,6 +61,7 @@ import { SokoniMarketplace } from '@/components/SokoniMarketplace';
 import SokoniOrdersPage from '@/pages/SokoniOrdersPage';
 import NotificationsPage from '@/pages/NotificationsPage';
 import OrderTrackingPage from '@/pages/OrderTrackingPage';
+import WishlistPage from '@/pages/WishlistPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -375,6 +376,9 @@ export default function App() {
               
               {/* Sokoni Marketplace - Public access for customers */}
               <Route path="/sokoni" element={<SokoniMarketplace />} />
+              
+              {/* Wishlist Page - Public access */}
+              <Route path="/sokoni/favorites" element={<WishlistPage />} />
               
               {/* Order Tracking - Public access */}
               <Route path="/track-order" element={<OrderTrackingPage />} />
