@@ -49,50 +49,69 @@ export const MobileBottomNav = () => {
   const { user, userProfile, signOut } = useAuth();
   const { permissions } = usePermissions();
 
+  // For assistants: only show Dashboard, Products, Sales, Calculator by default
+  // Other functionality requires owner permission
+  const isAssistant = userProfile?.role === 'assistant';
+
   // Always show 4 main items + profile
   const mainNavItems: BottomNavItem[] = [
     { id: 'home', label: 'Home', icon: Home, href: '/dashboard', permission: null },
     { id: 'products', label: 'Bidhaa', icon: Package, href: '/products', permission: 'can_view_products' },
-    { id: 'scanner', label: 'Scan', icon: QrCode, href: '/scanner', permission: 'can_view_products' },
     { id: 'sales', label: 'Mauzo', icon: ShoppingCart, href: '/sales', permission: 'can_view_sales' },
+    { id: 'calculator', label: 'Kikokotoo', icon: CalcIcon, href: '/calculator', permission: null },
   ].filter(item => {
     if (userProfile?.role === 'owner' || userProfile?.role === 'super_admin') return true;
     if (!item.permission) return true;
     return permissions?.[item.permission as keyof typeof permissions];
   });
 
-  const allProfileMenuItems: BottomNavItem[] = [
+  // Items that assistants can see (with permission check)
+  const assistantAllowedItems: BottomNavItem[] = [
     { id: 'quick-sale', label: 'Mauzo Haraka', icon: ShoppingCart, href: '/quick-sale', permission: 'can_create_sales' },
+    { id: 'credit', label: 'Mikopo', icon: CreditCard, href: '/credit-management', permission: null }, // view only, can't delete
+  ];
+
+  // Items only for owners/super_admin (in Haraka container)
+  const ownerOnlyItems: BottomNavItem[] = [
+    { id: 'scanner', label: 'Scan', icon: QrCode, href: '/scanner', permission: 'can_view_products' },
     { id: 'sokoni-orders', label: 'Oda za Sokoni', icon: Store, href: '/sokoni-orders', permission: null },
     { id: 'customers', label: 'Wateja', icon: Users, href: '/customers', permission: 'can_view_customers' },
     { id: 'discounts', label: 'Punguzo', icon: Percent, href: '/discounts', permission: null },
-    { id: 'credit', label: 'Mikopo', icon: CreditCard, href: '/credit-management', permission: null },
     { id: 'micro-loans', label: 'Mikopo Midogo', icon: CreditCard, href: '/micro-loans', permission: null },
     { id: 'expenses', label: 'Matumizi', icon: Receipt, href: '/expenses', permission: null },
     { id: 'inventory', label: 'Hesabu ya Stock', icon: BarChart3, href: '/inventory-snapshots', permission: 'can_view_inventory' },
     { id: 'reports', label: 'Ripoti', icon: BarChart3, href: '/reports', permission: 'can_view_reports' },
     { id: 'profit-loss', label: 'Faida/Hasara', icon: TrendingUp, href: '/profit-loss', permission: 'can_view_reports' },
     { id: 'import-products', label: 'Ingiza Bidhaa', icon: Download, href: '/products/import', permission: 'can_edit_products' },
-    { id: 'calculator', label: 'Kikokotoo', icon: CalcIcon, href: '/calculator', permission: null },
     { id: 'pwa', label: 'Sakinisha App', icon: Download, href: '/pwa-install', permission: null },
     { id: 'settings', label: 'Mipangilio', icon: Settings, href: '/settings', permission: null },
   ];
 
   // Add owner-specific items
   if (userProfile?.role === 'owner') {
-    allProfileMenuItems.push({ id: 'users', label: 'Watumiaji', icon: Users, href: '/users', permission: null });
+    ownerOnlyItems.push({ id: 'users', label: 'Watumiaji', icon: Users, href: '/users', permission: null });
   }
 
   // Add super admin items
   if (userProfile?.role === 'super_admin') {
-    allProfileMenuItems.push({ id: 'super-admin', label: 'Super Admin', icon: Settings, href: '/super-admin', permission: null });
+    ownerOnlyItems.push({ id: 'super-admin', label: 'Super Admin', icon: Settings, href: '/super-admin', permission: null });
   }
 
-  const profileMenuItems = allProfileMenuItems.filter(item => {
-    if (userProfile?.role === 'owner' || userProfile?.role === 'super_admin') return true;
-    if (!item.permission) return true;
-    return permissions?.[item.permission as keyof typeof permissions];
-  });
+  // Filter profile menu items based on role
+  const getProfileMenuItems = (): BottomNavItem[] => {
+    if (userProfile?.role === 'owner' || userProfile?.role === 'super_admin') {
+      // Owners see all items
+      return [...assistantAllowedItems, ...ownerOnlyItems];
+    }
+    
+    // Assistants only see assistant-allowed items (that they have permission for)
+    return assistantAllowedItems.filter(item => {
+      if (!item.permission) return true;
+      return permissions?.[item.permission as keyof typeof permissions];
+    });
+  };
+
+  const profileMenuItems = getProfileMenuItems();
 
   useEffect(() => {
     setUnreadCount(3);

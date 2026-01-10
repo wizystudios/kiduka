@@ -1,10 +1,6 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { X, ZoomIn, ZoomOut, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import {
-  Dialog,
-  DialogContent,
-} from '@/components/ui/dialog';
 
 interface ImageZoomProps {
   src: string;
@@ -93,83 +89,96 @@ export const ImageZoom = ({ src, alt, open, onClose }: ImageZoomProps) => {
     }
   }, [scale]);
 
-  return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-[95vw] max-h-[95vh] p-0 bg-black/95 border-none">
-        {/* Controls */}
-        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10 flex items-center gap-2 bg-black/50 backdrop-blur-sm rounded-full px-3 py-2">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 text-white hover:bg-white/20"
-            onClick={handleZoomOut}
-            disabled={scale <= 1}
-          >
-            <ZoomOut className="h-4 w-4" />
-          </Button>
-          <span className="text-white text-sm min-w-[3rem] text-center">
-            {Math.round(scale * 100)}%
-          </span>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 text-white hover:bg-white/20"
-            onClick={handleZoomIn}
-            disabled={scale >= 4}
-          >
-            <ZoomIn className="h-4 w-4" />
-          </Button>
-          <div className="w-px h-4 bg-white/30" />
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 text-white hover:bg-white/20"
-            onClick={handleReset}
-          >
-            <RotateCcw className="h-4 w-4" />
-          </Button>
-        </div>
+  // Reset state when dialog opens/closes
+  useEffect(() => {
+    if (!open) {
+      setScale(1);
+      setPosition({ x: 0, y: 0 });
+    }
+  }, [open]);
 
-        {/* Close button */}
+  if (!open) return null;
+
+  return (
+    <div 
+      className="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      {/* Controls */}
+      <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10 flex items-center gap-2 bg-black/50 backdrop-blur-sm rounded-full px-3 py-2">
         <Button
           variant="ghost"
           size="icon"
-          className="absolute top-4 right-4 z-10 h-10 w-10 rounded-full text-white bg-black/50 hover:bg-black/70"
-          onClick={onClose}
+          className="h-8 w-8 text-white hover:bg-white/20"
+          onClick={handleZoomOut}
+          disabled={scale <= 1}
         >
-          <X className="h-5 w-5" />
+          <ZoomOut className="h-4 w-4" />
         </Button>
-
-        {/* Image container */}
-        <div
-          ref={containerRef}
-          className="w-full h-[90vh] flex items-center justify-center overflow-hidden cursor-grab active:cursor-grabbing"
-          onMouseDown={handleMouseDown}
-          onMouseMove={handleMouseMove}
-          onMouseUp={handleMouseUp}
-          onMouseLeave={handleMouseUp}
-          onTouchStart={handleTouchStart}
-          onTouchMove={handleTouchMove}
-          onTouchEnd={handleTouchEnd}
-          onWheel={handleWheel}
-          onDoubleClick={handleDoubleClick}
+        <span className="text-white text-sm min-w-[3rem] text-center">
+          {Math.round(scale * 100)}%
+        </span>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8 text-white hover:bg-white/20"
+          onClick={handleZoomIn}
+          disabled={scale >= 4}
         >
-          <img
-            src={src}
-            alt={alt}
-            className="max-w-full max-h-full object-contain select-none transition-transform duration-100"
-            style={{
-              transform: `scale(${scale}) translate(${position.x / scale}px, ${position.y / scale}px)`,
-            }}
-            draggable={false}
-          />
-        </div>
+          <ZoomIn className="h-4 w-4" />
+        </Button>
+        <div className="w-px h-4 bg-white/30" />
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8 text-white hover:bg-white/20"
+          onClick={handleReset}
+        >
+          <RotateCcw className="h-4 w-4" />
+        </Button>
+      </div>
 
-        {/* Instructions */}
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-white/60 text-xs text-center">
-          <p>Double-click to zoom • Drag to pan • Scroll to zoom</p>
-        </div>
-      </DialogContent>
-    </Dialog>
+      {/* Close button */}
+      <Button
+        variant="ghost"
+        size="icon"
+        className="absolute top-4 right-4 z-10 h-10 w-10 rounded-full text-white bg-black/50 hover:bg-black/70"
+        onClick={onClose}
+      >
+        <X className="h-5 w-5" />
+      </Button>
+
+      {/* Image container */}
+      <div
+        ref={containerRef}
+        className="w-full h-full flex items-center justify-center overflow-hidden cursor-grab active:cursor-grabbing p-8"
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseUp}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        onWheel={handleWheel}
+        onDoubleClick={handleDoubleClick}
+      >
+        <img
+          src={src}
+          alt={alt}
+          className="max-w-full max-h-full object-contain select-none transition-transform duration-100"
+          style={{
+            transform: `scale(${scale}) translate(${position.x / scale}px, ${position.y / scale}px)`,
+          }}
+          draggable={false}
+        />
+      </div>
+
+      {/* Instructions */}
+      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-white/60 text-xs text-center">
+        <p>Bonyeza mara mbili kuzoom • Buruta kusogeza • Geuza kuza/kupunguza</p>
+      </div>
+    </div>
   );
 };
