@@ -10,6 +10,8 @@ import {
   Carousel,
   CarouselContent,
   CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
 } from '@/components/ui/carousel';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
@@ -25,12 +27,22 @@ import {
   Truck,
   ZoomIn,
   MessageSquare,
-  Info
+  Info,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { ImageZoom } from './ImageZoom';
 import { ProductReviews } from './ProductReviews';
+import { useWishlist } from '@/hooks/useWishlist';
+
+interface ProductImage {
+  id: string;
+  image_url: string;
+  display_order: number;
+  is_primary: boolean;
+}
 
 interface MarketProduct {
   id: string;
@@ -63,17 +75,46 @@ export const SokoniProductDetail = ({
   onSelectProduct,
 }: SokoniProductDetailProps) => {
   const [quantity, setQuantity] = useState(1);
-  const [isLiked, setIsLiked] = useState(false);
   const [imageZoomOpen, setImageZoomOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('details');
   const [averageRating, setAverageRating] = useState(0);
   const [reviewCount, setReviewCount] = useState(0);
+  const [productImages, setProductImages] = useState<ProductImage[]>([]);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [zoomImageUrl, setZoomImageUrl] = useState<string | null>(null);
+  
+  const { isInWishlist, toggleWishlist } = useWishlist();
 
   useEffect(() => {
     if (product?.id) {
       fetchProductRating();
+      fetchProductImages();
+      setCurrentImageIndex(0);
     }
   }, [product?.id]);
+
+  const fetchProductImages = async () => {
+    if (!product) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('product_images')
+        .select('*')
+        .eq('product_id', product.id)
+        .order('display_order', { ascending: true });
+
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        setProductImages(data);
+      } else {
+        setProductImages([]);
+      }
+    } catch (error) {
+      console.error('Error fetching product images:', error);
+      setProductImages([]);
+    }
+  };
 
   const fetchProductRating = async () => {
     if (!product) return;
@@ -99,6 +140,38 @@ export const SokoniProductDetail = ({
     }
   };
 
+  // Get all images (product_images table + main image_url as fallback)
+  const getAllImages = (): string[] => {
+    if (!product) return [];
+    
+    const images: string[] = [];
+    
+    // Add product_images first
+    productImages.forEach(img => images.push(img.image_url));
+    
+    // Add main image_url if not already in list and no product_images exist
+    if (product.image_url && images.length === 0) {
+      images.push(product.image_url);
+    }
+    
+    return images;
+  };
+
+  const allImages = getAllImages();
+  const currentImage = allImages[currentImageIndex] || product?.image_url;
+
+  const handleToggleWishlist = () => {
+    if (!product) return;
+    const added = toggleWishlist({
+      id: product.id,
+      name: product.name,
+      price: product.price,
+      image_url: product.image_url,
+      owner_business_name: product.owner_business_name,
+    });
+    toast.success(added ? 'Imeongezwa kwenye favorites!' : 'Imeondolewa kwenye favorites');
+  };
+
   if (!product) return null;
 
   const handleAddToCart = () => {
@@ -121,25 +194,44 @@ export const SokoniProductDetail = ({
 
   const totalPrice = product.price * quantity;
 
+  const isLiked = isInWishlist(product.id);
+
+  const nextImage = () => {
+    if (allImages.length > 1) {
+      setCurrentImageIndex((prev) => (prev + 1) % allImages.length);
+    }
+  };
+
+  const prevImage = () => {
+    if (allImages.length > 1) {
+      setCurrentImageIndex((prev) => (prev - 1 + allImages.length) % allImages.length);
+    }
+  };
+
+  const openZoom = (url: string) => {
+    setZoomImageUrl(url);
+    setImageZoomOpen(true);
+  };
+
   return (
     <>
       <Dialog open={open} onOpenChange={onClose}>
-        <DialogContent className="max-w-lg p-0 gap-0 max-h-[95vh] overflow-hidden rounded-2xl">
-          {/* Product Image Section */}
-          <div className="relative">
+        <DialogContent className="max-w-lg p-0 gap-0 max-h-[90vh] overflow-hidden rounded-2xl">
+          {/* Product Image Section - Fixed height */}
+          <div className="relative h-64 sm:h-72 flex-shrink-0">
             <div 
-              className="aspect-square bg-gradient-to-br from-muted to-muted/50 overflow-hidden cursor-zoom-in group"
-              onClick={() => product.image_url && setImageZoomOpen(true)}
+              className="w-full h-full bg-gradient-to-br from-muted to-muted/50 overflow-hidden cursor-zoom-in group"
+              onClick={() => currentImage && openZoom(currentImage)}
             >
-              {product.image_url ? (
+              {currentImage ? (
                 <>
                   <img 
-                    src={product.image_url} 
+                    src={currentImage} 
                     alt={product.name}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                   />
                   {/* Zoom hint overlay */}
-                  <div className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/20 transition-colors">
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/20 transition-colors pointer-events-none">
                     <div className="opacity-0 group-hover:opacity-100 transition-opacity bg-white/90 rounded-full p-3 shadow-lg">
                       <ZoomIn className="h-6 w-6 text-primary" />
                     </div>
@@ -147,10 +239,45 @@ export const SokoniProductDetail = ({
                 </>
               ) : (
                 <div className="w-full h-full flex items-center justify-center">
-                  <Package className="h-24 w-24 text-muted-foreground/30" />
+                  <Package className="h-20 w-20 text-muted-foreground/30" />
                 </div>
               )}
             </div>
+
+            {/* Image navigation arrows */}
+            {allImages.length > 1 && (
+              <>
+                <Button
+                  variant="secondary"
+                  size="icon"
+                  className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-background/80 backdrop-blur-sm shadow-lg hover:bg-background h-8 w-8"
+                  onClick={(e) => { e.stopPropagation(); prevImage(); }}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="icon"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-background/80 backdrop-blur-sm shadow-lg hover:bg-background h-8 w-8"
+                  onClick={(e) => { e.stopPropagation(); nextImage(); }}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+                
+                {/* Image dots indicator */}
+                <div className="absolute bottom-12 left-1/2 -translate-x-1/2 flex gap-1.5">
+                  {allImages.map((_, idx) => (
+                    <button
+                      key={idx}
+                      className={`h-2 rounded-full transition-all ${
+                        idx === currentImageIndex ? 'w-4 bg-primary' : 'w-2 bg-white/60'
+                      }`}
+                      onClick={(e) => { e.stopPropagation(); setCurrentImageIndex(idx); }}
+                    />
+                  ))}
+                </div>
+              </>
+            )}
             
             {/* Close button */}
             <Button
@@ -168,7 +295,7 @@ export const SokoniProductDetail = ({
                 variant="secondary"
                 size="icon"
                 className={`rounded-full bg-background/80 backdrop-blur-sm shadow-lg hover:bg-background ${isLiked ? 'text-red-500' : ''}`}
-                onClick={() => setIsLiked(!isLiked)}
+                onClick={handleToggleWishlist}
               >
                 <Heart className={`h-4 w-4 ${isLiked ? 'fill-current' : ''}`} />
               </Button>
@@ -190,11 +317,11 @@ export const SokoniProductDetail = ({
             )}
 
             {/* Zoom badge */}
-            {product.image_url && (
+            {currentImage && (
               <Badge 
                 variant="secondary" 
                 className="absolute bottom-3 right-3 bg-background/80 backdrop-blur-sm cursor-pointer hover:bg-background"
-                onClick={() => setImageZoomOpen(true)}
+                onClick={(e) => { e.stopPropagation(); openZoom(currentImage); }}
               >
                 <ZoomIn className="h-3 w-3 mr-1" />
                 Zoom
@@ -373,14 +500,12 @@ export const SokoniProductDetail = ({
       </Dialog>
 
       {/* Image Zoom Modal */}
-      {product.image_url && (
-        <ImageZoom
-          src={product.image_url}
-          alt={product.name}
-          open={imageZoomOpen}
-          onClose={() => setImageZoomOpen(false)}
-        />
-      )}
+      <ImageZoom
+        src={zoomImageUrl || currentImage || ''}
+        alt={product.name}
+        open={imageZoomOpen}
+        onClose={() => setImageZoomOpen(false)}
+      />
     </>
   );
 };
