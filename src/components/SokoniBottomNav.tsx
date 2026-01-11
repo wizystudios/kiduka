@@ -15,11 +15,14 @@ import {
   Heart,
   ClipboardList,
   LogIn,
-  Settings
+  LogOut,
+  UserCircle
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useWishlist } from '@/hooks/useWishlist';
+import { useSokoniCustomer } from '@/hooks/useSokoniCustomer';
 import { useState } from 'react';
+import { SokoniCustomerAuth } from '@/components/SokoniCustomerAuth';
 
 interface SokoniBottomNavProps {
   cartCount: number;
@@ -30,7 +33,9 @@ export const SokoniBottomNav = ({ cartCount, onCartClick }: SokoniBottomNavProps
   const navigate = useNavigate();
   const location = useLocation();
   const { wishlistCount } = useWishlist();
+  const { customer, isLoggedIn, logout } = useSokoniCustomer();
   const [profileOpen, setProfileOpen] = useState(false);
+  const [authOpen, setAuthOpen] = useState(false);
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -41,11 +46,22 @@ export const SokoniBottomNav = ({ cartCount, onCartClick }: SokoniBottomNavProps
     { id: 'profile', label: 'Mimi', icon: User, isProfile: true },
   ];
 
-  const profileMenuItems = [
-    { id: 'orders', label: 'Oda Zangu', icon: ClipboardList, path: '/track-order' },
-    { id: 'favorites', label: 'Vipendwa', icon: Heart, path: '/sokoni/favorites', badge: wishlistCount },
-    { id: 'login', label: 'Ingia/Jisajili', icon: LogIn, path: '/auth' },
-  ];
+  const getProfileMenuItems = () => {
+    const items = [
+      { id: 'orders', label: 'Oda Zangu', icon: ClipboardList, path: '/track-order' },
+      { id: 'favorites', label: 'Vipendwa', icon: Heart, path: '/sokoni/favorites', badge: wishlistCount },
+    ];
+
+    if (isLoggedIn) {
+      items.push({ id: 'logout', label: 'Toka', icon: LogOut, action: () => { logout(); setProfileOpen(false); } } as any);
+    } else {
+      items.push({ id: 'login', label: 'Ingia/Jisajili', icon: LogIn, action: () => { setAuthOpen(true); setProfileOpen(false); } } as any);
+    }
+
+    return items;
+  };
+
+  const profileMenuItems = getProfileMenuItems();
 
   return (
     <>
@@ -80,8 +96,21 @@ export const SokoniBottomNav = ({ cartCount, onCartClick }: SokoniBottomNavProps
                         Akaunti Yangu
                       </SheetTitle>
                     </SheetHeader>
-                    <div className="py-4 space-y-2">
-                      {profileMenuItems.map((menuItem) => {
+                    {/* Customer Info */}
+                    {isLoggedIn && customer && (
+                      <div className="py-3 px-4 bg-muted rounded-lg mb-3">
+                        <div className="flex items-center gap-3">
+                          <UserCircle className="h-10 w-10 text-primary" />
+                          <div>
+                            <p className="font-medium">{customer.name || 'Mteja'}</p>
+                            <p className="text-sm text-muted-foreground">{customer.phone}</p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="py-2 space-y-2">
+                      {profileMenuItems.map((menuItem: any) => {
                         const MenuIcon = menuItem.icon;
                         return (
                           <Button
@@ -89,8 +118,12 @@ export const SokoniBottomNav = ({ cartCount, onCartClick }: SokoniBottomNavProps
                             variant="ghost"
                             className="w-full justify-start h-12 gap-3"
                             onClick={() => {
-                              navigate(menuItem.path);
-                              setProfileOpen(false);
+                              if (menuItem.action) {
+                                menuItem.action();
+                              } else if (menuItem.path) {
+                                navigate(menuItem.path);
+                                setProfileOpen(false);
+                              }
                             }}
                           >
                             <MenuIcon className="h-5 w-5" />
@@ -129,6 +162,13 @@ export const SokoniBottomNav = ({ cartCount, onCartClick }: SokoniBottomNavProps
           })}
         </div>
       </div>
+
+      {/* Customer Auth Dialog */}
+      <SokoniCustomerAuth 
+        open={authOpen} 
+        onOpenChange={setAuthOpen}
+        onSuccess={() => setProfileOpen(false)}
+      />
     </>
   );
 };
