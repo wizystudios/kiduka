@@ -6,7 +6,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useDataAccess } from '@/hooks/useDataAccess';
 import { useRealTimeNotifications } from '@/hooks/useRealTimeNotifications';
-import { useOfflineSync } from '@/hooks/useOfflineSync';
 import { useNavigate } from 'react-router-dom';
 import { 
   TrendingUp, 
@@ -19,7 +18,6 @@ import {
   Users,
   FileSpreadsheet,
   Settings,
-  CreditCard,
   Percent,
   Banknote,
   ClipboardCheck,
@@ -32,15 +30,12 @@ import {
   Store,
   Bell
 } from 'lucide-react';
-import { ExpensesDashboardWidget } from '@/components/ExpensesDashboardWidget';
-import { StockAlertSystem } from '@/components/StockAlertSystem';
-import { SyncStatusCard } from '@/components/OfflineIndicator';
+import { StockAlertWidget, ExpensesWidget, TransactionsWidget, ProductsWidget } from '@/components/DashboardWidgets';
 
 export const Dashboard = () => {
   const { userProfile, loading: authLoading } = useAuth();
   const { dataOwnerId, isReady, isAssistant } = useDataAccess();
-  const { notifications, unreadCount } = useRealTimeNotifications();
-  const offlineSync = useOfflineSync(dataOwnerId);
+  const { unreadCount } = useRealTimeNotifications();
   const navigate = useNavigate();
   const [metrics, setMetrics] = useState({
     todaysSales: 0,
@@ -49,18 +44,12 @@ export const Dashboard = () => {
     lowStockItems: 0,
     pendingSokoniOrders: 0
   });
-  const [lowStockProducts, setLowStockProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (isReady && dataOwnerId && !authLoading) {
       fetchDashboardData();
-      
-      // Auto-refresh every 30 seconds
-      const interval = setInterval(() => {
-        fetchDashboardData();
-      }, 30000);
-      
+      const interval = setInterval(fetchDashboardData, 30000);
       return () => clearInterval(interval);
     }
   }, [isReady, dataOwnerId, authLoading]);
@@ -85,7 +74,6 @@ export const Dashboard = () => {
         .select('*')
         .eq('owner_id', dataOwnerId);
 
-      // Fetch pending Sokoni orders
       const { data: sokoniOrders } = await supabase
         .from('sokoni_orders')
         .select('id')
@@ -104,7 +92,6 @@ export const Dashboard = () => {
         lowStockItems: lowStock.length,
         pendingSokoniOrders: sokoniOrders?.length || 0
       });
-      setLowStockProducts(lowStock.slice(0, 3));
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
     } finally {
@@ -124,10 +111,7 @@ export const Dashboard = () => {
 
   const dashboardMetrics = [
     { title: "Mauzo Leo", value: `TZS ${metrics.todaysSales.toLocaleString()}`, icon: DollarSign, color: "text-green-600", bg: "bg-green-50", border: "border-l-green-500" },
-    { title: "Bidhaa", value: metrics.totalProducts, icon: Package, color: "text-purple-600", bg: "bg-purple-50", border: "border-l-purple-500" },
-    { title: "Miamala", value: metrics.todaysTransactions, icon: ShoppingCart, color: "text-blue-600", bg: "bg-blue-50", border: "border-l-blue-500" },
     { title: "Oda Sokoni", value: metrics.pendingSokoniOrders, icon: Store, color: "text-pink-600", bg: "bg-pink-50", border: "border-l-pink-500", action: () => navigate('/sokoni-orders') },
-    { title: "Stock Ndogo", value: metrics.lowStockItems, icon: AlertTriangle, color: "text-orange-600", bg: "bg-orange-50", border: "border-l-orange-500" },
   ];
 
   const quickActions = [
@@ -153,9 +137,9 @@ export const Dashboard = () => {
   ];
 
   return (
-    <div className="p-2 space-y-2 pb-20"	>
+    <div className="p-2 space-y-2 pb-20">
 
-      {/* Metrics */}
+      {/* Main Metrics - Only 2 cards */}
       <div className="grid grid-cols-2 gap-2">
         {dashboardMetrics.map((m, i) => (
           <Card 
@@ -178,19 +162,12 @@ export const Dashboard = () => {
         ))}
       </div>
 
-      {/* Sync Status Widget */}
-      <SyncStatusCard
-        isOnline={offlineSync.isOnline}
-        isSyncing={offlineSync.isSyncing}
-        pendingChanges={offlineSync.pendingChanges}
-        lastSync={offlineSync.lastSync}
-        onSync={offlineSync.syncData}
-      />
-
-      {/* Compact Widgets - Stock & Expenses */}
-      <div className="space-y-2">
-        <StockAlertSystem />
-        <ExpensesDashboardWidget />
+      {/* Compact Widget Buttons - Bottom Sheet Style */}
+      <div className="grid grid-cols-2 gap-2">
+        <StockAlertWidget />
+        <ExpensesWidget />
+        <TransactionsWidget />
+        <ProductsWidget />
       </div>
 
       {/* Haraka (Quick Navigation Buttons) */}

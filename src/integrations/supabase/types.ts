@@ -874,6 +874,30 @@ export type Database = {
           },
         ]
       }
+      sokoni_customers: {
+        Row: {
+          created_at: string
+          id: string
+          name: string | null
+          phone: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name?: string | null
+          phone: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string | null
+          phone?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       sokoni_orders: {
         Row: {
           created_at: string
