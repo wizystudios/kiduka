@@ -91,15 +91,36 @@ export const OrderTrackingPage = () => {
 
   const getStatusInfo = (status: string) => {
     const statusMap: Record<string, {label: string; color: string; icon: any; step: number}> = {
-      new: { label: 'Mpya', color: 'bg-blue-100 text-blue-800', icon: Clock, step: 1 },
+      new: { label: 'Imepokelewa', color: 'bg-blue-100 text-blue-800', icon: Clock, step: 1 },
       confirmed: { label: 'Imethibitishwa', color: 'bg-yellow-100 text-yellow-800', icon: CheckCircle, step: 2 },
       preparing: { label: 'Inaandaliwa', color: 'bg-orange-100 text-orange-800', icon: Package, step: 3 },
-      ready: { label: 'Tayari', color: 'bg-purple-100 text-purple-800', icon: Package, step: 4 },
-      delivered: { label: 'Imepelekwa', color: 'bg-green-100 text-green-800', icon: Truck, step: 5 },
+      ready: { label: 'Tayari Kusafirishwa', color: 'bg-purple-100 text-purple-800', icon: Package, step: 4 },
+      shipped: { label: 'Inasafirishwa', color: 'bg-cyan-100 text-cyan-800', icon: Truck, step: 5 },
+      delivered: { label: 'Imepelekwa', color: 'bg-green-100 text-green-800', icon: CheckCircle, step: 6 },
       cancelled: { label: 'Imeghairiwa', color: 'bg-red-100 text-red-800', icon: XCircle, step: 0 }
     };
     return statusMap[status] || { label: status, color: 'bg-gray-100 text-gray-800', icon: Clock, step: 0 };
   };
+
+  const getPaymentStatusInfo = (paymentStatus: string, paymentMethod?: string) => {
+    // If it's cash on delivery and not yet delivered, it should show "Haijalipwa"
+    if (paymentStatus === 'pending' || paymentStatus === 'unpaid') {
+      return { label: 'Haijalipwa', color: 'bg-amber-100 text-amber-800' };
+    }
+    if (paymentStatus === 'paid') {
+      return { label: 'Imelipwa', color: 'bg-green-100 text-green-800' };
+    }
+    return { label: 'Inasubiri', color: 'bg-yellow-100 text-yellow-800' };
+  };
+
+  const orderSteps = [
+    { key: 'new', label: 'Imepokelewa' },
+    { key: 'confirmed', label: 'Imethibitishwa' },
+    { key: 'preparing', label: 'Inaandaliwa' },
+    { key: 'ready', label: 'Tayari' },
+    { key: 'shipped', label: 'Inasafirishwa' },
+    { key: 'delivered', label: 'Imepelekwa' },
+  ];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-secondary/10">
@@ -175,6 +196,8 @@ export const OrderTrackingPage = () => {
             {orders.map((order) => {
               const statusInfo = getStatusInfo(order.order_status);
               const StatusIcon = statusInfo.icon;
+              const paymentInfo = getPaymentStatusInfo(order.payment_status);
+              const currentStep = statusInfo.step;
               
               return (
                 <Card key={order.id}>
@@ -201,6 +224,45 @@ export const OrderTrackingPage = () => {
                     </div>
                   </CardHeader>
                   <CardContent className="pt-0 space-y-3">
+                    {/* Order Progress Steps */}
+                    {order.order_status !== 'cancelled' && (
+                      <div className="py-3">
+                        <div className="flex justify-between relative">
+                          {/* Progress line */}
+                          <div className="absolute top-3 left-0 right-0 h-0.5 bg-muted" />
+                          <div 
+                            className="absolute top-3 left-0 h-0.5 bg-primary transition-all duration-500"
+                            style={{ width: `${Math.min(100, ((currentStep - 1) / (orderSteps.length - 1)) * 100)}%` }}
+                          />
+                          
+                          {orderSteps.map((step, idx) => {
+                            const stepNumber = idx + 1;
+                            const isCompleted = currentStep >= stepNumber;
+                            const isCurrent = currentStep === stepNumber;
+                            
+                            return (
+                              <div key={step.key} className="flex flex-col items-center z-10">
+                                <div 
+                                  className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium transition-colors ${
+                                    isCompleted 
+                                      ? 'bg-primary text-primary-foreground' 
+                                      : 'bg-muted text-muted-foreground'
+                                  } ${isCurrent ? 'ring-2 ring-primary ring-offset-2' : ''}`}
+                                >
+                                  {isCompleted ? '✓' : stepNumber}
+                                </div>
+                                <span className={`text-[9px] mt-1 text-center max-w-[50px] ${
+                                  isCompleted ? 'text-primary font-medium' : 'text-muted-foreground'
+                                }`}>
+                                  {step.label}
+                                </span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                    
                     {/* Items */}
                     <div className="space-y-1">
                       {order.items.map((item, idx) => (
@@ -220,8 +282,8 @@ export const OrderTrackingPage = () => {
                     {/* Payment Status */}
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-muted-foreground">Malipo</span>
-                      <Badge className={order.payment_status === 'paid' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}>
-                        {order.payment_status === 'paid' ? 'Imelipwa' : 'Inasubiri'}
+                      <Badge className={paymentInfo.color}>
+                        {paymentInfo.label}
                       </Badge>
                     </div>
                   </CardContent>

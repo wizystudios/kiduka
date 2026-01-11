@@ -31,7 +31,8 @@ import {
   ArrowLeft,
   ClipboardList,
   Eye,
-  Heart
+  Heart,
+  Share2
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -41,6 +42,7 @@ import { normalizeTzPhoneDigits } from '@/utils/phoneUtils';
 import { OrderReceiptDialog } from './OrderReceiptDialog';
 import { SokoniProductDetail } from './SokoniProductDetail';
 import { useWishlist } from '@/hooks/useWishlist';
+import { SokoniBottomNav } from './SokoniBottomNav';
 
 interface MarketProduct {
   id: string;
@@ -135,7 +137,7 @@ export const SokoniMarketplace = () => {
   const [guestOrders, setGuestOrders] = useState<GuestOrder[]>(() => getGuestOrders());
   const [selectedProduct, setSelectedProduct] = useState<MarketProduct | null>(null);
   const [productDetailOpen, setProductDetailOpen] = useState(false);
-  
+  const [cartSheetOpen, setCartSheetOpen] = useState(false);
   // Receipt dialog state
   const [receiptOpen, setReceiptOpen] = useState(false);
   const [receiptData, setReceiptData] = useState<{
@@ -332,6 +334,9 @@ export const SokoniMarketplace = () => {
         const trackingCode = generateTrackingCode();
         trackingCodes.push(trackingCode);
 
+        // Determine payment status based on method
+        const paymentStatus = method === 'cash_on_delivery' ? 'pending' : 'paid';
+
         const { error: orderError } = await supabase
           .from('sokoni_orders')
           .insert({
@@ -341,7 +346,7 @@ export const SokoniMarketplace = () => {
             items: orderItems,
             total_amount: orderTotal,
             payment_method: method,
-            payment_status: 'paid',
+            payment_status: paymentStatus,
             order_status: 'new',
             transaction_id: transactionId,
             tracking_code: trackingCode,
@@ -898,6 +903,97 @@ export const SokoniMarketplace = () => {
           setSelectedProduct(product);
         }}
       />
+
+      {/* Sokoni Bottom Navigation */}
+      <SokoniBottomNav 
+        cartCount={cartCount}
+        onCartClick={() => setCartSheetOpen(true)}
+      />
+
+      {/* Cart Sheet */}
+      <Sheet open={cartSheetOpen} onOpenChange={setCartSheetOpen}>
+        <SheetContent className="w-full sm:max-w-md">
+          <SheetHeader>
+            <SheetTitle className="flex items-center gap-2">
+              <ShoppingCart className="h-5 w-5" />
+              Kikapu ({cartCount})
+            </SheetTitle>
+          </SheetHeader>
+          
+          <div className="mt-4 space-y-3">
+            {cart.length === 0 ? (
+              <div className="text-center py-8">
+                <ShoppingCart className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
+                <p className="text-muted-foreground">Kikapu chako ni tupu</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Ongeza bidhaa kutoka sokoni
+                </p>
+              </div>
+            ) : (
+              <>
+                {cart.map(item => (
+                  <Card key={item.id} className="border-border">
+                    <CardContent className="p-3 flex items-center gap-3">
+                      <div className="flex-1">
+                        <p className="font-medium text-sm text-foreground">{item.name}</p>
+                        <p className="text-xs text-muted-foreground">{item.owner_business_name}</p>
+                        <p className="text-sm font-semibold text-primary">
+                          TSh {(item.price * item.quantity).toLocaleString()}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Button 
+                          variant="outline" 
+                          size="icon" 
+                          className="h-7 w-7"
+                          onClick={() => updateCartQuantity(item.id, -1)}
+                        >
+                          <Minus className="h-3 w-3" />
+                        </Button>
+                        <span className="w-8 text-center text-sm">{item.quantity}</span>
+                        <Button 
+                          variant="outline" 
+                          size="icon" 
+                          className="h-7 w-7"
+                          onClick={() => updateCartQuantity(item.id, 1)}
+                        >
+                          <Plus className="h-3 w-3" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-7 w-7 text-destructive"
+                          onClick={() => removeFromCart(item.id)}
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+                
+                <div className="border-t border-border pt-3 mt-4">
+                  <div className="flex justify-between text-lg font-bold">
+                    <span>Jumla:</span>
+                    <span className="text-primary">TSh {cartTotal.toLocaleString()}</span>
+                  </div>
+                  <Button 
+                    className="w-full mt-3" 
+                    size="lg"
+                    onClick={() => {
+                      setCartSheetOpen(false);
+                      setCheckoutOpen(true);
+                    }}
+                  >
+                    <Phone className="h-4 w-4 mr-2" />
+                    Endelea Kuoda
+                  </Button>
+                </div>
+              </>
+            )}
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 };
