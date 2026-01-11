@@ -223,7 +223,7 @@ export const AuthPage = () => {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     onKeyPress={(e) => e.key === 'Enter' && handleNextStep()}
-                    className={`pl-10 h-14 bg-transparent border-b border-border rounded-none text-lg focus:ring-0 ${
+                    className={`pl-10 h-14 bg-transparent border-0 border-b-2 border-border rounded-none text-lg focus:ring-0 focus:border-primary focus-visible:ring-0 focus-visible:ring-offset-0 ${
                       email && !email.includes('@') ? 'border-red-500' : ''
                     }`}
                     autoFocus
@@ -243,7 +243,7 @@ export const AuthPage = () => {
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                     onKeyPress={(e) => e.key === 'Enter' && handleNextStep()}
-                    className={`pl-10 h-14 bg-transparent border-b border-border rounded-none text-lg focus:ring-0 ${
+                    className={`pl-10 h-14 bg-transparent border-0 border-b-2 border-border rounded-none text-lg focus:ring-0 focus:border-primary focus-visible:ring-0 focus-visible:ring-offset-0 ${
                       phone && phone.length < 9 ? 'border-red-500' : ''
                     }`}
                     autoFocus
@@ -285,7 +285,7 @@ export const AuthPage = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && handleNextStep()}
-                className={`pl-10 pr-10 h-14 bg-transparent border-b border-border rounded-none text-lg focus:ring-0 ${
+                className={`pl-10 pr-10 h-14 bg-transparent border-0 border-b-2 border-border rounded-none text-lg focus:ring-0 focus:border-primary focus-visible:ring-0 focus-visible:ring-offset-0 ${
                   password && password.length < 6 ? 'border-red-500' : password.length >= 6 ? 'border-green-500' : ''
                 }`}
                 autoFocus
@@ -316,7 +316,7 @@ export const AuthPage = () => {
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && handleNextStep()}
-              className="pl-10 h-14 bg-transparent border-b border-border rounded-none text-lg focus:ring-0"
+              className="pl-10 h-14 bg-transparent border-0 border-b-2 border-border rounded-none text-lg focus:ring-0 focus:border-primary focus-visible:ring-0 focus-visible:ring-offset-0"
               autoFocus
             />
           </div>

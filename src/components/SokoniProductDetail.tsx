@@ -85,6 +85,7 @@ export const SokoniProductDetail = ({
   
   const { isInWishlist, toggleWishlist } = useWishlist();
 
+  // Auto-rotate images
   useEffect(() => {
     if (product?.id) {
       fetchProductRating();
@@ -92,6 +93,18 @@ export const SokoniProductDetail = ({
       setCurrentImageIndex(0);
     }
   }, [product?.id]);
+
+  // Auto-carousel effect
+  useEffect(() => {
+    const images = getAllImages();
+    if (images.length <= 1) return;
+    
+    const interval = setInterval(() => {
+      setCurrentImageIndex((prev) => (prev + 1) % images.length);
+    }, 3000); // Change image every 3 seconds
+    
+    return () => clearInterval(interval);
+  }, [productImages, product?.image_url]);
 
   const fetchProductImages = async () => {
     if (!product) return;
@@ -181,15 +194,33 @@ export const SokoniProductDetail = ({
   };
 
   const handleShare = async () => {
-    try {
-      await navigator.share({
-        title: product.name,
-        text: `Angalia ${product.name} - TSh ${product.price.toLocaleString()} kwenye Kiduka Sokoni`,
-        url: window.location.href,
-      });
-    } catch {
-      toast.success('Link imecopy!');
+    const shareText = `Angalia ${product.name} - TSh ${product.price.toLocaleString()} kwenye Kiduka Sokoni`;
+    const shareUrl = window.location.href;
+    
+    // Try native share first
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: product.name,
+          text: shareText,
+          url: shareUrl,
+        });
+        return;
+      } catch (e) {
+        // If native share fails or is cancelled, fall through to WhatsApp
+      }
     }
+    
+    // Fallback to WhatsApp share
+    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(`${shareText}\n${shareUrl}`)}`;
+    window.open(whatsappUrl, '_blank');
+    toast.success('Inafungua WhatsApp...');
+  };
+
+  const handleWhatsAppShare = () => {
+    const shareText = `Angalia ${product.name} - TSh ${product.price.toLocaleString()} kwenye Kiduka Sokoni\n${window.location.href}`;
+    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
+    window.open(whatsappUrl, '_blank');
   };
 
   const totalPrice = product.price * quantity;

@@ -49,11 +49,11 @@ export const MobileBottomNav = () => {
   const { user, userProfile, signOut } = useAuth();
   const { permissions } = usePermissions();
 
-  // For assistants: only show Dashboard, Products, Sales, Calculator by default
+  // For assistants: Default functionality is Dashboard, Bidhaa, Scanner, Mauzo, Calculator, Customers, Mikopo
   // Other functionality requires owner permission
   const isAssistant = userProfile?.role === 'assistant';
 
-  // Always show 4 main items + profile
+  // Always show 4 main items in bottom nav + profile
   const mainNavItems: BottomNavItem[] = [
     { id: 'home', label: 'Home', icon: Home, href: '/dashboard', permission: null },
     { id: 'products', label: 'Bidhaa', icon: Package, href: '/products', permission: 'can_view_products' },
@@ -65,17 +65,21 @@ export const MobileBottomNav = () => {
     return permissions?.[item.permission as keyof typeof permissions];
   });
 
-  // Items that assistants can see (with permission check)
-  const assistantAllowedItems: BottomNavItem[] = [
-    { id: 'quick-sale', label: 'Mauzo Haraka', icon: ShoppingCart, href: '/quick-sale', permission: 'can_create_sales' },
-    { id: 'credit', label: 'Mikopo', icon: CreditCard, href: '/credit-management', permission: null }, // view only, can't delete
+  // Default items that assistants can always access (no permission needed for these)
+  const assistantDefaultItems: BottomNavItem[] = [
+    { id: 'scanner', label: 'Scan', icon: QrCode, href: '/scanner', permission: null },
+    { id: 'customers', label: 'Wateja', icon: Users, href: '/customers', permission: null },
+    { id: 'credit', label: 'Mikopo', icon: CreditCard, href: '/credit-management', permission: null },
   ];
 
-  // Items only for owners/super_admin (in Haraka container)
+  // Items that require owner permission for assistants
+  const permissionRequiredItems: BottomNavItem[] = [
+    { id: 'quick-sale', label: 'Mauzo Haraka', icon: ShoppingCart, href: '/quick-sale', permission: 'can_create_sales' },
+  ];
+
+  // Items only for owners/super_admin
   const ownerOnlyItems: BottomNavItem[] = [
-    { id: 'scanner', label: 'Scan', icon: QrCode, href: '/scanner', permission: 'can_view_products' },
     { id: 'sokoni-orders', label: 'Oda za Sokoni', icon: Store, href: '/sokoni-orders', permission: null },
-    { id: 'customers', label: 'Wateja', icon: Users, href: '/customers', permission: 'can_view_customers' },
     { id: 'discounts', label: 'Punguzo', icon: Percent, href: '/discounts', permission: null },
     { id: 'micro-loans', label: 'Mikopo Midogo', icon: CreditCard, href: '/micro-loans', permission: null },
     { id: 'expenses', label: 'Matumizi', icon: Receipt, href: '/expenses', permission: null },
@@ -101,14 +105,16 @@ export const MobileBottomNav = () => {
   const getProfileMenuItems = (): BottomNavItem[] => {
     if (userProfile?.role === 'owner' || userProfile?.role === 'super_admin') {
       // Owners see all items
-      return [...assistantAllowedItems, ...ownerOnlyItems];
+      return [...assistantDefaultItems, ...permissionRequiredItems, ...ownerOnlyItems];
     }
     
-    // Assistants only see assistant-allowed items (that they have permission for)
-    return assistantAllowedItems.filter(item => {
+    // Assistants see default items + permission-required items they have access to
+    const allowedPermissionItems = permissionRequiredItems.filter(item => {
       if (!item.permission) return true;
       return permissions?.[item.permission as keyof typeof permissions];
     });
+    
+    return [...assistantDefaultItems, ...allowedPermissionItems];
   };
 
   const profileMenuItems = getProfileMenuItems();
