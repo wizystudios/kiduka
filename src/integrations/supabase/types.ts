@@ -901,7 +901,10 @@ export type Database = {
       sokoni_orders: {
         Row: {
           created_at: string
+          customer_paid_at: string | null
           customer_phone: string
+          customer_received: boolean | null
+          customer_received_at: string | null
           delivery_address: string
           id: string
           items: Json
@@ -917,7 +920,10 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          customer_paid_at?: string | null
           customer_phone: string
+          customer_received?: boolean | null
+          customer_received_at?: string | null
           delivery_address: string
           id?: string
           items: Json
@@ -933,7 +939,10 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          customer_paid_at?: string | null
           customer_phone?: string
+          customer_received?: boolean | null
+          customer_received_at?: string | null
           delivery_address?: string
           id?: string
           items?: Json

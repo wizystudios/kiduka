@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useSearchParams, Link } from 'react-router-dom';
+import { useSearchParams, Link, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { 
   Search, Package, Truck, CheckCircle, Clock, XCircle, 
-  Phone, Store, RefreshCw
+  Phone, Store, RefreshCw, CreditCard
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -23,10 +23,12 @@ interface TrackedOrder {
   items: Array<{product_name: string; quantity: number; unit_price: number}>;
   created_at: string;
   updated_at: string;
+  customer_received: boolean;
 }
 
 export const OrderTrackingPage = () => {
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const [phone, setPhone] = useState('');
   const [loading, setLoading] = useState(false);
   const [orders, setOrders] = useState<TrackedOrder[]>([]);
@@ -58,7 +60,7 @@ export const OrderTrackingPage = () => {
       // Search all orders by customer phone
       const { data, error } = await supabase
         .from('sokoni_orders')
-        .select('id, tracking_code, order_status, payment_status, total_amount, items, created_at, updated_at')
+        .select('id, tracking_code, order_status, payment_status, total_amount, items, created_at, updated_at, customer_received')
         .or(`customer_phone.eq.${normalizedPhone},customer_phone.eq.${phoneValue}`)
         .order('created_at', { ascending: false });
 
@@ -67,7 +69,8 @@ export const OrderTrackingPage = () => {
       if (data && data.length > 0) {
         const parsedOrders = data.map(order => ({
           ...order,
-          items: typeof order.items === 'string' ? JSON.parse(order.items) : order.items
+          items: typeof order.items === 'string' ? JSON.parse(order.items) : order.items,
+          customer_received: order.customer_received || false
         }));
         setOrders(parsedOrders);
       } else {
@@ -286,6 +289,17 @@ export const OrderTrackingPage = () => {
                         {paymentInfo.label}
                       </Badge>
                     </div>
+
+                    {/* Pay Button - Show when delivered and not paid */}
+                    {order.order_status === 'delivered' && order.payment_status !== 'paid' && (
+                      <Button 
+                        className="w-full mt-2"
+                        onClick={() => navigate(`/customer-payment?phone=${phone}&code=${order.tracking_code}`)}
+                      >
+                        <CreditCard className="h-4 w-4 mr-2" />
+                        Thibitisha na Lipa
+                      </Button>
+                    )}
                   </CardContent>
                 </Card>
               );
