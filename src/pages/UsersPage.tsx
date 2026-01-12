@@ -12,6 +12,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { AssistantPermissionsManager } from '@/components/AssistantPermissionsManager';
+import { AssistantHarakaManager } from '@/components/AssistantHarakaManager';
 
 interface Assistant {
   id: string;
@@ -338,14 +339,18 @@ export const UsersPage = () => {
       </Card>
 
       <Tabs defaultValue="assistants" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="assistants">
-            <UsersIcon className="h-4 w-4 mr-2" />
+            <UsersIcon className="h-4 w-4 mr-1" />
             Wasaidizi
           </TabsTrigger>
           <TabsTrigger value="permissions">
-            <SettingsIcon className="h-4 w-4 mr-2" />
+            <SettingsIcon className="h-4 w-4 mr-1" />
             Ruhusa
+          </TabsTrigger>
+          <TabsTrigger value="haraka">
+            <Shield className="h-4 w-4 mr-1" />
+            Haraka
           </TabsTrigger>
         </TabsList>
 
@@ -544,6 +549,20 @@ export const UsersPage = () => {
 
         <TabsContent value="permissions" className="mt-4">
           <AssistantPermissionsManager />
+        </TabsContent>
+
+        <TabsContent value="haraka" className="mt-4">
+          <Card>
+            <CardContent className="p-4 space-y-4">
+              <div>
+                <h3 className="font-semibold text-sm mb-2">Simamia Vitu vya Haraka</h3>
+                <p className="text-xs text-muted-foreground mb-4">
+                  Chagua vitu vya haraka ambavyo kila msaidizi anaweza kuona kwenye Dashboard.
+                </p>
+                <AssistantHarakaManager />
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>

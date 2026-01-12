@@ -51,7 +51,7 @@ export const useOrderNotifications = ({
     };
   }, []);
 
-  // Subscribe to new orders
+  // Subscribe to new orders AND order updates (for customer receipt/payment)
   useEffect(() => {
     if (!sellerId || !enabled) return;
 
@@ -69,7 +69,7 @@ export const useOrderNotifications = ({
     
     setupPushNotifications();
 
-    // Subscribe to real-time order updates
+    // Subscribe to real-time order updates (INSERT and UPDATE)
     const channel = supabase
       .channel(`sokoni-orders-${sellerId}`)
       .on(
@@ -125,6 +125,99 @@ export const useOrderNotifications = ({
 
           // Callback for additional handling
           onNewOrder?.(order);
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'sokoni_orders',
+          filter: `seller_id=eq.${sellerId}`,
+        },
+        (payload) => {
+          console.log('Order updated:', payload);
+          
+          const order = payload.new as any;
+          const oldOrder = payload.old as any;
+          
+          // Check if customer just confirmed receipt
+          if (order.customer_received && !oldOrder.customer_received) {
+            // Play notification sound
+            if ((window as any).__playOrderSound) {
+              (window as any).__playOrderSound();
+            }
+
+            toast.success(
+              `✅ Mteja Amepokea Bidhaa!`,
+              {
+                description: `Oda ${order.tracking_code} - TSh ${order.total_amount?.toLocaleString()}`,
+                duration: 10000,
+                action: {
+                  label: 'Tazama',
+                  onClick: () => {
+                    window.location.href = '/sokoni-orders';
+                  },
+                },
+              }
+            );
+
+            // Show browser notification
+            if (Notification.permission === 'granted') {
+              const notification = new Notification('Mteja Amepokea Bidhaa!', {
+                body: `Oda ${order.tracking_code} - TSh ${order.total_amount?.toLocaleString()}`,
+                icon: '/icon-192.png',
+                badge: '/icon-192.png',
+                tag: `order-received-${order.id}`,
+                requireInteraction: true,
+              });
+
+              notification.onclick = () => {
+                window.focus();
+                window.location.href = '/sokoni-orders';
+                notification.close();
+              };
+            }
+          }
+          
+          // Check if customer just paid
+          if (order.payment_status === 'paid' && oldOrder.payment_status !== 'paid') {
+            // Play notification sound
+            if ((window as any).__playOrderSound) {
+              (window as any).__playOrderSound();
+            }
+
+            toast.success(
+              `💰 Malipo Yamekamilika!`,
+              {
+                description: `Oda ${order.tracking_code} - TSh ${order.total_amount?.toLocaleString()} imelipwa!`,
+                duration: 10000,
+                action: {
+                  label: 'Tazama',
+                  onClick: () => {
+                    window.location.href = '/sokoni-orders';
+                  },
+                },
+              }
+            );
+
+            // Show browser notification
+            if (Notification.permission === 'granted') {
+              const notification = new Notification('Malipo Yamekamilika!', {
+                body: `Oda ${order.tracking_code} - TSh ${order.total_amount?.toLocaleString()} imelipwa!`,
+                icon: '/icon-192.png',
+                badge: '/icon-192.png',
+                tag: `order-paid-${order.id}`,
+                requireInteraction: true,
+              });
+
+              notification.onclick = () => {
+                window.focus();
+                window.location.href = '/sokoni-orders';
+                notification.close();
+              };
+            }
+          }
         }
       )
       .subscribe();

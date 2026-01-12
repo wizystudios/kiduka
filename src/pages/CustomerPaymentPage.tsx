@@ -115,7 +115,8 @@ export const CustomerPaymentPage = () => {
 
       if (error) throw error;
 
-      toast.success('Umekubali kupokea bidhaa!');
+      // Seller will be notified via real-time subscription on SokoniOrdersPage
+      toast.success('Umekubali kupokea bidhaa! Muuzaji ataona.');
       setOrder({ ...order, customer_received: true });
       setStep('pay');
     } catch (error) {
@@ -144,6 +145,7 @@ export const CustomerPaymentPage = () => {
         .from('sokoni_orders')
         .update({ 
           payment_status: 'paid',
+          payment_method: paymentMethod === 'mobile' ? mobileProvider : paymentMethod,
           customer_paid_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         })
@@ -151,7 +153,8 @@ export const CustomerPaymentPage = () => {
 
       if (error) throw error;
 
-      toast.success('Malipo yamekamilika! Asante kwa kununua.');
+      // Seller will be notified via real-time subscription
+      toast.success('Malipo yamekamilika! Muuzaji ataona. Asante!');
       setStep('done');
     } catch (error) {
       console.error('Error:', error);
