@@ -114,7 +114,19 @@ export const Dashboard = () => {
     { title: "Oda Sokoni", value: metrics.pendingSokoniOrders, icon: Store, color: "text-pink-600", bg: "bg-pink-50", border: "border-l-pink-500", action: () => navigate('/sokoni-orders') },
   ];
 
-  const quickActions = [
+  // Default assistant items (limited access)
+  const assistantQuickActions = [
+    { title: "Dashboard", icon: Home, color: "text-blue-600", bg: "bg-blue-50", action: () => navigate('/dashboard') },
+    { title: "Bidhaa", icon: Package, color: "text-purple-600", bg: "bg-purple-50", action: () => navigate('/products') },
+    { title: "Scanner", icon: Scan, color: "text-green-600", bg: "bg-green-50", action: () => navigate('/scanner') },
+    { title: "Mauzo", icon: ShoppingCart, color: "text-blue-600", bg: "bg-blue-50", action: () => navigate('/sales') },
+    { title: "Calculator", icon: Calculator, color: "text-cyan-600", bg: "bg-cyan-50", action: () => navigate('/calculator') },
+    { title: "Wateja", icon: Users, color: "text-indigo-600", bg: "bg-indigo-50", action: () => navigate('/customers') },
+    { title: "Mikopo", icon: Banknote, color: "text-lime-600", bg: "bg-lime-50", action: () => navigate('/micro-loans') },
+  ];
+
+  // Owner items (full access)
+  const ownerQuickActions = [
     { title: "Dashboard", icon: Home, color: "text-blue-600", bg: "bg-blue-50", action: () => navigate('/dashboard') },
     { title: "Bidhaa", icon: Package, color: "text-purple-600", bg: "bg-purple-50", action: () => navigate('/products') },
     { title: "Sokoni Oda", icon: Store, color: "text-pink-600", bg: "bg-pink-50", action: () => navigate('/sokoni-orders'), badge: metrics.pendingSokoniOrders },
@@ -135,6 +147,9 @@ export const Dashboard = () => {
     { title: "Watumiaji", icon: UserCheck, color: "text-blue-700", bg: "bg-blue-100", action: () => navigate('/users') },
     { title: "Sakinisha App", icon: Smartphone, color: "text-green-700", bg: "bg-green-100", action: () => navigate('/pwa-install') },
   ];
+
+  // Select which actions to show based on role
+  const quickActions = isAssistant ? assistantQuickActions : ownerQuickActions;
 
   return (
     <div className="p-2 space-y-2 pb-20">
@@ -176,22 +191,25 @@ export const Dashboard = () => {
           <CardTitle className="text-xs flex items-center">Haraka</CardTitle>
         </CardHeader>
         <CardContent className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-1 p-2 pt-1">
-          {quickActions.map((a, i) => (
-            <Button
-              key={i}
-              onClick={a.action}
-              className={`p-2 h-auto text-center ${a.bg} ${a.color} hover:opacity-80 border rounded-md relative`}
-              variant="outline"
-            >
-              {a.badge && a.badge > 0 && (
-                <Badge className="absolute -top-1 -right-1 h-4 w-4 p-0 flex items-center justify-center text-[10px] bg-destructive text-destructive-foreground">
-                  {a.badge > 9 ? '9+' : a.badge}
-                </Badge>
-              )}
-              <a.icon className="h-4 w-4 mx-auto mb-1" />
-              <p className="text-[11px] font-medium truncate">{a.title}</p>
-            </Button>
-          ))}
+          {quickActions.map((a, i) => {
+            const badge = 'badge' in a ? (a as any).badge : undefined;
+            return (
+              <Button
+                key={i}
+                onClick={a.action}
+                className={`p-2 h-auto text-center ${a.bg} ${a.color} hover:opacity-80 border rounded-md relative`}
+                variant="outline"
+              >
+                {badge && badge > 0 && (
+                  <Badge className="absolute -top-1 -right-1 h-4 w-4 p-0 flex items-center justify-center text-[10px] bg-destructive text-destructive-foreground">
+                    {badge > 9 ? '9+' : badge}
+                  </Badge>
+                )}
+                <a.icon className="h-4 w-4 mx-auto mb-1" />
+                <p className="text-[11px] font-medium truncate">{a.title}</p>
+              </Button>
+            );
+          })}
         </CardContent>
       </Card>
     </div>

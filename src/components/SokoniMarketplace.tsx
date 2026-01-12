@@ -422,7 +422,7 @@ export const SokoniMarketplace = () => {
           </div>
           
           <div className="flex items-center gap-2">
-            {/* Show seller dashboard link for sellers */}
+            {/* Show seller dashboard link for sellers only */}
             {isSeller && (
               <Button 
                 variant="secondary" 
@@ -433,123 +433,6 @@ export const SokoniMarketplace = () => {
                 Oda Zangu
               </Button>
             )}
-
-            {/* Favorites */}
-            <Button
-              variant="secondary"
-              size="sm"
-              className="relative"
-              onClick={() => navigate('/sokoni/favorites')}
-            >
-              <Heart className="h-4 w-4" />
-              {wishlistCount > 0 && (
-                <Badge className="absolute -top-2 -right-2 h-5 w-5 p-0 flex items-center justify-center text-xs bg-red-500 text-white">
-                  {wishlistCount}
-                </Badge>
-              )}
-            </Button>
-
-            {/* Customer tracking */}
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => navigate('/track-order')}
-            >
-              <Package className="h-4 w-4 mr-1" />
-              Fuatilia Oda
-            </Button>
-            
-            {/* Cart - For customers */}
-            <Sheet>
-              <SheetTrigger asChild>
-                <Button variant="secondary" size="sm" className="relative">
-                  <ShoppingCart className="h-4 w-4" />
-                  {cartCount > 0 && (
-                    <Badge className="absolute -top-2 -right-2 h-5 w-5 p-0 flex items-center justify-center text-xs bg-destructive text-destructive-foreground">
-                      {cartCount}
-                    </Badge>
-                  )}
-                </Button>
-              </SheetTrigger>
-              <SheetContent className="w-full sm:max-w-md">
-                <SheetHeader>
-                  <SheetTitle className="flex items-center gap-2">
-                    <ShoppingCart className="h-5 w-5" />
-                    Kikapu ({cartCount})
-                  </SheetTitle>
-                </SheetHeader>
-                
-                <div className="mt-4 space-y-3">
-                  {cart.length === 0 ? (
-                    <div className="text-center py-8">
-                      <ShoppingCart className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
-                      <p className="text-muted-foreground">Kikapu chako ni tupu</p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Ongeza bidhaa kutoka sokoni
-                      </p>
-                    </div>
-                  ) : (
-                    <>
-                      {cart.map(item => (
-                        <Card key={item.id} className="border-border">
-                          <CardContent className="p-3 flex items-center gap-3">
-                            <div className="flex-1">
-                              <p className="font-medium text-sm text-foreground">{item.name}</p>
-                              <p className="text-xs text-muted-foreground">{item.owner_business_name}</p>
-                              <p className="text-sm font-semibold text-primary">
-                                TSh {(item.price * item.quantity).toLocaleString()}
-                              </p>
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <Button 
-                                variant="outline" 
-                                size="icon" 
-                                className="h-7 w-7"
-                                onClick={() => updateCartQuantity(item.id, -1)}
-                              >
-                                <Minus className="h-3 w-3" />
-                              </Button>
-                              <span className="w-8 text-center text-sm">{item.quantity}</span>
-                              <Button 
-                                variant="outline" 
-                                size="icon" 
-                                className="h-7 w-7"
-                                onClick={() => updateCartQuantity(item.id, 1)}
-                              >
-                                <Plus className="h-3 w-3" />
-                              </Button>
-                              <Button 
-                                variant="ghost" 
-                                size="icon" 
-                                className="h-7 w-7 text-destructive"
-                                onClick={() => removeFromCart(item.id)}
-                              >
-                                <Trash2 className="h-3 w-3" />
-                              </Button>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))}
-                      
-                      <div className="border-t border-border pt-3 mt-4">
-                        <div className="flex justify-between text-lg font-bold">
-                          <span>Jumla:</span>
-                          <span className="text-primary">TSh {cartTotal.toLocaleString()}</span>
-                        </div>
-                        <Button 
-                          className="w-full mt-3" 
-                          size="lg"
-                          onClick={() => setCheckoutOpen(true)}
-                        >
-                          <Phone className="h-4 w-4 mr-2" />
-                          Endelea Kuoda
-                        </Button>
-                      </div>
-                    </>
-                  )}
-                </div>
-              </SheetContent>
-            </Sheet>
           </div>
         </div>
 

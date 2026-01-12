@@ -62,6 +62,7 @@ import SokoniOrdersPage from '@/pages/SokoniOrdersPage';
 import NotificationsPage from '@/pages/NotificationsPage';
 import OrderTrackingPage from '@/pages/OrderTrackingPage';
 import WishlistPage from '@/pages/WishlistPage';
+import CustomerPaymentPage from '@/pages/CustomerPaymentPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -382,7 +383,9 @@ export default function App() {
               
               {/* Order Tracking - Public access */}
               <Route path="/track-order" element={<OrderTrackingPage />} />
-
+              
+              {/* Customer Payment - Public access */}
+              <Route path="/customer-payment" element={<CustomerPaymentPage />} />
               {/* Sokoni Orders (seller dashboard) */}
               <Route path="/sokoni-orders" element={
                 <ProtectedRoute>
