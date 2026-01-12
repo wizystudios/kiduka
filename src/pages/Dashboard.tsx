@@ -28,12 +28,37 @@ import {
   Calculator,
   Wallet,
   Store,
-  Bell
+  Bell,
+  LucideIcon
 } from 'lucide-react';
 import { StockAlertWidget, ExpensesWidget, TransactionsWidget, ProductsWidget } from '@/components/DashboardWidgets';
 
+// Map haraka keys to their config
+const HARAKA_ITEMS_MAP: Record<string, { title: string; icon: LucideIcon; color: string; bg: string; path: string }> = {
+  dashboard: { title: "Dashboard", icon: Home, color: "text-blue-600", bg: "bg-blue-50", path: '/dashboard' },
+  products: { title: "Bidhaa", icon: Package, color: "text-purple-600", bg: "bg-purple-50", path: '/products' },
+  scanner: { title: "Scanner", icon: Scan, color: "text-green-600", bg: "bg-green-50", path: '/scanner' },
+  sales: { title: "Mauzo", icon: ShoppingCart, color: "text-blue-600", bg: "bg-blue-50", path: '/sales' },
+  quick_sale: { title: "Mauzo Haraka", icon: Zap, color: "text-orange-600", bg: "bg-orange-50", path: '/quick-sale' },
+  calculator: { title: "Calculator", icon: Calculator, color: "text-cyan-600", bg: "bg-cyan-50", path: '/calculator' },
+  customers: { title: "Wateja", icon: Users, color: "text-indigo-600", bg: "bg-indigo-50", path: '/customers' },
+  loans: { title: "Mikopo", icon: Banknote, color: "text-lime-600", bg: "bg-lime-50", path: '/micro-loans' },
+  expenses: { title: "Matumizi", icon: Wallet, color: "text-red-600", bg: "bg-red-50", path: '/expenses' },
+  inventory: { title: "Hesabu", icon: ClipboardCheck, color: "text-yellow-600", bg: "bg-yellow-50", path: '/inventory-snapshots' },
+  discounts: { title: "Punguzo", icon: Percent, color: "text-pink-600", bg: "bg-pink-50", path: '/discounts' },
+  reports: { title: "Ripoti", icon: BarChart3, color: "text-purple-600", bg: "bg-purple-50", path: '/reports' },
+  profit_loss: { title: "Faida/Hasara", icon: TrendingUp, color: "text-emerald-600", bg: "bg-emerald-50", path: '/profit-loss' },
+  import_products: { title: "Ingiza Bidhaa", icon: FileSpreadsheet, color: "text-orange-600", bg: "bg-orange-50", path: '/products/import' },
+  notifications: { title: "Arifa", icon: Bell, color: "text-amber-600", bg: "bg-amber-50", path: '/notifications' },
+  sokoni_orders: { title: "Sokoni Oda", icon: Store, color: "text-pink-600", bg: "bg-pink-50", path: '/sokoni-orders' },
+  settings: { title: "Mipangilio", icon: Settings, color: "text-gray-700", bg: "bg-gray-100", path: '/settings' },
+};
+
+// Default haraka items for assistants
+const DEFAULT_ASSISTANT_HARAKA = ['dashboard', 'products', 'scanner', 'sales', 'calculator', 'customers', 'loans', 'settings'];
+
 export const Dashboard = () => {
-  const { userProfile, loading: authLoading } = useAuth();
+  const { user, userProfile, loading: authLoading } = useAuth();
   const { dataOwnerId, isReady, isAssistant } = useDataAccess();
   const { unreadCount } = useRealTimeNotifications();
   const navigate = useNavigate();
@@ -45,6 +70,27 @@ export const Dashboard = () => {
     pendingSokoniOrders: 0
   });
   const [loading, setLoading] = useState(true);
+  const [assistantHarakaKeys, setAssistantHarakaKeys] = useState<string[]>(DEFAULT_ASSISTANT_HARAKA);
+
+  // Load assistant's haraka permissions
+  useEffect(() => {
+    if (isAssistant && user?.id && dataOwnerId) {
+      const storedPerms = localStorage.getItem(`haraka_perms_${dataOwnerId}_${user.id}`);
+      if (storedPerms) {
+        try {
+          const perms = JSON.parse(storedPerms);
+          const enabledKeys = Object.entries(perms)
+            .filter(([_, enabled]) => enabled)
+            .map(([key]) => key);
+          if (enabledKeys.length > 0) {
+            setAssistantHarakaKeys(enabledKeys);
+          }
+        } catch (e) {
+          console.error('Error parsing haraka perms:', e);
+        }
+      }
+    }
+  }, [isAssistant, user?.id, dataOwnerId]);
 
   useEffect(() => {
     if (isReady && dataOwnerId && !authLoading) {
@@ -114,16 +160,21 @@ export const Dashboard = () => {
     { title: "Oda Sokoni", value: metrics.pendingSokoniOrders, icon: Store, color: "text-pink-600", bg: "bg-pink-50", border: "border-l-pink-500", action: () => navigate('/sokoni-orders') },
   ];
 
-  // Default assistant items (limited access)
-  const assistantQuickActions = [
-    { title: "Dashboard", icon: Home, color: "text-blue-600", bg: "bg-blue-50", action: () => navigate('/dashboard') },
-    { title: "Bidhaa", icon: Package, color: "text-purple-600", bg: "bg-purple-50", action: () => navigate('/products') },
-    { title: "Scanner", icon: Scan, color: "text-green-600", bg: "bg-green-50", action: () => navigate('/scanner') },
-    { title: "Mauzo", icon: ShoppingCart, color: "text-blue-600", bg: "bg-blue-50", action: () => navigate('/sales') },
-    { title: "Calculator", icon: Calculator, color: "text-cyan-600", bg: "bg-cyan-50", action: () => navigate('/calculator') },
-    { title: "Wateja", icon: Users, color: "text-indigo-600", bg: "bg-indigo-50", action: () => navigate('/customers') },
-    { title: "Mikopo", icon: Banknote, color: "text-lime-600", bg: "bg-lime-50", action: () => navigate('/micro-loans') },
-  ];
+  // Build assistant quick actions from stored permissions
+  const buildAssistantQuickActions = () => {
+    return assistantHarakaKeys
+      .filter(key => HARAKA_ITEMS_MAP[key])
+      .map(key => {
+        const item = HARAKA_ITEMS_MAP[key];
+        return {
+          title: item.title,
+          icon: item.icon,
+          color: item.color,
+          bg: item.bg,
+          action: () => navigate(item.path),
+        };
+      });
+  };
 
   // Owner items (full access)
   const ownerQuickActions = [
@@ -149,7 +200,7 @@ export const Dashboard = () => {
   ];
 
   // Select which actions to show based on role
-  const quickActions = isAssistant ? assistantQuickActions : ownerQuickActions;
+  const quickActions = isAssistant ? buildAssistantQuickActions() : ownerQuickActions;
 
   return (
     <div className="p-2 space-y-2 pb-20">
