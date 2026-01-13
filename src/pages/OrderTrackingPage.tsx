@@ -290,8 +290,8 @@ export const OrderTrackingPage = () => {
                       </Badge>
                     </div>
 
-                    {/* Pay Button - Show when delivered and not paid */}
-                    {order.order_status === 'delivered' && order.payment_status !== 'paid' && (
+                    {/* Pay Button - Show when delivered and not paid and not yet received confirmed */}
+                    {order.order_status === 'delivered' && order.payment_status !== 'paid' && !order.customer_received && (
                       <Button 
                         className="w-full mt-2"
                         onClick={() => navigate(`/customer-payment?phone=${phone}&code=${order.tracking_code}`)}
@@ -299,6 +299,14 @@ export const OrderTrackingPage = () => {
                         <CreditCard className="h-4 w-4 mr-2" />
                         Thibitisha na Lipa
                       </Button>
+                    )}
+                    
+                    {/* Show paid confirmation if already paid */}
+                    {order.payment_status === 'paid' && (
+                      <div className="flex items-center gap-2 mt-2 p-2 bg-green-50 rounded-lg text-green-700">
+                        <CheckCircle className="h-4 w-4" />
+                        <span className="text-sm font-medium">Malipo yamekamilika!</span>
+                      </div>
                     )}
                   </CardContent>
                 </Card>
