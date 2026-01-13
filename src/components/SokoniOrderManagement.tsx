@@ -57,6 +57,49 @@ export const SokoniOrderManagement = () => {
   useEffect(() => {
     if (dataOwnerId) {
       fetchOrders();
+      
+      // Subscribe to realtime updates for payment status changes
+      const channel = supabase
+        .channel('sokoni_orders_changes')
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'sokoni_orders',
+            filter: `seller_id=eq.${dataOwnerId}`
+          },
+          (payload) => {
+            console.log('Order updated:', payload);
+            const updatedOrder = payload.new as any;
+            
+            // Update local state with the new order data
+            setOrders(prev => prev.map(order => 
+              order.id === updatedOrder.id 
+                ? {
+                    ...order,
+                    ...updatedOrder,
+                    items: Array.isArray(updatedOrder.items) 
+                      ? updatedOrder.items 
+                      : JSON.parse(updatedOrder.items as string || '[]')
+                  }
+                : order
+            ));
+            
+            // Show notification for payment updates
+            if (updatedOrder.payment_status === 'paid') {
+              toast.success(`Malipo yamepokewa! Oda #${updatedOrder.id.slice(0, 8).toUpperCase()}`);
+            }
+            if (updatedOrder.customer_received) {
+              toast.info(`Mteja amethibitisha kupokea bidhaa - Oda #${updatedOrder.id.slice(0, 8).toUpperCase()}`);
+            }
+          }
+        )
+        .subscribe();
+      
+      return () => {
+        supabase.removeChannel(channel);
+      };
     }
   }, [dataOwnerId]);
 
