@@ -8,16 +8,20 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { 
   Shield, Users, Package, ShoppingCart, Wallet, 
   TrendingUp, Eye, Pencil, Trash2, Plus, Search,
   RefreshCw, BarChart3, Store, CreditCard, Bell,
-  Settings, AlertTriangle, CheckCircle, XCircle, ChevronRight
+  Settings, AlertTriangle, CheckCircle, XCircle, ChevronRight,
+  Download, FileSpreadsheet, FileText, Clock, UserPlus, DollarSign
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
+import { useAdminNotifications } from '@/hooks/useAdminNotifications';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
+import { exportToExcel, exportToPDF, createPrintableTable } from '@/utils/exportUtils';
 
 interface StatCard {
   title: string;
@@ -97,11 +101,25 @@ interface ChartData {
   users: number;
 }
 
+interface Subscription {
+  id: string;
+  user_id: string;
+  status: string;
+  trial_ends_at: string;
+  current_period_end: string | null;
+  payment_amount: number;
+  created_at: string;
+  user_email?: string;
+  user_name?: string;
+}
+
 export const SuperAdminDashboard = () => {
   const { user } = useAuth();
+  const { notifications, unreadCount, markAsRead, markAllAsRead, fetchNotifications } = useAdminNotifications();
   const [activeTab, setActiveTab] = useState('overview');
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [notificationsPanelOpen, setNotificationsPanelOpen] = useState(false);
   
   // Stats
   const [stats, setStats] = useState({
@@ -112,7 +130,8 @@ export const SuperAdminDashboard = () => {
     totalOrders: 0,
     totalExpenses: 0,
     totalCustomers: 0,
-    activeLoans: 0
+    activeLoans: 0,
+    pendingSubscriptions: 0
   });
   
   // Chart data
@@ -126,6 +145,7 @@ export const SuperAdminDashboard = () => {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
+  const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   
   // Dialogs
   const [viewDialog, setViewDialog] = useState<{type: string; data: any} | null>(null);
@@ -147,7 +167,8 @@ export const SuperAdminDashboard = () => {
         fetchExpenses(),
         fetchCustomers(),
         fetchOrders(),
-        fetchChartData()
+        fetchChartData(),
+        fetchSubscriptions()
       ]);
     } finally {
       setLoading(false);
@@ -219,14 +240,15 @@ export const SuperAdminDashboard = () => {
   };
   
   const fetchStats = async () => {
-    const [usersRes, productsRes, salesRes, expensesRes, customersRes, ordersRes, loansRes] = await Promise.all([
+    const [usersRes, productsRes, salesRes, expensesRes, customersRes, ordersRes, loansRes, subsRes] = await Promise.all([
       supabase.from('profiles').select('id', { count: 'exact' }),
       supabase.from('products').select('id', { count: 'exact' }),
       supabase.from('sales').select('total_amount'),
       supabase.from('expenses').select('amount'),
       supabase.from('customers').select('id', { count: 'exact' }),
       supabase.from('sokoni_orders').select('id', { count: 'exact' }),
-      supabase.from('micro_loans').select('id', { count: 'exact' }).eq('status', 'active')
+      supabase.from('micro_loans').select('id', { count: 'exact' }).eq('status', 'active'),
+      supabase.from('user_subscriptions').select('id', { count: 'exact' }).eq('status', 'pending_approval')
     ]);
     
     const totalRevenue = (salesRes.data || []).reduce((sum, s) => sum + (s.total_amount || 0), 0);
@@ -240,8 +262,160 @@ export const SuperAdminDashboard = () => {
       totalOrders: ordersRes.count || 0,
       totalExpenses,
       totalCustomers: customersRes.count || 0,
-      activeLoans: loansRes.count || 0
+      activeLoans: loansRes.count || 0,
+      pendingSubscriptions: subsRes.count || 0
     });
+  };
+  
+  const fetchSubscriptions = async () => {
+    const { data: subs } = await supabase
+      .from('user_subscriptions')
+      .select('*')
+      .order('created_at', { ascending: false });
+    
+    // Enrich with user info
+    const userIds = (subs || []).map(s => s.user_id);
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('id, email, full_name')
+      .in('id', userIds);
+    
+    const enriched = (subs || []).map(s => ({
+      ...s,
+      user_email: profiles?.find(p => p.id === s.user_id)?.email,
+      user_name: profiles?.find(p => p.id === s.user_id)?.full_name
+    }));
+    
+    setSubscriptions(enriched);
+  };
+  
+  const handleApproveSubscription = async (subId: string) => {
+    try {
+      const periodEnd = new Date();
+      periodEnd.setMonth(periodEnd.getMonth() + 1);
+      
+      const { error } = await supabase
+        .from('user_subscriptions')
+        .update({
+          status: 'active',
+          current_period_start: new Date().toISOString(),
+          current_period_end: periodEnd.toISOString(),
+          approved_by: user?.id,
+          approved_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', subId);
+      
+      if (error) throw error;
+      
+      toast.success('Usajili umekubaliwa!');
+      fetchSubscriptions();
+      fetchStats();
+    } catch (error: any) {
+      toast.error(`Imeshindwa: ${error.message}`);
+    }
+  };
+  
+  const handleRejectSubscription = async (subId: string) => {
+    try {
+      const { error } = await supabase
+        .from('user_subscriptions')
+        .update({
+          status: 'expired',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', subId);
+      
+      if (error) throw error;
+      
+      toast.success('Usajili umekataliwa');
+      fetchSubscriptions();
+      fetchStats();
+    } catch (error: any) {
+      toast.error(`Imeshindwa: ${error.message}`);
+    }
+  };
+  
+  // Export functions
+  const handleExportUsers = () => {
+    const columns = [
+      { header: 'Jina', key: 'full_name' },
+      { header: 'Email', key: 'email' },
+      { header: 'Biashara', key: 'business_name' },
+      { header: 'Role', key: 'role' },
+      { header: 'Tarehe', key: 'created_at', formatter: (v: string) => new Date(v).toLocaleDateString('sw-TZ') }
+    ];
+    exportToExcel(users, columns, 'Watumiaji_Kiduka');
+    toast.success('Imehifadhiwa kama Excel');
+  };
+  
+  const handleExportSales = () => {
+    const columns = [
+      { header: 'Tarehe', key: 'created_at', formatter: (v: string) => new Date(v).toLocaleDateString('sw-TZ') },
+      { header: 'Kiasi', key: 'total_amount', formatter: (v: number) => `TSh ${v?.toLocaleString() || 0}` },
+      { header: 'Malipo', key: 'payment_method' },
+      { header: 'Hali', key: 'payment_status' }
+    ];
+    exportToExcel(sales, columns, 'Mauzo_Kiduka');
+    toast.success('Imehifadhiwa kama Excel');
+  };
+  
+  const handleExportOrders = () => {
+    const columns = [
+      { header: 'Tracking Code', key: 'tracking_code' },
+      { header: 'Simu', key: 'customer_phone' },
+      { header: 'Kiasi', key: 'total_amount', formatter: (v: number) => `TSh ${v?.toLocaleString() || 0}` },
+      { header: 'Hali Oda', key: 'order_status' },
+      { header: 'Malipo', key: 'payment_status' },
+      { header: 'Tarehe', key: 'created_at', formatter: (v: string) => new Date(v).toLocaleDateString('sw-TZ') }
+    ];
+    exportToExcel(orders, columns, 'Oda_Sokoni');
+    toast.success('Imehifadhiwa kama Excel');
+  };
+  
+  const handleExportPDF = (type: string) => {
+    let columns: any[] = [];
+    let data: any[] = [];
+    let title = '';
+    
+    switch (type) {
+      case 'users':
+        columns = [
+          { header: 'Jina', key: 'full_name' },
+          { header: 'Email', key: 'email' },
+          { header: 'Role', key: 'role' }
+        ];
+        data = users;
+        title = 'Watumiaji';
+        break;
+      case 'sales':
+        columns = [
+          { header: 'Tarehe', key: 'created_at', formatter: (v: string) => new Date(v).toLocaleDateString('sw-TZ') },
+          { header: 'Kiasi', key: 'total_amount', formatter: (v: number) => `TSh ${v?.toLocaleString() || 0}` },
+          { header: 'Hali', key: 'payment_status' }
+        ];
+        data = sales;
+        title = 'Mauzo';
+        break;
+      case 'summary':
+        const summaryHtml = `
+          <div class="stats">
+            <div class="stat-card"><strong>${stats.totalUsers}</strong><br/>Watumiaji</div>
+            <div class="stat-card"><strong>${stats.totalProducts}</strong><br/>Bidhaa</div>
+            <div class="stat-card"><strong>${stats.totalSales}</strong><br/>Mauzo</div>
+            <div class="stat-card"><strong>TSh ${stats.totalRevenue.toLocaleString()}</strong><br/>Mapato</div>
+            <div class="stat-card"><strong>TSh ${stats.totalExpenses.toLocaleString()}</strong><br/>Matumizi</div>
+            <div class="stat-card"><strong>TSh ${(stats.totalRevenue - stats.totalExpenses).toLocaleString()}</strong><br/>Faida</div>
+          </div>
+        `;
+        exportToPDF('Muhtasari wa Biashara', summaryHtml);
+        toast.success('PDF inaandaliwa...');
+        return;
+    }
+    
+    const tableHtml = createPrintableTable(data.slice(0, 100), columns, title);
+    exportToPDF(title, tableHtml);
+    toast.success('PDF inaandaliwa...');
   };
   
   const fetchUsers = async () => {
@@ -475,24 +649,113 @@ export const SuperAdminDashboard = () => {
   
   return (
     <div className="w-full max-w-7xl mx-auto p-4 md:p-6 lg:p-8 space-y-6 pb-20">
-      {/* Header */}
+      {/* Header with Notifications */}
       <Card>
         <CardHeader className="pb-3">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div className="flex items-center gap-3">
-              <Shield className="h-8 w-8 text-red-600" />
+              <Shield className="h-8 w-8 text-destructive" />
               <div>
                 <CardTitle className="text-xl">Super Admin Dashboard</CardTitle>
                 <CardDescription>Dhibiti kila kitu katika Kiduka POS</CardDescription>
               </div>
             </div>
-            <Button onClick={fetchAllData} variant="outline" size="sm">
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Refresh
-            </Button>
+            <div className="flex items-center gap-2">
+              {/* Notifications Button */}
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="relative"
+                onClick={() => setNotificationsPanelOpen(true)}
+              >
+                <Bell className="h-4 w-4" />
+                {unreadCount > 0 && (
+                  <Badge className="absolute -top-2 -right-2 h-5 w-5 p-0 flex items-center justify-center text-xs bg-destructive">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </Badge>
+                )}
+              </Button>
+              
+              {/* Export Dropdown */}
+              <div className="flex gap-1">
+                <Button variant="outline" size="sm" onClick={() => handleExportPDF('summary')}>
+                  <FileText className="h-4 w-4 mr-1" />
+                  PDF
+                </Button>
+                <Button variant="outline" size="sm" onClick={handleExportSales}>
+                  <FileSpreadsheet className="h-4 w-4 mr-1" />
+                  Excel
+                </Button>
+              </div>
+              
+              <Button onClick={fetchAllData} variant="outline" size="sm">
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Refresh
+              </Button>
+            </div>
           </div>
         </CardHeader>
       </Card>
+      
+      {/* Notifications Panel */}
+      <Dialog open={notificationsPanelOpen} onOpenChange={setNotificationsPanelOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center justify-between">
+              <span className="flex items-center gap-2">
+                <Bell className="h-5 w-5" />
+                Arifa ({unreadCount} mpya)
+              </span>
+              {unreadCount > 0 && (
+                <Button variant="ghost" size="sm" onClick={markAllAsRead}>
+                  Soma zote
+                </Button>
+              )}
+            </DialogTitle>
+          </DialogHeader>
+          <ScrollArea className="h-[400px] pr-4">
+            <div className="space-y-3">
+              {notifications.length === 0 ? (
+                <p className="text-center text-muted-foreground py-8">Hakuna arifa</p>
+              ) : (
+                notifications.map(n => (
+                  <Card 
+                    key={n.id} 
+                    className={`cursor-pointer transition-colors ${!n.is_read ? 'bg-primary/5 border-primary/20' : ''}`}
+                    onClick={() => markAsRead(n.id)}
+                  >
+                    <CardContent className="p-3">
+                      <div className="flex items-start gap-3">
+                        <div className={`p-2 rounded-full ${
+                          n.notification_type === 'new_user' ? 'bg-blue-100 text-blue-600' :
+                          n.notification_type === 'large_transaction' ? 'bg-green-100 text-green-600' :
+                          n.notification_type === 'subscription_request' ? 'bg-orange-100 text-orange-600' :
+                          'bg-muted text-muted-foreground'
+                        }`}>
+                          {n.notification_type === 'new_user' ? <UserPlus className="h-4 w-4" /> :
+                           n.notification_type === 'large_transaction' ? <DollarSign className="h-4 w-4" /> :
+                           n.notification_type === 'subscription_request' ? <Clock className="h-4 w-4" /> :
+                           <Bell className="h-4 w-4" />}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-sm">{n.title}</p>
+                          <p className="text-xs text-muted-foreground">{n.message}</p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {new Date(n.created_at).toLocaleString('sw-TZ')}
+                          </p>
+                        </div>
+                        {!n.is_read && (
+                          <div className="h-2 w-2 rounded-full bg-primary flex-shrink-0" />
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))
+              )}
+            </div>
+          </ScrollArea>
+        </DialogContent>
+      </Dialog>
       
       {/* Stats Grid */}
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
@@ -515,18 +778,26 @@ export const SuperAdminDashboard = () => {
       
       {/* Main Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid grid-cols-4 md:grid-cols-7 mb-4">
+        <TabsList className="grid grid-cols-4 md:grid-cols-8 mb-4">
           <TabsTrigger value="overview" className="text-xs">Overview</TabsTrigger>
           <TabsTrigger value="analytics" className="text-xs">Analytics</TabsTrigger>
+          <TabsTrigger value="subscriptions" className="text-xs relative">
+            Usajili
+            {stats.pendingSubscriptions > 0 && (
+              <Badge className="absolute -top-1 -right-1 h-4 w-4 p-0 flex items-center justify-center text-[10px] bg-destructive">
+                {stats.pendingSubscriptions}
+              </Badge>
+            )}
+          </TabsTrigger>
           <TabsTrigger value="users" className="text-xs">Watumiaji</TabsTrigger>
-          <TabsTrigger value="products" className="text-xs">Bidhaa</TabsTrigger>
+          <TabsTrigger value="products" className="text-xs hidden md:block">Bidhaa</TabsTrigger>
           <TabsTrigger value="sales" className="text-xs hidden md:block">Mauzo</TabsTrigger>
           <TabsTrigger value="orders" className="text-xs hidden md:block">Oda</TabsTrigger>
           <TabsTrigger value="more" className="text-xs">Zaidi</TabsTrigger>
         </TabsList>
         
         {/* Search */}
-        {activeTab !== 'overview' && activeTab !== 'analytics' && (
+        {activeTab !== 'overview' && activeTab !== 'analytics' && activeTab !== 'subscriptions' && (
           <div className="relative mb-4">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input 
@@ -537,6 +808,91 @@ export const SuperAdminDashboard = () => {
             />
           </div>
         )}
+        
+        {/* Subscriptions Tab - Admin Approval */}
+        <TabsContent value="subscriptions" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Clock className="h-4 w-4 text-orange-600" />
+                Maombi ya Usajili Yanasubiri Idhini ({stats.pendingSubscriptions})
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {subscriptions.filter(s => s.status === 'pending_approval').length === 0 ? (
+                <p className="text-muted-foreground text-center py-8">Hakuna maombi yanasubiri</p>
+              ) : (
+                <div className="space-y-3">
+                  {subscriptions.filter(s => s.status === 'pending_approval').map(sub => (
+                    <Card key={sub.id} className="border-orange-200 bg-orange-50/50 dark:bg-orange-900/10">
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between gap-4 flex-wrap">
+                          <div>
+                            <p className="font-medium">{sub.user_name || sub.user_email}</p>
+                            <p className="text-sm text-muted-foreground">{sub.user_email}</p>
+                            <p className="text-xs text-muted-foreground">
+                              Trial iliisha: {new Date(sub.trial_ends_at).toLocaleDateString('sw-TZ')}
+                            </p>
+                          </div>
+                          <div className="flex gap-2">
+                            <Button 
+                              size="sm" 
+                              onClick={() => handleApproveSubscription(sub.id)}
+                              className="bg-green-600 hover:bg-green-700"
+                            >
+                              <CheckCircle className="h-4 w-4 mr-1" />
+                              Kubali
+                            </Button>
+                            <Button 
+                              size="sm" 
+                              variant="destructive"
+                              onClick={() => handleRejectSubscription(sub.id)}
+                            >
+                              <XCircle className="h-4 w-4 mr-1" />
+                              Kataa
+                            </Button>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+          
+          {/* All Subscriptions */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm">Usajili Wote</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {subscriptions.map(sub => (
+                  <div key={sub.id} className="flex items-center justify-between p-3 border rounded-lg">
+                    <div>
+                      <p className="font-medium text-sm">{sub.user_name || sub.user_email}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {sub.status === 'trial' && `Trial inaisha: ${new Date(sub.trial_ends_at).toLocaleDateString('sw-TZ')}`}
+                        {sub.status === 'active' && `Hai hadi: ${sub.current_period_end ? new Date(sub.current_period_end).toLocaleDateString('sw-TZ') : 'N/A'}`}
+                        {sub.status === 'pending_approval' && 'Inasubiri idhini'}
+                        {sub.status === 'expired' && 'Imeisha'}
+                      </p>
+                    </div>
+                    <Badge className={
+                      sub.status === 'active' ? 'bg-green-100 text-green-800' :
+                      sub.status === 'trial' ? 'bg-blue-100 text-blue-800' :
+                      sub.status === 'pending_approval' ? 'bg-orange-100 text-orange-800' :
+                      'bg-red-100 text-red-800'
+                    }>
+                      {sub.status}
+                    </Badge>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
         
         {/* Analytics Tab - NEW */}
         <TabsContent value="analytics" className="space-y-6">
