@@ -89,13 +89,14 @@ serve(async (req) => {
       throw new Error(result.SMSMessageData?.Recipients?.[0]?.status || 'Failed to send message')
     }
 
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error sending WhatsApp message:', error)
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     
     return new Response(
       JSON.stringify({
         error: 'Failed to send WhatsApp message',
-        details: error.message
+        details: errorMessage
       }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
