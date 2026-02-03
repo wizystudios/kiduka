@@ -57,7 +57,7 @@ import { WhatsAppPage } from '@/pages/WhatsAppPage';
 import SalesForecastingPage from '@/pages/SalesForecastingPage';
 import { CustomerLoyaltyPage } from '@/pages/CustomerLoyaltyPage';
 import { InventoryAutomationPage } from '@/pages/InventoryAutomationPage';
-import { SokoniHomepage } from '@/components/SokoniHomepage';
+import { SokoniMarketplace } from '@/components/SokoniMarketplace';
 import SokoniOrdersPage from '@/pages/SokoniOrdersPage';
 import NotificationsPage from '@/pages/NotificationsPage';
 import OrderTrackingPage from '@/pages/OrderTrackingPage';
@@ -376,7 +376,8 @@ export default function App() {
               } />
               
               {/* Sokoni Marketplace - Public access for customers */}
-              <Route path="/sokoni-home" element={<SokoniHomepage />} />
+              <Route path="/sokoni" element={<SokoniMarketplace />} />
+              <Route path="/sokoni-home" element={<SokoniMarketplace />} />
               
               {/* Wishlist Page - Public access */}
               <Route path="/sokoni/favorites" element={<WishlistPage />} />

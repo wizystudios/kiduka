@@ -1191,6 +1191,14 @@ export type Database = {
         }
         Returns: Json
       }
+      approve_user_subscription: {
+        Args: {
+          p_admin_id: string
+          p_months?: number
+          p_subscription_id: string
+        }
+        Returns: Json
+      }
       can_access_owner_data: {
         Args: { target_owner_id: string }
         Returns: boolean
