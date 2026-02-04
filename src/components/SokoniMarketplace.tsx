@@ -22,6 +22,7 @@ import {
   Camera, ArrowLeft, Plus, Minus, Trash2, Phone,
   ClipboardList, Truck, Eye, Grid3X3
 } from 'lucide-react';
+import { SokoniLogo } from './SokoniLogo';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -529,17 +530,20 @@ export const SokoniMarketplace = () => {
 
   return (
     <div className="min-h-screen bg-background pb-24">
-      {/* Header */}
+      {/* Header with Sokoni Logo */}
       <div className="bg-primary text-primary-foreground sticky top-0 z-50">
         <div className="flex items-center gap-2 p-3">
           <Button 
             variant="ghost" 
             size="icon" 
-            className="text-primary-foreground hover:bg-primary-foreground/10"
+            className="text-primary-foreground hover:bg-primary-foreground/10 rounded-xl"
             onClick={() => navigate('/')}
           >
             <ArrowLeft className="h-5 w-5" />
           </Button>
+          
+          {/* Sokoni Logo */}
+          <SokoniLogo size="sm" showText={false} />
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-primary-foreground/70" />
             <Input

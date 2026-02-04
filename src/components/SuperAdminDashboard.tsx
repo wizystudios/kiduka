@@ -1482,22 +1482,103 @@ export const SuperAdminDashboard = () => {
         </TabsContent>
       </Tabs>
       
-      {/* View Dialog */}
+      {/* View Dialog - Enhanced User View */}
       <Dialog open={!!viewDialog} onOpenChange={() => setViewDialog(null)}>
-        <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto">
+        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Maelezo - {viewDialog?.type}</DialogTitle>
+            <DialogTitle className="text-lg">Maelezo Kamili - {viewDialog?.type}</DialogTitle>
           </DialogHeader>
-          <div className="space-y-3">
-            {viewDialog?.data && Object.entries(viewDialog.data).map(([key, value]) => (
-              <div key={key} className="flex justify-between py-2 border-b">
-                <span className="text-muted-foreground text-sm">{key}</span>
-                <span className="text-sm font-medium text-right max-w-[200px] truncate">
-                  {typeof value === 'object' ? JSON.stringify(value) : String(value || '-')}
-                </span>
+          
+          {viewDialog?.type === 'user' && viewDialog.data && (
+            <div className="space-y-4">
+              {/* User Profile Header */}
+              <div className="flex items-center gap-4 p-4 bg-muted rounded-2xl">
+                <div className="h-16 w-16 rounded-full bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center">
+                  <span className="text-2xl font-bold text-primary-foreground">
+                    {(viewDialog.data.full_name || viewDialog.data.email || '?')[0].toUpperCase()}
+                  </span>
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold">{viewDialog.data.full_name || 'Hakuna Jina'}</h3>
+                  <p className="text-sm text-muted-foreground">{viewDialog.data.email}</p>
+                  {getRoleBadge(viewDialog.data.role)}
+                </div>
               </div>
-            ))}
-          </div>
+              
+              {/* User Details */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="p-3 bg-muted/50 rounded-xl">
+                  <p className="text-xs text-muted-foreground">Biashara</p>
+                  <p className="font-medium">{viewDialog.data.business_name || '-'}</p>
+                </div>
+                <div className="p-3 bg-muted/50 rounded-xl">
+                  <p className="text-xs text-muted-foreground">Simu</p>
+                  <p className="font-medium">{viewDialog.data.phone || '-'}</p>
+                </div>
+                <div className="p-3 bg-muted/50 rounded-xl col-span-2">
+                  <p className="text-xs text-muted-foreground">Amesajili</p>
+                  <p className="font-medium">{formatDate(viewDialog.data.created_at)}</p>
+                </div>
+              </div>
+              
+              {/* Admin Actions */}
+              <div className="border-t pt-4 space-y-3">
+                <p className="text-sm font-semibold text-muted-foreground">Vitendo vya Admin</p>
+                <div className="grid grid-cols-2 gap-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => {
+                      setViewDialog(null);
+                      setEditDialog({type: 'user', data: {...viewDialog.data}});
+                    }}
+                    className="rounded-xl"
+                  >
+                    <Pencil className="h-4 w-4 mr-2" />
+                    Hariri
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => {
+                      setViewDialog(null);
+                      setDeleteDialog({type: 'user', id: viewDialog.data.id, name: viewDialog.data.full_name || viewDialog.data.email});
+                    }}
+                    className="rounded-xl text-red-600 hover:bg-red-50"
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Futa
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    className="rounded-xl col-span-2"
+                    onClick={() => {
+                      handleUpdateRole(viewDialog.data.id, viewDialog.data.role === 'owner' ? 'assistant' : 'owner');
+                      setViewDialog(null);
+                    }}
+                  >
+                    <Settings className="h-4 w-4 mr-2" />
+                    Badilisha Role ({viewDialog.data.role} → {viewDialog.data.role === 'owner' ? 'assistant' : 'owner'})
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+          
+          {/* Generic view for other types */}
+          {viewDialog?.type !== 'user' && viewDialog?.data && (
+            <div className="space-y-3">
+              {Object.entries(viewDialog.data).map(([key, value]) => (
+                <div key={key} className="flex justify-between py-2 border-b">
+                  <span className="text-muted-foreground text-sm capitalize">{key.replace(/_/g, ' ')}</span>
+                  <span className="text-sm font-medium text-right max-w-[200px] truncate">
+                    {typeof value === 'object' ? JSON.stringify(value) : String(value || '-')}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
         </DialogContent>
       </Dialog>
       

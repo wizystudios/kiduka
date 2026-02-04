@@ -22,6 +22,8 @@ import { useSubscription } from '@/hooks/useSubscription';
 import { toast } from 'sonner';
 import { BackButton } from '@/components/BackButton';
 import { useNavigate } from 'react-router-dom';
+import { KidukaLogo } from '@/components/KidukaLogo';
+import { SubscriptionCountdown } from '@/components/SubscriptionCountdown';
 
 export const SubscriptionPage = () => {
   const navigate = useNavigate();
@@ -30,6 +32,17 @@ export const SubscriptionPage = () => {
   const [phoneNumber, setPhoneNumber] = useState('');
   const [processing, setProcessing] = useState(false);
   const [paymentInitiated, setPaymentInitiated] = useState(false);
+
+  // Get renewal date based on status
+  const getRenewalDate = () => {
+    if (subscription?.status === 'trial' && subscription.trial_ends_at) {
+      return subscription.trial_ends_at;
+    }
+    if (subscription?.status === 'active' && subscription.current_period_end) {
+      return subscription.current_period_end;
+    }
+    return null;
+  };
 
   const handlePayment = async () => {
     if (!phoneNumber || phoneNumber.length < 9) {
@@ -41,7 +54,7 @@ export const SubscriptionPage = () => {
     try {
       const { data, error } = await supabase.functions.invoke('clickpesa-payment', {
         body: {
-          amount: 10000, // 10,000 TZS monthly subscription
+          amount: 10000,
           phone_number: phoneNumber,
           subscription_id: subscription?.id,
           transaction_type: 'subscription_payment',
@@ -55,8 +68,6 @@ export const SubscriptionPage = () => {
       if (data?.success) {
         setPaymentInitiated(true);
         toast.success('Malipo yameanzishwa! Tafadhali kamilisha kwenye simu yako.');
-        
-        // Request activation with payment reference
         await requestActivation(data.reference);
       } else {
         toast.error(data?.error || 'Imeshindwa kuanzisha malipo');
@@ -88,13 +99,22 @@ export const SubscriptionPage = () => {
 
   const getStatusInfo = (status: string) => {
     const info: Record<string, { label: string; color: string; icon: any }> = {
-      trial: { label: 'Majaribio', color: 'bg-blue-100 text-blue-800', icon: Clock },
-      active: { label: 'Hai', color: 'bg-green-100 text-green-800', icon: CheckCircle },
-      expired: { label: 'Imeisha', color: 'bg-red-100 text-red-800', icon: AlertTriangle },
-      pending_approval: { label: 'Inasubiri Idhini', color: 'bg-yellow-100 text-yellow-800', icon: Clock },
-      cancelled: { label: 'Imesitishwa', color: 'bg-gray-100 text-gray-800', icon: AlertTriangle }
+      trial: { label: 'Majaribio', color: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300', icon: Clock },
+      active: { label: 'Hai', color: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300', icon: CheckCircle },
+      expired: { label: 'Imeisha', color: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300', icon: AlertTriangle },
+      pending_approval: { label: 'Inasubiri Idhini', color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300', icon: Clock },
+      cancelled: { label: 'Imesitishwa', color: 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300', icon: AlertTriangle }
     };
     return info[status] || info.expired;
+  };
+
+  const getPlanName = (status: string) => {
+    switch (status) {
+      case 'trial': return 'Majaribio (30 Siku)';
+      case 'active': return 'Premium Monthly';
+      case 'pending_approval': return 'Inasubiri Idhini';
+      default: return 'Hakuna Mpango';
+    }
   };
 
   if (subLoading) {
@@ -110,77 +130,55 @@ export const SubscriptionPage = () => {
 
   const statusInfo = subscription?.status ? getStatusInfo(subscription.status) : getStatusInfo('expired');
   const StatusIcon = statusInfo.icon;
+  const renewalDate = getRenewalDate();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 p-4">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-background dark:via-background dark:to-background p-4">
       <div className="max-w-2xl mx-auto space-y-6">
         <BackButton to="/dashboard" className="mb-4" />
         
-        {/* Header */}
-        <div className="text-center space-y-2">
-          <Crown className="h-12 w-12 mx-auto text-primary" />
-          <h1 className="text-2xl md:text-3xl font-bold">
-            Michango - Kiduka POS
-          </h1>
-          <p className="text-muted-foreground">
-            Simamia usajili wako wa Kiduka POS
-          </p>
+        {/* Header with Kiduka Logo centered */}
+        <div className="flex flex-col items-center justify-center space-y-4">
+          <KidukaLogo size="xl" animate />
+          <div className="text-center">
+            <h1 className="text-2xl font-bold">Michango</h1>
+            <p className="text-muted-foreground text-sm">Simamia usajili wako</p>
+          </div>
         </div>
 
-        {/* Current Status Card */}
-        <Card className="shadow-lg">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <StatusIcon className="h-5 w-5" />
-              Hali ya Akaunti
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
-              <span className="font-medium">Hali:</span>
+        {/* Plan & Status Card */}
+        <Card className="shadow-lg overflow-hidden">
+          <div className="bg-gradient-to-r from-primary to-primary/80 p-4 text-primary-foreground">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Crown className="h-8 w-8" />
+                <div>
+                  <p className="text-sm opacity-90">Mpango Wako</p>
+                  <p className="text-xl font-bold">{getPlanName(subscription?.status || 'expired')}</p>
+                </div>
+              </div>
               <Badge className={statusInfo.color}>
                 {statusInfo.label}
               </Badge>
             </div>
+          </div>
+          
+          <CardContent className="p-4 space-y-4">
+            {/* Real-time Countdown */}
+            {renewalDate && subscription?.status !== 'expired' && (
+              <div className="space-y-3">
+                <p className="text-center text-sm text-muted-foreground">
+                  {subscription?.status === 'trial' ? 'Majaribio yanaisha baada ya:' : 'Usajili unaisha baada ya:'}
+                </p>
+                <SubscriptionCountdown targetDate={renewalDate} />
+              </div>
+            )}
             
-            {subscription?.days_remaining !== undefined && subscription.days_remaining > 0 && (
-              <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
-                <span className="font-medium">Siku Zilizobaki:</span>
-                <span className="font-bold text-lg text-primary">
-                  {subscription.days_remaining} siku
-                </span>
-              </div>
-            )}
-
-            {subscription?.trial_ends_at && subscription.status === 'trial' && (
-              <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
-                <span className="font-medium flex items-center gap-2">
-                  <Calendar className="h-4 w-4" />
-                  Majaribio Yanaisha:
-                </span>
-                <span className="font-medium">
-                  {new Date(subscription.trial_ends_at).toLocaleDateString('sw-TZ', {
-                    day: 'numeric',
-                    month: 'short',
-                    year: 'numeric'
-                  })}
-                </span>
-              </div>
-            )}
-
-            {subscription?.current_period_end && subscription.status === 'active' && (
-              <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
-                <span className="font-medium flex items-center gap-2">
-                  <Calendar className="h-4 w-4" />
-                  Usajili Unaisha:
-                </span>
-                <span className="font-medium">
-                  {new Date(subscription.current_period_end).toLocaleDateString('sw-TZ', {
-                    day: 'numeric',
-                    month: 'short',
-                    year: 'numeric'
-                  })}
-                </span>
+            {subscription?.status === 'expired' && (
+              <div className="text-center p-4 bg-red-50 dark:bg-red-900/20 rounded-2xl">
+                <AlertTriangle className="h-10 w-10 text-red-600 mx-auto mb-2" />
+                <p className="font-semibold text-red-800 dark:text-red-300">Usajili Wako Umeisha</p>
+                <p className="text-sm text-red-600 dark:text-red-400">Lipa ili kuendelea kutumia Kiduka POS</p>
               </div>
             )}
           </CardContent>
@@ -200,29 +198,29 @@ export const SubscriptionPage = () => {
             </CardHeader>
             <CardContent className="space-y-4">
               {subscription?.status === 'pending_approval' ? (
-                <div className="text-center p-6 bg-blue-50 rounded-lg">
+                <div className="text-center p-6 bg-blue-50 dark:bg-blue-900/20 rounded-2xl">
                   <Loader2 className="h-10 w-10 text-blue-600 mx-auto mb-3 animate-spin" />
-                  <h3 className="font-semibold text-blue-800 mb-1">
+                  <h3 className="font-semibold text-blue-800 dark:text-blue-300 mb-1">
                     Inasubiri Idhini ya Admin
                   </h3>
-                  <p className="text-sm text-blue-600">
+                  <p className="text-sm text-blue-600 dark:text-blue-400">
                     Ombi lako limetumwa. Tafadhali subiri admin akuidhinishe.
                   </p>
                 </div>
               ) : paymentInitiated ? (
-                <div className="text-center p-6 bg-green-50 rounded-lg">
+                <div className="text-center p-6 bg-green-50 dark:bg-green-900/20 rounded-2xl">
                   <Loader2 className="h-10 w-10 text-green-600 mx-auto mb-3 animate-spin" />
-                  <h3 className="font-semibold text-green-800 mb-1">
+                  <h3 className="font-semibold text-green-800 dark:text-green-300 mb-1">
                     Malipo Yanasubiriwa
                   </h3>
-                  <p className="text-sm text-green-600">
-                    Kamilisha malipo kwenye simu yako. Akaunti yako itafunguliwa mara utakapolipa.
+                  <p className="text-sm text-green-600 dark:text-green-400">
+                    Kamilisha malipo kwenye simu yako.
                   </p>
                 </div>
               ) : (
                 <>
                   {/* Pricing */}
-                  <div className="text-center p-4 bg-gradient-to-r from-primary/10 to-primary/5 rounded-lg">
+                  <div className="text-center p-4 bg-gradient-to-r from-primary/10 to-primary/5 rounded-2xl">
                     <p className="text-3xl font-bold text-primary">TSh 10,000</p>
                     <p className="text-sm text-muted-foreground">kwa mwezi</p>
                   </div>
@@ -255,14 +253,14 @@ export const SubscriptionPage = () => {
                           placeholder="0712 345 678"
                           value={phoneNumber}
                           onChange={(e) => setPhoneNumber(e.target.value)}
-                          className="pl-10"
+                          className="pl-10 rounded-xl"
                         />
                       </div>
                     </div>
 
                     <Button 
                       onClick={handlePayment} 
-                      className="w-full" 
+                      className="w-full rounded-xl" 
                       size="lg"
                       disabled={processing}
                     >
@@ -291,7 +289,7 @@ export const SubscriptionPage = () => {
 
                   <Button 
                     variant="outline" 
-                    className="w-full"
+                    className="w-full rounded-xl"
                     onClick={handleManualRequest}
                     disabled={processing}
                   >
@@ -305,18 +303,18 @@ export const SubscriptionPage = () => {
 
         {/* Active subscription info */}
         {subscription?.status === 'active' && !subscription?.requires_payment && (
-          <Card className="shadow-lg bg-gradient-to-r from-green-50 to-emerald-50 border-green-200">
+          <Card className="shadow-lg bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border-green-200 dark:border-green-800">
             <CardContent className="text-center py-8">
               <CheckCircle className="h-12 w-12 text-green-600 mx-auto mb-4" />
-              <h3 className="text-xl font-bold text-green-800 mb-2">
+              <h3 className="text-xl font-bold text-green-800 dark:text-green-300 mb-2">
                 Akaunti Yako ni Hai!
               </h3>
-              <p className="text-green-700">
+              <p className="text-green-700 dark:text-green-400">
                 Endelea kutumia Kiduka POS bila wasiwasi.
               </p>
               <Button 
                 onClick={() => navigate('/dashboard')} 
-                className="mt-4"
+                className="mt-4 rounded-xl"
                 variant="outline"
               >
                 Rudi Dashboard
@@ -327,27 +325,27 @@ export const SubscriptionPage = () => {
 
         {/* Trial info */}
         {subscription?.status === 'trial' && !subscription?.requires_payment && (
-          <Card className="shadow-lg bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
+          <Card className="shadow-lg bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border-blue-200 dark:border-blue-800">
             <CardContent className="text-center py-6">
               <Clock className="h-10 w-10 text-blue-600 mx-auto mb-3" />
-              <h3 className="text-lg font-bold text-blue-800 mb-2">
+              <h3 className="text-lg font-bold text-blue-800 dark:text-blue-300 mb-2">
                 Uko Katika Kipindi cha Majaribio
               </h3>
-              <p className="text-blue-700 text-sm">
-                Una siku {subscription.days_remaining} zilizobaki. Lipa kabla ya kipindi kuisha ili kuendelea kutumia.
+              <p className="text-blue-700 dark:text-blue-400 text-sm">
+                Lipa kabla ya kipindi kuisha ili kuendelea kutumia.
               </p>
             </CardContent>
           </Card>
         )}
 
         {/* Money Back Guarantee */}
-        <Card className="bg-gradient-to-r from-green-50 to-emerald-50 border-green-200 shadow-lg">
+        <Card className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border-green-200 dark:border-green-800 shadow-lg">
           <CardContent className="text-center py-6">
             <Shield className="h-10 w-10 text-green-600 mx-auto mb-3" />
-            <h3 className="text-lg font-bold text-green-800 mb-2">
+            <h3 className="text-lg font-bold text-green-800 dark:text-green-300 mb-2">
               Dhamana ya Kuridhika
             </h3>
-            <p className="text-green-700 text-sm">
+            <p className="text-green-700 dark:text-green-400 text-sm">
               Ukihitaji msaada, wasiliana nasi kupitia WhatsApp.
             </p>
           </CardContent>

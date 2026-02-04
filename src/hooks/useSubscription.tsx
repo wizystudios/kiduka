@@ -23,14 +23,14 @@ export const useSubscription = () => {
       return;
     }
 
-    // Skip subscription check for super_admin
+    // Skip subscription check for super_admin - they never expire
     if (userProfile?.role === 'super_admin') {
       setSubscription({
         id: 'admin',
         status: 'active',
         trial_ends_at: null,
         current_period_end: null,
-        days_remaining: 999,
+        days_remaining: 0, // Don't show days for super admin
         is_active: true,
         requires_payment: false,
       });
