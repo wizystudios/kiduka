@@ -6,8 +6,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { 
-  Search, Package, Truck, CheckCircle, Clock, XCircle, 
-  Phone, Store, RefreshCw, CreditCard
+  Search, Package, Truck, CheckCircle, Clock, XCircle,
+  Phone, Store, RefreshCw, CreditCard, ArrowUpRight, Sparkles
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -127,200 +127,250 @@ export const OrderTrackingPage = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-secondary/10">
-      <div className="max-w-md mx-auto p-4 space-y-6 pb-20">
-        {/* Header */}
-        <div className="text-center pt-6">
-          <KidukaLogo size="md" />
-          <h1 className="text-xl font-bold mt-4">Fuatilia Oda Zako</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Ingiza namba ya simu ili uone oda zako zote
-          </p>
-        </div>
-
-        {/* Search Form - simplified to phone only */}
-        <Card>
-          <CardContent className="p-4 space-y-4">
-            <div>
-              <Label htmlFor="phone">Namba ya Simu</Label>
-              <div className="relative mt-1">
-                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="phone"
-                  type="tel"
-                  placeholder="0712 345 678"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-                  className="pl-10"
-                />
+      <div className="max-w-6xl mx-auto p-4 md:p-6">
+        {/* Split Layout Container */}
+        <div className="flex flex-col lg:flex-row min-h-[80vh] relative">
+          {/* Center Divider - The "Tree" line */}
+          <div className="hidden lg:flex absolute left-1/2 top-0 bottom-0 -translate-x-1/2 flex-col items-center z-10">
+            <div className="w-px h-12 bg-gradient-to-b from-transparent to-primary/30" />
+            <ArrowUpRight className="h-5 w-5 text-primary/50 -rotate-45" />
+            <div className="w-px flex-1 bg-gradient-to-b from-primary/30 via-primary to-primary/30 relative">
+              <div className="absolute top-1/4 left-0 -translate-x-full pr-2">
+                <ArrowUpRight className="h-4 w-4 text-primary/40 rotate-180" />
+              </div>
+              <div className="absolute top-1/4 right-0 translate-x-full pl-2">
+                <ArrowUpRight className="h-4 w-4 text-primary/40" />
+              </div>
+              <div className="absolute top-1/2 left-0 -translate-x-full pr-2">
+                <ArrowUpRight className="h-4 w-4 text-primary/60 rotate-180" />
+              </div>
+              <div className="absolute top-1/2 right-0 translate-x-full pl-2">
+                <ArrowUpRight className="h-4 w-4 text-primary/60" />
+              </div>
+              <div className="absolute top-3/4 left-0 -translate-x-full pr-2">
+                <ArrowUpRight className="h-4 w-4 text-primary/40 rotate-180" />
+              </div>
+              <div className="absolute top-3/4 right-0 translate-x-full pl-2">
+                <ArrowUpRight className="h-4 w-4 text-primary/40" />
               </div>
             </div>
-
-            <Button 
-              className="w-full" 
-              onClick={handleSearch}
-              disabled={loading}
-            >
-              {loading ? (
-                <>
-                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                  Inatafuta...
-                </>
-              ) : (
-                <>
-                  <Search className="h-4 w-4 mr-2" />
-                  Tafuta Oda Zangu
-                </>
-              )}
-            </Button>
-          </CardContent>
-        </Card>
-
-        {/* Not Found */}
-        {notFound && hasSearched && (
-          <Card className="border-muted">
-            <CardContent className="p-6 text-center">
-              <Package className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
-              <h3 className="font-semibold">Hakuna Oda</h3>
-              <p className="text-sm text-muted-foreground mt-1">
-                Hakuna oda zilizopatikana kwa namba hii ya simu.
-              </p>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Orders List */}
-        {orders.length > 0 && (
-          <div className="space-y-4">
-            <h2 className="font-semibold text-sm text-muted-foreground">
-              Oda {orders.length} zimepatikana
-            </h2>
-            
-            {orders.map((order) => {
-              const statusInfo = getStatusInfo(order.order_status);
-              const StatusIcon = statusInfo.icon;
-              const paymentInfo = getPaymentStatusInfo(order.payment_status);
-              const currentStep = statusInfo.step;
-              
-              return (
-                <Card key={order.id}>
-                  <CardHeader className="pb-2">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <code className="font-mono text-sm font-bold text-primary">
-                          {order.tracking_code}
-                        </code>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {new Date(order.created_at).toLocaleDateString('sw-TZ', {
-                            day: 'numeric',
-                            month: 'short',
-                            year: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit'
-                          })}
-                        </p>
-                      </div>
-                      <Badge className={statusInfo.color}>
-                        <StatusIcon className="h-3 w-3 mr-1" />
-                        {statusInfo.label}
-                      </Badge>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="pt-0 space-y-3">
-                    {/* Order Progress Steps */}
-                    {order.order_status !== 'cancelled' && (
-                      <div className="py-3">
-                        <div className="flex justify-between relative">
-                          {/* Progress line */}
-                          <div className="absolute top-3 left-0 right-0 h-0.5 bg-muted" />
-                          <div 
-                            className="absolute top-3 left-0 h-0.5 bg-primary transition-all duration-500"
-                            style={{ width: `${Math.min(100, ((currentStep - 1) / (orderSteps.length - 1)) * 100)}%` }}
-                          />
-                          
-                          {orderSteps.map((step, idx) => {
-                            const stepNumber = idx + 1;
-                            const isCompleted = currentStep >= stepNumber;
-                            const isCurrent = currentStep === stepNumber;
-                            
-                            return (
-                              <div key={step.key} className="flex flex-col items-center z-10">
-                                <div 
-                                  className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium transition-colors ${
-                                    isCompleted 
-                                      ? 'bg-primary text-primary-foreground' 
-                                      : 'bg-muted text-muted-foreground'
-                                  } ${isCurrent ? 'ring-2 ring-primary ring-offset-2' : ''}`}
-                                >
-                                  {isCompleted ? '✓' : stepNumber}
-                                </div>
-                                <span className={`text-[9px] mt-1 text-center max-w-[50px] ${
-                                  isCompleted ? 'text-primary font-medium' : 'text-muted-foreground'
-                                }`}>
-                                  {step.label}
-                                </span>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    )}
-                    
-                    {/* Items */}
-                    <div className="space-y-1">
-                      {order.items.map((item, idx) => (
-                        <div key={idx} className="flex justify-between text-sm p-2 bg-muted/50 rounded">
-                          <span>{item.product_name} x{item.quantity}</span>
-                          <span className="font-medium">TSh {(item.unit_price * item.quantity).toLocaleString()}</span>
-                        </div>
-                      ))}
-                    </div>
-                    
-                    {/* Total */}
-                    <div className="flex justify-between font-bold pt-2 border-t">
-                      <span>Jumla</span>
-                      <span className="text-primary">TSh {order.total_amount.toLocaleString()}</span>
-                    </div>
-
-                    {/* Payment Status */}
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Malipo</span>
-                      <Badge className={paymentInfo.color}>
-                        {paymentInfo.label}
-                      </Badge>
-                    </div>
-
-                    {/* Pay Button - Show when delivered and not paid and not yet received confirmed */}
-                    {order.order_status === 'delivered' && order.payment_status !== 'paid' && !order.customer_received && (
-                      <Button 
-                        className="w-full mt-2"
-                        onClick={() => navigate(`/customer-payment?phone=${phone}&code=${order.tracking_code}`)}
-                      >
-                        <CreditCard className="h-4 w-4 mr-2" />
-                        Thibitisha na Lipa
-                      </Button>
-                    )}
-                    
-                    {/* Show paid confirmation if already paid */}
-                    {order.payment_status === 'paid' && (
-                      <div className="flex items-center gap-2 mt-2 p-2 bg-green-50 rounded-lg text-green-700">
-                        <CheckCircle className="h-4 w-4" />
-                        <span className="text-sm font-medium">Malipo yamekamilika!</span>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              );
-            })}
+            <ArrowUpRight className="h-5 w-5 text-primary/50 rotate-135" />
+            <div className="w-px h-12 bg-gradient-to-t from-transparent to-primary/30" />
           </div>
-        )}
 
-        {/* Back to Sokoni */}
-        <div className="text-center">
-          <Link to="/sokoni" className="inline-flex items-center text-primary hover:underline">
-            <Store className="h-4 w-4 mr-2" />
-            Rudi Sokoni
-          </Link>
+          {/* LEFT SIDE - Order Progress Timeline */}
+          <div className="flex-1 lg:pr-12 space-y-6 mb-8 lg:mb-0">
+            {/* Header */}
+            <div className="text-center py-6">
+              <KidukaLogo size="lg" animate />
+              <div className="flex items-center justify-center gap-2 mt-4">
+                <Sparkles className="h-5 w-5 text-primary animate-pulse" />
+                <h1 className="text-2xl font-bold">Fuatilia Oda Zako</h1>
+              </div>
+              <p className="text-sm text-muted-foreground mt-1">
+                Ingiza namba ya simu ili uone oda zako zote
+              </p>
+            </div>
+
+            {/* Order Timeline - shows when orders exist */}
+            {orders.length > 0 && (
+              <Card className="shadow-lg">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-sm">
+                    <Package className="h-5 w-5 text-primary" />
+                    Hatua za Oda
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {orderSteps.map((step, idx) => {
+                    const currentOrder = orders[0];
+                    const currentStep = getStatusInfo(currentOrder.order_status).step;
+                    const stepNumber = idx + 1;
+                    const isCompleted = currentStep >= stepNumber;
+                    const isCurrent = currentStep === stepNumber;
+                    
+                    return (
+                      <div key={step.key} className="flex items-center gap-4">
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                          isCompleted 
+                            ? 'bg-primary text-primary-foreground' 
+                            : 'bg-muted text-muted-foreground'
+                        } ${isCurrent ? 'ring-4 ring-primary/30' : ''}`}>
+                          {isCompleted ? <CheckCircle className="h-5 w-5" /> : stepNumber}
+                        </div>
+                        <div className="flex-1">
+                          <p className={`font-medium ${isCompleted ? 'text-primary' : 'text-muted-foreground'}`}>
+                            {step.label}
+                          </p>
+                          {isCurrent && (
+                            <p className="text-xs text-muted-foreground animate-pulse">Sasa hivi...</p>
+                          )}
+                        </div>
+                        {idx < orderSteps.length - 1 && (
+                          <div className={`w-px h-8 ${isCompleted ? 'bg-primary' : 'bg-muted'}`} />
+                        )}
+                      </div>
+                    );
+                  })}
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Back to Sokoni */}
+            <div className="text-center">
+              <Link to="/sokoni" className="inline-flex items-center text-primary hover:underline font-medium">
+                <Store className="h-5 w-5 mr-2" />
+                Rudi Sokoni
+              </Link>
+            </div>
+          </div>
+
+          {/* RIGHT SIDE - Search Form & Results */}
+          <div className="flex-1 lg:pl-12 space-y-6">
+            {/* Search Form */}
+            <Card className="shadow-lg">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Phone className="h-5 w-5" />
+                  Weka Namba ya Simu
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="relative">
+                  <Phone className="absolute left-4 top-3 h-5 w-5 text-muted-foreground" />
+                  <Input
+                    id="phone"
+                    type="tel"
+                    placeholder="0712 345 678"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                    className="pl-12 text-lg"
+                  />
+                </div>
+
+                <Button 
+                  className="w-full" 
+                  size="lg"
+                  onClick={handleSearch}
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <>
+                      <RefreshCw className="h-5 w-5 mr-2 animate-spin" />
+                      Inatafuta...
+                    </>
+                  ) : (
+                    <>
+                      <Search className="h-5 w-5 mr-2" />
+                      Tafuta Oda Zangu
+                    </>
+                  )}
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* Not Found */}
+            {notFound && hasSearched && (
+              <Card className="border-muted">
+                <CardContent className="p-8 text-center">
+                  <Package className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="font-bold text-lg">Hakuna Oda</h3>
+                  <p className="text-sm text-muted-foreground mt-2">
+                    Hakuna oda zilizopatikana kwa namba hii ya simu.
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Orders List */}
+            {orders.length > 0 && (
+              <div className="space-y-4">
+                <h2 className="font-bold text-lg flex items-center gap-2">
+                  <CheckCircle className="h-5 w-5 text-green-600" />
+                  Oda {orders.length} zimepatikana
+                </h2>
+                
+                {orders.map((order) => {
+                  const statusInfo = getStatusInfo(order.order_status);
+                  const StatusIcon = statusInfo.icon;
+                  const paymentInfo = getPaymentStatusInfo(order.payment_status);
+                  
+                  return (
+                    <Card key={order.id} className="shadow-md">
+                      <CardHeader className="pb-2">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <code className="font-mono text-lg font-bold text-primary">
+                              {order.tracking_code}
+                            </code>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {new Date(order.created_at).toLocaleDateString('sw-TZ', {
+                                day: 'numeric',
+                                month: 'short',
+                                year: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              })}
+                            </p>
+                          </div>
+                          <Badge className={statusInfo.color}>
+                            <StatusIcon className="h-4 w-4 mr-1" />
+                            {statusInfo.label}
+                          </Badge>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="pt-0 space-y-3">
+                        {/* Items */}
+                        <div className="space-y-2">
+                          {order.items.map((item, idx) => (
+                            <div key={idx} className="flex justify-between text-sm p-3 bg-muted/50 rounded-2xl">
+                              <span>{item.product_name} x{item.quantity}</span>
+                              <span className="font-bold">TSh {(item.unit_price * item.quantity).toLocaleString()}</span>
+                            </div>
+                          ))}
+                        </div>
+                        
+                        {/* Total */}
+                        <div className="flex justify-between text-lg font-bold pt-3 border-t">
+                          <span>Jumla</span>
+                          <span className="text-primary">TSh {order.total_amount.toLocaleString()}</span>
+                        </div>
+
+                        {/* Payment Status */}
+                        <div className="flex items-center justify-between">
+                          <span className="text-muted-foreground">Malipo</span>
+                          <Badge className={paymentInfo.color}>
+                            {paymentInfo.label}
+                          </Badge>
+                        </div>
+
+                        {/* Pay Button */}
+                        {order.order_status === 'delivered' && order.payment_status !== 'paid' && !order.customer_received && (
+                          <Button 
+                            className="w-full"
+                            size="lg"
+                            onClick={() => navigate(`/customer-payment?phone=${phone}&code=${order.tracking_code}`)}
+                          >
+                            <CreditCard className="h-5 w-5 mr-2" />
+                            Thibitisha na Lipa
+                          </Button>
+                        )}
+                        
+                        {/* Paid Confirmation */}
+                        {order.payment_status === 'paid' && (
+                          <div className="flex items-center gap-2 p-3 bg-green-50 dark:bg-green-900/20 rounded-2xl text-green-700 dark:text-green-300">
+                            <CheckCircle className="h-5 w-5" />
+                            <span className="font-medium">Malipo yamekamilika!</span>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
