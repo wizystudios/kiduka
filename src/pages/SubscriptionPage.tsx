@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -13,8 +13,9 @@ import {
   Phone,
   Loader2,
   CheckCircle,
-  Calendar,
-  AlertTriangle
+  AlertTriangle,
+  ArrowUpRight,
+  Sparkles
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -131,225 +132,280 @@ export const SubscriptionPage = () => {
   const statusInfo = subscription?.status ? getStatusInfo(subscription.status) : getStatusInfo('expired');
   const StatusIcon = statusInfo.icon;
   const renewalDate = getRenewalDate();
+  const hasActivePlan = subscription?.status === 'active' || subscription?.status === 'trial';
+  const needsPayment = subscription?.requires_payment || subscription?.status === 'expired';
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-background dark:via-background dark:to-background p-4">
-      <div className="max-w-2xl mx-auto space-y-6">
-        <BackButton to="/dashboard" className="mb-4" />
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-background dark:via-background dark:to-background">
+      <div className="max-w-6xl mx-auto p-4 md:p-6">
+        <BackButton to="/dashboard" className="mb-6" />
         
-        {/* Header with Kiduka Logo centered */}
-        <div className="flex flex-col items-center justify-center space-y-4">
-          <KidukaLogo size="xl" animate />
-          <div className="text-center">
-            <h1 className="text-2xl font-bold">Michango</h1>
-            <p className="text-muted-foreground text-sm">Simamia usajili wako</p>
-          </div>
-        </div>
-
-        {/* Plan & Status Card */}
-        <Card className="shadow-lg overflow-hidden">
-          <div className="bg-gradient-to-r from-primary to-primary/80 p-4 text-primary-foreground">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Crown className="h-8 w-8" />
-                <div>
-                  <p className="text-sm opacity-90">Mpango Wako</p>
-                  <p className="text-xl font-bold">{getPlanName(subscription?.status || 'expired')}</p>
-                </div>
+        {/* Split Layout Container */}
+        <div className="flex flex-col lg:flex-row min-h-[80vh] relative">
+          {/* Center Divider - The "Tree" line */}
+          <div className="hidden lg:flex absolute left-1/2 top-0 bottom-0 -translate-x-1/2 flex-col items-center z-10">
+            {/* Top branch */}
+            <div className="w-px h-12 bg-gradient-to-b from-transparent to-primary/30" />
+            <ArrowUpRight className="h-5 w-5 text-primary/50 -rotate-45" />
+            <div className="w-px flex-1 bg-gradient-to-b from-primary/30 via-primary to-primary/30 relative">
+              {/* Branch arrows */}
+              <div className="absolute top-1/4 left-0 -translate-x-full pr-2">
+                <ArrowUpRight className="h-4 w-4 text-primary/40 rotate-180" />
               </div>
-              <Badge className={statusInfo.color}>
-                {statusInfo.label}
-              </Badge>
+              <div className="absolute top-1/4 right-0 translate-x-full pl-2">
+                <ArrowUpRight className="h-4 w-4 text-primary/40" />
+              </div>
+              <div className="absolute top-1/2 left-0 -translate-x-full pr-2">
+                <ArrowUpRight className="h-4 w-4 text-primary/60 rotate-180" />
+              </div>
+              <div className="absolute top-1/2 right-0 translate-x-full pl-2">
+                <ArrowUpRight className="h-4 w-4 text-primary/60" />
+              </div>
+              <div className="absolute top-3/4 left-0 -translate-x-full pr-2">
+                <ArrowUpRight className="h-4 w-4 text-primary/40 rotate-180" />
+              </div>
+              <div className="absolute top-3/4 right-0 translate-x-full pl-2">
+                <ArrowUpRight className="h-4 w-4 text-primary/40" />
+              </div>
             </div>
+            <ArrowUpRight className="h-5 w-5 text-primary/50 rotate-135" />
+            <div className="w-px h-12 bg-gradient-to-t from-transparent to-primary/30" />
           </div>
-          
-          <CardContent className="p-4 space-y-4">
-            {/* Real-time Countdown */}
-            {renewalDate && subscription?.status !== 'expired' && (
-              <div className="space-y-3">
-                <p className="text-center text-sm text-muted-foreground">
-                  {subscription?.status === 'trial' ? 'Majaribio yanaisha baada ya:' : 'Usajili unaisha baada ya:'}
-                </p>
-                <SubscriptionCountdown targetDate={renewalDate} />
+
+          {/* LEFT SIDE - Payment Form */}
+          <div className="flex-1 lg:pr-12 space-y-6 mb-8 lg:mb-0">
+            {/* Header with Kiduka Logo centered */}
+            <div className="flex flex-col items-center justify-center space-y-4 py-6">
+              <KidukaLogo size="xl" animate />
+              <div className="text-center">
+                <h1 className="text-2xl font-bold">Michango</h1>
+                <p className="text-muted-foreground text-sm">Simamia usajili wako</p>
               </div>
-            )}
-            
-            {subscription?.status === 'expired' && (
-              <div className="text-center p-4 bg-red-50 dark:bg-red-900/20 rounded-2xl">
-                <AlertTriangle className="h-10 w-10 text-red-600 mx-auto mb-2" />
-                <p className="font-semibold text-red-800 dark:text-red-300">Usajili Wako Umeisha</p>
-                <p className="text-sm text-red-600 dark:text-red-400">Lipa ili kuendelea kutumia Kiduka POS</p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+            </div>
 
-        {/* Payment/Action Card */}
-        {(subscription?.requires_payment || subscription?.status === 'expired') && (
-          <Card className="shadow-lg">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <CreditCard className="h-5 w-5" />
-                Lipa Usajili
-              </CardTitle>
-              <CardDescription>
-                Lipa TSh 10,000 kwa mwezi ili kuendelea kutumia Kiduka POS
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {subscription?.status === 'pending_approval' ? (
-                <div className="text-center p-6 bg-blue-50 dark:bg-blue-900/20 rounded-2xl">
-                  <Loader2 className="h-10 w-10 text-blue-600 mx-auto mb-3 animate-spin" />
-                  <h3 className="font-semibold text-blue-800 dark:text-blue-300 mb-1">
-                    Inasubiri Idhini ya Admin
-                  </h3>
-                  <p className="text-sm text-blue-600 dark:text-blue-400">
-                    Ombi lako limetumwa. Tafadhali subiri admin akuidhinishe.
-                  </p>
-                </div>
-              ) : paymentInitiated ? (
-                <div className="text-center p-6 bg-green-50 dark:bg-green-900/20 rounded-2xl">
-                  <Loader2 className="h-10 w-10 text-green-600 mx-auto mb-3 animate-spin" />
-                  <h3 className="font-semibold text-green-800 dark:text-green-300 mb-1">
-                    Malipo Yanasubiriwa
-                  </h3>
-                  <p className="text-sm text-green-600 dark:text-green-400">
-                    Kamilisha malipo kwenye simu yako.
-                  </p>
-                </div>
-              ) : (
-                <>
-                  {/* Pricing */}
-                  <div className="text-center p-4 bg-gradient-to-r from-primary/10 to-primary/5 rounded-2xl">
-                    <p className="text-3xl font-bold text-primary">TSh 10,000</p>
-                    <p className="text-sm text-muted-foreground">kwa mwezi</p>
-                  </div>
-
-                  {/* Features */}
-                  <div className="space-y-2">
-                    {[
-                      'Bidhaa zisizo na kikomo',
-                      'Mauzo yasiye na kikomo',
-                      'Ripoti za kina',
-                      'Sokoni Marketplace',
-                      'Msaada wa kiufundi'
-                    ].map((feature, idx) => (
-                      <div key={idx} className="flex items-center gap-2 text-sm">
-                        <Check className="h-4 w-4 text-green-600" />
-                        <span>{feature}</span>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Payment Form */}
-                  <div className="space-y-3 pt-4 border-t">
-                    <div className="space-y-2">
-                      <Label htmlFor="phone">Namba ya Simu (M-Pesa/Tigo Pesa)</Label>
-                      <div className="relative">
-                        <Phone className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                        <Input
-                          id="phone"
-                          type="tel"
-                          placeholder="0712 345 678"
-                          value={phoneNumber}
-                          onChange={(e) => setPhoneNumber(e.target.value)}
-                          className="pl-10 rounded-xl"
-                        />
-                      </div>
+            {/* Payment/Action Card */}
+            {needsPayment && (
+              <Card className="shadow-lg">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <CreditCard className="h-5 w-5" />
+                    Lipa Usajili
+                  </CardTitle>
+                  <CardDescription>
+                    Lipa TSh 10,000 kwa mwezi ili kuendelea kutumia Kiduka POS
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {subscription?.status === 'pending_approval' ? (
+                    <div className="text-center p-6 bg-blue-50 dark:bg-blue-900/20 rounded-3xl">
+                      <Loader2 className="h-10 w-10 text-blue-600 mx-auto mb-3 animate-spin" />
+                      <h3 className="font-semibold text-blue-800 dark:text-blue-300 mb-1">
+                        Inasubiri Idhini ya Admin
+                      </h3>
+                      <p className="text-sm text-blue-600 dark:text-blue-400">
+                        Ombi lako limetumwa. Tafadhali subiri admin akuidhinishe.
+                      </p>
                     </div>
+                  ) : paymentInitiated ? (
+                    <div className="text-center p-6 bg-green-50 dark:bg-green-900/20 rounded-3xl">
+                      <Loader2 className="h-10 w-10 text-green-600 mx-auto mb-3 animate-spin" />
+                      <h3 className="font-semibold text-green-800 dark:text-green-300 mb-1">
+                        Malipo Yanasubiriwa
+                      </h3>
+                      <p className="text-sm text-green-600 dark:text-green-400">
+                        Kamilisha malipo kwenye simu yako.
+                      </p>
+                    </div>
+                  ) : (
+                    <>
+                      {/* Pricing */}
+                      <div className="text-center p-4 bg-gradient-to-r from-primary/10 to-primary/5 rounded-3xl">
+                        <p className="text-4xl font-bold text-primary">TSh 10,000</p>
+                        <p className="text-sm text-muted-foreground">kwa mwezi</p>
+                      </div>
 
+                      {/* Features */}
+                      <div className="grid grid-cols-2 gap-2">
+                        {[
+                          'Bidhaa zisizo na kikomo',
+                          'Mauzo yasiye na kikomo',
+                          'Ripoti za kina',
+                          'Sokoni Marketplace',
+                          'Msaada wa kiufundi',
+                          'Discount & Offers'
+                        ].map((feature, idx) => (
+                          <div key={idx} className="flex items-center gap-2 text-sm bg-muted/50 p-2 rounded-xl">
+                            <Check className="h-4 w-4 text-green-600 flex-shrink-0" />
+                            <span className="text-xs">{feature}</span>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Payment Form */}
+                      <div className="space-y-4 pt-4 border-t">
+                        <div className="space-y-2">
+                          <Label htmlFor="phone">Namba ya Simu (M-Pesa/Tigo Pesa)</Label>
+                          <div className="relative">
+                            <Phone className="absolute left-4 top-3 h-5 w-5 text-muted-foreground" />
+                            <Input
+                              id="phone"
+                              type="tel"
+                              placeholder="0712 345 678"
+                              value={phoneNumber}
+                              onChange={(e) => setPhoneNumber(e.target.value)}
+                              className="pl-12"
+                            />
+                          </div>
+                        </div>
+
+                        <Button 
+                          onClick={handlePayment} 
+                          className="w-full" 
+                          size="lg"
+                          disabled={processing}
+                        >
+                          {processing ? (
+                            <>
+                              <Loader2 className="h-5 w-5 animate-spin mr-2" />
+                              Inaandaa...
+                            </>
+                          ) : (
+                            <>
+                              <CreditCard className="h-5 w-5 mr-2" />
+                              Lipa Sasa
+                            </>
+                          )}
+                        </Button>
+
+                        <div className="relative">
+                          <div className="absolute inset-0 flex items-center">
+                            <span className="w-full border-t" />
+                          </div>
+                          <div className="relative flex justify-center text-xs uppercase">
+                            <span className="bg-card px-2 text-muted-foreground">Au</span>
+                          </div>
+                        </div>
+
+                        <Button 
+                          variant="outline" 
+                          className="w-full"
+                          onClick={handleManualRequest}
+                          disabled={processing}
+                        >
+                          Omba Idhini ya Admin
+                        </Button>
+                      </div>
+                    </>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Money Back Guarantee */}
+            <Card className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border-green-200 dark:border-green-800 shadow-lg">
+              <CardContent className="flex items-center gap-4 py-4">
+                <Shield className="h-10 w-10 text-green-600 flex-shrink-0" />
+                <div>
+                  <h3 className="font-bold text-green-800 dark:text-green-300">
+                    Dhamana ya Kuridhika
+                  </h3>
+                  <p className="text-green-700 dark:text-green-400 text-sm">
+                    Ukihitaji msaada, wasiliana nasi kupitia WhatsApp.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* RIGHT SIDE - Status & Results */}
+          <div className="flex-1 lg:pl-12 space-y-6">
+            {/* Plan & Status Card */}
+            <Card className="shadow-lg overflow-hidden">
+              <div className="bg-gradient-to-r from-primary to-primary/80 p-6 text-primary-foreground">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <Crown className="h-10 w-10" />
+                    <div>
+                      <p className="text-sm opacity-90">Mpango Wako</p>
+                      <p className="text-2xl font-bold">{getPlanName(subscription?.status || 'expired')}</p>
+                    </div>
+                  </div>
+                  <Badge className={`${statusInfo.color} text-sm px-3 py-1`}>
+                    {statusInfo.label}
+                  </Badge>
+                </div>
+              </div>
+              
+              <CardContent className="p-6 space-y-6">
+                {/* Real-time Countdown */}
+                {renewalDate && subscription?.status !== 'expired' && (
+                  <div className="space-y-4">
+                    <p className="text-center text-sm text-muted-foreground font-medium">
+                      {subscription?.status === 'trial' ? 'Majaribio yanaisha baada ya:' : 'Usajili unaisha baada ya:'}
+                    </p>
+                    <SubscriptionCountdown targetDate={renewalDate} />
+                  </div>
+                )}
+                
+                {subscription?.status === 'expired' && (
+                  <div className="text-center p-6 bg-red-50 dark:bg-red-900/20 rounded-3xl">
+                    <AlertTriangle className="h-12 w-12 text-red-600 mx-auto mb-3" />
+                    <p className="font-bold text-lg text-red-800 dark:text-red-300">Usajili Wako Umeisha</p>
+                    <p className="text-sm text-red-600 dark:text-red-400">Lipa ili kuendelea kutumia Kiduka POS</p>
+                  </div>
+                )}
+
+                {/* Active Status */}
+                {subscription?.status === 'active' && !subscription?.requires_payment && (
+                  <div className="text-center p-6 bg-green-50 dark:bg-green-900/20 rounded-3xl">
+                    <CheckCircle className="h-14 w-14 text-green-600 mx-auto mb-4" />
+                    <h3 className="text-xl font-bold text-green-800 dark:text-green-300 mb-2">
+                      Akaunti Yako ni Hai!
+                    </h3>
+                    <p className="text-green-700 dark:text-green-400">
+                      Endelea kutumia Kiduka POS bila wasiwasi.
+                    </p>
                     <Button 
-                      onClick={handlePayment} 
-                      className="w-full rounded-xl" 
-                      size="lg"
-                      disabled={processing}
+                      onClick={() => navigate('/dashboard')} 
+                      className="mt-4"
+                      variant="outline"
                     >
-                      {processing ? (
-                        <>
-                          <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                          Inaandaa...
-                        </>
-                      ) : (
-                        <>
-                          <CreditCard className="h-4 w-4 mr-2" />
-                          Lipa Sasa
-                        </>
-                      )}
+                      Rudi Dashboard
                     </Button>
                   </div>
+                )}
 
-                  <div className="relative">
-                    <div className="absolute inset-0 flex items-center">
-                      <span className="w-full border-t" />
-                    </div>
-                    <div className="relative flex justify-center text-xs uppercase">
-                      <span className="bg-background px-2 text-muted-foreground">Au</span>
-                    </div>
+                {/* Trial Status */}
+                {subscription?.status === 'trial' && !subscription?.requires_payment && (
+                  <div className="text-center p-6 bg-blue-50 dark:bg-blue-900/20 rounded-3xl">
+                    <Sparkles className="h-12 w-12 text-blue-600 mx-auto mb-3" />
+                    <h3 className="text-lg font-bold text-blue-800 dark:text-blue-300 mb-2">
+                      Kipindi cha Majaribio
+                    </h3>
+                    <p className="text-blue-700 dark:text-blue-400 text-sm">
+                      Furahia huduma zote bure hadi kipindi kiishe.
+                    </p>
                   </div>
+                )}
+              </CardContent>
+            </Card>
 
-                  <Button 
-                    variant="outline" 
-                    className="w-full rounded-xl"
-                    onClick={handleManualRequest}
-                    disabled={processing}
-                  >
-                    Omba Idhini ya Admin (Bila kulipa sasa)
-                  </Button>
-                </>
-              )}
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Active subscription info */}
-        {subscription?.status === 'active' && !subscription?.requires_payment && (
-          <Card className="shadow-lg bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border-green-200 dark:border-green-800">
-            <CardContent className="text-center py-8">
-              <CheckCircle className="h-12 w-12 text-green-600 mx-auto mb-4" />
-              <h3 className="text-xl font-bold text-green-800 dark:text-green-300 mb-2">
-                Akaunti Yako ni Hai!
-              </h3>
-              <p className="text-green-700 dark:text-green-400">
-                Endelea kutumia Kiduka POS bila wasiwasi.
-              </p>
-              <Button 
-                onClick={() => navigate('/dashboard')} 
-                className="mt-4 rounded-xl"
-                variant="outline"
-              >
-                Rudi Dashboard
-              </Button>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Trial info */}
-        {subscription?.status === 'trial' && !subscription?.requires_payment && (
-          <Card className="shadow-lg bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border-blue-200 dark:border-blue-800">
-            <CardContent className="text-center py-6">
-              <Clock className="h-10 w-10 text-blue-600 mx-auto mb-3" />
-              <h3 className="text-lg font-bold text-blue-800 dark:text-blue-300 mb-2">
-                Uko Katika Kipindi cha Majaribio
-              </h3>
-              <p className="text-blue-700 dark:text-blue-400 text-sm">
-                Lipa kabla ya kipindi kuisha ili kuendelea kutumia.
-              </p>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Money Back Guarantee */}
-        <Card className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border-green-200 dark:border-green-800 shadow-lg">
-          <CardContent className="text-center py-6">
-            <Shield className="h-10 w-10 text-green-600 mx-auto mb-3" />
-            <h3 className="text-lg font-bold text-green-800 dark:text-green-300 mb-2">
-              Dhamana ya Kuridhika
-            </h3>
-            <p className="text-green-700 dark:text-green-400 text-sm">
-              Ukihitaji msaada, wasiliana nasi kupitia WhatsApp.
-            </p>
-          </CardContent>
-        </Card>
+            {/* User Info */}
+            <Card className="shadow-sm">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3">
+                  <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+                    <Crown className="h-6 w-6 text-primary" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-medium">{userProfile?.full_name || 'Mtumiaji'}</p>
+                    <p className="text-sm text-muted-foreground">{userProfile?.business_name || 'Biashara'}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
       </div>
     </div>
   );
