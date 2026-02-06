@@ -32,7 +32,7 @@ import { OrderReceiptDialog } from './OrderReceiptDialog';
 import { SokoniProductDetail } from './SokoniProductDetail';
 import { useWishlist } from '@/hooks/useWishlist';
 import { SokoniBottomNav } from './SokoniBottomNav';
-
+import { ImageSearchModal } from './ImageSearchModal';
 interface MarketProduct {
   id: string;
   name: string;
@@ -150,6 +150,7 @@ export const SokoniMarketplace = () => {
   const [cartSheetOpen, setCartSheetOpen] = useState(false);
   const [categories, setCategories] = useState<CategoryItem[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(searchParams.get('category'));
+  const [imageSearchOpen, setImageSearchOpen] = useState(false);
   
   // Receipt dialog state
   const [receiptOpen, setReceiptOpen] = useState(false);
@@ -559,6 +560,7 @@ export const SokoniMarketplace = () => {
               variant="ghost" 
               size="icon" 
               className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 text-primary-foreground"
+              onClick={() => setImageSearchOpen(true)}
             >
               <Camera className="h-4 w-4" />
             </Button>
@@ -1078,6 +1080,9 @@ export const SokoniMarketplace = () => {
           )}
         </SheetContent>
       </Sheet>
+
+      {/* Image Search Modal */}
+      <ImageSearchModal open={imageSearchOpen} onClose={() => setImageSearchOpen(false)} />
     </div>
   );
 };

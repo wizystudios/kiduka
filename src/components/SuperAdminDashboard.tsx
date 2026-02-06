@@ -14,7 +14,8 @@ import {
   TrendingUp, Eye, Pencil, Trash2, Plus, Search,
   RefreshCw, BarChart3, Store, CreditCard, Bell,
   Settings, AlertTriangle, CheckCircle, XCircle, ChevronRight,
-  Download, FileSpreadsheet, FileText, Clock, UserPlus, DollarSign
+  Download, FileSpreadsheet, FileText, Clock, UserPlus, DollarSign,
+  Building2, Phone, Mail
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -22,6 +23,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useAdminNotifications } from '@/hooks/useAdminNotifications';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 import { exportToExcel, exportToPDF, createPrintableTable } from '@/utils/exportUtils';
+import { AdminPasswordDialog } from './AdminPasswordDialog';
 
 interface StatCard {
   title: string;
@@ -151,6 +153,8 @@ export const SuperAdminDashboard = () => {
   const [viewDialog, setViewDialog] = useState<{type: string; data: any} | null>(null);
   const [editDialog, setEditDialog] = useState<{type: string; data: any} | null>(null);
   const [deleteDialog, setDeleteDialog] = useState<{type: string; id: string; name: string} | null>(null);
+  const [passwordDialog, setPasswordDialog] = useState<{action: string; callback: () => void} | null>(null);
+  const [selectedBusiness, setSelectedBusiness] = useState<string | null>(null);
   
   useEffect(() => {
     fetchAllData();
@@ -1776,6 +1780,15 @@ export const SuperAdminDashboard = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Admin Password Dialog */}
+      <AdminPasswordDialog
+        open={!!passwordDialog}
+        onClose={() => setPasswordDialog(null)}
+        onConfirm={() => passwordDialog?.callback()}
+        action={passwordDialog?.action || ''}
+        description="Kitendo hiki kinahitaji uthibitisho wa nenosiri la admin."
+      />
     </div>
   );
 };

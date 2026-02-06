@@ -1,18 +1,17 @@
 import { useState, useEffect } from 'react';
 
-interface CountdownProps {
+interface SubscriptionCountdownProps {
   targetDate: string;
+  compact?: boolean;
 }
 
-interface TimeLeft {
-  days: number;
-  hours: number;
-  minutes: number;
-  seconds: number;
-}
-
-export const SubscriptionCountdown = ({ targetDate }: CountdownProps) => {
-  const [timeLeft, setTimeLeft] = useState<TimeLeft>({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+export const SubscriptionCountdown = ({ targetDate, compact = false }: SubscriptionCountdownProps) => {
+  const [timeLeft, setTimeLeft] = useState({
+    days: 0,
+    hours: 0,
+    minutes: 0,
+    seconds: 0
+  });
 
   useEffect(() => {
     const calculateTimeLeft = () => {
@@ -38,24 +37,40 @@ export const SubscriptionCountdown = ({ targetDate }: CountdownProps) => {
     return () => clearInterval(timer);
   }, [targetDate]);
 
-  const TimeBlock = ({ value, label }: { value: number; label: string }) => (
-    <div className="flex flex-col items-center">
-      <div className="bg-gradient-to-br from-primary to-primary/80 text-primary-foreground rounded-2xl w-16 h-16 flex items-center justify-center shadow-lg">
-        <span className="text-2xl font-bold">{String(value).padStart(2, '0')}</span>
+  const formatNumber = (num: number) => num.toString().padStart(2, '0');
+
+  if (compact) {
+    return (
+      <div className="flex items-center justify-center gap-1 text-sm font-mono">
+        <span className="bg-muted px-1.5 py-0.5 rounded text-xs font-bold">{timeLeft.days}d</span>
+        <span className="text-muted-foreground">:</span>
+        <span className="bg-muted px-1.5 py-0.5 rounded text-xs font-bold">{formatNumber(timeLeft.hours)}h</span>
+        <span className="text-muted-foreground">:</span>
+        <span className="bg-muted px-1.5 py-0.5 rounded text-xs font-bold">{formatNumber(timeLeft.minutes)}m</span>
+        <span className="text-muted-foreground">:</span>
+        <span className="bg-muted px-1.5 py-0.5 rounded text-xs font-bold">{formatNumber(timeLeft.seconds)}s</span>
       </div>
-      <span className="text-xs text-muted-foreground mt-1 font-medium">{label}</span>
-    </div>
-  );
+    );
+  }
 
   return (
-    <div className="flex items-center justify-center gap-2">
-      <TimeBlock value={timeLeft.days} label="Siku" />
-      <span className="text-2xl font-bold text-muted-foreground self-start mt-4">:</span>
-      <TimeBlock value={timeLeft.hours} label="Saa" />
-      <span className="text-2xl font-bold text-muted-foreground self-start mt-4">:</span>
-      <TimeBlock value={timeLeft.minutes} label="Dakika" />
-      <span className="text-2xl font-bold text-muted-foreground self-start mt-4">:</span>
-      <TimeBlock value={timeLeft.seconds} label="Sekunde" />
+    <div className="grid grid-cols-4 gap-2 text-center">
+      <div className="p-2 bg-muted rounded-xl">
+        <p className="text-lg font-bold font-mono">{timeLeft.days}</p>
+        <p className="text-[10px] text-muted-foreground">Siku</p>
+      </div>
+      <div className="p-2 bg-muted rounded-xl">
+        <p className="text-lg font-bold font-mono">{formatNumber(timeLeft.hours)}</p>
+        <p className="text-[10px] text-muted-foreground">Saa</p>
+      </div>
+      <div className="p-2 bg-muted rounded-xl">
+        <p className="text-lg font-bold font-mono">{formatNumber(timeLeft.minutes)}</p>
+        <p className="text-[10px] text-muted-foreground">Dakika</p>
+      </div>
+      <div className="p-2 bg-muted rounded-xl">
+        <p className="text-lg font-bold font-mono">{formatNumber(timeLeft.seconds)}</p>
+        <p className="text-[10px] text-muted-foreground">Sekunde</p>
+      </div>
     </div>
   );
 };
