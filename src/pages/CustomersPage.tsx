@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -6,11 +5,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Plus, Search, Edit, Trash2, Users, Mail, Phone, MapPin, Star, FileText, FileSpreadsheet, Download } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, Users, Mail, Phone, FileText, FileSpreadsheet, AlertTriangle, DollarSign } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { CustomerLedger } from '@/components/CustomerLedger';
-import { exportToExcel, exportToCSV, ExportColumn } from '@/utils/exportUtils';
+import { exportToExcel, ExportColumn } from '@/utils/exportUtils';
 
 interface Customer {
   id: string;
@@ -43,18 +42,12 @@ export const CustomersPage = () => {
 
   const fetchCustomers = async () => {
     try {
-      console.log('Fetching customers...');
       const { data, error } = await supabase
         .from('customers')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) {
-        console.error('Error fetching customers:', error);
-        throw error;
-      }
-      
-      console.log('Customers loaded:', data?.length || 0);
+      if (error) throw error;
       setCustomers(data || []);
     } catch (error) {
       console.error('Error fetching customers:', error);
@@ -71,8 +64,8 @@ export const CustomersPage = () => {
   const handleSaveCustomer = async () => {
     if (!customerData.name.trim()) {
       toast({
-        title: 'Error',
-        description: 'Customer name is required',
+        title: 'Hitilafu',
+        description: 'Jina la mteja linahitajika',
         variant: 'destructive'
       });
       return;
@@ -90,7 +83,7 @@ export const CustomersPage = () => {
           .eq('id', editingCustomer.id);
 
         if (error) throw error;
-        toast({ title: 'Success', description: 'Customer updated successfully' });
+        toast({ title: 'Mafanikio', description: 'Mteja amesasishwa' });
       } else {
         const { error } = await supabase
           .from('customers')
@@ -102,7 +95,7 @@ export const CustomersPage = () => {
           });
 
         if (error) throw error;
-        toast({ title: 'Success', description: 'Customer added successfully' });
+        toast({ title: 'Mafanikio', description: 'Mteja ameongezwa' });
       }
 
       setCustomerData({ name: '', email: '', phone: '' });
@@ -112,8 +105,8 @@ export const CustomersPage = () => {
     } catch (error) {
       console.error('Error saving customer:', error);
       toast({
-        title: 'Error',
-        description: 'Failed to save customer',
+        title: 'Hitilafu',
+        description: 'Imeshindwa kuhifadhi mteja',
         variant: 'destructive'
       });
     }
@@ -130,7 +123,7 @@ export const CustomersPage = () => {
   };
 
   const handleDeleteCustomer = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this customer?')) return;
+    if (!confirm('Una uhakika unataka kufuta mteja huyu?')) return;
 
     try {
       const { error } = await supabase
@@ -141,12 +134,12 @@ export const CustomersPage = () => {
       if (error) throw error;
       
       setCustomers(customers.filter(c => c.id !== id));
-      toast({ title: 'Success', description: 'Customer deleted successfully' });
+      toast({ title: 'Mafanikio', description: 'Mteja amefutwa' });
     } catch (error) {
       console.error('Error deleting customer:', error);
       toast({
-        title: 'Error',
-        description: 'Failed to delete customer',
+        title: 'Hitilafu',
+        description: 'Imeshindwa kufuta mteja',
         variant: 'destructive'
       });
     }
@@ -175,11 +168,14 @@ export const CustomersPage = () => {
     customer.phone?.includes(searchTerm)
   );
 
+  const totalDebt = customers.reduce((sum, c) => sum + (c.outstanding_balance || 0), 0);
+  const customersWithDebt = customers.filter(c => (c.outstanding_balance || 0) > 0).length;
+
   if (loading) {
     return (
       <div className="p-4 space-y-4">
         {[...Array(5)].map((_, i) => (
-          <div key={i} className="h-20 bg-gray-200 rounded-lg animate-pulse" />
+          <div key={i} className="h-20 bg-muted rounded-2xl animate-pulse" />
         ))}
       </div>
     );
@@ -187,10 +183,11 @@ export const CustomersPage = () => {
 
   return (
     <div className="p-4 space-y-6">
+      {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Usimamizi wa Wateja</h2>
-          <p className="text-gray-600">Simamia wateja na pointi za utii</p>
+          <h2 className="text-2xl font-bold">Usimamizi wa Wateja</h2>
+          <p className="text-muted-foreground text-sm">Simamia wateja na madeni</p>
         </div>
         
         <div className="flex gap-2">
@@ -204,123 +201,173 @@ export const CustomersPage = () => {
           </Button>
           
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="bg-blue-600 hover:bg-blue-700 text-white">
-              <Plus className="h-4 w-4 mr-2" />
-              Ongeza Mteja
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>{editingCustomer ? 'Hariri Mteja' : 'Ongeza Mteja Mpya'}</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="name">Jina *</Label>
-                <Input
-                  id="name"
-                  value={customerData.name}
-                  onChange={(e) => setCustomerData({...customerData, name: e.target.value})}
-                  placeholder="Jina la mteja"
-                />
-              </div>
-              <div>
-                <Label htmlFor="email">Barua Pepe</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={customerData.email}
-                  onChange={(e) => setCustomerData({...customerData, email: e.target.value})}
-                  placeholder="mteja@email.com"
-                />
-              </div>
-              <div>
-                <Label htmlFor="phone">Simu</Label>
-                <Input
-                  id="phone"
-                  value={customerData.phone}
-                  onChange={(e) => setCustomerData({...customerData, phone: e.target.value})}
-                  placeholder="+255 123 456 789"
-                />
-              </div>
-              <Button onClick={handleSaveCustomer} className="w-full bg-blue-600 hover:bg-blue-700">
-                {editingCustomer ? 'Sasisha Mteja' : 'Ongeza Mteja'}
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="h-4 w-4 mr-2" />
+                Ongeza Mteja
               </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>{editingCustomer ? 'Hariri Mteja' : 'Ongeza Mteja Mpya'}</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="name">Jina *</Label>
+                  <Input
+                    id="name"
+                    value={customerData.name}
+                    onChange={(e) => setCustomerData({...customerData, name: e.target.value})}
+                    placeholder="Jina la mteja"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="email">Barua Pepe</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={customerData.email}
+                    onChange={(e) => setCustomerData({...customerData, email: e.target.value})}
+                    placeholder="mteja@email.com"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="phone">Simu</Label>
+                  <Input
+                    id="phone"
+                    value={customerData.phone}
+                    onChange={(e) => setCustomerData({...customerData, phone: e.target.value})}
+                    placeholder="+255 123 456 789"
+                  />
+                </div>
+                <Button onClick={handleSaveCustomer} className="w-full">
+                  {editingCustomer ? 'Sasisha Mteja' : 'Ongeza Mteja'}
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
 
+      {/* Summary Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-xl">
+                <Users className="h-5 w-5 text-blue-600" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold">{customers.length}</p>
+                <p className="text-xs text-muted-foreground">Wateja Wote</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-xl">
+                <AlertTriangle className="h-5 w-5 text-red-600" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold">{customersWithDebt}</p>
+                <p className="text-xs text-muted-foreground">Wenye Madeni</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="col-span-2">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-xl">
+                <DollarSign className="h-5 w-5 text-orange-600" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-orange-600">TSh {totalDebt.toLocaleString()}</p>
+                <p className="text-xs text-muted-foreground">Jumla ya Madeni</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Search */}
       <div className="relative">
-        <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
-          placeholder="Search customers by name, email, or phone..."
+          placeholder="Tafuta mteja kwa jina, email, au simu..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="pl-10"
         />
       </div>
 
-      <div className="space-y-4">
+      {/* Customer Grid */}
+      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
         {filteredCustomers.map((customer) => (
           <Card key={customer.id} className="hover:shadow-lg transition-all duration-300">
             <CardContent className="p-4">
-              <div className="flex justify-between items-center">
-                <div className="flex items-center space-x-4">
-                  <div className="bg-blue-100 p-3 rounded-full">
-                    <Users className="h-6 w-6 text-blue-600" />
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-start gap-3 flex-1 min-w-0">
+                  <div className="bg-primary/10 p-3 rounded-xl flex-shrink-0">
+                    <Users className="h-5 w-5 text-primary" />
                   </div>
-                  <div>
-                    <h3 className="font-semibold text-lg">{customer.name}</h3>
-                    <div className="space-y-1 text-sm text-gray-600">
-                      {customer.email && (
-                        <div className="flex items-center space-x-2">
-                          <Mail className="h-4 w-4" />
-                          <span>{customer.email}</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h3 className="font-semibold truncate">{customer.name}</h3>
+                      {(customer.outstanding_balance || 0) > 0 && (
+                        <Badge className="bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300 text-xs">
+                          Deni: TSh {(customer.outstanding_balance || 0).toLocaleString()}
+                        </Badge>
+                      )}
+                    </div>
+                    <div className="space-y-1 text-sm text-muted-foreground mt-1">
+                      {customer.phone && (
+                        <div className="flex items-center gap-2">
+                          <Phone className="h-3 w-3" />
+                          <span className="truncate">{customer.phone}</span>
                         </div>
                       )}
-                      {customer.phone && (
-                        <div className="flex items-center space-x-2">
-                          <Phone className="h-4 w-4" />
-                          <span>{customer.phone}</span>
+                      {customer.email && (
+                        <div className="flex items-center gap-2">
+                          <Mail className="h-3 w-3" />
+                          <span className="truncate">{customer.email}</span>
                         </div>
                       )}
                     </div>
                   </div>
                 </div>
                 
-                <div className="flex items-center space-x-3">
-                  <div className="flex space-x-1">
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      className="h-8 w-8 p-0"
-                      onClick={() => {
-                        setSelectedCustomer({ id: customer.id, name: customer.name });
-                        setLedgerOpen(true);
-                      }}
-                      title="View Ledger"
-                    >
-                      <FileText className="h-4 w-4" />
-                    </Button>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      className="h-8 w-8 p-0"
-                      onClick={() => handleEditCustomer(customer)}
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      className="h-8 w-8 p-0 text-red-500 hover:text-red-700"
-                      onClick={() => handleDeleteCustomer(customer.id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
+                <div className="flex gap-1 flex-shrink-0">
+                  <Button 
+                    variant="ghost" 
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={() => {
+                      setSelectedCustomer({ id: customer.id, name: customer.name });
+                      setLedgerOpen(true);
+                    }}
+                    title="Ona Leja"
+                  >
+                    <FileText className="h-4 w-4" />
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={() => handleEditCustomer(customer)}
+                  >
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="icon"
+                    className="h-8 w-8 text-red-500 hover:text-red-700"
+                    onClick={() => handleDeleteCustomer(customer.id)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
                 </div>
               </div>
             </CardContent>
@@ -331,30 +378,30 @@ export const CustomersPage = () => {
       {filteredCustomers.length === 0 && (
         <Card className="text-center py-12">
           <CardContent>
-            <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">No customers found</h3>
-            <p className="text-gray-600 mb-4">
-              {searchTerm ? "Try adjusting your search terms" : "Start by adding your first customer"}
+            <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <h3 className="text-lg font-semibold mb-2">Hakuna wateja</h3>
+            <p className="text-muted-foreground mb-4">
+              {searchTerm ? "Jaribu kutafuta kwa maneno mengine" : "Anza kwa kuongeza mteja wa kwanza"}
             </p>
             {!searchTerm && (
               <Button onClick={() => setDialogOpen(true)}>
                 <Plus className="h-4 w-4 mr-2" />
-                Add Customer
+                Ongeza Mteja
               </Button>
             )}
           </CardContent>
         </Card>
       )}
 
-    {/* Customer Ledger Dialog */}
-    {selectedCustomer && (
-      <CustomerLedger
-        customerId={selectedCustomer.id}
-        customerName={selectedCustomer.name}
-        open={ledgerOpen}
-        onOpenChange={setLedgerOpen}
-      />
-    )}
+      {/* Customer Ledger Dialog */}
+      {selectedCustomer && (
+        <CustomerLedger
+          customerId={selectedCustomer.id}
+          customerName={selectedCustomer.name}
+          open={ledgerOpen}
+          onOpenChange={setLedgerOpen}
+        />
+      )}
     </div>
   );
 };

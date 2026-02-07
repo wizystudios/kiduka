@@ -11,10 +11,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { 
   Shield, Users, Package, ShoppingCart, Wallet, 
-  TrendingUp, Eye, Pencil, Trash2, Plus, Search,
+  TrendingUp, Eye, Pencil, Trash2, Search,
   RefreshCw, BarChart3, Store, CreditCard, Bell,
-  Settings, AlertTriangle, CheckCircle, XCircle, ChevronRight,
-  Download, FileSpreadsheet, FileText, Clock, UserPlus, DollarSign,
+  Settings, AlertTriangle, CheckCircle, XCircle,
+  FileSpreadsheet, FileText, Clock, UserPlus, DollarSign,
   Building2, Phone, Mail
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -25,14 +25,6 @@ import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, R
 import { exportToExcel, exportToPDF, createPrintableTable } from '@/utils/exportUtils';
 import { AdminPasswordDialog } from './AdminPasswordDialog';
 
-interface StatCard {
-  title: string;
-  value: number;
-  icon: React.ReactNode;
-  trend?: string;
-  color: string;
-}
-
 interface User {
   id: string;
   email: string;
@@ -40,17 +32,20 @@ interface User {
   business_name: string;
   role: string;
   created_at: string;
+  phone?: string;
 }
 
 interface Product {
   id: string;
   name: string;
   price: number;
+  cost_price?: number;
   stock_quantity: number;
   owner_id: string;
   category: string;
   created_at: string;
   owner_name?: string;
+  business_name?: string;
 }
 
 interface Sale {
@@ -61,6 +56,7 @@ interface Sale {
   created_at: string;
   owner_id: string;
   owner_name?: string;
+  business_name?: string;
 }
 
 interface Expense {
@@ -71,6 +67,7 @@ interface Expense {
   expense_date: string;
   owner_id: string;
   owner_name?: string;
+  business_name?: string;
 }
 
 interface Customer {
@@ -82,6 +79,7 @@ interface Customer {
   owner_id: string;
   created_at: string;
   owner_name?: string;
+  business_name?: string;
 }
 
 interface Order {
@@ -94,6 +92,9 @@ interface Order {
   created_at: string;
   seller_id: string;
   seller_name?: string;
+  business_name?: string;
+  items?: any;
+  delivery_address?: string;
 }
 
 interface ChartData {
@@ -117,7 +118,7 @@ interface Subscription {
 
 export const SuperAdminDashboard = () => {
   const { user } = useAuth();
-  const { notifications, unreadCount, markAsRead, markAllAsRead, fetchNotifications } = useAdminNotifications();
+  const { notifications, unreadCount, markAsRead, markAllAsRead } = useAdminNotifications();
   const [activeTab, setActiveTab] = useState('overview');
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -153,8 +154,9 @@ export const SuperAdminDashboard = () => {
   const [viewDialog, setViewDialog] = useState<{type: string; data: any} | null>(null);
   const [editDialog, setEditDialog] = useState<{type: string; data: any} | null>(null);
   const [deleteDialog, setDeleteDialog] = useState<{type: string; id: string; name: string} | null>(null);
-  const [passwordDialog, setPasswordDialog] = useState<{action: string; callback: () => void} | null>(null);
+  const [passwordDialog, setPasswordDialog] = useState<{action: string; callback: () => void; description?: string} | null>(null);
   const [selectedBusiness, setSelectedBusiness] = useState<string | null>(null);
+  const [approvalDialog, setApprovalDialog] = useState<{subId: string; duration: string} | null>(null);
   
   useEffect(() => {
     fetchAllData();
@@ -181,7 +183,6 @@ export const SuperAdminDashboard = () => {
   
   const fetchChartData = async () => {
     try {
-      // Get last 30 days of data
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
       
@@ -198,7 +199,6 @@ export const SuperAdminDashboard = () => {
           .order('created_at', { ascending: true })
       ]);
       
-      // Process sales data by day
       const salesByDay: Record<string, {revenue: number; count: number}> = {};
       (salesRes.data || []).forEach(sale => {
         const date = new Date(sale.created_at).toLocaleDateString('sw-TZ', { day: '2-digit', month: 'short' });
@@ -209,7 +209,6 @@ export const SuperAdminDashboard = () => {
         salesByDay[date].count += 1;
       });
       
-      // Process user registrations by day
       const usersByDay: Record<string, number> = {};
       let runningTotal = 0;
       (usersRes.data || []).forEach(u => {
@@ -218,7 +217,6 @@ export const SuperAdminDashboard = () => {
         usersByDay[date] = runningTotal;
       });
       
-      // Create chart data for last 14 days
       const chartData: ChartData[] = [];
       for (let i = 13; i >= 0; i--) {
         const date = new Date();
@@ -233,8 +231,6 @@ export const SuperAdminDashboard = () => {
       }
       
       setRevenueChartData(chartData);
-      
-      // User growth data
       const userGrowth = Object.entries(usersByDay).slice(-14).map(([date, users]) => ({ date, users }));
       setUserGrowthData(userGrowth);
       
@@ -277,7 +273,6 @@ export const SuperAdminDashboard = () => {
       .select('*')
       .order('created_at', { ascending: false });
     
-    // Enrich with user info
     const userIds = (subs || []).map(s => s.user_id);
     const { data: profiles } = await supabase
       .from('profiles')
@@ -293,10 +288,31 @@ export const SuperAdminDashboard = () => {
     setSubscriptions(enriched);
   };
   
-  const handleApproveSubscription = async (subId: string) => {
+  const handleApproveSubscription = async (subId: string, duration: string = '1_month') => {
     try {
       const periodEnd = new Date();
-      periodEnd.setMonth(periodEnd.getMonth() + 1);
+      
+      switch(duration) {
+        case '30_min':
+          periodEnd.setMinutes(periodEnd.getMinutes() + 30);
+          break;
+        case '1_hour':
+          periodEnd.setHours(periodEnd.getHours() + 1);
+          break;
+        case '1_day':
+          periodEnd.setDate(periodEnd.getDate() + 1);
+          break;
+        case '2_days':
+          periodEnd.setDate(periodEnd.getDate() + 2);
+          break;
+        case '1_week':
+          periodEnd.setDate(periodEnd.getDate() + 7);
+          break;
+        case '1_month':
+        default:
+          periodEnd.setMonth(periodEnd.getMonth() + 1);
+          break;
+      }
       
       const { error } = await supabase
         .from('user_subscriptions')
@@ -315,6 +331,7 @@ export const SuperAdminDashboard = () => {
       toast.success('Usajili umekubaliwa!');
       fetchSubscriptions();
       fetchStats();
+      setApprovalDialog(null);
     } catch (error: any) {
       toast.error(`Imeshindwa: ${error.message}`);
     }
@@ -340,7 +357,6 @@ export const SuperAdminDashboard = () => {
     }
   };
   
-  // Export functions
   const handleExportUsers = () => {
     const columns = [
       { header: 'Jina', key: 'full_name' },
@@ -356,24 +372,12 @@ export const SuperAdminDashboard = () => {
   const handleExportSales = () => {
     const columns = [
       { header: 'Tarehe', key: 'created_at', formatter: (v: string) => new Date(v).toLocaleDateString('sw-TZ') },
+      { header: 'Biashara', key: 'business_name' },
       { header: 'Kiasi', key: 'total_amount', formatter: (v: number) => `TSh ${v?.toLocaleString() || 0}` },
       { header: 'Malipo', key: 'payment_method' },
       { header: 'Hali', key: 'payment_status' }
     ];
     exportToExcel(sales, columns, 'Mauzo_Kiduka');
-    toast.success('Imehifadhiwa kama Excel');
-  };
-  
-  const handleExportOrders = () => {
-    const columns = [
-      { header: 'Tracking Code', key: 'tracking_code' },
-      { header: 'Simu', key: 'customer_phone' },
-      { header: 'Kiasi', key: 'total_amount', formatter: (v: number) => `TSh ${v?.toLocaleString() || 0}` },
-      { header: 'Hali Oda', key: 'order_status' },
-      { header: 'Malipo', key: 'payment_status' },
-      { header: 'Tarehe', key: 'created_at', formatter: (v: string) => new Date(v).toLocaleDateString('sw-TZ') }
-    ];
-    exportToExcel(orders, columns, 'Oda_Sokoni');
     toast.success('Imehifadhiwa kama Excel');
   };
   
@@ -392,15 +396,6 @@ export const SuperAdminDashboard = () => {
         data = users;
         title = 'Watumiaji';
         break;
-      case 'sales':
-        columns = [
-          { header: 'Tarehe', key: 'created_at', formatter: (v: string) => new Date(v).toLocaleDateString('sw-TZ') },
-          { header: 'Kiasi', key: 'total_amount', formatter: (v: number) => `TSh ${v?.toLocaleString() || 0}` },
-          { header: 'Hali', key: 'payment_status' }
-        ];
-        data = sales;
-        title = 'Mauzo';
-        break;
       case 'summary':
         const summaryHtml = `
           <div class="stats">
@@ -408,8 +403,6 @@ export const SuperAdminDashboard = () => {
             <div class="stat-card"><strong>${stats.totalProducts}</strong><br/>Bidhaa</div>
             <div class="stat-card"><strong>${stats.totalSales}</strong><br/>Mauzo</div>
             <div class="stat-card"><strong>TSh ${stats.totalRevenue.toLocaleString()}</strong><br/>Mapato</div>
-            <div class="stat-card"><strong>TSh ${stats.totalExpenses.toLocaleString()}</strong><br/>Matumizi</div>
-            <div class="stat-card"><strong>TSh ${(stats.totalRevenue - stats.totalExpenses).toLocaleString()}</strong><br/>Faida</div>
           </div>
         `;
         exportToPDF('Muhtasari wa Biashara', summaryHtml);
@@ -445,7 +438,20 @@ export const SuperAdminDashboard = () => {
       .order('created_at', { ascending: false })
       .limit(100);
     
-    setProducts(data || []);
+    // Enrich with owner info
+    const ownerIds = [...new Set((data || []).map(p => p.owner_id))];
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('id, full_name, business_name')
+      .in('id', ownerIds);
+    
+    const enriched = (data || []).map(p => ({
+      ...p,
+      owner_name: profiles?.find(pr => pr.id === p.owner_id)?.full_name || 'Unknown',
+      business_name: profiles?.find(pr => pr.id === p.owner_id)?.business_name || 'No Business'
+    }));
+    
+    setProducts(enriched);
   };
   
   const fetchSales = async () => {
@@ -455,7 +461,20 @@ export const SuperAdminDashboard = () => {
       .order('created_at', { ascending: false })
       .limit(100);
     
-    setSales(data || []);
+    // Enrich with owner info
+    const ownerIds = [...new Set((data || []).map(s => s.owner_id))];
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('id, full_name, business_name')
+      .in('id', ownerIds);
+    
+    const enriched = (data || []).map(s => ({
+      ...s,
+      owner_name: profiles?.find(pr => pr.id === s.owner_id)?.full_name || 'Unknown',
+      business_name: profiles?.find(pr => pr.id === s.owner_id)?.business_name || 'No Business'
+    }));
+    
+    setSales(enriched);
   };
   
   const fetchExpenses = async () => {
@@ -465,7 +484,19 @@ export const SuperAdminDashboard = () => {
       .order('expense_date', { ascending: false })
       .limit(100);
     
-    setExpenses(data || []);
+    const ownerIds = [...new Set((data || []).map(e => e.owner_id))];
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('id, full_name, business_name')
+      .in('id', ownerIds);
+    
+    const enriched = (data || []).map(e => ({
+      ...e,
+      owner_name: profiles?.find(pr => pr.id === e.owner_id)?.full_name || 'Unknown',
+      business_name: profiles?.find(pr => pr.id === e.owner_id)?.business_name || 'No Business'
+    }));
+    
+    setExpenses(enriched);
   };
   
   const fetchCustomers = async () => {
@@ -475,7 +506,19 @@ export const SuperAdminDashboard = () => {
       .order('created_at', { ascending: false })
       .limit(100);
     
-    setCustomers(data || []);
+    const ownerIds = [...new Set((data || []).map(c => c.owner_id))];
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('id, full_name, business_name')
+      .in('id', ownerIds);
+    
+    const enriched = (data || []).map(c => ({
+      ...c,
+      owner_name: profiles?.find(pr => pr.id === c.owner_id)?.full_name || 'Unknown',
+      business_name: profiles?.find(pr => pr.id === c.owner_id)?.business_name || 'No Business'
+    }));
+    
+    setCustomers(enriched);
   };
   
   const fetchOrders = async () => {
@@ -485,10 +528,22 @@ export const SuperAdminDashboard = () => {
       .order('created_at', { ascending: false })
       .limit(100);
     
-    setOrders(data || []);
+    const sellerIds = [...new Set((data || []).map(o => o.seller_id))];
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('id, full_name, business_name')
+      .in('id', sellerIds);
+    
+    const enriched = (data || []).map(o => ({
+      ...o,
+      seller_name: profiles?.find(pr => pr.id === o.seller_id)?.full_name || 'Unknown',
+      business_name: profiles?.find(pr => pr.id === o.seller_id)?.business_name || 'No Business'
+    }));
+    
+    setOrders(enriched);
   };
   
-  const handleDelete = async () => {
+  const executeDelete = async () => {
     if (!deleteDialog) return;
     
     const { type, id } = deleteDialog;
@@ -531,7 +586,18 @@ export const SuperAdminDashboard = () => {
     }
   };
   
-  const handleEditSave = async () => {
+  const handleDelete = (type: string, id: string, name: string) => {
+    setDeleteDialog({ type, id, name });
+    setPasswordDialog({
+      action: `Kufuta ${type}: ${name}`,
+      description: 'Hatua hii haiwezi kurejeshwa. Toa nenosiri la admin ili kuendelea.',
+      callback: () => {
+        setPasswordDialog(null);
+      }
+    });
+  };
+  
+  const executeEdit = async () => {
     if (!editDialog) return;
     
     const { type, data } = editDialog;
@@ -542,6 +608,7 @@ export const SuperAdminDashboard = () => {
       delete updateData.created_at;
       delete updateData.owner_name;
       delete updateData.seller_name;
+      delete updateData.business_name;
       
       updateData.updated_at = new Date().toISOString();
       
@@ -579,37 +646,54 @@ export const SuperAdminDashboard = () => {
     }
   };
   
-  const handleUpdateRole = async (userId: string, newRole: 'owner' | 'assistant' | 'super_admin') => {
-    try {
-      // First check if role exists
-      const { data: existing } = await supabase
-        .from('user_roles')
-        .select('id')
-        .eq('user_id', userId)
-        .single();
-      
-      if (existing) {
-        const { error } = await supabase
-          .from('user_roles')
-          .update({ role: newRole })
-          .eq('user_id', userId);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase
-          .from('user_roles')
-          .insert([{ user_id: userId, role: newRole }]);
-        if (error) throw error;
+  const handleEditSave = () => {
+    setPasswordDialog({
+      action: `Kuhariri ${editDialog?.type}`,
+      description: 'Toa nenosiri la admin ili kuhifadhi mabadiliko.',
+      callback: () => {
+        setPasswordDialog(null);
+        executeEdit();
       }
-      
-      toast.success('Role imesasishwa');
-      fetchUsers();
-    } catch (error: any) {
-      console.error('Role update error:', error);
-      toast.error(`Imeshindwa: ${error.message}`);
-    }
+    });
   };
   
-  const statCards: StatCard[] = [
+  const handleUpdateRole = async (userId: string, newRole: 'owner' | 'assistant' | 'super_admin') => {
+    setPasswordDialog({
+      action: `Kubadilisha role kuwa ${newRole}`,
+      description: 'Kitendo hiki kitabadilisha ruhusa za mtumiaji.',
+      callback: async () => {
+        setPasswordDialog(null);
+        try {
+          const { data: existing } = await supabase
+            .from('user_roles')
+            .select('id')
+            .eq('user_id', userId)
+            .single();
+          
+          if (existing) {
+            const { error } = await supabase
+              .from('user_roles')
+              .update({ role: newRole })
+              .eq('user_id', userId);
+            if (error) throw error;
+          } else {
+            const { error } = await supabase
+              .from('user_roles')
+              .insert([{ user_id: userId, role: newRole }]);
+            if (error) throw error;
+          }
+          
+          toast.success('Role imesasishwa');
+          fetchUsers();
+        } catch (error: any) {
+          console.error('Role update error:', error);
+          toast.error(`Imeshindwa: ${error.message}`);
+        }
+      }
+    });
+  };
+  
+  const statCards = [
     { title: 'Watumiaji', value: stats.totalUsers, icon: <Users className="h-5 w-5" />, color: 'text-blue-600' },
     { title: 'Bidhaa', value: stats.totalProducts, icon: <Package className="h-5 w-5" />, color: 'text-green-600' },
     { title: 'Mauzo', value: stats.totalSales, icon: <ShoppingCart className="h-5 w-5" />, color: 'text-purple-600' },
@@ -638,10 +722,28 @@ export const SuperAdminDashboard = () => {
       pending: 'bg-yellow-100 text-yellow-800',
       new: 'bg-blue-100 text-blue-800',
       delivered: 'bg-emerald-100 text-emerald-800',
-      cancelled: 'bg-red-100 text-red-800'
+      cancelled: 'bg-red-100 text-red-800',
+      completed: 'bg-green-100 text-green-800'
     };
     return <Badge className={colors[status] || 'bg-gray-100'}>{status}</Badge>;
   };
+  
+  // Filter by selected business
+  const filteredProducts = selectedBusiness 
+    ? products.filter(p => p.owner_id === selectedBusiness)
+    : products;
+  const filteredSales = selectedBusiness 
+    ? sales.filter(s => s.owner_id === selectedBusiness)
+    : sales;
+  const filteredCustomers = selectedBusiness 
+    ? customers.filter(c => c.owner_id === selectedBusiness)
+    : customers;
+  const filteredOrders = selectedBusiness 
+    ? orders.filter(o => o.seller_id === selectedBusiness)
+    : orders;
+  const filteredExpenses = selectedBusiness 
+    ? expenses.filter(e => e.owner_id === selectedBusiness)
+    : expenses;
   
   if (loading) {
     return (
@@ -651,9 +753,11 @@ export const SuperAdminDashboard = () => {
     );
   }
   
+  const businessOwners = users.filter(u => u.role === 'owner');
+  
   return (
     <div className="w-full max-w-7xl mx-auto p-4 md:p-6 lg:p-8 space-y-6 pb-20">
-      {/* Header with Notifications */}
+      {/* Header */}
       <Card>
         <CardHeader className="pb-3">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -664,8 +768,24 @@ export const SuperAdminDashboard = () => {
                 <CardDescription>Dhibiti kila kitu katika Kiduka POS</CardDescription>
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              {/* Notifications Button */}
+            <div className="flex items-center gap-2 flex-wrap">
+              {/* Business Filter */}
+              <Select value={selectedBusiness || 'all'} onValueChange={(v) => setSelectedBusiness(v === 'all' ? null : v)}>
+                <SelectTrigger className="w-[180px] h-9">
+                  <Building2 className="h-4 w-4 mr-2" />
+                  <SelectValue placeholder="Biashara Zote" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Biashara Zote</SelectItem>
+                  {businessOwners.map(u => (
+                    <SelectItem key={u.id} value={u.id}>
+                      {u.business_name || u.full_name || u.email}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              
+              {/* Notifications */}
               <Button 
                 variant="outline" 
                 size="sm" 
@@ -680,18 +800,14 @@ export const SuperAdminDashboard = () => {
                 )}
               </Button>
               
-              {/* Export Dropdown */}
-              <div className="flex gap-1">
-                <Button variant="outline" size="sm" onClick={() => handleExportPDF('summary')}>
-                  <FileText className="h-4 w-4 mr-1" />
-                  PDF
-                </Button>
-                <Button variant="outline" size="sm" onClick={handleExportSales}>
-                  <FileSpreadsheet className="h-4 w-4 mr-1" />
-                  Excel
-                </Button>
-              </div>
-              
+              <Button variant="outline" size="sm" onClick={() => handleExportPDF('summary')}>
+                <FileText className="h-4 w-4 mr-1" />
+                PDF
+              </Button>
+              <Button variant="outline" size="sm" onClick={handleExportSales}>
+                <FileSpreadsheet className="h-4 w-4 mr-1" />
+                Excel
+              </Button>
               <Button onClick={fetchAllData} variant="outline" size="sm">
                 <RefreshCw className="h-4 w-4 mr-2" />
                 Refresh
@@ -813,7 +929,7 @@ export const SuperAdminDashboard = () => {
           </div>
         )}
         
-        {/* Subscriptions Tab - Admin Approval */}
+        {/* Subscriptions Tab */}
         <TabsContent value="subscriptions" className="space-y-4">
           <Card>
             <CardHeader>
@@ -841,7 +957,7 @@ export const SuperAdminDashboard = () => {
                           <div className="flex gap-2">
                             <Button 
                               size="sm" 
-                              onClick={() => handleApproveSubscription(sub.id)}
+                              onClick={() => setApprovalDialog({ subId: sub.id, duration: '1_month' })}
                               className="bg-green-600 hover:bg-green-700"
                             >
                               <CheckCircle className="h-4 w-4 mr-1" />
@@ -864,44 +980,45 @@ export const SuperAdminDashboard = () => {
               )}
             </CardContent>
           </Card>
-          
-          {/* All Subscriptions */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-sm">Usajili Wote</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                {subscriptions.map(sub => (
-                  <div key={sub.id} className="flex items-center justify-between p-3 border rounded-lg">
-                    <div>
-                      <p className="font-medium text-sm">{sub.user_name || sub.user_email}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {sub.status === 'trial' && `Trial inaisha: ${new Date(sub.trial_ends_at).toLocaleDateString('sw-TZ')}`}
-                        {sub.status === 'active' && `Hai hadi: ${sub.current_period_end ? new Date(sub.current_period_end).toLocaleDateString('sw-TZ') : 'N/A'}`}
-                        {sub.status === 'pending_approval' && 'Inasubiri idhini'}
-                        {sub.status === 'expired' && 'Imeisha'}
-                      </p>
-                    </div>
-                    <Badge className={
-                      sub.status === 'active' ? 'bg-green-100 text-green-800' :
-                      sub.status === 'trial' ? 'bg-blue-100 text-blue-800' :
-                      sub.status === 'pending_approval' ? 'bg-orange-100 text-orange-800' :
-                      'bg-red-100 text-red-800'
-                    }>
-                      {sub.status}
-                    </Badge>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
         </TabsContent>
         
-        {/* Analytics Tab - NEW */}
+        {/* Approval Duration Dialog */}
+        <Dialog open={!!approvalDialog} onOpenChange={() => setApprovalDialog(null)}>
+          <DialogContent className="max-w-sm">
+            <DialogHeader>
+              <DialogTitle>Chagua Muda wa Idhini</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-3">
+              <p className="text-sm text-muted-foreground">Mtumiaji atapata uwezo wa kutumia mfumo kwa muda gani?</p>
+              <Select 
+                value={approvalDialog?.duration || '1_month'} 
+                onValueChange={(v) => setApprovalDialog(prev => prev ? {...prev, duration: v} : null)}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="30_min">Dakika 30</SelectItem>
+                  <SelectItem value="1_hour">Saa 1</SelectItem>
+                  <SelectItem value="1_day">Siku 1</SelectItem>
+                  <SelectItem value="2_days">Siku 2</SelectItem>
+                  <SelectItem value="1_week">Wiki 1</SelectItem>
+                  <SelectItem value="1_month">Mwezi 1</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setApprovalDialog(null)}>Ghairi</Button>
+              <Button onClick={() => approvalDialog && handleApproveSubscription(approvalDialog.subId, approvalDialog.duration)}>
+                Kubali
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+        
+        {/* Analytics Tab */}
         <TabsContent value="analytics" className="space-y-6">
           <div className="grid md:grid-cols-2 gap-6">
-            {/* Revenue Trend Chart */}
             <Card>
               <CardHeader>
                 <CardTitle className="text-sm flex items-center gap-2">
@@ -910,34 +1027,28 @@ export const SuperAdminDashboard = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="h-[250px] md:h-[300px]">
+                <div className="h-[250px]">
                   <ResponsiveContainer width="100%" height="100%">
                     <AreaChart data={revenueChartData}>
                       <defs>
                         <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3}/>
-                          <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0}/>
+                          <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
+                          <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
                         </linearGradient>
                       </defs>
-                      <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                      <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                       <XAxis dataKey="date" tick={{ fontSize: 10 }} />
-                      <YAxis tick={{ fontSize: 10 }} tickFormatter={(v) => `${(v/1000).toFixed(0)}K`} />
+                      <YAxis tick={{ fontSize: 10 }} tickFormatter={(v) => `${(v/1000)}k`} />
                       <Tooltip 
                         formatter={(value: number) => [`TSh ${value.toLocaleString()}`, 'Mapato']}
-                        labelStyle={{ color: 'hsl(var(--foreground))' }}
-                        contentStyle={{ 
-                          backgroundColor: 'hsl(var(--background))', 
-                          border: '1px solid hsl(var(--border))',
-                          borderRadius: '8px'
-                        }}
+                        contentStyle={{ borderRadius: '8px' }}
                       />
                       <Area 
                         type="monotone" 
                         dataKey="revenue" 
-                        stroke="hsl(var(--primary))" 
+                        stroke="#10b981" 
                         fillOpacity={1} 
                         fill="url(#colorRevenue)" 
-                        strokeWidth={2}
                       />
                     </AreaChart>
                   </ResponsiveContainer>
@@ -945,75 +1056,6 @@ export const SuperAdminDashboard = () => {
               </CardContent>
             </Card>
             
-            {/* Sales Count Chart */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-sm flex items-center gap-2">
-                  <ShoppingCart className="h-4 w-4 text-purple-600" />
-                  Idadi ya Mauzo (Siku 14)
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="h-[250px] md:h-[300px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={revenueChartData}>
-                      <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                      <XAxis dataKey="date" tick={{ fontSize: 10 }} />
-                      <YAxis tick={{ fontSize: 10 }} />
-                      <Tooltip 
-                        formatter={(value: number) => [value, 'Mauzo']}
-                        labelStyle={{ color: 'hsl(var(--foreground))' }}
-                        contentStyle={{ 
-                          backgroundColor: 'hsl(var(--background))', 
-                          border: '1px solid hsl(var(--border))',
-                          borderRadius: '8px'
-                        }}
-                      />
-                      <Bar dataKey="sales" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              </CardContent>
-            </Card>
-            
-            {/* User Growth Chart */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-sm flex items-center gap-2">
-                  <Users className="h-4 w-4 text-blue-600" />
-                  Ukuaji wa Watumiaji
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="h-[250px] md:h-[300px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={userGrowthData}>
-                      <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                      <XAxis dataKey="date" tick={{ fontSize: 10 }} />
-                      <YAxis tick={{ fontSize: 10 }} />
-                      <Tooltip 
-                        formatter={(value: number) => [value, 'Watumiaji']}
-                        labelStyle={{ color: 'hsl(var(--foreground))' }}
-                        contentStyle={{ 
-                          backgroundColor: 'hsl(var(--background))', 
-                          border: '1px solid hsl(var(--border))',
-                          borderRadius: '8px'
-                        }}
-                      />
-                      <Line 
-                        type="monotone" 
-                        dataKey="users" 
-                        stroke="#3b82f6" 
-                        strokeWidth={2}
-                        dot={{ fill: '#3b82f6', strokeWidth: 2 }}
-                      />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </div>
-              </CardContent>
-            </Card>
-            
-            {/* Summary Stats */}
             <Card>
               <CardHeader>
                 <CardTitle className="text-sm flex items-center gap-2">
@@ -1023,26 +1065,18 @@ export const SuperAdminDashboard = () => {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="p-4 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg text-center">
-                    <p className="text-2xl font-bold text-emerald-600">{formatCurrency(stats.totalRevenue)}</p>
+                  <div className="p-4 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl text-center">
+                    <p className="text-xl font-bold text-emerald-600">{formatCurrency(stats.totalRevenue)}</p>
                     <p className="text-xs text-muted-foreground">Jumla Mapato</p>
                   </div>
-                  <div className="p-4 bg-red-50 dark:bg-red-900/20 rounded-lg text-center">
-                    <p className="text-2xl font-bold text-red-600">{formatCurrency(stats.totalExpenses)}</p>
+                  <div className="p-4 bg-red-50 dark:bg-red-900/20 rounded-xl text-center">
+                    <p className="text-xl font-bold text-red-600">{formatCurrency(stats.totalExpenses)}</p>
                     <p className="text-xs text-muted-foreground">Jumla Matumizi</p>
                   </div>
-                  <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg text-center">
-                    <p className="text-2xl font-bold text-blue-600">{stats.totalUsers}</p>
-                    <p className="text-xs text-muted-foreground">Watumiaji</p>
-                  </div>
-                  <div className="p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg text-center">
-                    <p className="text-2xl font-bold text-purple-600">{stats.totalSales}</p>
-                    <p className="text-xs text-muted-foreground">Mauzo</p>
-                  </div>
                 </div>
-                <div className="p-4 bg-gradient-to-r from-primary/10 to-primary/5 rounded-lg">
+                <div className="p-4 bg-gradient-to-r from-primary/10 to-primary/5 rounded-xl">
                   <p className="text-sm font-medium">Faida Jumla</p>
-                  <p className="text-3xl font-bold text-primary">{formatCurrency(stats.totalRevenue - stats.totalExpenses)}</p>
+                  <p className="text-2xl font-bold text-primary">{formatCurrency(stats.totalRevenue - stats.totalExpenses)}</p>
                 </div>
               </CardContent>
             </Card>
@@ -1051,7 +1085,7 @@ export const SuperAdminDashboard = () => {
         
         {/* Overview Tab */}
         <TabsContent value="overview" className="space-y-4">
-          <div className="grid md:grid-cols-2 lg:grid-cols-2 gap-4">
+          <div className="grid md:grid-cols-2 gap-4">
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm flex items-center gap-2">
@@ -1082,47 +1116,9 @@ export const SuperAdminDashboard = () => {
                   <div key={s.id} className="flex items-center justify-between py-2 border-b last:border-0">
                     <div>
                       <p className="font-medium text-sm">{formatCurrency(s.total_amount)}</p>
-                      <p className="text-xs text-muted-foreground">{formatDate(s.created_at)}</p>
+                      <p className="text-xs text-muted-foreground">{s.business_name} • {formatDate(s.created_at)}</p>
                     </div>
                     {getStatusBadge(s.payment_status || 'completed')}
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm flex items-center gap-2">
-                  <Store className="h-4 w-4" /> Oda za Sokoni
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {orders.slice(0, 5).map(o => (
-                  <div key={o.id} className="flex items-center justify-between py-2 border-b last:border-0">
-                    <div>
-                      <p className="font-medium text-sm font-mono">{o.tracking_code}</p>
-                      <p className="text-xs text-muted-foreground">{formatCurrency(o.total_amount)}</p>
-                    </div>
-                    {getStatusBadge(o.order_status)}
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm flex items-center gap-2">
-                  <CreditCard className="h-4 w-4" /> Matumizi
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {expenses.slice(0, 5).map(e => (
-                  <div key={e.id} className="flex items-center justify-between py-2 border-b last:border-0">
-                    <div>
-                      <p className="font-medium text-sm">{e.category}</p>
-                      <p className="text-xs text-muted-foreground">{e.description?.slice(0, 30)}</p>
-                    </div>
-                    <span className="font-medium text-red-600">{formatCurrency(e.amount)}</span>
                   </div>
                 ))}
               </CardContent>
@@ -1186,7 +1182,7 @@ export const SuperAdminDashboard = () => {
                             variant="outline" 
                             size="icon" 
                             className="h-7 w-7 text-red-600"
-                            onClick={() => setDeleteDialog({type: 'user', id: u.id, name: u.full_name || u.email})}
+                            onClick={() => handleDelete('user', u.id, u.full_name || u.email)}
                           >
                             <Trash2 className="h-3 w-3" />
                           </Button>
@@ -1202,7 +1198,7 @@ export const SuperAdminDashboard = () => {
         {/* Products Tab */}
         <TabsContent value="products" className="space-y-3">
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
-            {products
+            {filteredProducts
               .filter(p => p.name?.toLowerCase().includes(searchQuery.toLowerCase()))
               .map(p => (
                 <Card key={p.id}>
@@ -1217,6 +1213,10 @@ export const SuperAdminDashboard = () => {
                           <span className="text-primary font-semibold">{formatCurrency(p.price)}</span>
                           <span className="text-muted-foreground ml-2">• Stock: {p.stock_quantity}</span>
                         </p>
+                        <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
+                          <Building2 className="h-3 w-3" />
+                          <span className="truncate">{p.business_name}</span>
+                        </div>
                       </div>
                       <div className="flex gap-1">
                         <Button 
@@ -1239,7 +1239,7 @@ export const SuperAdminDashboard = () => {
                           variant="outline" 
                           size="icon" 
                           className="h-7 w-7 text-red-600"
-                          onClick={() => setDeleteDialog({type: 'product', id: p.id, name: p.name})}
+                          onClick={() => handleDelete('product', p.id, p.name)}
                         >
                           <Trash2 className="h-3 w-3" />
                         </Button>
@@ -1254,7 +1254,7 @@ export const SuperAdminDashboard = () => {
         {/* Sales Tab */}
         <TabsContent value="sales" className="space-y-3">
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
-            {sales
+            {filteredSales
               .filter(s => s.id.toLowerCase().includes(searchQuery.toLowerCase()))
               .map(s => (
                 <Card key={s.id}>
@@ -1271,6 +1271,10 @@ export const SuperAdminDashboard = () => {
                         <p className="text-xs text-muted-foreground">
                           {s.payment_method || 'Cash'} • {formatDate(s.created_at)}
                         </p>
+                        <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
+                          <Building2 className="h-3 w-3" />
+                          <span className="truncate">{s.business_name}</span>
+                        </div>
                       </div>
                       <div className="flex gap-1">
                         <Button 
@@ -1285,7 +1289,7 @@ export const SuperAdminDashboard = () => {
                           variant="outline" 
                           size="icon" 
                           className="h-7 w-7 text-red-600"
-                          onClick={() => setDeleteDialog({type: 'sale', id: s.id, name: `Sale #${s.id.slice(0,8)}`})}
+                          onClick={() => handleDelete('sale', s.id, `Sale #${s.id.slice(0,8)}`)}
                         >
                           <Trash2 className="h-3 w-3" />
                         </Button>
@@ -1300,7 +1304,7 @@ export const SuperAdminDashboard = () => {
         {/* Orders Tab */}
         <TabsContent value="orders" className="space-y-3">
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
-            {orders
+            {filteredOrders
               .filter(o => 
                 o.tracking_code?.toLowerCase().includes(searchQuery.toLowerCase()) ||
                 o.customer_phone?.includes(searchQuery)
@@ -1319,6 +1323,10 @@ export const SuperAdminDashboard = () => {
                         </div>
                         <p className="text-sm text-primary font-semibold">{formatCurrency(o.total_amount)}</p>
                         <p className="text-xs text-muted-foreground">{o.customer_phone}</p>
+                        <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
+                          <Building2 className="h-3 w-3" />
+                          <span className="truncate">{o.business_name}</span>
+                        </div>
                       </div>
                       <div className="flex gap-1">
                         <Button 
@@ -1341,7 +1349,7 @@ export const SuperAdminDashboard = () => {
                           variant="outline" 
                           size="icon" 
                           className="h-7 w-7 text-red-600"
-                          onClick={() => setDeleteDialog({type: 'order', id: o.id, name: o.tracking_code})}
+                          onClick={() => handleDelete('order', o.id, o.tracking_code)}
                         >
                           <Trash2 className="h-3 w-3" />
                         </Button>
@@ -1353,59 +1361,17 @@ export const SuperAdminDashboard = () => {
           </div>
         </TabsContent>
         
-        {/* More Tab - Expenses & Customers */}
+        {/* More Tab */}
         <TabsContent value="more" className="space-y-4">
-          <Tabs defaultValue="expenses">
-            <TabsList className="w-full grid grid-cols-3">
-              <TabsTrigger value="expenses">Matumizi</TabsTrigger>
+          <Tabs defaultValue="customers">
+            <TabsList className="w-full grid grid-cols-2">
               <TabsTrigger value="customers">Wateja</TabsTrigger>
-              <TabsTrigger value="sales-mobile" className="md:hidden">Mauzo</TabsTrigger>
+              <TabsTrigger value="expenses">Matumizi</TabsTrigger>
             </TabsList>
-            
-            <TabsContent value="expenses" className="space-y-3 mt-4">
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
-                {expenses
-                  .filter(e => e.category?.toLowerCase().includes(searchQuery.toLowerCase()))
-                  .map(e => (
-                    <Card key={e.id}>
-                      <CardContent className="p-4">
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-1 flex-wrap">
-                              <span className="font-medium">{e.category}</span>
-                              <Badge variant="outline" className="text-xs">{formatDate(e.expense_date)}</Badge>
-                            </div>
-                            <p className="text-xs text-muted-foreground truncate">{e.description}</p>
-                            <p className="text-red-600 font-semibold">{formatCurrency(e.amount)}</p>
-                          </div>
-                          <div className="flex gap-1">
-                            <Button 
-                              variant="outline" 
-                              size="icon" 
-                              className="h-7 w-7"
-                              onClick={() => setEditDialog({type: 'expense', data: {...e}})}
-                            >
-                              <Pencil className="h-3 w-3" />
-                            </Button>
-                            <Button 
-                              variant="outline" 
-                              size="icon" 
-                              className="h-7 w-7 text-red-600"
-                              onClick={() => setDeleteDialog({type: 'expense', id: e.id, name: e.category})}
-                            >
-                              <Trash2 className="h-3 w-3" />
-                            </Button>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-              </div>
-            </TabsContent>
             
             <TabsContent value="customers" className="space-y-3 mt-4">
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
-                {customers
+                {filteredCustomers
                   .filter(c => c.name?.toLowerCase().includes(searchQuery.toLowerCase()))
                   .map(c => (
                     <Card key={c.id}>
@@ -1413,16 +1379,20 @@ export const SuperAdminDashboard = () => {
                         <div className="flex items-start justify-between gap-2">
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 mb-1 flex-wrap">
-                              <span className="font-medium">{c.name}</span>
-                              {c.outstanding_balance > 0 && (
+                              <span className="font-medium truncate">{c.name}</span>
+                              {(c.outstanding_balance || 0) > 0 && (
                                 <Badge className="bg-red-100 text-red-800 text-xs">
-                                  Deni: {formatCurrency(c.outstanding_balance)}
+                                  Deni: TSh {(c.outstanding_balance || 0).toLocaleString()}
                                 </Badge>
                               )}
                             </div>
                             <p className="text-xs text-muted-foreground">
-                              {c.phone} • {c.email || 'No email'}
+                              {c.phone || 'No email'} • {c.email || 'No email'}
                             </p>
+                            <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
+                              <Building2 className="h-3 w-3" />
+                              <span className="truncate">{c.business_name}</span>
+                            </div>
                           </div>
                           <div className="flex gap-1">
                             <Button 
@@ -1437,7 +1407,7 @@ export const SuperAdminDashboard = () => {
                               variant="outline" 
                               size="icon" 
                               className="h-7 w-7 text-red-600"
-                              onClick={() => setDeleteDialog({type: 'customer', id: c.id, name: c.name})}
+                              onClick={() => handleDelete('customer', c.id, c.name)}
                             >
                               <Trash2 className="h-3 w-3" />
                             </Button>
@@ -1449,54 +1419,64 @@ export const SuperAdminDashboard = () => {
               </div>
             </TabsContent>
             
-            {/* Mobile Sales Tab */}
-            <TabsContent value="sales-mobile" className="space-y-3 mt-4 md:hidden">
-              {sales
-                .filter(s => s.id.toLowerCase().includes(searchQuery.toLowerCase()))
-                .slice(0, 20)
-                .map(s => (
-                  <Card key={s.id}>
-                    <CardContent className="p-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="font-medium">#{s.id.slice(0, 8).toUpperCase()}</span>
-                            {getStatusBadge(s.payment_status || 'completed')}
+            <TabsContent value="expenses" className="space-y-3 mt-4">
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
+                {filteredExpenses
+                  .filter(e => e.category?.toLowerCase().includes(searchQuery.toLowerCase()))
+                  .map(e => (
+                    <Card key={e.id}>
+                      <CardContent className="p-4">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1 flex-wrap">
+                              <span className="font-medium">{e.category}</span>
+                            </div>
+                            <p className="text-sm text-red-600 font-semibold">{formatCurrency(e.amount)}</p>
+                            <p className="text-xs text-muted-foreground truncate">{e.description}</p>
+                            <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
+                              <Building2 className="h-3 w-3" />
+                              <span className="truncate">{e.business_name}</span>
+                            </div>
                           </div>
-                          <p className="text-sm">
-                            <span className="text-primary font-semibold">{formatCurrency(s.total_amount)}</span>
-                          </p>
+                          <div className="flex gap-1">
+                            <Button 
+                              variant="outline" 
+                              size="icon" 
+                              className="h-7 w-7"
+                              onClick={() => setEditDialog({type: 'expense', data: {...e}})}
+                            >
+                              <Pencil className="h-3 w-3" />
+                            </Button>
+                            <Button 
+                              variant="outline" 
+                              size="icon" 
+                              className="h-7 w-7 text-red-600"
+                              onClick={() => handleDelete('expense', e.id, e.category)}
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          </div>
                         </div>
-                        <div className="flex gap-1">
-                          <Button 
-                            variant="outline" 
-                            size="icon" 
-                            className="h-8 w-8"
-                            onClick={() => setViewDialog({type: 'sale', data: s})}
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+                      </CardContent>
+                    </Card>
+                  ))}
+              </div>
             </TabsContent>
           </Tabs>
         </TabsContent>
       </Tabs>
       
-      {/* View Dialog - Enhanced User View */}
+      {/* View Dialog */}
       <Dialog open={!!viewDialog} onOpenChange={() => setViewDialog(null)}>
-        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
+        <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="text-lg">Maelezo Kamili - {viewDialog?.type}</DialogTitle>
+            <DialogTitle>Maelezo Kamili - {viewDialog?.type}</DialogTitle>
           </DialogHeader>
           
+          {/* User View */}
           {viewDialog?.type === 'user' && viewDialog.data && (
             <div className="space-y-4">
-              {/* User Profile Header */}
-              <div className="flex items-center gap-4 p-4 bg-muted rounded-2xl">
+              <div className="flex items-center gap-4 p-4 bg-muted/50 rounded-2xl">
                 <div className="h-16 w-16 rounded-full bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center">
                   <span className="text-2xl font-bold text-primary-foreground">
                     {(viewDialog.data.full_name || viewDialog.data.email || '?')[0].toUpperCase()}
@@ -1509,7 +1489,6 @@ export const SuperAdminDashboard = () => {
                 </div>
               </div>
               
-              {/* User Details */}
               <div className="grid grid-cols-2 gap-3">
                 <div className="p-3 bg-muted/50 rounded-xl">
                   <p className="text-xs text-muted-foreground">Biashara</p>
@@ -1525,7 +1504,6 @@ export const SuperAdminDashboard = () => {
                 </div>
               </div>
               
-              {/* Admin Actions */}
               <div className="border-t pt-4 space-y-3">
                 <p className="text-sm font-semibold text-muted-foreground">Vitendo vya Admin</p>
                 <div className="grid grid-cols-2 gap-2">
@@ -1546,41 +1524,124 @@ export const SuperAdminDashboard = () => {
                     size="sm"
                     onClick={() => {
                       setViewDialog(null);
-                      setDeleteDialog({type: 'user', id: viewDialog.data.id, name: viewDialog.data.full_name || viewDialog.data.email});
+                      handleDelete('user', viewDialog.data.id, viewDialog.data.full_name || viewDialog.data.email);
                     }}
                     className="rounded-xl text-red-600 hover:bg-red-50"
                   >
                     <Trash2 className="h-4 w-4 mr-2" />
                     Futa
                   </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    className="rounded-xl col-span-2"
-                    onClick={() => {
-                      handleUpdateRole(viewDialog.data.id, viewDialog.data.role === 'owner' ? 'assistant' : 'owner');
-                      setViewDialog(null);
-                    }}
-                  >
-                    <Settings className="h-4 w-4 mr-2" />
-                    Badilisha Role ({viewDialog.data.role} → {viewDialog.data.role === 'owner' ? 'assistant' : 'owner'})
-                  </Button>
                 </div>
               </div>
             </div>
           )}
           
-          {/* Generic view for other types */}
-          {viewDialog?.type !== 'user' && viewDialog?.data && (
-            <div className="space-y-3">
-              {Object.entries(viewDialog.data).map(([key, value]) => (
-                <div key={key} className="flex justify-between py-2 border-b">
-                  <span className="text-muted-foreground text-sm capitalize">{key.replace(/_/g, ' ')}</span>
-                  <span className="text-sm font-medium text-right max-w-[200px] truncate">
-                    {typeof value === 'object' ? JSON.stringify(value) : String(value || '-')}
-                  </span>
+          {/* Product View */}
+          {viewDialog?.type === 'product' && viewDialog.data && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="p-3 bg-muted/50 rounded-xl">
+                  <p className="text-xs text-muted-foreground">Jina</p>
+                  <p className="font-medium">{viewDialog.data.name}</p>
                 </div>
-              ))}
+                <div className="p-3 bg-muted/50 rounded-xl">
+                  <p className="text-xs text-muted-foreground">Bei</p>
+                  <p className="font-medium text-primary">{formatCurrency(viewDialog.data.price)}</p>
+                </div>
+                <div className="p-3 bg-muted/50 rounded-xl">
+                  <p className="text-xs text-muted-foreground">Cost Price</p>
+                  <p className="font-medium">{formatCurrency(viewDialog.data.cost_price || 0)}</p>
+                </div>
+                <div className="p-3 bg-muted/50 rounded-xl">
+                  <p className="text-xs text-muted-foreground">Stock</p>
+                  <p className="font-medium">{viewDialog.data.stock_quantity}</p>
+                </div>
+                <div className="p-3 bg-muted/50 rounded-xl">
+                  <p className="text-xs text-muted-foreground">Category</p>
+                  <p className="font-medium">{viewDialog.data.category || '-'}</p>
+                </div>
+                <div className="p-3 bg-muted/50 rounded-xl">
+                  <p className="text-xs text-muted-foreground">Barcode</p>
+                  <p className="font-medium font-mono text-xs">{viewDialog.data.barcode || '-'}</p>
+                </div>
+                <div className="p-3 bg-primary/10 rounded-xl col-span-2">
+                  <p className="text-xs text-muted-foreground flex items-center gap-1">
+                    <Building2 className="h-3 w-3" /> Biashara
+                  </p>
+                  <p className="font-medium">{viewDialog.data.business_name}</p>
+                  <p className="text-xs text-muted-foreground">{viewDialog.data.owner_name}</p>
+                </div>
+              </div>
+            </div>
+          )}
+          
+          {/* Sale View */}
+          {viewDialog?.type === 'sale' && viewDialog.data && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="p-3 bg-muted/50 rounded-xl col-span-2">
+                  <p className="text-xs text-muted-foreground">Total Amount</p>
+                  <p className="font-bold text-xl text-primary">{formatCurrency(viewDialog.data.total_amount)}</p>
+                </div>
+                <div className="p-3 bg-muted/50 rounded-xl">
+                  <p className="text-xs text-muted-foreground">Payment Method</p>
+                  <p className="font-medium">{viewDialog.data.payment_method || 'Cash'}</p>
+                </div>
+                <div className="p-3 bg-muted/50 rounded-xl">
+                  <p className="text-xs text-muted-foreground">Status</p>
+                  {getStatusBadge(viewDialog.data.payment_status || 'completed')}
+                </div>
+                <div className="p-3 bg-muted/50 rounded-xl col-span-2">
+                  <p className="text-xs text-muted-foreground">Date</p>
+                  <p className="font-medium">{formatDate(viewDialog.data.created_at)}</p>
+                </div>
+                <div className="p-3 bg-primary/10 rounded-xl col-span-2">
+                  <p className="text-xs text-muted-foreground flex items-center gap-1">
+                    <Building2 className="h-3 w-3" /> Biashara
+                  </p>
+                  <p className="font-medium">{viewDialog.data.business_name}</p>
+                  <p className="text-xs text-muted-foreground">{viewDialog.data.owner_name}</p>
+                </div>
+              </div>
+            </div>
+          )}
+          
+          {/* Order View */}
+          {viewDialog?.type === 'order' && viewDialog.data && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="p-3 bg-muted/50 rounded-xl col-span-2">
+                  <p className="text-xs text-muted-foreground">Tracking Code</p>
+                  <p className="font-bold text-lg font-mono">{viewDialog.data.tracking_code}</p>
+                </div>
+                <div className="p-3 bg-muted/50 rounded-xl">
+                  <p className="text-xs text-muted-foreground">Total Amount</p>
+                  <p className="font-bold text-primary">{formatCurrency(viewDialog.data.total_amount)}</p>
+                </div>
+                <div className="p-3 bg-muted/50 rounded-xl">
+                  <p className="text-xs text-muted-foreground">Customer Phone</p>
+                  <p className="font-medium">{viewDialog.data.customer_phone}</p>
+                </div>
+                <div className="p-3 bg-muted/50 rounded-xl">
+                  <p className="text-xs text-muted-foreground">Order Status</p>
+                  {getStatusBadge(viewDialog.data.order_status)}
+                </div>
+                <div className="p-3 bg-muted/50 rounded-xl">
+                  <p className="text-xs text-muted-foreground">Payment Status</p>
+                  {getStatusBadge(viewDialog.data.payment_status)}
+                </div>
+                <div className="p-3 bg-muted/50 rounded-xl col-span-2">
+                  <p className="text-xs text-muted-foreground">Delivery Address</p>
+                  <p className="font-medium">{viewDialog.data.delivery_address || '-'}</p>
+                </div>
+                <div className="p-3 bg-primary/10 rounded-xl col-span-2">
+                  <p className="text-xs text-muted-foreground flex items-center gap-1">
+                    <Building2 className="h-3 w-3" /> Biashara (Seller)
+                  </p>
+                  <p className="font-medium">{viewDialog.data.business_name}</p>
+                  <p className="text-xs text-muted-foreground">{viewDialog.data.seller_name}</p>
+                </div>
+              </div>
             </div>
           )}
         </DialogContent>
@@ -1763,8 +1824,8 @@ export const SuperAdminDashboard = () => {
         </DialogContent>
       </Dialog>
       
-      {/* Delete Confirmation Dialog */}
-      <Dialog open={!!deleteDialog} onOpenChange={() => setDeleteDialog(null)}>
+      {/* Delete Confirmation via Password */}
+      <Dialog open={!!deleteDialog && !passwordDialog} onOpenChange={() => setDeleteDialog(null)}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-red-600">
@@ -1776,7 +1837,7 @@ export const SuperAdminDashboard = () => {
           <p className="text-sm text-muted-foreground">Hatua hii haiwezi kurejeshwa.</p>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDeleteDialog(null)}>Ghairi</Button>
-            <Button variant="destructive" onClick={handleDelete}>Futa</Button>
+            <Button variant="destructive" onClick={executeDelete}>Futa</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -1785,9 +1846,16 @@ export const SuperAdminDashboard = () => {
       <AdminPasswordDialog
         open={!!passwordDialog}
         onClose={() => setPasswordDialog(null)}
-        onConfirm={() => passwordDialog?.callback()}
+        onConfirm={() => {
+          if (passwordDialog?.callback) {
+            passwordDialog.callback();
+          }
+          if (deleteDialog) {
+            executeDelete();
+          }
+        }}
         action={passwordDialog?.action || ''}
-        description="Kitendo hiki kinahitaji uthibitisho wa nenosiri la admin."
+        description={passwordDialog?.description}
       />
     </div>
   );
