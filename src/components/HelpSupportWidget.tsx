@@ -4,8 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { 
-  HelpCircle, Phone, Mail, MessageCircle, Send, 
-  CheckCircle, Headphones
+  Phone, Mail, Send, CheckCircle, Headphones
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
@@ -33,7 +32,6 @@ export const HelpSupportWidget = ({ open, onClose }: HelpSupportWidgetProps) => 
 
     setSending(true);
     try {
-      // Create admin notification for help request
       const { error } = await supabase
         .from('admin_notifications')
         .insert({
@@ -90,7 +88,7 @@ export const HelpSupportWidget = ({ open, onClose }: HelpSupportWidgetProps) => 
             <p className="text-sm text-muted-foreground mb-4">
               Timu yetu itawasiliana nawe haraka iwezekanavyo.
             </p>
-            <Button onClick={handleClose}>Funga</Button>
+            <Button onClick={handleClose} className="rounded-2xl">Funga</Button>
           </div>
         ) : (
           <div className="space-y-4">
@@ -123,21 +121,6 @@ export const HelpSupportWidget = ({ open, onClose }: HelpSupportWidgetProps) => 
               </Card>
             </div>
 
-            <Card 
-              className="cursor-pointer hover:bg-muted/50 transition-colors"
-              onClick={() => window.open(`https://wa.me/${SUPPORT_PHONE.replace(/[^0-9]/g, '')}`, '_blank')}
-            >
-              <CardContent className="p-3 flex items-center gap-3">
-                <div className="h-10 w-10 rounded-full bg-[#25D366]/10 flex items-center justify-center flex-shrink-0">
-                  <MessageCircle className="h-5 w-5 text-[#25D366]" />
-                </div>
-                <div>
-                  <p className="font-medium text-sm">WhatsApp</p>
-                  <p className="text-xs text-muted-foreground">Tuandikie moja kwa moja</p>
-                </div>
-              </CardContent>
-            </Card>
-
             {/* Message Form */}
             <div className="border-t pt-4">
               <p className="text-sm font-medium mb-2">Au tuandikie hapa:</p>
@@ -149,7 +132,7 @@ export const HelpSupportWidget = ({ open, onClose }: HelpSupportWidgetProps) => 
                 className="resize-none"
               />
               <Button 
-                className="w-full mt-3"
+                className="w-full mt-3 rounded-2xl"
                 onClick={handleSendHelpRequest}
                 disabled={sending || !message.trim()}
               >
