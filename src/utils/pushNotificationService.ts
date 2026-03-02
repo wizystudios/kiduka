@@ -29,7 +29,7 @@ class PushNotificationService {
     try {
       const registration = await navigator.serviceWorker.ready;
       
-      const subscription = await registration.pushManager.subscribe({
+      const subscription = await (registration as any).pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: this.urlBase64ToUint8Array(this.vapidPublicKey) as unknown as BufferSource
       });
@@ -53,7 +53,7 @@ class PushNotificationService {
   async unsubscribeFromPush(): Promise<boolean> {
     try {
       const registration = await navigator.serviceWorker.ready;
-      const subscription = await registration.pushManager.getSubscription();
+      const subscription = await (registration as any).pushManager.getSubscription();
       
       if (subscription) {
         await subscription.unsubscribe();
@@ -70,7 +70,7 @@ class PushNotificationService {
   async getSubscription(): Promise<PushSubscription | null> {
     try {
       const registration = await navigator.serviceWorker.ready;
-      return await registration.pushManager.getSubscription();
+      return await (registration as any).pushManager.getSubscription();
     } catch (error) {
       console.error('Error getting subscription:', error);
       return null;
