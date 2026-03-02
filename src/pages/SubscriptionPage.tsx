@@ -339,15 +339,13 @@ export const SubscriptionPage = () => {
 
         {/* Expired Status Banner */}
         {isExpired && !isPending && !paymentInitiated && (
-          <Card className="mt-6 bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800">
+          <Card className="mt-6 bg-destructive/5 border-destructive/30">
             <CardContent className="p-4 flex items-center gap-4">
-              <AlertTriangle className="h-8 w-8 text-red-600 flex-shrink-0" />
+              <AlertTriangle className="h-8 w-8 text-destructive flex-shrink-0" />
               <div>
-                <p className="font-bold text-red-800 dark:text-red-300">
-                  Muda Wako wa Majaribio Umeisha
-                </p>
-                <p className="text-sm text-red-600 dark:text-red-400">
-                  Lipa ili kuendelea kutumia Kiduka POS
+                <p className="font-bold text-destructive">Kipindi Chako Kimeisha</p>
+                <p className="text-sm text-muted-foreground">
+                  Lipa au omba idhini ya admin ili kuendelea
                 </p>
               </div>
             </CardContent>

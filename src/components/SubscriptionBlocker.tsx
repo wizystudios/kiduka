@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { 
   AlertTriangle, Clock, Phone, CreditCard, CheckCircle, Loader2, 
   Crown, LogOut, HelpCircle, ArrowUpRight, Check, Package, TrendingUp,
-  Users, BarChart3, Store, Shield, Sparkles, Infinity, Mail
+  Users, BarChart3, Store, Shield, Sparkles, Infinity
 } from 'lucide-react';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useAuth } from '@/hooks/useAuth';
@@ -30,7 +30,6 @@ export const SubscriptionBlocker = ({ children }: SubscriptionBlockerProps) => {
   const [paymentInitiated, setPaymentInitiated] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
 
-  // Show loading state
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -39,7 +38,6 @@ export const SubscriptionBlocker = ({ children }: SubscriptionBlockerProps) => {
     );
   }
 
-  // If not blocked, show children
   if (!isBlocked) {
     return <>{children}</>;
   }
@@ -87,7 +85,7 @@ export const SubscriptionBlocker = ({ children }: SubscriptionBlockerProps) => {
       if (success) {
         toast.success('Ombi lako limetumwa kwa admin. Utaarifiwa ukikubaliwa.');
       } else {
-        toast.error('Imeshindwa kutuma ombi');
+        toast.error('Imeshindwa kutuma ombi. Jaribu tena.');
       }
     } catch (error) {
       toast.error('Tatizo. Jaribu tena.');
@@ -101,15 +99,6 @@ export const SubscriptionBlocker = ({ children }: SubscriptionBlockerProps) => {
     navigate('/auth');
   };
 
-  // Free plan features
-  const trialFeatures = [
-    { icon: Package, text: 'Bidhaa hadi 50' },
-    { icon: TrendingUp, text: 'Mauzo ya kawaida' },
-    { icon: Users, text: 'Wateja hadi 20' },
-    { icon: Clock, text: 'Siku 30 za majaribio' },
-  ];
-
-  // Premium plan features
   const premiumFeatures = [
     { icon: Infinity, text: 'Bidhaa zisizo na kikomo' },
     { icon: TrendingUp, text: 'Mauzo yasiye na kikomo' },
@@ -125,28 +114,28 @@ export const SubscriptionBlocker = ({ children }: SubscriptionBlockerProps) => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-background dark:via-background dark:to-background">
-      <div className="max-w-6xl mx-auto p-4 md:p-6">
+      <div className="max-w-5xl mx-auto p-4 md:p-6">
         {/* Top Bar with Logout */}
-        <div className="flex justify-between items-center mb-4">
+        <div className="flex justify-between items-center mb-6">
           <div />
-          <Button variant="ghost" size="sm" onClick={handleLogout} className="text-muted-foreground">
+          <Button variant="outline" size="sm" onClick={handleLogout} className="rounded-2xl">
             <LogOut className="h-4 w-4 mr-2" />
-            Toka
+            Toka Akaunti
           </Button>
         </div>
         
-        {/* Header - Centered Kiduka Logo */}
-        <div className="flex flex-col items-center justify-center py-4 mb-4">
+        {/* Header */}
+        <div className="flex flex-col items-center justify-center py-4 mb-6">
           <KidukaLogo size="xl" animate />
-          <h1 className="text-xl font-bold mt-3">Muda Wako Umeisha</h1>
+          <h1 className="text-xl font-bold mt-3">Kipindi Chako Kimeisha</h1>
           <p className="text-sm text-muted-foreground">
             {userProfile?.full_name || 'Mtumiaji'} • {userProfile?.business_name || 'Biashara'}
           </p>
         </div>
 
-        {/* Split Layout - ChatGPT Style Plan Cards */}
+        {/* Split Layout */}
         <div className="flex flex-col lg:flex-row gap-6 relative">
-          {/* Center Divider - Tree line */}
+          {/* Center Divider */}
           <div className="hidden lg:flex absolute left-1/2 top-0 bottom-0 -translate-x-1/2 flex-col items-center z-10">
             <div className="w-px h-8 bg-gradient-to-b from-transparent to-primary/30" />
             <ArrowUpRight className="h-4 w-4 text-primary/50 -rotate-45" />
@@ -168,41 +157,62 @@ export const SubscriptionBlocker = ({ children }: SubscriptionBlockerProps) => {
             <div className="w-px h-8 bg-gradient-to-t from-transparent to-primary/30" />
           </div>
 
-          {/* LEFT SIDE - Expired Status */}
+          {/* LEFT SIDE - Status Info */}
           <div className="flex-1 lg:pr-8">
-            <Card className="h-full border-red-200 bg-red-50/30 dark:bg-red-900/10">
-              <CardHeader className="pb-2">
+            <Card className="h-full border-destructive/30 bg-destructive/5">
+              <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-lg font-bold text-red-700 dark:text-red-400">Majaribio Yameisha</CardTitle>
-                  <Badge className="bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300 text-xs">
-                    Imekwisha
-                  </Badge>
-                </div>
-                <div className="flex items-baseline gap-1 mt-2">
-                  <span className="text-3xl font-bold text-red-600">TSh 0</span>
-                  <span className="text-sm text-muted-foreground">/siku 30</span>
+                  <CardTitle className="text-lg font-bold text-destructive">Akaunti Imesimamishwa</CardTitle>
+                  <Badge variant="destructive" className="text-xs rounded-2xl">Imekwisha</Badge>
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
-                {/* Expired Message */}
-                <div className="p-4 bg-red-100/50 dark:bg-red-900/20 rounded-2xl text-center">
-                  <AlertTriangle className="h-8 w-8 text-red-600 mx-auto mb-2" />
-                  <p className="text-sm font-medium text-red-800 dark:text-red-300">
-                    Kipindi chako cha majaribio kimeisha
-                  </p>
-                  <p className="text-xs text-red-600 dark:text-red-400 mt-1">
-                    Lipa ili uendelee kutumia Kiduka POS
+                <div className="p-4 bg-destructive/10 rounded-2xl text-center">
+                  <AlertTriangle className="h-8 w-8 text-destructive mx-auto mb-2" />
+                  <p className="text-sm font-medium">Kipindi chako kimeisha</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Lipa au omba idhini ya admin ili kuendelea
                   </p>
                 </div>
 
-                <div className="space-y-2">
-                  {trialFeatures.map((feature, idx) => (
-                    <div key={idx} className="flex items-center gap-2 text-sm text-muted-foreground line-through opacity-60">
-                      <feature.icon className="h-4 w-4 flex-shrink-0" />
-                      <span>{feature.text}</span>
+                {/* Request Admin Permission */}
+                <div className="space-y-3">
+                  {isPending ? (
+                    <div className="p-4 bg-orange-50 dark:bg-orange-900/20 rounded-2xl text-center">
+                      <Loader2 className="h-6 w-6 text-orange-600 mx-auto mb-2 animate-spin" />
+                      <p className="text-sm font-medium text-orange-800 dark:text-orange-300">
+                        Inasubiri Idhini ya Admin
+                      </p>
+                      <p className="text-xs text-orange-600 dark:text-orange-400 mt-1">
+                        Admin atapitiia ombi lako na kukuruhusu kuendelea
+                      </p>
                     </div>
-                  ))}
+                  ) : (
+                    <Button 
+                      variant="outline" 
+                      className="w-full rounded-2xl"
+                      onClick={handleManualRequest}
+                      disabled={processing}
+                    >
+                      {processing ? (
+                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                      ) : (
+                        <Shield className="h-4 w-4 mr-2" />
+                      )}
+                      Omba Idhini ya Admin
+                    </Button>
+                  )}
                 </div>
+
+                {/* Logout button */}
+                <Button 
+                  variant="ghost" 
+                  className="w-full rounded-2xl text-muted-foreground"
+                  onClick={handleLogout}
+                >
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Toka Akaunti
+                </Button>
               </CardContent>
             </Card>
           </div>
@@ -210,15 +220,13 @@ export const SubscriptionBlocker = ({ children }: SubscriptionBlockerProps) => {
           {/* RIGHT SIDE - Premium Plan with Payment */}
           <div className="flex-1 lg:pl-8">
             <Card className="h-full border-primary/50 ring-2 ring-primary">
-              <CardHeader className="pb-2">
+              <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-lg font-bold flex items-center gap-2">
                     <Crown className="h-5 w-5 text-primary" />
                     Premium
                   </CardTitle>
-                  <Badge className="bg-primary/10 text-primary text-xs">
-                    Pendekeza
-                  </Badge>
+                  <Badge className="bg-primary/10 text-primary text-xs rounded-2xl">Pendekeza</Badge>
                 </div>
                 <div className="flex items-baseline gap-1 mt-2">
                   <span className="text-3xl font-bold text-primary">TSh 10,000</span>
@@ -226,80 +234,49 @@ export const SubscriptionBlocker = ({ children }: SubscriptionBlockerProps) => {
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
-                {isPending ? (
-                  <div className="p-4 bg-orange-50 dark:bg-orange-900/20 rounded-2xl text-center">
-                    <Loader2 className="h-8 w-8 text-orange-600 mx-auto mb-2 animate-spin" />
-                    <p className="text-sm font-medium text-orange-800 dark:text-orange-300">
-                      Inasubiri Idhini ya Admin
-                    </p>
-                    <p className="text-xs text-orange-600 dark:text-orange-400">
-                      Ombi lako linapitiwa
-                    </p>
-                  </div>
-                ) : paymentInitiated ? (
+                {paymentInitiated ? (
                   <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-2xl text-center">
-                    <Loader2 className="h-8 w-8 text-green-600 mx-auto mb-2 animate-spin" />
+                    <Loader2 className="h-6 w-6 text-green-600 mx-auto mb-2 animate-spin" />
                     <p className="text-sm font-medium text-green-800 dark:text-green-300">
-                      Kamilisha malipo kwenye simu
+                      Kamilisha malipo kwenye simu yako
                     </p>
                   </div>
                 ) : (
-                  <>
-                    {/* Payment Form */}
-                    <div className="space-y-3">
-                      <div className="space-y-1">
-                        <Label htmlFor="phone" className="text-xs">Namba ya Simu (M-Pesa/Tigo Pesa)</Label>
-                        <div className="relative">
-                          <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                          <Input
-                            id="phone"
-                            type="tel"
-                            placeholder="0712 345 678"
-                            value={phoneNumber}
-                            onChange={(e) => setPhoneNumber(e.target.value)}
-                            className="pl-10 h-10"
-                          />
-                        </div>
-                      </div>
-
-                      <Button 
-                        onClick={handlePayment} 
-                        className="w-full" 
-                        size="lg"
-                        disabled={processing}
-                      >
-                        {processing ? (
-                          <>
-                            <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                            Inaandaa...
-                          </>
-                        ) : (
-                          <>
-                            <CreditCard className="h-4 w-4 mr-2" />
-                            Panda daraja Premium
-                          </>
-                        )}
-                      </Button>
-
+                  <div className="space-y-3">
+                    <div className="space-y-1">
+                      <Label htmlFor="phone" className="text-xs">Namba ya Simu (M-Pesa/Tigo Pesa)</Label>
                       <div className="relative">
-                        <div className="absolute inset-0 flex items-center">
-                          <span className="w-full border-t" />
-                        </div>
-                        <div className="relative flex justify-center text-xs uppercase">
-                          <span className="bg-card px-2 text-muted-foreground">Au</span>
-                        </div>
+                        <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          id="phone"
+                          type="tel"
+                          placeholder="0712 345 678"
+                          value={phoneNumber}
+                          onChange={(e) => setPhoneNumber(e.target.value)}
+                          className="pl-10"
+                        />
                       </div>
-
-                      <Button 
-                        variant="outline" 
-                        className="w-full"
-                        onClick={handleManualRequest}
-                        disabled={processing}
-                      >
-                        Omba Idhini ya Admin
-                      </Button>
                     </div>
-                  </>
+
+                    <Button 
+                      onClick={handlePayment} 
+                      className="w-full rounded-2xl" 
+                      size="lg"
+                      disabled={processing}
+                    >
+                      {processing ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                          Inaandaa...
+                        </>
+                      ) : (
+                        <>
+                          <CreditCard className="h-4 w-4 mr-2" />
+                          Lipa Sasa
+                        </>
+                      )}
+                    </Button>
+                  </div>
                 )}
 
                 <div className="space-y-2">
@@ -317,14 +294,13 @@ export const SubscriptionBlocker = ({ children }: SubscriptionBlockerProps) => {
 
         {/* Help Button */}
         <div className="mt-6 text-center">
-          <Button variant="ghost" size="sm" onClick={() => setHelpOpen(true)}>
+          <Button variant="ghost" size="sm" onClick={() => setHelpOpen(true)} className="rounded-2xl">
             <HelpCircle className="h-4 w-4 mr-2" />
             Unahitaji msaada?
           </Button>
         </div>
       </div>
 
-      {/* Help Widget */}
       <HelpSupportWidget open={helpOpen} onClose={() => setHelpOpen(false)} />
     </div>
   );
