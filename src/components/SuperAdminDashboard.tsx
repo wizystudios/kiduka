@@ -593,6 +593,7 @@ export const SuperAdminDashboard = () => {
       description: 'Hatua hii haiwezi kurejeshwa. Toa nenosiri la admin ili kuendelea.',
       callback: () => {
         setPasswordDialog(null);
+        // executeDelete will be called from password dialog onConfirm
       }
     });
   };
@@ -1824,34 +1825,19 @@ export const SuperAdminDashboard = () => {
         </DialogContent>
       </Dialog>
       
-      {/* Delete Confirmation via Password */}
-      <Dialog open={!!deleteDialog && !passwordDialog} onOpenChange={() => setDeleteDialog(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-red-600">
-              <AlertTriangle className="h-5 w-5" />
-              Thibitisha Kufuta
-            </DialogTitle>
-          </DialogHeader>
-          <p>Una uhakika unataka kufuta <strong>{deleteDialog?.name}</strong>?</p>
-          <p className="text-sm text-muted-foreground">Hatua hii haiwezi kurejeshwa.</p>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteDialog(null)}>Ghairi</Button>
-            <Button variant="destructive" onClick={executeDelete}>Futa</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
       {/* Admin Password Dialog */}
       <AdminPasswordDialog
         open={!!passwordDialog}
-        onClose={() => setPasswordDialog(null)}
+        onClose={() => {
+          setPasswordDialog(null);
+          setDeleteDialog(null);
+        }}
         onConfirm={() => {
-          if (passwordDialog?.callback) {
-            passwordDialog.callback();
-          }
+          setPasswordDialog(null);
           if (deleteDialog) {
             executeDelete();
+          } else if (passwordDialog?.callback) {
+            passwordDialog.callback();
           }
         }}
         action={passwordDialog?.action || ''}
