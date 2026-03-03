@@ -479,6 +479,31 @@ export const EnhancedSettingsPage = () => {
 
         <TabsContent value="account">
           <div className="space-y-6">
+            {/* Tour Replay */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <HelpCircle className="h-5 w-5 mr-2" />
+                  Mwongozo wa App
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <p className="text-sm text-muted-foreground">Tazama mwongozo wa jinsi ya kutumia Kiduka POS tena.</p>
+                <Button 
+                  variant="outline" 
+                  className="w-full"
+                  onClick={() => {
+                    if (user?.id) {
+                      localStorage.removeItem(`kiduka_tour_seen_${user.id}`);
+                      window.location.reload();
+                    }
+                  }}
+                >
+                  🎓 Anza Mwongozo Tena
+                </Button>
+              </CardContent>
+            </Card>
+
             {/* Help Center */}
             <Card>
               <CardHeader>
@@ -490,7 +515,7 @@ export const EnhancedSettingsPage = () => {
               <CardContent>
                 <Button onClick={() => setShowHelp(true)} variant="outline" className="w-full">
                   <HelpCircle className="h-4 w-4 mr-2" />
-                  Open {t('help_center')}
+                  {t('help_center')}
                 </Button>
               </CardContent>
             </Card>

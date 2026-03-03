@@ -587,13 +587,49 @@ export const SuperAdminDashboard = () => {
   };
   
   const handleDelete = (type: string, id: string, name: string) => {
-    setDeleteDialog({ type, id, name });
+    const dialogData = { type, id, name };
+    setDeleteDialog(dialogData);
     setPasswordDialog({
       action: `Kufuta ${type}: ${name}`,
       description: 'Hatua hii haiwezi kurejeshwa. Toa nenosiri la admin ili kuendelea.',
-      callback: () => {
+      callback: async () => {
         setPasswordDialog(null);
-        // executeDelete will be called from password dialog onConfirm
+        // Execute delete directly
+        try {
+          let error = null;
+          switch(dialogData.type) {
+            case 'user':
+              // Delete user roles first, then profile
+              await supabase.from('user_roles').delete().eq('user_id', dialogData.id);
+              await supabase.from('assistant_permissions').delete().eq('assistant_id', dialogData.id);
+              ({ error } = await supabase.from('profiles').delete().eq('id', dialogData.id));
+              break;
+            case 'product':
+              ({ error } = await supabase.from('products').delete().eq('id', dialogData.id));
+              break;
+            case 'sale':
+              await supabase.from('sales_items').delete().eq('sale_id', dialogData.id);
+              ({ error } = await supabase.from('sales').delete().eq('id', dialogData.id));
+              break;
+            case 'expense':
+              ({ error } = await supabase.from('expenses').delete().eq('id', dialogData.id));
+              break;
+            case 'customer':
+              ({ error } = await supabase.from('customers').delete().eq('id', dialogData.id));
+              break;
+            case 'order':
+              ({ error } = await supabase.from('sokoni_orders').delete().eq('id', dialogData.id));
+              break;
+          }
+          if (error) throw error;
+          toast.success(`${dialogData.type} imefutwa kikamilifu`);
+          fetchAllData();
+        } catch (err: any) {
+          console.error('Delete error:', err);
+          toast.error(`Imeshindwa kufuta: ${err.message}`);
+        } finally {
+          setDeleteDialog(null);
+        }
       }
     });
   };
