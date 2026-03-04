@@ -155,14 +155,16 @@ export function AppSidebar() {
   }));
 
   return (
-    <Sidebar collapsible="icon" className="border-r border-border/40 bg-background">
+    <Sidebar collapsible="icon" className="border-r border-border/40 bg-background [&_[data-radix-scroll-area-viewport]]:scrollbar-none">
       <SidebarHeader className="border-b border-border/40 p-3">
-        <div className="flex items-center justify-center">
-          <KidukaLogo size="sm" showText={!collapsed} />
-        </div>
+        {!collapsed && (
+          <div className="flex items-center justify-center">
+            <KidukaLogo size="sm" showText />
+          </div>
+        )}
       </SidebarHeader>
 
-      <SidebarContent className="py-2">
+      <SidebarContent className="py-2 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>

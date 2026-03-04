@@ -10,6 +10,7 @@ import { EmailConfirmationPage } from '@/components/EmailConfirmationPage';
 import { normalizeTzPhoneDigits } from '@/utils/phoneUtils';
 
 type AuthStep = 'method' | 'identifier' | 'password' | 'name';
+type AuthMethod = 'email' | 'phone' | 'name';
 
 export const AuthPage = () => {
   const { user, signIn, signUp } = useAuth();
@@ -19,10 +20,11 @@ export const AuthPage = () => {
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
   const [showPassword, setShowPassword] = useState(false);
   const [step, setStep] = useState<AuthStep>('identifier');
-  const [authMethod, setAuthMethod] = useState<'email' | 'phone'>('email');
+  const [authMethod, setAuthMethod] = useState<AuthMethod>('email');
   
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
 
@@ -30,13 +32,28 @@ export const AuthPage = () => {
     return <Navigate to="/dashboard" replace />;
   }
 
-  const getIdentifier = () => authMethod === 'email' ? email : phone;
+  const getIdentifier = () => {
+    if (authMethod === 'email') return email;
+    if (authMethod === 'phone') return phone;
+    return username; // name-based login
+  };
+
+  // Password policy for signup
+  const checkPasswordPolicy = (pw: string) => ({
+    minLength: pw.length >= 8,
+    hasNumbers: (pw.match(/\d/g) || []).length >= 3,
+    hasSpecial: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(pw),
+    hasUppercase: /[A-Z]/.test(pw),
+  });
 
   const handleNextStep = () => {
     if (step === 'identifier') {
       const identifier = getIdentifier();
       if (!identifier) {
-        toast.error(authMethod === 'email' ? 'Ingiza barua pepe' : 'Ingiza namba ya simu');
+        toast.error(
+          authMethod === 'email' ? 'Ingiza barua pepe' :
+          authMethod === 'phone' ? 'Ingiza namba ya simu' : 'Ingiza jina lako'
+        );
         return;
       }
       if (authMethod === 'email' && !identifier.includes('@')) {
@@ -47,13 +64,23 @@ export const AuthPage = () => {
         toast.error('Namba ya simu si sahihi');
         return;
       }
+      if (authMethod === 'name' && identifier.length < 3) {
+        toast.error('Jina lazima liwe angalau herufi 3');
+        return;
+      }
       setStep('password');
     } else if (step === 'password') {
       if (!password || password.length < 6) {
         toast.error('Nywila lazima iwe angalau herufi 6');
         return;
       }
+      // For signup, enforce strong password policy
       if (mode === 'signup') {
+        const policy = checkPasswordPolicy(password);
+        if (!Object.values(policy).every(Boolean)) {
+          toast.error('Nywila haikidhi masharti ya usalama');
+          return;
+        }
         setStep('name');
       } else {
         handleSignIn();
@@ -90,9 +117,28 @@ export const AuthPage = () => {
 
     setLoading(true);
     try {
-      const loginEmail = authMethod === 'phone'
-        ? `${normalizedPhone}@kiduka.phone`
-        : email;
+      let loginEmail: string;
+      
+      if (authMethod === 'phone') {
+        loginEmail = `${normalizedPhone}@kiduka.phone`;
+      } else if (authMethod === 'name') {
+        // Name-based login: look up email by full_name in profiles
+        const { supabase } = await import('@/integrations/supabase/client');
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('email')
+          .ilike('full_name', username)
+          .limit(1);
+        
+        if (!profiles || profiles.length === 0 || !profiles[0].email) {
+          toast.error('Jina hili halijapatikana. Jaribu barua pepe au simu.');
+          setLoading(false);
+          return;
+        }
+        loginEmail = profiles[0].email;
+      } else {
+        loginEmail = email;
+      }
 
       await signIn(loginEmail, password);
       toast.success('Karibu tena!');
@@ -153,6 +199,7 @@ export const AuthPage = () => {
     setStep('identifier');
     setEmail('');
     setPhone('');
+    setUsername('');
     setPassword('');
     setFullName('');
   };
@@ -162,10 +209,14 @@ export const AuthPage = () => {
     resetForm();
   };
 
-  const switchAuthMethod = () => {
-    setAuthMethod(authMethod === 'email' ? 'phone' : 'email');
+  const cycleAuthMethod = () => {
+    const methods: AuthMethod[] = ['email', 'phone', 'name'];
+    const currentIndex = methods.indexOf(authMethod);
+    const next = methods[(currentIndex + 1) % methods.length];
+    setAuthMethod(next);
     setEmail('');
     setPhone('');
+    setUsername('');
   };
 
   if (showConfirmation) {
@@ -204,7 +255,7 @@ export const AuthPage = () => {
         {mode === 'signin' ? 'Karibu Tena' : 'Jisajili'}
       </h1>
       <p className="text-sm text-muted-foreground mb-8">
-        {step === 'identifier' && (authMethod === 'email' ? 'Ingiza barua pepe yako' : 'Ingiza namba ya simu yako')}
+        {step === 'identifier' && (authMethod === 'email' ? 'Ingiza barua pepe yako' : authMethod === 'phone' ? 'Ingiza namba ya simu yako' : 'Ingiza jina lako la akaunti')}
         {step === 'password' && 'Ingiza nywila yako'}
         {step === 'name' && 'Ingiza jina lako'}
       </p>
@@ -213,7 +264,7 @@ export const AuthPage = () => {
       <div className="w-full max-w-sm space-y-4">
         {step === 'identifier' && (
           <>
-            {authMethod === 'email' ? (
+            {authMethod === 'email' && (
               <div className="space-y-1">
                 <div className="relative">
                   <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
@@ -224,16 +275,18 @@ export const AuthPage = () => {
                     onChange={(e) => setEmail(e.target.value)}
                     onKeyPress={(e) => e.key === 'Enter' && handleNextStep()}
                     className={`pl-10 h-14 bg-transparent border-0 border-b-2 border-border rounded-none text-lg focus:ring-0 focus:border-primary focus-visible:ring-0 focus-visible:ring-offset-0 ${
-                      email && !email.includes('@') ? 'border-red-500' : ''
+                      email && !email.includes('@') ? 'border-destructive' : ''
                     }`}
                     autoFocus
                   />
                 </div>
                 {email && !email.includes('@') && (
-                  <p className="text-xs text-red-500 pl-2">Barua pepe lazima iwe na @</p>
+                  <p className="text-xs text-destructive pl-2">Barua pepe lazima iwe na @</p>
                 )}
               </div>
-            ) : (
+            )}
+            
+            {authMethod === 'phone' && (
               <div className="space-y-1">
                 <div className="relative">
                   <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
@@ -244,31 +297,53 @@ export const AuthPage = () => {
                     onChange={(e) => setPhone(e.target.value)}
                     onKeyPress={(e) => e.key === 'Enter' && handleNextStep()}
                     className={`pl-10 h-14 bg-transparent border-0 border-b-2 border-border rounded-none text-lg focus:ring-0 focus:border-primary focus-visible:ring-0 focus-visible:ring-offset-0 ${
-                      phone && phone.length < 9 ? 'border-red-500' : ''
+                      phone && phone.length < 9 ? 'border-destructive' : ''
                     }`}
                     autoFocus
                   />
                 </div>
                 {phone && phone.length < 9 && (
-                  <p className="text-xs text-red-500 pl-2">Namba ya simu lazima iwe angalau tarakimu 9</p>
+                  <p className="text-xs text-destructive pl-2">Namba ya simu lazima iwe angalau tarakimu 9</p>
                 )}
+              </div>
+            )}
+
+            {authMethod === 'name' && (
+              <div className="space-y-1">
+                <div className="relative">
+                  <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                  <Input
+                    type="text"
+                    placeholder="Jina lako (mfano: kharifanadhiru)"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && handleNextStep()}
+                    className="pl-10 h-14 bg-transparent border-0 border-b-2 border-border rounded-none text-lg focus:ring-0 focus:border-primary focus-visible:ring-0 focus-visible:ring-offset-0"
+                    autoFocus
+                  />
+                </div>
               </div>
             )}
             
             <button
               type="button"
               className="w-full text-primary text-sm py-2 flex items-center justify-center gap-2"
-              onClick={switchAuthMethod}
+              onClick={cycleAuthMethod}
             >
               {authMethod === 'email' ? (
                 <>
                   <Phone className="h-4 w-4" />
-                  Tumia namba ya simu badala yake
+                  Tumia namba ya simu
+                </>
+              ) : authMethod === 'phone' ? (
+                <>
+                  <User className="h-4 w-4" />
+                  Tumia jina lako
                 </>
               ) : (
                 <>
                   <Mail className="h-4 w-4" />
-                  Tumia barua pepe badala yake
+                  Tumia barua pepe
                 </>
               )}
             </button>
@@ -286,7 +361,7 @@ export const AuthPage = () => {
                 onChange={(e) => setPassword(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && handleNextStep()}
                 className={`pl-10 pr-10 h-14 bg-transparent border-0 border-b-2 border-border rounded-none text-lg focus:ring-0 focus:border-primary focus-visible:ring-0 focus-visible:ring-offset-0 ${
-                  password && password.length < 6 ? 'border-red-500' : password.length >= 6 ? 'border-green-500' : ''
+                  password && password.length < 6 ? 'border-destructive' : password.length >= 6 ? 'border-primary' : ''
                 }`}
                 autoFocus
               />
@@ -298,12 +373,31 @@ export const AuthPage = () => {
                 {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
               </button>
             </div>
-            {password && password.length < 6 && (
-              <p className="text-xs text-red-500 pl-2">Nywila lazima iwe angalau herufi 6 ({password.length}/6)</p>
+            {mode === 'signin' && password && password.length < 6 && (
+              <p className="text-xs text-destructive pl-2">Nywila lazima iwe angalau herufi 6</p>
             )}
-            {password && password.length >= 6 && (
-              <p className="text-xs text-green-500 pl-2">✓ Nywila imekubalika</p>
+            {mode === 'signin' && password && password.length >= 6 && (
+              <p className="text-xs text-primary pl-2">✓ Nywila imekubalika</p>
             )}
+            {mode === 'signup' && password.length > 0 && (() => {
+              const p = checkPasswordPolicy(password);
+              return (
+                <div className="p-3 bg-muted/50 rounded-2xl space-y-1 mt-2">
+                  <p className={`text-xs ${p.minLength ? 'text-primary' : 'text-muted-foreground'}`}>
+                    {p.minLength ? '✓' : '○'} Angalau herufi 8
+                  </p>
+                  <p className={`text-xs ${p.hasNumbers ? 'text-primary' : 'text-muted-foreground'}`}>
+                    {p.hasNumbers ? '✓' : '○'} Angalau nambari 3
+                  </p>
+                  <p className={`text-xs ${p.hasSpecial ? 'text-primary' : 'text-muted-foreground'}`}>
+                    {p.hasSpecial ? '✓' : '○'} Herufi maalum (!@#$...)
+                  </p>
+                  <p className={`text-xs ${p.hasUppercase ? 'text-primary' : 'text-muted-foreground'}`}>
+                    {p.hasUppercase ? '✓' : '○'} Herufi kubwa (A-Z)
+                  </p>
+                </div>
+              );
+            })()}
           </div>
         )}
 

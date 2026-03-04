@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -12,27 +12,17 @@ import {
   SheetTitle,
   SheetTrigger,
 } from '@/components/ui/sheet';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import {
-  Home,
-  Package,
-  QrCode,
-  ShoppingCart,
-  Settings,
-  LogOut,
-  Bell,
-  Users,
-  CreditCard,
-  Percent,
-  TrendingUp,
-  BarChart3,
-  Download,
-  Calculator as CalcIcon,
-  Receipt,
-  Store
+  Home, Package, QrCode, ShoppingCart, Settings, LogOut, Bell,
+  Users, CreditCard, Percent, TrendingUp, BarChart3, Download,
+  Calculator as CalcIcon, Receipt, Store, Shield, Crown, Brain,
+  ClipboardList, Smartphone, Zap, Banknote, LineChart, UserCheck,
+  ChevronDown, Menu, HelpCircle
 } from 'lucide-react';
 import { NotificationCenter } from '@/components/NotificationCenter';
 
-interface BottomNavItem {
+interface NavItem {
   id: string;
   label: string;
   icon: React.ComponentType<any>;
@@ -40,112 +30,118 @@ interface BottomNavItem {
   permission?: string | null;
 }
 
+interface NavGroup {
+  id: string;
+  label: string;
+  icon: React.ComponentType<any>;
+  permission: string | null;
+  children: NavItem[];
+  href?: string;
+}
+
+const navigationGroups: NavGroup[] = [
+  { id: 'dashboard', label: 'Dashboard', icon: Home, permission: null, children: [], href: '/dashboard' },
+  {
+    id: 'bidhaa', label: 'Bidhaa', icon: Package, permission: 'can_view_products',
+    children: [
+      { id: 'products-list', label: 'Orodha', icon: Package, href: '/products', permission: 'can_view_products' },
+      { id: 'import-products', label: 'Ingiza', icon: Download, href: '/products/import', permission: 'can_edit_products' },
+      { id: 'scanner', label: 'Scanner', icon: QrCode, href: '/scanner', permission: 'can_view_products' },
+    ]
+  },
+  {
+    id: 'mauzo', label: 'Mauzo', icon: ShoppingCart, permission: 'can_view_sales',
+    children: [
+      { id: 'sales-list', label: 'Historia', icon: ShoppingCart, href: '/sales', permission: 'can_view_sales' },
+      { id: 'quick-sale', label: 'Haraka', icon: Zap, href: '/quick-sale', permission: 'can_create_sales' },
+      { id: 'discounts', label: 'Punguzo', icon: Percent, href: '/discounts', permission: null },
+    ]
+  },
+  {
+    id: 'stock', label: 'Stock', icon: ClipboardList, permission: 'can_view_inventory',
+    children: [
+      { id: 'inventory-snapshots', label: 'Hesabu', icon: ClipboardList, href: '/inventory-snapshots', permission: 'can_view_inventory' },
+      { id: 'inventory-automation', label: 'Auto-Oda', icon: Package, href: '/inventory-automation', permission: 'can_edit_inventory' },
+    ]
+  },
+  {
+    id: 'orders', label: 'Oda', icon: Store, permission: 'can_view_sales',
+    children: [
+      { id: 'sokoni', label: 'Sokoni', icon: Store, href: '/sokoni', permission: null },
+      { id: 'sokoni-orders', label: 'Oda za Sokoni', icon: ClipboardList, href: '/sokoni-orders', permission: 'can_view_sales' },
+    ]
+  },
+  {
+    id: 'wateja', label: 'Wateja', icon: Users, permission: 'can_view_customers',
+    children: [
+      { id: 'customers-list', label: 'Orodha', icon: Users, href: '/customers', permission: 'can_view_customers' },
+      { id: 'loyalty', label: 'Uaminifu', icon: Crown, href: '/loyalty', permission: 'can_view_customers' },
+    ]
+  },
+  {
+    id: 'mikopo', label: 'Mikopo', icon: CreditCard, permission: null,
+    children: [
+      { id: 'credit', label: 'Wateja', icon: CreditCard, href: '/credit-management', permission: null },
+      { id: 'micro-loans', label: 'Midogo', icon: Banknote, href: '/micro-loans', permission: null },
+    ]
+  },
+  {
+    id: 'ripoti', label: 'Ripoti', icon: BarChart3, permission: 'can_view_reports',
+    children: [
+      { id: 'reports', label: 'Kuu', icon: BarChart3, href: '/reports', permission: 'can_view_reports' },
+      { id: 'profit-loss', label: 'Faida/Hasara', icon: TrendingUp, href: '/profit-loss', permission: 'can_view_reports' },
+      { id: 'sales-analytics', label: 'Takwimu', icon: LineChart, href: '/sales-analytics', permission: 'can_view_reports' },
+      { id: 'expenses', label: 'Matumizi', icon: Receipt, href: '/expenses', permission: null },
+    ]
+  },
+  { id: 'calculator', label: 'Kikokotoo', icon: CalcIcon, permission: null, children: [], href: '/calculator' },
+  {
+    id: 'mipangilio', label: 'Mipangilio', icon: Settings, permission: null,
+    children: [
+      { id: 'settings', label: 'Mipangilio', icon: Settings, href: '/settings', permission: null },
+      { id: 'subscription', label: 'Michango', icon: Crown, href: '/subscription', permission: null },
+      { id: 'pwa-install', label: 'Sakinisha App', icon: Smartphone, href: '/pwa-install', permission: null },
+    ]
+  },
+];
+
 export const MobileBottomNav = () => {
-  const [profileSheetOpen, setProfileSheetOpen] = useState(false);
-  const [notificationSheetOpen, setNotificationSheetOpen] = useState(false);
-  const [unreadCount, setUnreadCount] = useState(0);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [notificationOpen, setNotificationOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   const { user, userProfile, signOut } = useAuth();
   const { permissions } = usePermissions();
 
-  // For assistants: Default functionality is Dashboard, Bidhaa, Scanner, Mauzo, Calculator, Customers, Mikopo
-  // Other functionality requires owner permission
-  const isAssistant = userProfile?.role === 'assistant';
+  if (!user) return null;
 
-  // Always show 4 main items in bottom nav + profile
-  const mainNavItems: BottomNavItem[] = [
-    { id: 'home', label: 'Home', icon: Home, href: '/dashboard', permission: null },
-    { id: 'products', label: 'Bidhaa', icon: Package, href: '/products', permission: 'can_view_products' },
-    { id: 'sales', label: 'Mauzo', icon: ShoppingCart, href: '/sales', permission: 'can_view_sales' },
-    { id: 'calculator', label: 'Kikokotoo', icon: CalcIcon, href: '/calculator', permission: null },
-  ].filter(item => {
+  const hasPermission = (perm: string | null) => {
     if (userProfile?.role === 'owner' || userProfile?.role === 'super_admin') return true;
-    if (!item.permission) return true;
-    return permissions?.[item.permission as keyof typeof permissions];
-  });
-
-  // Default items that assistants can always access (no permission needed for these)
-  const assistantDefaultItems: BottomNavItem[] = [
-    { id: 'scanner', label: 'Scan', icon: QrCode, href: '/scanner', permission: null },
-    { id: 'customers', label: 'Wateja', icon: Users, href: '/customers', permission: null },
-    { id: 'credit', label: 'Mikopo', icon: CreditCard, href: '/credit-management', permission: null },
-  ];
-
-  // Items that require owner permission for assistants
-  const permissionRequiredItems: BottomNavItem[] = [
-    { id: 'quick-sale', label: 'Mauzo Haraka', icon: ShoppingCart, href: '/quick-sale', permission: 'can_create_sales' },
-  ];
-
-  // Items only for owners/super_admin
-  const ownerOnlyItems: BottomNavItem[] = [
-    { id: 'sokoni-orders', label: 'Oda za Sokoni', icon: Store, href: '/sokoni-orders', permission: null },
-    { id: 'discounts', label: 'Punguzo', icon: Percent, href: '/discounts', permission: null },
-    { id: 'micro-loans', label: 'Mikopo Midogo', icon: CreditCard, href: '/micro-loans', permission: null },
-    { id: 'expenses', label: 'Matumizi', icon: Receipt, href: '/expenses', permission: null },
-    { id: 'inventory', label: 'Hesabu ya Stock', icon: BarChart3, href: '/inventory-snapshots', permission: 'can_view_inventory' },
-    { id: 'reports', label: 'Ripoti', icon: BarChart3, href: '/reports', permission: 'can_view_reports' },
-    { id: 'profit-loss', label: 'Faida/Hasara', icon: TrendingUp, href: '/profit-loss', permission: 'can_view_reports' },
-    { id: 'import-products', label: 'Ingiza Bidhaa', icon: Download, href: '/products/import', permission: 'can_edit_products' },
-    { id: 'pwa', label: 'Sakinisha App', icon: Download, href: '/pwa-install', permission: null },
-    { id: 'settings', label: 'Mipangilio', icon: Settings, href: '/settings', permission: null },
-  ];
-
-  // Add owner-specific items
-  if (userProfile?.role === 'owner') {
-    ownerOnlyItems.push({ id: 'users', label: 'Watumiaji', icon: Users, href: '/users', permission: null });
-  }
-
-  // Add super admin items
-  if (userProfile?.role === 'super_admin') {
-    ownerOnlyItems.push({ id: 'super-admin', label: 'Super Admin', icon: Settings, href: '/super-admin', permission: null });
-  }
-
-  // Filter profile menu items based on role
-  const getProfileMenuItems = (): BottomNavItem[] => {
-    if (userProfile?.role === 'owner' || userProfile?.role === 'super_admin') {
-      // Owners see all items
-      return [...assistantDefaultItems, ...permissionRequiredItems, ...ownerOnlyItems];
-    }
-    
-    // Assistants see default items + permission-required items they have access to
-    const allowedPermissionItems = permissionRequiredItems.filter(item => {
-      if (!item.permission) return true;
-      return permissions?.[item.permission as keyof typeof permissions];
-    });
-    
-    return [...assistantDefaultItems, ...allowedPermissionItems];
+    if (!perm) return true;
+    return permissions?.[perm as keyof typeof permissions] ?? false;
   };
 
-  const profileMenuItems = getProfileMenuItems();
+  const isActive = (href: string) => {
+    if (href === '/dashboard') return location.pathname === '/dashboard';
+    return location.pathname.startsWith(href);
+  };
 
-  useEffect(() => {
-    setUnreadCount(3);
-  }, []);
+  const handleNav = (href: string) => {
+    navigate(href);
+    setMenuOpen(false);
+  };
+
+  const handleSignOut = async () => {
+    try { await signOut(); setMenuOpen(false); } catch (e) { console.error(e); }
+  };
 
   const getUserInitials = () => {
-    const displayName = userProfile?.full_name || 
-                       user?.user_metadata?.full_name || 
-                       user?.email?.split('@')[0] || 
-                       'User';
-    
-    return displayName
-      .split(' ')
-      .map((n: string) => n.charAt(0).toUpperCase())
-      .join('')
-      .slice(0, 2);
-  };
-
-  const getDisplayName = () => {
-    return userProfile?.full_name || 
-           user?.user_metadata?.full_name || 
-           user?.email?.split('@')[0] || 
-           'User';
+    const name = userProfile?.full_name || user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'U';
+    return name.split(' ').map((n: string) => n.charAt(0).toUpperCase()).join('').slice(0, 2);
   };
 
   const getUserRole = () => {
-    const role = userProfile?.role || 'owner';
-    switch (role) {
+    switch (userProfile?.role) {
       case 'owner': return 'Mmiliki';
       case 'assistant': return 'Msaidizi';
       case 'super_admin': return 'Msimamizi Mkuu';
@@ -153,154 +149,187 @@ export const MobileBottomNav = () => {
     }
   };
 
-  const isActive = (href: string) => {
-    if (href === '/') {
-      return location.pathname === '/';
-    }
-    return location.pathname.startsWith(href);
-  };
+  const filteredGroups = navigationGroups.filter(g => hasPermission(g.permission)).map(g => ({
+    ...g,
+    children: g.children.filter(c => hasPermission(c.permission))
+  }));
 
-  const handleNavigation = (href: string) => {
-    navigate(href);
-  };
-
-  const handleSignOut = async () => {
-    try {
-      await signOut();
-      setProfileSheetOpen(false);
-    } catch (error) {
-      console.error('Error signing out:', error);
-    }
-  };
-
-  if (!user) return null;
+  // Bottom bar: Home, Mauzo, Scanner, Arifa, Menu
+  const bottomItems = [
+    { id: 'home', label: 'Home', icon: Home, action: () => handleNav('/dashboard') },
+    { id: 'sales', label: 'Mauzo', icon: ShoppingCart, action: () => handleNav('/sales') },
+    { id: 'scanner', label: 'Scan', icon: QrCode, action: () => handleNav('/scanner') },
+    { id: 'notifications', label: 'Arifa', icon: Bell, action: () => setNotificationOpen(true) },
+    { id: 'menu', label: 'Zaidi', icon: Menu, action: () => setMenuOpen(true) },
+  ];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-background border-t border-border z-50 md:hidden">
-      <div className="flex items-center justify-center h-16 px-2">
-        <div className="grid grid-cols-5 gap-1 max-w-md w-full">
-          {mainNavItems.slice(0, 4).map((item) => {
+    <>
+      {/* Bottom Navigation Bar */}
+      <nav className="fixed bottom-0 left-0 right-0 bg-background border-t border-border z-50 md:hidden">
+        <div className="flex items-center justify-around h-16 px-1">
+          {bottomItems.map((item) => {
             const Icon = item.icon;
-            const active = isActive(item.href);
+            const active = item.id === 'home' ? location.pathname === '/dashboard' :
+                          item.id === 'sales' ? location.pathname.startsWith('/sales') :
+                          item.id === 'scanner' ? location.pathname.startsWith('/scanner') : false;
             return (
               <button
                 key={item.id}
-                onClick={() => handleNavigation(item.href)}
-                className={`flex flex-col items-center justify-center p-2 rounded-lg transition-all ${
-                  active 
-                    ? 'text-primary bg-primary/10' 
-                    : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                onClick={item.action}
+                className={`flex flex-col items-center justify-center p-2 rounded-xl transition-all flex-1 ${
+                  active ? 'text-primary bg-primary/10' : 'text-muted-foreground'
                 }`}
               >
-                <Icon className={`h-5 w-5 ${active ? 'scale-110' : ''}`} />
-                <span className={`text-[10px] mt-0.5 font-medium`}>
-                  {item.label}
-                </span>
+                <Icon className="h-5 w-5" />
+                <span className="text-[10px] mt-0.5 font-medium">{item.label}</span>
               </button>
             );
           })}
-
-          {/* Profile Sheet Trigger - Always visible */}
-          <Sheet open={profileSheetOpen} onOpenChange={setProfileSheetOpen}>
-            <SheetTrigger asChild>
-              <button className="flex flex-col items-center justify-center p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-all">
-                <div className="relative">
-                  <Avatar className="h-5 w-5">
-                    <AvatarImage src={userProfile?.avatar_url} />
-                    <AvatarFallback className="bg-gradient-to-br from-emerald-500 to-blue-600 text-white text-xs">
-                      {getUserInitials()}
-                    </AvatarFallback>
-                  </Avatar>
-                  {unreadCount > 0 && (
-                    <Badge className="absolute -top-1 -right-1 h-3 w-3 p-0 bg-destructive text-destructive-foreground text-[8px] flex items-center justify-center">
-                      {unreadCount}
-                    </Badge>
-                  )}
-                </div>
-                <span className="text-[10px] mt-0.5 font-medium">Profile</span>
-              </button>
-            </SheetTrigger>
-            
-            <SheetContent side="bottom" className="h-[80vh] overflow-y-auto">
-              <SheetHeader className="pb-4">
-                <SheetTitle className="flex items-center gap-3">
-                  <Avatar className="h-12 w-12">
-                    <AvatarImage src={userProfile?.avatar_url} />
-                    <AvatarFallback className="bg-gradient-to-br from-emerald-500 to-blue-600 text-white">
-                      {getUserInitials()}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="text-left">
-                    <h3 className="font-semibold text-lg">{getDisplayName()}</h3>
-                    <p className="text-sm text-muted-foreground">{user.email}</p>
-                    <Badge variant="outline" className="text-xs">
-                      {getUserRole()}
-                    </Badge>
-                  </div>
-                </SheetTitle>
-              </SheetHeader>
-              
-              <div className="space-y-2 pb-8">
-                {/* Notifications */}
-                <Sheet open={notificationSheetOpen} onOpenChange={setNotificationSheetOpen}>
-                  <SheetTrigger asChild>
-                    <Button variant="ghost" className="w-full justify-start h-12">
-                      <div className="relative mr-3">
-                        <Bell className="h-5 w-5" />
-                        {unreadCount > 0 && (
-                          <Badge className="absolute -top-1 -right-1 h-4 w-4 p-0 bg-destructive text-destructive-foreground text-xs flex items-center justify-center">
-                            {unreadCount}
-                          </Badge>
-                        )}
-                      </div>
-                      Arifa ({unreadCount})
-                    </Button>
-                  </SheetTrigger>
-                  <SheetContent side="right" className="w-full sm:w-96">
-                    <SheetHeader>
-                      <SheetTitle>Arifa</SheetTitle>
-                    </SheetHeader>
-                    <div className="mt-4">
-                      <NotificationCenter />
-                    </div>
-                  </SheetContent>
-                </Sheet>
-
-                {/* Menu Items */}
-                {profileMenuItems.map((item) => {
-                  const Icon = item.icon;
-                  return (
-                    <Button
-                      key={item.id}
-                      variant="ghost"
-                      className="w-full justify-start h-12"
-                      onClick={() => {
-                        handleNavigation(item.href);
-                        setProfileSheetOpen(false);
-                      }}
-                    >
-                      <Icon className="h-5 w-5 mr-3" />
-                      {item.label}
-                    </Button>
-                  );
-                })}
-
-                {/* Sign Out */}
-                <div className="pt-4 border-t border-border">
-                  <Button
-                    variant="ghost"
-                    className="w-full justify-start h-12 text-destructive hover:text-destructive hover:bg-destructive/10"
-                    onClick={handleSignOut}
-                  >
-                    <LogOut className="h-5 w-5 mr-3" />
-                    Toka
-                  </Button>
-                </div>
-              </div>
-            </SheetContent>
-          </Sheet>
         </div>
-      </div>
-    </nav>
+      </nav>
+
+      {/* Notification Sheet */}
+      <Sheet open={notificationOpen} onOpenChange={setNotificationOpen}>
+        <SheetContent side="right" className="w-full sm:w-96">
+          <SheetHeader><SheetTitle>Arifa</SheetTitle></SheetHeader>
+          <div className="mt-4"><NotificationCenter /></div>
+        </SheetContent>
+      </Sheet>
+
+      {/* Full Menu Sheet - Airtel-style Grid */}
+      <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
+        <SheetContent side="bottom" className="h-[85vh] overflow-y-auto rounded-t-3xl">
+          {/* User Profile Header */}
+          <div className="flex items-center gap-3 pb-4 border-b border-border mb-4">
+            <Avatar className="h-12 w-12">
+              <AvatarImage src={userProfile?.avatar_url} />
+              <AvatarFallback className="bg-gradient-to-br from-emerald-500 to-blue-600 text-white">
+                {getUserInitials()}
+              </AvatarFallback>
+            </Avatar>
+            <div className="flex-1 min-w-0">
+              <h3 className="font-semibold text-base truncate">{userProfile?.full_name || user?.email?.split('@')[0]}</h3>
+              <div className="flex items-center gap-2">
+                <Badge variant="outline" className="text-xs">{getUserRole()}</Badge>
+                <span className="text-xs text-muted-foreground truncate">{userProfile?.business_name}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Grid of features - Airtel style carpet */}
+          <div className="space-y-4">
+            {filteredGroups.map((group) => {
+              // Direct link items (no children) - render as grid item
+              if (group.children.length === 0 && group.href) {
+                const Icon = group.icon;
+                const active = isActive(group.href);
+                return (
+                  <button
+                    key={group.id}
+                    onClick={() => handleNav(group.href!)}
+                    className={`inline-flex flex-col items-center justify-center w-[calc(25%-8px)] p-3 rounded-2xl transition-all ${
+                      active ? 'bg-primary/10 text-primary' : 'bg-muted/30 hover:bg-muted/60 text-foreground'
+                    }`}
+                  >
+                    <div className={`h-10 w-10 rounded-xl flex items-center justify-center mb-1 ${
+                      active ? 'bg-primary/20' : 'bg-muted/50'
+                    }`}>
+                      <Icon className="h-5 w-5" />
+                    </div>
+                    <span className="text-[11px] font-medium text-center leading-tight">{group.label}</span>
+                  </button>
+                );
+              }
+
+              // Collapsible group with children - show as dropdown section
+              return (
+                <Collapsible key={group.id}>
+                  <CollapsibleTrigger className="flex items-center justify-between w-full px-2 py-2 rounded-xl hover:bg-muted/30 transition-colors">
+                    <div className="flex items-center gap-2">
+                      <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                        <group.icon className="h-4 w-4 text-primary" />
+                      </div>
+                      <span className="text-sm font-semibold">{group.label}</span>
+                    </div>
+                    <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform duration-200 group-data-[state=open]:rotate-180" />
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <div className="grid grid-cols-4 gap-2 pt-2 pl-2">
+                      {group.children.map((child) => {
+                        const ChildIcon = child.icon;
+                        const active = isActive(child.href);
+                        return (
+                          <button
+                            key={child.id}
+                            onClick={() => handleNav(child.href)}
+                            className={`flex flex-col items-center justify-center p-3 rounded-2xl transition-all ${
+                              active ? 'bg-primary/10 text-primary' : 'bg-muted/30 hover:bg-muted/60 text-foreground'
+                            }`}
+                          >
+                            <div className={`h-9 w-9 rounded-xl flex items-center justify-center mb-1 ${
+                              active ? 'bg-primary/20' : 'bg-muted/50'
+                            }`}>
+                              <ChildIcon className="h-4 w-4" />
+                            </div>
+                            <span className="text-[10px] font-medium text-center leading-tight">{child.label}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </CollapsibleContent>
+                </Collapsible>
+              );
+            })}
+
+            {/* Super Admin */}
+            {userProfile?.role === 'super_admin' && (
+              <button
+                onClick={() => handleNav('/super-admin')}
+                className="inline-flex flex-col items-center justify-center w-[calc(25%-8px)] p-3 rounded-2xl bg-muted/30 hover:bg-muted/60"
+              >
+                <div className="h-10 w-10 rounded-xl bg-destructive/10 flex items-center justify-center mb-1">
+                  <Shield className="h-5 w-5 text-destructive" />
+                </div>
+                <span className="text-[11px] font-medium">Admin</span>
+              </button>
+            )}
+
+            {/* Users for owners */}
+            {userProfile?.role === 'owner' && (
+              <button
+                onClick={() => handleNav('/users')}
+                className="inline-flex flex-col items-center justify-center w-[calc(25%-8px)] p-3 rounded-2xl bg-muted/30 hover:bg-muted/60"
+              >
+                <div className="h-10 w-10 rounded-xl bg-muted/50 flex items-center justify-center mb-1">
+                  <UserCheck className="h-5 w-5" />
+                </div>
+                <span className="text-[11px] font-medium">Watumiaji</span>
+              </button>
+            )}
+          </div>
+
+          {/* Footer Actions */}
+          <div className="mt-6 pt-4 border-t border-border space-y-2">
+            <Button
+              variant="ghost"
+              className="w-full justify-start h-11 rounded-2xl"
+              onClick={() => handleNav('/settings')}
+            >
+              <HelpCircle className="h-4 w-4 mr-3" />
+              Msaada
+            </Button>
+            <Button
+              variant="ghost"
+              className="w-full justify-start h-11 rounded-2xl text-destructive hover:text-destructive hover:bg-destructive/10"
+              onClick={handleSignOut}
+            >
+              <LogOut className="h-4 w-4 mr-3" />
+              Toka Akaunti
+            </Button>
+          </div>
+        </SheetContent>
+      </Sheet>
+    </>
   );
 };
