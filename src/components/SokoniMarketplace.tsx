@@ -33,6 +33,13 @@ import { SokoniProductDetail } from './SokoniProductDetail';
 import { useWishlist } from '@/hooks/useWishlist';
 import { SokoniBottomNav } from './SokoniBottomNav';
 import { ImageSearchModal } from './ImageSearchModal';
+interface ActiveDiscount {
+  id: string;
+  discount_type: string;
+  value: number;
+  applicable_products: string[];
+}
+
 interface MarketProduct {
   id: string;
   name: string;
@@ -45,6 +52,8 @@ interface MarketProduct {
   owner_business_name?: string;
   owner_phone?: string;
   created_at?: string;
+  discount_price?: number;
+  discount_percent?: number;
 }
 
 interface CartItem extends MarketProduct {
@@ -214,23 +223,53 @@ export const SokoniMarketplace = () => {
       const sellerIds = [...new Set(productsData?.map(p => p.owner_id) || [])];
 
       let profilesData: SellerProfile[] = [];
+      let discountsData: ActiveDiscount[] = [];
+      
       if (sellerIds.length > 0) {
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('id, business_name, phone')
-          .in('id', sellerIds);
+        const [profilesResult, discountsResult] = await Promise.all([
+          supabase.from('profiles').select('id, business_name, phone').in('id', sellerIds),
+          supabase.from('discounts').select('id, discount_type, value, applicable_products').eq('active', true)
+            .or(`end_date.is.null,end_date.gte.${new Date().toISOString().split('T')[0]}`)
+        ]);
 
-        if (!error && data) profilesData = data as any;
+        if (!profilesResult.error && profilesResult.data) profilesData = profilesResult.data as any;
+        if (!discountsResult.error && discountsResult.data) {
+          discountsData = (discountsResult.data as any[]).map(d => ({
+            ...d,
+            applicable_products: Array.isArray(d.applicable_products) ? d.applicable_products : []
+          }));
+        }
       }
 
       setSellers(profilesData);
 
       const enrichedProducts = (productsData || []).map(product => {
         const seller = profilesData?.find(p => p.id === product.owner_id);
+        
+        // Find applicable discount
+        let discount_price: number | undefined;
+        let discount_percent: number | undefined;
+        
+        for (const disc of discountsData) {
+          const applies = disc.applicable_products.length === 0 || disc.applicable_products.includes(product.id);
+          if (applies) {
+            if (disc.discount_type === 'percentage') {
+              discount_price = product.price * (1 - disc.value / 100);
+              discount_percent = disc.value;
+            } else {
+              discount_price = Math.max(0, product.price - disc.value);
+              discount_percent = Math.round((disc.value / product.price) * 100);
+            }
+            break; // Apply first matching discount
+          }
+        }
+        
         return {
           ...product,
           owner_business_name: seller?.business_name || 'Duka',
-          owner_phone: seller?.phone || undefined
+          owner_phone: seller?.phone || undefined,
+          discount_price,
+          discount_percent
         };
       });
 
@@ -314,8 +353,10 @@ export const SokoniMarketplace = () => {
     return matchesSearch && matchesCategory;
   });
 
-  // Get top deals (lowest prices)
-  const topDeals = [...products].sort((a, b) => a.price - b.price).slice(0, 6);
+  // Get top deals - products with real discounts first, then lowest prices
+  const topDeals = [...products]
+    .sort((a, b) => (b.discount_percent || 0) - (a.discount_percent || 0) || a.price - b.price)
+    .slice(0, 6);
 
   // Get new arrivals
   const newArrivals = products.slice(0, 6);
@@ -446,7 +487,11 @@ export const SokoniMarketplace = () => {
   };
 
   // Product Card component
-  const ProductCard = ({ product, showDiscount = false }: { product: MarketProduct; showDiscount?: boolean }) => (
+  const ProductCard = ({ product }: { product: MarketProduct }) => {
+    const hasDiscount = !!product.discount_price;
+    const displayPrice = product.discount_price || product.price;
+    
+    return (
     <Card 
       className="overflow-hidden cursor-pointer hover:shadow-lg transition-all duration-300 group border-0 bg-card"
       onClick={() => openProductDetail(product)}
@@ -468,6 +513,11 @@ export const SokoniMarketplace = () => {
             {product.category}
           </Badge>
         )}
+        {hasDiscount && (
+          <Badge className="absolute bottom-2 left-2 text-xs bg-destructive text-destructive-foreground">
+            -{product.discount_percent}%
+          </Badge>
+        )}
         <Button 
           variant="ghost" 
           size="icon" 
@@ -484,21 +534,16 @@ export const SokoniMarketplace = () => {
           <span className="text-xs text-muted-foreground truncate">{product.owner_business_name}</span>
         </div>
         <div className="mt-2">
-          {showDiscount && (
+          {hasDiscount && (
             <span className="text-xs text-muted-foreground line-through mr-2">
-              TSh {(product.price * 1.15).toLocaleString()}
+              TSh {product.price.toLocaleString()}
             </span>
           )}
-          <span className={`font-bold ${showDiscount ? 'text-destructive' : 'text-primary'}`}>
-            TSh {product.price.toLocaleString()}
+          <span className={`font-bold ${hasDiscount ? 'text-destructive' : 'text-primary'}`}>
+            TSh {Math.round(displayPrice).toLocaleString()}
           </span>
         </div>
         <div className="flex items-center justify-between mt-2">
-          {showDiscount && (
-            <Badge variant="secondary" className="text-xs bg-destructive/10 text-destructive">
-              -15% OFF
-            </Badge>
-          )}
           <Badge variant="outline" className="text-xs ml-auto">
             {product.stock_quantity} pcs
           </Badge>
@@ -508,7 +553,7 @@ export const SokoniMarketplace = () => {
           className="w-full mt-2 group-hover:bg-primary/90"
           onClick={(e) => {
             e.stopPropagation();
-            addToCart(product, 1);
+            addToCart({ ...product, price: displayPrice }, 1);
           }}
         >
           <ShoppingCart className="h-3 w-3 mr-1" />
@@ -516,7 +561,8 @@ export const SokoniMarketplace = () => {
         </Button>
       </CardContent>
     </Card>
-  );
+    );
+  };
 
   if (loading) {
     return (
@@ -683,7 +729,7 @@ export const SokoniMarketplace = () => {
             </div>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
               {topDeals.map(product => (
-                <ProductCard key={product.id} product={product} showDiscount />
+                <ProductCard key={product.id} product={product} />
               ))}
             </div>
           </section>

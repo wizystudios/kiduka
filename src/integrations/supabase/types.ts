@@ -155,6 +155,39 @@ export type Database = {
         }
         Relationships: []
       }
+      chat_messages: {
+        Row: {
+          created_at: string
+          id: string
+          is_read: boolean | null
+          message: string
+          recipient_id: string | null
+          sender_id: string
+          sender_name: string | null
+          sender_type: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_read?: boolean | null
+          message: string
+          recipient_id?: string | null
+          sender_id: string
+          sender_name?: string | null
+          sender_type?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_read?: boolean | null
+          message?: string
+          recipient_id?: string | null
+          sender_id?: string
+          sender_name?: string | null
+          sender_type?: string
+        }
+        Relationships: []
+      }
       customer_transactions: {
         Row: {
           amount_paid: number | null
@@ -1011,6 +1044,8 @@ export type Database = {
           customer_received: boolean | null
           customer_received_at: string | null
           delivery_address: string
+          delivery_person_name: string | null
+          delivery_person_phone: string | null
           id: string
           items: Json
           linked_sale_id: string | null
@@ -1030,6 +1065,8 @@ export type Database = {
           customer_received?: boolean | null
           customer_received_at?: string | null
           delivery_address: string
+          delivery_person_name?: string | null
+          delivery_person_phone?: string | null
           id?: string
           items: Json
           linked_sale_id?: string | null
@@ -1049,6 +1086,8 @@ export type Database = {
           customer_received?: boolean | null
           customer_received_at?: string | null
           delivery_address?: string
+          delivery_person_name?: string | null
+          delivery_person_phone?: string | null
           id?: string
           items?: Json
           linked_sale_id?: string | null
