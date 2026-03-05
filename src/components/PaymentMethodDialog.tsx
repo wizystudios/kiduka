@@ -1,13 +1,11 @@
-
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Card, CardContent } from '@/components/ui/card';
-import { CreditCard, Smartphone, Banknote, CheckCircle, AlertCircle } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { CreditCard, Smartphone, Banknote, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
 
 interface PaymentMethodDialogProps {
   open: boolean;
@@ -33,13 +31,12 @@ export const PaymentMethodDialog = ({ open, onOpenChange, totalAmount, onPayment
   const [processing, setProcessing] = useState(false);
   const [awaitingPayment, setAwaitingPayment] = useState(false);
   const [paymentConfirmed, setPaymentConfirmed] = useState(false);
-  const { toast } = useToast();
 
   const mobileProviders = [
-    { id: 'mpesa', name: 'M-Pesa', prefix: '255' },
-    { id: 'airtel', name: 'Airtel Money', prefix: '255' },
-    { id: 'halopesa', name: 'Halo Pesa', prefix: '255' },
-    { id: 'tigopesa', name: 'Mixx by Yas (Tigo Pesa)', prefix: '255' }
+    { id: 'mpesa', name: 'M-Pesa' },
+    { id: 'airtel', name: 'Airtel Money' },
+    { id: 'halopesa', name: 'Halo Pesa' },
+    { id: 'tigopesa', name: 'Mixx by Yas (Tigo Pesa)' }
   ];
 
   const bankProviders = [
@@ -48,66 +45,27 @@ export const PaymentMethodDialog = ({ open, onOpenChange, totalAmount, onPayment
   ];
 
   const handlePayment = async () => {
-    if (processing) return; // prevent double submit
+    if (processing) return;
     if (selectedMethod === 'cash') {
       setProcessing(true);
-      // Cash payment - immediate confirmation
-      onPaymentComplete({
-        method: 'cash',
-        transactionId: `CASH_${Date.now()}`
-      });
+      onPaymentComplete({ method: 'cash', transactionId: `CASH_${Date.now()}` });
       return;
     }
-
-    if (selectedMethod === 'mobile') {
-      setProcessing(true);
-      setAwaitingPayment(true);
-      
-      // Show customer payment instructions
-      toast({
-        title: 'Malipo ya Simu',
-        description: `Mteja anapaswa kulipa TZS ${totalAmount.toLocaleString()} kupitia ${mobileProvider} kwa namba ${phoneNumber}`,
-        duration: 10000
-      });
-
-      // In real implementation, this would trigger USSD or payment gateway
-      // For now, we simulate waiting for customer confirmation
-      
-      setProcessing(false);
-      return;
-    }
-
-    if (selectedMethod === 'bank') {
-      setProcessing(true);
-      setAwaitingPayment(true);
-      
-      toast({
-        title: 'Malipo ya Benki',
-        description: `Mteja anapaswa kuthibitisha malipo ya TZS ${totalAmount.toLocaleString()} kupitia ${bankProvider}`,
-        duration: 10000
-      });
-      
-      setProcessing(false);
-      return;
-    }
+    setProcessing(true);
+    setAwaitingPayment(true);
+    setProcessing(false);
   };
 
   const confirmPaymentReceived = () => {
-    // Guard against double submission
     if (paymentConfirmed) return;
     setPaymentConfirmed(true);
     setAwaitingPayment(false);
-    
-    const transactionId = selectedMethod === 'mobile' 
-      ? `MOB_${Date.now()}`
-      : `BANK_${Date.now()}`;
-
     onPaymentComplete({
       method: selectedMethod,
       provider: selectedMethod === 'mobile' ? mobileProvider : bankProvider,
       phoneNumber: selectedMethod === 'mobile' ? phoneNumber : undefined,
       accountNumber: selectedMethod === 'bank' ? accountNumber : undefined,
-      transactionId
+      transactionId: `${selectedMethod === 'mobile' ? 'MOB' : 'BANK'}_${Date.now()}`
     });
   };
 
@@ -126,165 +84,106 @@ export const PaymentMethodDialog = ({ open, onOpenChange, totalAmount, onPayment
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Chagua Njia ya Malipo</DialogTitle>
-        </DialogHeader>
+      <DialogContent className="max-w-md p-0 overflow-hidden rounded-2xl">
+        {/* Header */}
+        <div className="bg-gradient-to-br from-primary/10 via-background to-secondary/10 p-5 text-center border-b border-border">
+          <h2 className="text-lg font-bold">Chagua Njia ya Malipo</h2>
+          <p className="text-2xl font-bold text-primary mt-1">TSh {totalAmount.toLocaleString()}</p>
+        </div>
         
-        <div className="space-y-4">
-          <div className="text-center">
-            <p className="text-lg font-semibold">Jumla: TZS {totalAmount.toLocaleString()}</p>
-          </div>
-
-          {/* Payment Method Selection */}
+        <div className="p-5 space-y-4">
           {!awaitingPayment && !paymentConfirmed && (
             <>
               <div className="grid grid-cols-3 gap-2">
-                <Card 
-                  className={`cursor-pointer ${selectedMethod === 'cash' ? 'border-blue-500 bg-blue-50' : ''}`}
-                  onClick={() => setSelectedMethod('cash')}
-                >
-                  <CardContent className="p-3 text-center">
-                    <Banknote className="h-6 w-6 mx-auto mb-1" />
-                    <p className="text-xs">Taslimu</p>
-                  </CardContent>
-                </Card>
-
-                <Card 
-                  className={`cursor-pointer ${selectedMethod === 'mobile' ? 'border-blue-500 bg-blue-50' : ''}`}
-                  onClick={() => setSelectedMethod('mobile')}
-                >
-                  <CardContent className="p-3 text-center">
-                    <Smartphone className="h-6 w-6 mx-auto mb-1" />
-                    <p className="text-xs">Simu</p>
-                  </CardContent>
-                </Card>
-
-                <Card 
-                  className={`cursor-pointer ${selectedMethod === 'bank' ? 'border-blue-500 bg-blue-50' : ''}`}
-                  onClick={() => setSelectedMethod('bank')}
-                >
-                  <CardContent className="p-3 text-center">
-                    <CreditCard className="h-6 w-6 mx-auto mb-1" />
-                    <p className="text-xs">Benki</p>
-                  </CardContent>
-                </Card>
+                {[
+                  { key: 'cash' as const, icon: Banknote, label: 'Taslimu' },
+                  { key: 'mobile' as const, icon: Smartphone, label: 'Simu' },
+                  { key: 'bank' as const, icon: CreditCard, label: 'Benki' },
+                ].map(opt => (
+                  <Card 
+                    key={opt.key}
+                    className={`cursor-pointer rounded-2xl transition-all ${selectedMethod === opt.key ? 'border-primary ring-2 ring-primary/20 bg-primary/5' : 'hover:bg-muted/50'}`}
+                    onClick={() => setSelectedMethod(opt.key)}
+                  >
+                    <CardContent className="p-3 text-center">
+                      <opt.icon className={`h-6 w-6 mx-auto mb-1 ${selectedMethod === opt.key ? 'text-primary' : 'text-muted-foreground'}`} />
+                      <p className="text-xs font-medium">{opt.label}</p>
+                    </CardContent>
+                  </Card>
+                ))}
               </div>
 
-              {/* Mobile Payment Details */}
               {selectedMethod === 'mobile' && (
                 <div className="space-y-3">
                   <div>
-                    <Label>Chagua Mtoa Huduma</Label>
+                    <Label className="text-xs">Mtoa Huduma</Label>
                     <Select value={mobileProvider} onValueChange={setMobileProvider}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Chagua mtoa huduma" />
-                      </SelectTrigger>
+                      <SelectTrigger className="rounded-2xl"><SelectValue placeholder="Chagua" /></SelectTrigger>
                       <SelectContent>
-                        {mobileProviders.map(provider => (
-                          <SelectItem key={provider.id} value={provider.id}>
-                            {provider.name}
-                          </SelectItem>
-                        ))}
+                        {mobileProviders.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
                       </SelectContent>
                     </Select>
                   </div>
-                  
                   <div>
-                    <Label>Namba ya Simu ya Mteja</Label>
-                    <Input
-                      placeholder="255xxxxxxxxx"
-                      value={phoneNumber}
-                      onChange={(e) => setPhoneNumber(e.target.value)}
-                    />
+                    <Label className="text-xs">Namba ya Simu</Label>
+                    <Input placeholder="255xxxxxxxxx" value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} className="rounded-2xl" />
                   </div>
                 </div>
               )}
 
-              {/* Bank Payment Details */}
               {selectedMethod === 'bank' && (
                 <div className="space-y-3">
                   <div>
-                    <Label>Chagua Benki</Label>
+                    <Label className="text-xs">Benki</Label>
                     <Select value={bankProvider} onValueChange={setBankProvider}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Chagua benki" />
-                      </SelectTrigger>
+                      <SelectTrigger className="rounded-2xl"><SelectValue placeholder="Chagua" /></SelectTrigger>
                       <SelectContent>
-                        {bankProviders.map(bank => (
-                          <SelectItem key={bank.id} value={bank.id}>
-                            {bank.name}
-                          </SelectItem>
-                        ))}
+                        {bankProviders.map(b => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}
                       </SelectContent>
                     </Select>
                   </div>
-                  
                   <div>
-                    <Label>Namba ya Akaunti</Label>
-                    <Input
-                      placeholder="Ingiza namba ya akaunti"
-                      value={accountNumber}
-                      onChange={(e) => setAccountNumber(e.target.value)}
-                    />
+                    <Label className="text-xs">Namba ya Akaunti</Label>
+                    <Input placeholder="Ingiza namba" value={accountNumber} onChange={(e) => setAccountNumber(e.target.value)} className="rounded-2xl" />
                   </div>
                 </div>
               )}
 
-              <Button 
-                onClick={handlePayment}
-                disabled={!isValidPayment() || processing}
-                className="w-full"
-              >
-                {processing ? 'Inasubiri Malipo...' : selectedMethod === 'cash' ? `Pokea TZS ${totalAmount.toLocaleString()}` : `Tuma Ombi la Malipo`}
+              <Button onClick={handlePayment} disabled={!isValidPayment() || processing} className="w-full rounded-2xl h-11">
+                {processing ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                {selectedMethod === 'cash' ? `Pokea TSh ${totalAmount.toLocaleString()}` : 'Tuma Ombi la Malipo'}
               </Button>
             </>
           )}
 
-          {/* Awaiting Payment Confirmation */}
           {awaitingPayment && !paymentConfirmed && (
-            <div className="text-center space-y-4">
-              <div className="flex justify-center">
-                <AlertCircle className="h-12 w-12 text-orange-500" />
+            <div className="text-center space-y-4 py-4">
+              <div className="h-16 w-16 rounded-full bg-orange-100 dark:bg-orange-900/20 flex items-center justify-center mx-auto">
+                <AlertCircle className="h-8 w-8 text-orange-500" />
               </div>
               <div>
-                <h3 className="text-lg font-semibold">Inasubiri Uthibitisho wa Malipo</h3>
-                <p className="text-sm text-gray-600 mt-2">
-                  Mteja anapaswa kuthibitisha malipo ya TZS {totalAmount.toLocaleString()}
-                  {selectedMethod === 'mobile' && ` kupitia ${mobileProvider}`}
-                  {selectedMethod === 'bank' && ` kupitia ${bankProvider}`}
+                <h3 className="font-bold">Inasubiri Uthibitisho</h3>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Mteja athibitishe TSh {totalAmount.toLocaleString()}
                 </p>
               </div>
-              
               <div className="flex gap-2">
-                <Button 
-                  onClick={confirmPaymentReceived}
-                  className="flex-1 bg-green-600 hover:bg-green-700"
-                >
+                <Button onClick={confirmPaymentReceived} className="flex-1 rounded-2xl bg-green-600 hover:bg-green-700">
                   <CheckCircle className="h-4 w-4 mr-2" />
-                  Malipo Yamepokewa
+                  Yamepokewa
                 </Button>
-                <Button 
-                  onClick={cancelPayment}
-                  variant="outline"
-                  className="flex-1"
-                >
-                  Ghairi
-                </Button>
+                <Button onClick={cancelPayment} variant="outline" className="flex-1 rounded-2xl">Ghairi</Button>
               </div>
             </div>
           )}
 
-          {/* Payment Confirmed */}
           {paymentConfirmed && (
-            <div className="text-center space-y-4">
-              <div className="flex justify-center">
-                <CheckCircle className="h-12 w-12 text-green-500" />
+            <div className="text-center py-6">
+              <div className="h-16 w-16 rounded-full bg-green-100 dark:bg-green-900/20 flex items-center justify-center mx-auto mb-3">
+                <CheckCircle className="h-8 w-8 text-green-600" />
               </div>
-              <div>
-                <h3 className="text-lg font-semibold text-green-600">Malipo Yamekamilika!</h3>
-                <p className="text-sm text-gray-600">TZS {totalAmount.toLocaleString()} yamepokewa kikamilifu</p>
-              </div>
+              <h3 className="font-bold text-green-600">Malipo Yamekamilika!</h3>
+              <p className="text-sm text-muted-foreground">TSh {totalAmount.toLocaleString()}</p>
             </div>
           )}
         </div>

@@ -24,6 +24,7 @@ import { useAdminNotifications } from '@/hooks/useAdminNotifications';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 import { exportToExcel, exportToPDF, createPrintableTable } from '@/utils/exportUtils';
 import { AdminPasswordDialog } from './AdminPasswordDialog';
+import { AdminChatPanel } from './AdminChatPanel';
 
 interface User {
   id: string;
@@ -935,7 +936,7 @@ export const SuperAdminDashboard = () => {
       
       {/* Main Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid grid-cols-4 md:grid-cols-8 mb-4">
+        <TabsList className="grid grid-cols-4 md:grid-cols-9 mb-4">
           <TabsTrigger value="overview" className="text-xs">Overview</TabsTrigger>
           <TabsTrigger value="analytics" className="text-xs">Analytics</TabsTrigger>
           <TabsTrigger value="subscriptions" className="text-xs relative">
@@ -950,6 +951,7 @@ export const SuperAdminDashboard = () => {
           <TabsTrigger value="products" className="text-xs hidden md:block">Bidhaa</TabsTrigger>
           <TabsTrigger value="sales" className="text-xs hidden md:block">Mauzo</TabsTrigger>
           <TabsTrigger value="orders" className="text-xs hidden md:block">Oda</TabsTrigger>
+          <TabsTrigger value="chat" className="text-xs">Mazungumzo</TabsTrigger>
           <TabsTrigger value="more" className="text-xs">Zaidi</TabsTrigger>
         </TabsList>
         
@@ -1398,6 +1400,11 @@ export const SuperAdminDashboard = () => {
           </div>
         </TabsContent>
         
+        {/* Chat Tab */}
+        <TabsContent value="chat" className="space-y-4">
+          <AdminChatPanel />
+        </TabsContent>
+
         {/* More Tab */}
         <TabsContent value="more" className="space-y-4">
           <Tabs defaultValue="customers">

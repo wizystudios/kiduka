@@ -2,23 +2,12 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { 
-  Package, 
-  Truck, 
-  CheckCircle, 
-  XCircle,
-  Clock,
-  Phone,
-  MapPin,
-  Eye,
-  RefreshCw
+  Package, Truck, CheckCircle, XCircle, Clock, Phone, MapPin, Eye, RefreshCw, User
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -43,6 +32,8 @@ export interface SokoniOrder {
   tracking_code?: string | null;
   linked_sale_id?: string | null;
   transaction_id?: string;
+  delivery_person_name?: string | null;
+  delivery_person_phone?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -53,59 +44,32 @@ export const SokoniOrderManagement = () => {
   const [selectedOrder, setSelectedOrder] = useState<SokoniOrder | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('new');
+  const [deliveryName, setDeliveryName] = useState('');
+  const [deliveryPhone, setDeliveryPhone] = useState('');
 
   useEffect(() => {
     if (dataOwnerId) {
       fetchOrders();
-      
-      // Subscribe to realtime updates for payment status changes
       const channel = supabase
         .channel('sokoni_orders_changes')
-        .on(
-          'postgres_changes',
-          {
-            event: 'UPDATE',
-            schema: 'public',
-            table: 'sokoni_orders',
-            filter: `seller_id=eq.${dataOwnerId}`
-          },
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'sokoni_orders', filter: `seller_id=eq.${dataOwnerId}` },
           (payload) => {
-            console.log('Order updated:', payload);
             const updatedOrder = payload.new as any;
-            
-            // Update local state with the new order data
-            setOrders(prev => prev.map(order => 
-              order.id === updatedOrder.id 
-                ? {
-                    ...order,
-                    ...updatedOrder,
-                    items: Array.isArray(updatedOrder.items) 
-                      ? updatedOrder.items 
-                      : JSON.parse(updatedOrder.items as string || '[]')
-                  }
-                : order
-            ));
-            
-            // Show notification for payment updates
-            if (updatedOrder.payment_status === 'paid') {
-              toast.success(`Malipo yamepokewa! Oda #${updatedOrder.id.slice(0, 8).toUpperCase()}`);
-            }
-            if (updatedOrder.customer_received) {
-              toast.info(`Mteja amethibitisha kupokea bidhaa - Oda #${updatedOrder.id.slice(0, 8).toUpperCase()}`);
-            }
+            setOrders(prev => {
+              const exists = prev.find(o => o.id === updatedOrder.id);
+              if (exists) {
+                return prev.map(o => o.id === updatedOrder.id ? { ...o, ...updatedOrder, items: Array.isArray(updatedOrder.items) ? updatedOrder.items : JSON.parse(updatedOrder.items || '[]') } : o);
+              }
+              return [{ ...updatedOrder, items: Array.isArray(updatedOrder.items) ? updatedOrder.items : JSON.parse(updatedOrder.items || '[]') }, ...prev];
+            });
           }
-        )
-        .subscribe();
-      
-      return () => {
-        supabase.removeChannel(channel);
-      };
+        ).subscribe();
+      return () => { supabase.removeChannel(channel); };
     }
   }, [dataOwnerId]);
 
   const fetchOrders = async () => {
     if (!dataOwnerId) return;
-
     setLoading(true);
     try {
       const { data, error } = await supabase
@@ -113,18 +77,12 @@ export const SokoniOrderManagement = () => {
         .select('*')
         .eq('seller_id', dataOwnerId)
         .order('created_at', { ascending: false });
-
       if (error) throw error;
-
-      // Parse items JSON properly
-      const parsedOrders = (data || []).map(order => ({
+      setOrders((data || []).map(order => ({
         ...order,
         items: Array.isArray(order.items) ? order.items : JSON.parse(order.items as string || '[]')
-      }));
-
-      setOrders(parsedOrders);
-    } catch (error) {
-      console.error('Error fetching orders:', error);
+      })));
+    } catch {
       toast.error('Imeshindwa kupakia oda');
     } finally {
       setLoading(false);
@@ -135,8 +93,7 @@ export const SokoniOrderManagement = () => {
     const colors: Record<string, string> = {
       new: 'bg-primary/10 text-primary',
       confirmed: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100',
-      preparing: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-100',
-      ready: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-100',
+      delivering: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100',
       delivered: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100',
       cancelled: 'bg-destructive/10 text-destructive'
     };
@@ -147,68 +104,50 @@ export const SokoniOrderManagement = () => {
     const labels: Record<string, string> = {
       new: 'Mpya',
       confirmed: 'Imethibitishwa',
-      preparing: 'Inaandaliwa',
-      ready: 'Tayari',
+      delivering: 'Inapelekwa',
       delivered: 'Imepelekwa',
       cancelled: 'Imeghairiwa'
     };
     return labels[status] || status;
   };
 
-  const getPaymentStatusBadge = (status: string) => {
-    if (status === 'paid') {
-      return <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100">Imelipwa</Badge>;
-    } else if (status === 'pending') {
-      return <Badge className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100">Inasubiri</Badge>;
-    }
-    return <Badge className="bg-destructive/10 text-destructive">Imeshindikana</Badge>;
-  };
-
-  const updateOrderStatus = async (orderId: string, newStatus: string) => {
+  const updateOrderStatus = async (orderId: string, newStatus: string, extraData?: Record<string, any>) => {
     try {
+      const updateData: any = { order_status: newStatus, updated_at: new Date().toISOString(), ...extraData };
+      
       const { error } = await supabase
         .from('sokoni_orders')
-        .update({ order_status: newStatus, updated_at: new Date().toISOString() })
+        .update(updateData)
         .eq('id', orderId);
-
       if (error) throw error;
 
-      // If seller confirms, convert to sale + sales_items and decrement stock
       if (newStatus === 'confirmed') {
         const current = orders.find(o => o.id === orderId);
         if (!current?.linked_sale_id) {
-          const { data: saleId, error: saleError } = await supabase.rpc('process_sokoni_order_to_sale', {
-            order_id: orderId,
-          });
-
+          const { data: saleId, error: saleError } = await supabase.rpc('process_sokoni_order_to_sale', { order_id: orderId });
           if (saleError) {
-            console.error('Sale processing error:', saleError);
-            toast.error('Oda imethibitishwa, lakini imeshindwa kuingia kwenye mauzo. Jaribu tena.');
+            toast.error('Oda imethibitishwa, lakini imeshindwa kuingia kwenye mauzo.');
           } else if (saleId) {
-            // Link sale back to order (best-effort)
             await supabase.from('sokoni_orders').update({ linked_sale_id: saleId }).eq('id', orderId);
-            toast.success('Mauzo ya Sokoni yameongezwa kwenye mfumo!');
           }
         }
       }
 
       setOrders(prev => prev.map(order =>
-        order.id === orderId
-          ? { ...order, order_status: newStatus, updated_at: new Date().toISOString() }
-          : order
+        order.id === orderId ? { ...order, order_status: newStatus, ...extraData, updated_at: new Date().toISOString() } : order
       ));
-
-      toast.success(`Oda imebadilishwa kuwa "${getStatusLabel(newStatus)}"`);
+      toast.success(`Oda: "${getStatusLabel(newStatus)}"`);
       setSelectedOrder(null);
-    } catch (error) {
-      console.error('Error updating order:', error);
+      setDeliveryName('');
+      setDeliveryPhone('');
+    } catch {
       toast.error('Imeshindwa kubadilisha hali ya oda');
     }
   };
 
   const filteredOrders = orders.filter(order => {
     if (activeTab === 'new') return order.order_status === 'new';
-    if (activeTab === 'active') return ['confirmed', 'preparing', 'ready'].includes(order.order_status);
+    if (activeTab === 'active') return ['confirmed', 'delivering'].includes(order.order_status);
     if (activeTab === 'completed') return ['delivered', 'cancelled'].includes(order.order_status);
     return true;
   });
@@ -218,8 +157,7 @@ export const SokoniOrderManagement = () => {
     const now = new Date();
     const diffMs = now.getTime() - date.getTime();
     const diffMins = Math.floor(diffMs / 60000);
-    
-    if (diffMins < 60) return `Dakika ${diffMins} zilizopita`;
+    if (diffMins < 60) return `Dak ${diffMins} zilizopita`;
     if (diffMins < 1440) return `Saa ${Math.floor(diffMins / 60)} zilizopita`;
     return date.toLocaleDateString('sw-TZ');
   };
@@ -227,21 +165,21 @@ export const SokoniOrderManagement = () => {
   if (dataLoading || loading) {
     return (
       <div className="flex items-center justify-center py-8">
-        <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div>
+        <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
       </div>
     );
   }
 
   return (
     <div className="space-y-4">
-      <Card className="border-border">
+      <Card className="border-border rounded-3xl">
         <CardHeader className="pb-2">
           <div className="flex items-center justify-between">
             <CardTitle className="flex items-center gap-2 text-base">
               <Package className="h-5 w-5 text-primary" />
               Oda za Sokoni
             </CardTitle>
-            <Button variant="outline" size="sm" onClick={fetchOrders}>
+            <Button variant="outline" size="sm" onClick={fetchOrders} className="rounded-2xl">
               <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
               Refresh
             </Button>
@@ -270,20 +208,19 @@ export const SokoniOrderManagement = () => {
                 </div>
               ) : (
                 filteredOrders.map(order => (
-                  <Card key={order.id} className="cursor-pointer hover:shadow-md transition-shadow border-border">
+                  <Card key={order.id} className="cursor-pointer hover:shadow-md transition-shadow border-border rounded-2xl">
                     <CardContent className="p-4">
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1 flex-wrap">
-                            <span className="font-semibold text-foreground">#{order.id.slice(0, 8).toUpperCase()}</span>
-                            <Badge className={getStatusColor(order.order_status)}>
-                              {getStatusLabel(order.order_status)}
+                            <span className="font-semibold">#{order.id.slice(0, 8).toUpperCase()}</span>
+                            <Badge className={getStatusColor(order.order_status)}>{getStatusLabel(order.order_status)}</Badge>
+                            <Badge className={order.payment_status === 'paid' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}>
+                              {order.payment_status === 'paid' ? 'Imelipwa' : 'Inasubiri'}
                             </Badge>
-                            {getPaymentStatusBadge(order.payment_status)}
                           </div>
                           <p className="text-xs text-muted-foreground flex items-center gap-1">
-                            <Phone className="h-3 w-3" />
-                            {order.customer_phone}
+                            <Phone className="h-3 w-3" />{order.customer_phone}
                           </p>
                           {order.tracking_code && (
                             <p className="text-xs text-muted-foreground mt-1">
@@ -291,27 +228,24 @@ export const SokoniOrderManagement = () => {
                             </p>
                           )}
                           <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
-                            <MapPin className="h-3 w-3" />
-                            {order.delivery_address}
+                            <MapPin className="h-3 w-3" />{order.delivery_address}
                           </p>
+                          {order.delivery_person_name && (
+                            <p className="text-xs text-primary flex items-center gap-1 mt-1">
+                              <User className="h-3 w-3" />
+                              Mpelekaji: {order.delivery_person_name} • {order.delivery_person_phone}
+                            </p>
+                          )}
                           <div className="mt-2">
-                            <p className="text-sm text-foreground">
-                              {order.items.length} bidhaa • 
-                              <span className="font-semibold text-primary ml-1">
-                                TSh {order.total_amount.toLocaleString()}
-                              </span>
+                            <p className="text-sm">
+                              {order.items.length} bidhaa • <span className="font-semibold text-primary">TSh {order.total_amount.toLocaleString()}</span>
                             </p>
                             <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
-                              <Clock className="h-3 w-3" />
-                              {formatTime(order.created_at)}
+                              <Clock className="h-3 w-3" />{formatTime(order.created_at)}
                             </p>
                           </div>
                         </div>
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => setSelectedOrder(order)}
-                        >
+                        <Button variant="outline" size="sm" onClick={() => setSelectedOrder(order)} className="rounded-2xl">
                           <Eye className="h-4 w-4" />
                         </Button>
                       </div>
@@ -325,127 +259,114 @@ export const SokoniOrderManagement = () => {
       </Card>
 
       {/* Order Detail Dialog */}
-      <Dialog open={!!selectedOrder} onOpenChange={() => setSelectedOrder(null)}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Maelezo ya Oda #{selectedOrder?.id.slice(0, 8).toUpperCase()}</DialogTitle>
-          </DialogHeader>
-          
+      <Dialog open={!!selectedOrder} onOpenChange={() => { setSelectedOrder(null); setDeliveryName(''); setDeliveryPhone(''); }}>
+        <DialogContent className="max-w-md p-0 overflow-hidden rounded-2xl">
+          <div className="bg-gradient-to-br from-primary/10 via-background to-secondary/10 p-4 text-center border-b border-border">
+            <h2 className="font-bold">Oda #{selectedOrder?.id.slice(0, 8).toUpperCase()}</h2>
             {selectedOrder && (
-              <div className="space-y-4">
-                {/* Customer Info */}
-                <div className="p-3 bg-muted rounded-lg space-y-2">
-                  <p className="text-sm flex items-center gap-2 text-foreground">
-                    <Phone className="h-4 w-4" />
-                    <a href={`tel:${selectedOrder.customer_phone}`} className="text-primary">
-                      {selectedOrder.customer_phone}
-                    </a>
+              <Badge className={`mt-2 ${getStatusColor(selectedOrder.order_status)}`}>
+                {getStatusLabel(selectedOrder.order_status)}
+              </Badge>
+            )}
+          </div>
+          
+          {selectedOrder && (
+            <div className="p-4 space-y-4">
+              {/* Customer */}
+              <Card className="rounded-2xl">
+                <CardContent className="p-3 space-y-1">
+                  <p className="text-sm flex items-center gap-2">
+                    <Phone className="h-4 w-4 text-primary" />
+                    <a href={`tel:${selectedOrder.customer_phone}`} className="text-primary font-medium">{selectedOrder.customer_phone}</a>
                   </p>
-
+                  <p className="text-sm flex items-center gap-2">
+                    <MapPin className="h-4 w-4 text-muted-foreground" />{selectedOrder.delivery_address}
+                  </p>
                   {selectedOrder.tracking_code && (
                     <div className="flex items-center justify-between">
-                      <p className="text-sm text-foreground">
-                        Tracking: <span className="font-mono font-semibold">{selectedOrder.tracking_code}</span>
-                      </p>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          navigator.clipboard.writeText(selectedOrder.tracking_code || '');
-                          toast.success('Namba ya ufuatiliaji imenakiliwa');
-                        }}
-                      >
-                        Nakili
-                      </Button>
+                      <p className="text-sm font-mono font-semibold">{selectedOrder.tracking_code}</p>
+                      <Button size="sm" variant="outline" className="rounded-2xl text-xs" onClick={() => { navigator.clipboard.writeText(selectedOrder.tracking_code || ''); toast.success('Imenakiliwa'); }}>Nakili</Button>
                     </div>
                   )}
+                </CardContent>
+              </Card>
 
-                  <p className="text-sm flex items-center gap-2 text-foreground">
-                    <MapPin className="h-4 w-4" />
-                    {selectedOrder.delivery_address}
-                  </p>
-                </div>
+              {/* Delivery Person Info */}
+              {selectedOrder.delivery_person_name && (
+                <Card className="rounded-2xl border-primary/30">
+                  <CardContent className="p-3">
+                    <p className="text-xs text-muted-foreground mb-1">Mpelekaji</p>
+                    <p className="font-medium flex items-center gap-2">
+                      <User className="h-4 w-4 text-primary" />
+                      {selectedOrder.delivery_person_name}
+                    </p>
+                    <p className="text-sm flex items-center gap-2 mt-1">
+                      <Phone className="h-3 w-3" />
+                      <a href={`tel:${selectedOrder.delivery_person_phone}`} className="text-primary">{selectedOrder.delivery_person_phone}</a>
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
 
               {/* Items */}
               <div>
-                <h4 className="font-medium mb-2 text-foreground">Bidhaa</h4>
-                <div className="space-y-2">
-                  {selectedOrder.items.map((item, idx) => (
-                    <div key={idx} className="flex justify-between text-sm p-2 bg-muted/50 rounded">
-                      <span className="text-foreground">{item.product_name} x{item.quantity}</span>
-                      <span className="font-medium text-foreground">TSh {(item.unit_price * item.quantity).toLocaleString()}</span>
-                    </div>
-                  ))}
-                  <div className="flex justify-between font-bold pt-2 border-t border-border">
-                    <span className="text-foreground">Jumla</span>
-                    <span className="text-primary">TSh {selectedOrder.total_amount.toLocaleString()}</span>
+                <p className="font-medium text-sm mb-2">Bidhaa</p>
+                {selectedOrder.items.map((item, idx) => (
+                  <div key={idx} className="flex justify-between text-sm p-2 bg-muted/50 rounded-xl mb-1">
+                    <span>{item.product_name} x{item.quantity}</span>
+                    <span className="font-medium">TSh {(item.unit_price * item.quantity).toLocaleString()}</span>
                   </div>
+                ))}
+                <div className="flex justify-between font-bold pt-2 border-t border-border mt-2">
+                  <span>Jumla</span>
+                  <span className="text-primary">TSh {selectedOrder.total_amount.toLocaleString()}</span>
                 </div>
               </div>
 
-              {/* Payment Info */}
-              <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
-                <div>
-                  <p className="text-sm text-muted-foreground">Njia ya Malipo</p>
-                  <p className="font-medium capitalize text-foreground">{selectedOrder.payment_method || 'N/A'}</p>
-                </div>
-                {getPaymentStatusBadge(selectedOrder.payment_status)}
-              </div>
-
-              {selectedOrder.transaction_id && (
-                <div className="text-xs text-muted-foreground">
-                  Transaction ID: {selectedOrder.transaction_id}
-                </div>
-              )}
-
-              {/* Action Buttons */}
-              <div className="grid grid-cols-2 gap-2 pt-2">
+              {/* Actions - Simplified: new → confirmed → delivering → delivered */}
+              <div className="space-y-2 pt-2">
                 {selectedOrder.order_status === 'new' && (
-                  <>
-                    <Button 
-                      variant="outline" 
-                      className="text-destructive border-destructive hover:bg-destructive/10"
-                      onClick={() => updateOrderStatus(selectedOrder.id, 'cancelled')}
-                    >
-                      <XCircle className="h-4 w-4 mr-2" />
-                      Ghairi
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button variant="outline" className="rounded-2xl text-destructive border-destructive" onClick={() => updateOrderStatus(selectedOrder.id, 'cancelled')}>
+                      <XCircle className="h-4 w-4 mr-2" />Ghairi
                     </Button>
-                    <Button 
-                      onClick={() => updateOrderStatus(selectedOrder.id, 'confirmed')}
-                    >
-                      <CheckCircle className="h-4 w-4 mr-2" />
-                      Kubali
+                    <Button className="rounded-2xl" onClick={() => updateOrderStatus(selectedOrder.id, 'confirmed')}>
+                      <CheckCircle className="h-4 w-4 mr-2" />Kubali
                     </Button>
-                  </>
+                  </div>
                 )}
                 
                 {selectedOrder.order_status === 'confirmed' && (
-                  <Button 
-                    className="col-span-2"
-                    onClick={() => updateOrderStatus(selectedOrder.id, 'preparing')}
-                  >
-                    Anza Kuandaa
-                  </Button>
+                  <div className="space-y-3">
+                    <p className="text-sm font-medium">Maelezo ya Mpelekaji</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <Label className="text-xs">Jina</Label>
+                        <Input placeholder="Jina la mpelekaji" value={deliveryName} onChange={(e) => setDeliveryName(e.target.value)} className="rounded-2xl" />
+                      </div>
+                      <div>
+                        <Label className="text-xs">Simu</Label>
+                        <Input placeholder="07xx xxx xxx" value={deliveryPhone} onChange={(e) => setDeliveryPhone(e.target.value)} className="rounded-2xl" />
+                      </div>
+                    </div>
+                    <Button 
+                      className="w-full rounded-2xl" 
+                      disabled={!deliveryName || !deliveryPhone}
+                      onClick={() => updateOrderStatus(selectedOrder.id, 'delivering', {
+                        delivery_person_name: deliveryName,
+                        delivery_person_phone: deliveryPhone
+                      })}
+                    >
+                      <Truck className="h-4 w-4 mr-2" />
+                      Peleka Sasa
+                    </Button>
+                  </div>
                 )}
                 
-                {selectedOrder.order_status === 'preparing' && (
-                  <Button 
-                    className="col-span-2"
-                    onClick={() => updateOrderStatus(selectedOrder.id, 'ready')}
-                  >
-                    <Package className="h-4 w-4 mr-2" />
-                    Tayari Kupeleka
-                  </Button>
-                )}
-                
-                {selectedOrder.order_status === 'ready' && (
-                  <Button 
-                    className="col-span-2"
-                    onClick={() => updateOrderStatus(selectedOrder.id, 'delivered')}
-                  >
-                    <Truck className="h-4 w-4 mr-2" />
-                    Imepelekwa
+                {selectedOrder.order_status === 'delivering' && (
+                  <Button className="w-full rounded-2xl" onClick={() => updateOrderStatus(selectedOrder.id, 'delivered')}>
+                    <CheckCircle className="h-4 w-4 mr-2" />
+                    Imefika kwa Mteja
                   </Button>
                 )}
               </div>
