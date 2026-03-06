@@ -70,9 +70,9 @@ export const useBusinessGovernance = () => {
           .maybeSingle(),
       ]);
 
-      if (!contractRes.error) setContract(contractRes.data as BusinessContract | null);
-      if (!complianceRes.error) setCompliance(complianceRes.data as BusinessCompliance | null);
-      if (!adminSessionRes.error) setActiveAdminSession((adminSessionRes.data as AdminBusinessSession | null) ?? null);
+      if (!contractRes.error) setContract(contractRes.data as unknown as BusinessContract | null);
+      if (!complianceRes.error) setCompliance(complianceRes.data as unknown as BusinessCompliance | null);
+      if (!adminSessionRes.error) setActiveAdminSession((adminSessionRes.data as unknown as AdminBusinessSession | null) ?? null);
     } finally {
       setLoading(false);
     }
