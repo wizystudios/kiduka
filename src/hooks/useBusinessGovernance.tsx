@@ -188,7 +188,7 @@ export const useBusinessGovernance = () => {
         .single();
 
       if (error) return { success: false, error };
-      return { success: true, session: data as AdminBusinessSession };
+      return { success: true, session: data as unknown as AdminBusinessSession };
     },
     [user?.id, isSuperAdmin],
   );

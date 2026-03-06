@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
+import { useSubscription } from '@/hooks/useSubscription';
 import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 import { OnboardingTour } from './OnboardingTour';
 import { SubscriptionBlocker } from './SubscriptionBlocker';
 import { PasswordChangeRequired } from './PasswordChangeRequired';
@@ -28,7 +30,13 @@ export const SubscriptionGuard = ({ children }: SubscriptionGuardProps) => {
       setNeedsPasswordChange(mustForcePasswordUpdate);
 
       const localTourSeen = localStorage.getItem(`kiduka_tour_seen_${user.id}`) === 'true';
-      const metadataTourSeen = Boolean((user.user_metadata as any)?.tour_seen);
+      let metadataTourSeen = Boolean((user.user_metadata as any)?.tour_seen);
+
+      if (!metadataTourSeen && localTourSeen) {
+        await supabase.auth.updateUser({ data: { tour_seen: true } });
+        metadataTourSeen = true;
+      }
+
       const tourSeen = localTourSeen || metadataTourSeen;
       setShowTour(!tourSeen && !isBlocked && !mustForcePasswordUpdate);
     };
@@ -36,9 +44,10 @@ export const SubscriptionGuard = ({ children }: SubscriptionGuardProps) => {
     evaluateFlags();
   }, [user, loading, isBlocked]);
 
-  const handleTourComplete = () => {
+  const handleTourComplete = async () => {
     if (user?.id) {
       localStorage.setItem(`kiduka_tour_seen_${user.id}`, 'true');
+      await supabase.auth.updateUser({ data: { tour_seen: true } });
     }
     setShowTour(false);
   };
@@ -73,8 +82,3 @@ export const SubscriptionGuard = ({ children }: SubscriptionGuardProps) => {
 
   return <>{children}</>;
 };
-
-function useSubscription() {
-  const { useSubscription } = require('@/hooks/useSubscription');
-  return useSubscription();
-}
