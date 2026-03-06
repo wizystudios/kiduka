@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_business_sessions: {
+        Row: {
+          active: boolean
+          admin_id: string
+          ended_at: string | null
+          id: string
+          owner_id: string
+          started_at: string
+        }
+        Insert: {
+          active?: boolean
+          admin_id: string
+          ended_at?: string | null
+          id?: string
+          owner_id: string
+          started_at?: string
+        }
+        Update: {
+          active?: boolean
+          admin_id?: string
+          ended_at?: string | null
+          id?: string
+          owner_id?: string
+          started_at?: string
+        }
+        Relationships: []
+      }
       admin_notifications: {
         Row: {
           created_at: string
@@ -125,6 +152,108 @@ export type Database = {
           id?: string
           owner_id?: string
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      business_compliance: {
+        Row: {
+          block_mode: string
+          block_until: string | null
+          business_license: string | null
+          completed_at: string | null
+          created_at: string
+          enforced_by: string | null
+          id: string
+          nida_number: string | null
+          notes: string | null
+          owner_id: string
+          required_after: string
+          tin_number: string | null
+          updated_at: string
+        }
+        Insert: {
+          block_mode?: string
+          block_until?: string | null
+          business_license?: string | null
+          completed_at?: string | null
+          created_at?: string
+          enforced_by?: string | null
+          id?: string
+          nida_number?: string | null
+          notes?: string | null
+          owner_id: string
+          required_after?: string
+          tin_number?: string | null
+          updated_at?: string
+        }
+        Update: {
+          block_mode?: string
+          block_until?: string | null
+          business_license?: string | null
+          completed_at?: string | null
+          created_at?: string
+          enforced_by?: string | null
+          id?: string
+          nida_number?: string | null
+          notes?: string | null
+          owner_id?: string
+          required_after?: string
+          tin_number?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      business_contracts: {
+        Row: {
+          admin_notes: string | null
+          agreed_terms: boolean
+          contract_version: string
+          created_at: string
+          expires_at: string | null
+          full_legal_name: string | null
+          id: string
+          last_reminder_at: string | null
+          owner_id: string
+          required_by: string | null
+          review_later_until: string | null
+          signature_data: string | null
+          signed_at: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          agreed_terms?: boolean
+          contract_version?: string
+          created_at?: string
+          expires_at?: string | null
+          full_legal_name?: string | null
+          id?: string
+          last_reminder_at?: string | null
+          owner_id: string
+          required_by?: string | null
+          review_later_until?: string | null
+          signature_data?: string | null
+          signed_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          admin_notes?: string | null
+          agreed_terms?: boolean
+          contract_version?: string
+          created_at?: string
+          expires_at?: string | null
+          full_legal_name?: string | null
+          id?: string
+          last_reminder_at?: string | null
+          owner_id?: string
+          required_by?: string | null
+          review_later_until?: string | null
+          signature_data?: string | null
+          signed_at?: string | null
+          status?: string
+          updated_at?: string
         }
         Relationships: []
       }

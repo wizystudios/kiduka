@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 import { OnboardingTour } from './OnboardingTour';
 import { SubscriptionBlocker } from './SubscriptionBlocker';
 import { PasswordChangeRequired } from './PasswordChangeRequired';
@@ -16,28 +17,37 @@ export const SubscriptionGuard = ({ children }: SubscriptionGuardProps) => {
   const [needsPasswordChange, setNeedsPasswordChange] = useState(false);
 
   useEffect(() => {
-    if (user?.id && !loading) {
-      // Check if user needs password change (weak password from before policy)
-      const pwUpdated = localStorage.getItem(`kiduka_pw_updated_${user.id}`);
+    const evaluateFlags = async () => {
+      if (!user?.id || loading) return;
+
       const pwCreatedAt = new Date(user.created_at || '');
-      const policyDate = new Date('2026-03-04'); // Policy enforcement date
-      
-      // Users created before policy who haven't updated their password
-      if (!pwUpdated && pwCreatedAt < policyDate && !isBlocked) {
-        setNeedsPasswordChange(true);
+      const policyDate = new Date('2026-03-04');
+      const localPwUpdated = localStorage.getItem(`kiduka_pw_updated_${user.id}`) === 'true';
+      const metadataPwUpdated = Boolean((user.user_metadata as any)?.pw_policy_compliant);
+      const passwordAlreadyUpdated = localPwUpdated || metadataPwUpdated;
+
+      const mustForcePasswordUpdate = !passwordAlreadyUpdated && pwCreatedAt < policyDate && !isBlocked;
+      setNeedsPasswordChange(mustForcePasswordUpdate);
+
+      const localTourSeen = localStorage.getItem(`kiduka_tour_seen_${user.id}`) === 'true';
+      let metadataTourSeen = Boolean((user.user_metadata as any)?.tour_seen);
+
+      if (!metadataTourSeen && localTourSeen) {
+        await supabase.auth.updateUser({ data: { tour_seen: true } });
+        metadataTourSeen = true;
       }
 
-      const tourKey = `kiduka_tour_seen_${user.id}`;
-      const hasSeenTour = localStorage.getItem(tourKey);
-      if (!hasSeenTour && !isBlocked && !needsPasswordChange) {
-        setShowTour(true);
-      }
-    }
-  }, [user?.id, loading, isBlocked]);
+      const tourSeen = localTourSeen || metadataTourSeen;
+      setShowTour(!tourSeen && !isBlocked && !mustForcePasswordUpdate);
+    };
 
-  const handleTourComplete = () => {
+    evaluateFlags();
+  }, [user, loading, isBlocked]);
+
+  const handleTourComplete = async () => {
     if (user?.id) {
       localStorage.setItem(`kiduka_tour_seen_${user.id}`, 'true');
+      await supabase.auth.updateUser({ data: { tour_seen: true } });
     }
     setShowTour(false);
   };
@@ -57,7 +67,6 @@ export const SubscriptionGuard = ({ children }: SubscriptionGuardProps) => {
     return <SubscriptionBlocker>{children}</SubscriptionBlocker>;
   }
 
-  // Force password change for users with weak passwords
   if (needsPasswordChange) {
     return <PasswordChangeRequired />;
   }

@@ -4,6 +4,7 @@ import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { TopNavbar } from "@/components/TopNavbar";
 import { UserInfoBar } from "@/components/UserInfoBar";
 import OfflineSyncBootstrap from "@/components/OfflineSyncBootstrap";
+import { ContractComplianceGate } from "@/components/ContractComplianceGate";
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -18,7 +19,7 @@ export function AppLayout({ children }: AppLayoutProps) {
         <AppSidebar />
         <SidebarInset className="flex-1">
           <main className="w-full pt-16 pb-36 md:pt-0 md:pb-0">
-            {children}
+            <ContractComplianceGate>{children}</ContractComplianceGate>
           </main>
         </SidebarInset>
       </div>

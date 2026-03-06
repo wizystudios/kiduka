@@ -47,11 +47,15 @@ export const PasswordChangeRequired = () => {
 
     setLoading(true);
     try {
-      const { error } = await supabase.auth.updateUser({ password: newPassword });
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword,
+        data: { pw_policy_compliant: true },
+      });
       if (error) throw error;
 
-      // Mark password as updated
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (user) {
         localStorage.setItem(`kiduka_pw_updated_${user.id}`, 'true');
       }
@@ -67,11 +71,7 @@ export const PasswordChangeRequired = () => {
 
   const PolicyItem = ({ passed, label }: { passed: boolean; label: string }) => (
     <div className="flex items-center gap-2 text-sm">
-      {passed ? (
-        <CheckCircle className="h-4 w-4 text-green-600 flex-shrink-0" />
-      ) : (
-        <XCircle className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-      )}
+      {passed ? <CheckCircle className="h-4 w-4 text-green-600 flex-shrink-0" /> : <XCircle className="h-4 w-4 text-muted-foreground flex-shrink-0" />}
       <span className={passed ? 'text-green-700 dark:text-green-400' : 'text-muted-foreground'}>{label}</span>
     </div>
   );
@@ -79,18 +79,17 @@ export const PasswordChangeRequired = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-secondary/10 flex flex-col items-center justify-center p-6">
       <KidukaLogo size="lg" />
-      
+
       <div className="mt-6 mb-4 flex items-center gap-2">
         <Shield className="h-6 w-6 text-primary" />
         <h1 className="text-xl font-bold">Badilisha Nywila</h1>
       </div>
-      
+
       <p className="text-sm text-muted-foreground text-center mb-6 max-w-sm">
         Kwa usalama wa akaunti yako, tafadhali weka nywila mpya inayokidhi masharti ya usalama.
       </p>
 
       <div className="w-full max-w-sm space-y-4">
-        {/* Current password */}
         <div className="space-y-1">
           <Label>Nywila ya Sasa</Label>
           <div className="relative">
@@ -108,7 +107,6 @@ export const PasswordChangeRequired = () => {
           </div>
         </div>
 
-        {/* New password */}
         <div className="space-y-1">
           <Label>Nywila Mpya</Label>
           <div className="relative">
@@ -126,7 +124,6 @@ export const PasswordChangeRequired = () => {
           </div>
         </div>
 
-        {/* Policy checklist */}
         {newPassword.length > 0 && (
           <div className="p-3 bg-muted/50 rounded-2xl space-y-1.5">
             <PolicyItem passed={policy.minLength} label="Angalau herufi 8" />
@@ -136,25 +133,13 @@ export const PasswordChangeRequired = () => {
           </div>
         )}
 
-        {/* Confirm password */}
         <div className="space-y-1">
           <Label>Thibitisha Nywila</Label>
-          <Input
-            type="password"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            placeholder="Rudia nywila mpya"
-          />
-          {confirmPassword && !passwordsMatch && (
-            <p className="text-xs text-destructive">Nywila hazilingani</p>
-          )}
+          <Input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="Rudia nywila mpya" />
+          {confirmPassword && !passwordsMatch && <p className="text-xs text-destructive">Nywila hazilingani</p>}
         </div>
 
-        <Button
-          onClick={handleSubmit}
-          disabled={loading || !allPassed || !passwordsMatch}
-          className="w-full rounded-2xl h-12"
-        >
+        <Button onClick={handleSubmit} disabled={loading || !allPassed || !passwordsMatch} className="w-full rounded-2xl h-12">
           {loading ? 'Inabadilisha...' : 'Badilisha Nywila'}
         </Button>
       </div>
