@@ -9,6 +9,7 @@ import { ShoppingBag, Plus } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useDataAccess } from '@/hooks/useDataAccess';
 import { toast } from 'sonner';
+import { logActivity } from '@/hooks/useActivityLogger';
 import { InvoiceGenerator } from '@/components/InvoiceGenerator';
 
 interface Customer {
