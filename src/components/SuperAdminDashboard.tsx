@@ -1274,6 +1274,17 @@ export const SuperAdminDashboard = () => {
                             <Trash2 className="h-3 w-3" />
                           </Button>
                         </div>
+                        {u.role === 'owner' && (
+                          <Button
+                            variant="default"
+                            size="sm"
+                            className="w-full mt-1 rounded-xl text-xs h-7"
+                            onClick={() => handleEnterBusiness(u.id, u.business_name || u.full_name || u.email)}
+                          >
+                            <LogIn className="h-3 w-3 mr-1" />
+                            Ingia Biashara
+                          </Button>
+                        )}
                       </div>
                     </div>
                   </CardContent>
