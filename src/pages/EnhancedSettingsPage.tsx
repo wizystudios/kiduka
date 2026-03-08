@@ -389,6 +389,66 @@ export const EnhancedSettingsPage = () => {
               </div>
             </CardContent>
           </Card>
+
+          {/* Location Settings */}
+          <Card className="mt-6">
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <MapPin className="h-5 w-5 mr-2" />
+                Eneo Lako
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <Label>Nchi</Label>
+                <Select value={locationSettings.country} onValueChange={v => setLocationSettings(s => ({...s, country: v}))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Tanzania">Tanzania 🇹🇿</SelectItem>
+                    <SelectItem value="Kenya">Kenya 🇰🇪</SelectItem>
+                    <SelectItem value="Uganda">Uganda 🇺🇬</SelectItem>
+                    <SelectItem value="Rwanda">Rwanda 🇷🇼</SelectItem>
+                    <SelectItem value="Burundi">Burundi 🇧🇮</SelectItem>
+                    <SelectItem value="DRC">DRC 🇨🇩</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label>Mkoa *</Label>
+                  <Select value={locationSettings.region} onValueChange={v => setLocationSettings(s => ({...s, region: v, district: ''}))}>
+                    <SelectTrigger><SelectValue placeholder="Chagua mkoa..." /></SelectTrigger>
+                    <SelectContent>
+                      {REGION_LIST.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Wilaya *</Label>
+                  <Select value={locationSettings.district} onValueChange={v => setLocationSettings(s => ({...s, district: v}))} disabled={!locationSettings.region}>
+                    <SelectTrigger><SelectValue placeholder="Chagua wilaya..." /></SelectTrigger>
+                    <SelectContent>
+                      {locationDistricts.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label>Kata / Ward</Label>
+                  <Input value={locationSettings.ward} onChange={e => setLocationSettings(s => ({...s, ward: e.target.value}))} placeholder="Mfano: Mwananyamala" />
+                </div>
+                <div>
+                  <Label>Mtaa</Label>
+                  <Input value={locationSettings.street} onChange={e => setLocationSettings(s => ({...s, street: e.target.value}))} placeholder="Mfano: Mtaa wa Uhuru" />
+                </div>
+              </div>
+              <Button onClick={handleLocationUpdate} disabled={savingLocation} className="w-full gap-2">
+                {savingLocation ? <Loader2 className="h-4 w-4 animate-spin" /> : <MapPin className="h-4 w-4" />}
+                {savingLocation ? 'Inahifadhi...' : 'Hifadhi Eneo'}
+              </Button>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="business">
