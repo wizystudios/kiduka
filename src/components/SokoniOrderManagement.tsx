@@ -6,12 +6,14 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
 import { 
-  Package, Truck, CheckCircle, XCircle, Clock, Phone, MapPin, Eye, RefreshCw, User
+  Package, Truck, CheckCircle, XCircle, Clock, Phone, MapPin, Eye, RefreshCw, User, MessageSquare, Send, Receipt
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useDataAccess } from '@/hooks/useDataAccess';
+import { useAuth } from '@/hooks/useAuth';
 
 interface OrderItem {
   product_name: string;
@@ -40,12 +42,16 @@ export interface SokoniOrder {
 
 export const SokoniOrderManagement = () => {
   const { dataOwnerId, loading: dataLoading } = useDataAccess();
+  const { user } = useAuth();
   const [orders, setOrders] = useState<SokoniOrder[]>([]);
   const [selectedOrder, setSelectedOrder] = useState<SokoniOrder | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('new');
   const [deliveryName, setDeliveryName] = useState('');
   const [deliveryPhone, setDeliveryPhone] = useState('');
+  const [whatsappOpen, setWhatsappOpen] = useState(false);
+  const [whatsappMsg, setWhatsappMsg] = useState('');
+  const [sendingWa, setSendingWa] = useState(false);
 
   useEffect(() => {
     if (dataOwnerId) {
@@ -87,6 +93,87 @@ export const SokoniOrderManagement = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const formatPhone = (phone: string) => {
+    if (phone.startsWith('+')) return phone;
+    if (phone.startsWith('0')) return `+255${phone.slice(1)}`;
+    if (phone.startsWith('255')) return `+${phone}`;
+    return `+255${phone}`;
+  };
+
+  const sendWhatsAppToCustomer = async (order: SokoniOrder, message: string, messageType: string) => {
+    const phone = formatPhone(order.customer_phone);
+    try {
+      const { error } = await supabase.functions.invoke('send-whatsapp', {
+        body: { phoneNumber: phone, message, messageType }
+      });
+
+      if (user) {
+        await supabase.from('whatsapp_messages').insert({
+          owner_id: user.id,
+          customer_name: `Sokoni - ${order.customer_phone}`,
+          phone_number: phone,
+          message,
+          message_type: messageType,
+          status: error ? 'sent_wa_link' : 'sent',
+        });
+      }
+
+      if (error) {
+        window.open(`https://wa.me/${phone.replace('+', '')}?text=${encodeURIComponent(message)}`, '_blank');
+      }
+      return true;
+    } catch {
+      window.open(`https://wa.me/${phone.replace('+', '')}?text=${encodeURIComponent(message)}`, '_blank');
+      if (user) {
+        await supabase.from('whatsapp_messages').insert({
+          owner_id: user.id, customer_name: `Sokoni - ${order.customer_phone}`,
+          phone_number: phone, message, message_type: messageType, status: 'sent_wa_link',
+        });
+      }
+      return true;
+    }
+  };
+
+  const buildOrderConfirmationMsg = (order: SokoniOrder) => {
+    const itemsList = order.items.map(i => `• ${i.product_name} x${i.quantity} = TSh ${(i.unit_price * i.quantity).toLocaleString()}`).join('\n');
+    return `✅ ODA YAKO IMETHIBITISHWA!\n\n` +
+      `📦 Namba: #${order.id.slice(0, 8).toUpperCase()}\n` +
+      `${order.tracking_code ? `🔍 Tracking: ${order.tracking_code}\n` : ''}` +
+      `\n📋 Bidhaa:\n${itemsList}\n\n` +
+      `💰 Jumla: TSh ${order.total_amount.toLocaleString()}\n` +
+      `📍 Anwani: ${order.delivery_address}\n\n` +
+      `Tutakuarifu oda yako itakapokuwa njiani! 🚚\nAsante! 🙏`;
+  };
+
+  const buildDeliveringMsg = (order: SokoniOrder) => {
+    return `🚚 ODA YAKO INAKUJA!\n\n` +
+      `📦 Namba: #${order.id.slice(0, 8).toUpperCase()}\n` +
+      `${order.tracking_code ? `🔍 Tracking: ${order.tracking_code}\n` : ''}` +
+      `\n👤 Mpelekaji: ${order.delivery_person_name || 'N/A'}\n` +
+      `📞 Simu: ${order.delivery_person_phone || 'N/A'}\n\n` +
+      `📍 Anwani: ${order.delivery_address}\n` +
+      `💰 Jumla: TSh ${order.total_amount.toLocaleString()}\n\n` +
+      `Tafadhali kuwa tayari kupokea! 📦\nAsante! 🙏`;
+  };
+
+  const buildDeliveredMsg = (order: SokoniOrder) => {
+    const itemsList = order.items.map(i => `• ${i.product_name} x${i.quantity} = TSh ${(i.unit_price * i.quantity).toLocaleString()}`).join('\n');
+    return `🧾 RISITI - ODA IMEKAMILIKA!\n\n` +
+      `📦 Namba: #${order.id.slice(0, 8).toUpperCase()}\n` +
+      `📅 Tarehe: ${new Date().toLocaleDateString('sw-TZ')}\n\n` +
+      `📋 Bidhaa:\n${itemsList}\n\n` +
+      `💰 JUMLA: TSh ${order.total_amount.toLocaleString()}\n` +
+      `💳 Malipo: ${order.payment_status === 'paid' ? 'Imelipwa ✅' : 'Inasubiri'}\n\n` +
+      `Asante kwa kununua kwenye Sokoni! 🛍️\nKaribu tena! 😊`;
+  };
+
+  const buildCancelledMsg = (order: SokoniOrder) => {
+    return `❌ ODA IMEGHAIRIWA\n\n` +
+      `📦 Namba: #${order.id.slice(0, 8).toUpperCase()}\n` +
+      `💰 Kiasi: TSh ${order.total_amount.toLocaleString()}\n\n` +
+      `Samahani, oda yako imeghairiwa.\nTafadhali wasiliana nasi kwa maelezo zaidi.\nAsante! 🙏`;
   };
 
   const getStatusColor = (status: string) => {
@@ -133,9 +220,35 @@ export const SokoniOrderManagement = () => {
         }
       }
 
+      const updatedOrder = { ...(orders.find(o => o.id === orderId)!), order_status: newStatus, ...extraData, updated_at: new Date().toISOString() };
+      
       setOrders(prev => prev.map(order =>
-        order.id === orderId ? { ...order, order_status: newStatus, ...extraData, updated_at: new Date().toISOString() } : order
+        order.id === orderId ? updatedOrder : order
       ));
+
+      // Auto-send WhatsApp notifications on status changes
+      let waMsg = '';
+      let waType = 'order';
+      switch (newStatus) {
+        case 'confirmed':
+          waMsg = buildOrderConfirmationMsg(updatedOrder);
+          break;
+        case 'delivering':
+          waMsg = buildDeliveringMsg(updatedOrder);
+          break;
+        case 'delivered':
+          waMsg = buildDeliveredMsg(updatedOrder);
+          waType = 'receipt';
+          break;
+        case 'cancelled':
+          waMsg = buildCancelledMsg(updatedOrder);
+          break;
+      }
+
+      if (waMsg) {
+        sendWhatsAppToCustomer(updatedOrder, waMsg, waType);
+      }
+
       toast.success(`Oda: "${getStatusLabel(newStatus)}"`);
       setSelectedOrder(null);
       setDeliveryName('');
@@ -143,6 +256,26 @@ export const SokoniOrderManagement = () => {
     } catch {
       toast.error('Imeshindwa kubadilisha hali ya oda');
     }
+  };
+
+  const openCustomWhatsApp = (order: SokoniOrder) => {
+    setWhatsappMsg(`Habari, kuhusu oda yako #${order.id.slice(0, 8).toUpperCase()} ya TSh ${order.total_amount.toLocaleString()}:\n\n`);
+    setWhatsappOpen(true);
+  };
+
+  const sendCustomWhatsApp = async () => {
+    if (!selectedOrder || !whatsappMsg.trim()) return;
+    setSendingWa(true);
+    await sendWhatsAppToCustomer(selectedOrder, whatsappMsg, 'general');
+    toast.success('Ujumbe umetumwa!');
+    setSendingWa(false);
+    setWhatsappOpen(false);
+  };
+
+  const sendReceiptWhatsApp = (order: SokoniOrder) => {
+    const msg = buildDeliveredMsg(order);
+    sendWhatsAppToCustomer(order, msg, 'receipt');
+    toast.success('Risiti imetumwa kwa WhatsApp!');
   };
 
   const filteredOrders = orders.filter(order => {
@@ -245,9 +378,23 @@ export const SokoniOrderManagement = () => {
                             </p>
                           </div>
                         </div>
-                        <Button variant="outline" size="sm" onClick={() => setSelectedOrder(order)} className="rounded-2xl">
-                          <Eye className="h-4 w-4" />
-                        </Button>
+                        <div className="flex flex-col gap-1">
+                          <Button variant="outline" size="sm" onClick={() => setSelectedOrder(order)} className="rounded-2xl">
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="rounded-2xl text-green-600 hover:text-green-700"
+                            onClick={(e) => { 
+                              e.stopPropagation(); 
+                              setSelectedOrder(order); 
+                              openCustomWhatsApp(order); 
+                            }}
+                          >
+                            <MessageSquare className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </div>
                     </CardContent>
                   </Card>
@@ -259,7 +406,7 @@ export const SokoniOrderManagement = () => {
       </Card>
 
       {/* Order Detail Dialog */}
-      <Dialog open={!!selectedOrder} onOpenChange={() => { setSelectedOrder(null); setDeliveryName(''); setDeliveryPhone(''); }}>
+      <Dialog open={!!selectedOrder && !whatsappOpen} onOpenChange={() => { setSelectedOrder(null); setDeliveryName(''); setDeliveryPhone(''); }}>
         <DialogContent className="max-w-md p-0 overflow-hidden rounded-2xl">
           <div className="bg-gradient-to-br from-primary/10 via-background to-secondary/10 p-4 text-center border-b border-border">
             <h2 className="font-bold">Oda #{selectedOrder?.id.slice(0, 8).toUpperCase()}</h2>
@@ -323,6 +470,30 @@ export const SokoniOrderManagement = () => {
                 </div>
               </div>
 
+              {/* WhatsApp Quick Actions */}
+              <div className="flex gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="flex-1 rounded-2xl text-green-600 border-green-300 hover:bg-green-50"
+                  onClick={() => openCustomWhatsApp(selectedOrder)}
+                >
+                  <MessageSquare className="h-4 w-4 mr-1" />
+                  WhatsApp
+                </Button>
+                {selectedOrder.order_status === 'delivered' && (
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="flex-1 rounded-2xl text-blue-600 border-blue-300 hover:bg-blue-50"
+                    onClick={() => sendReceiptWhatsApp(selectedOrder)}
+                  >
+                    <Receipt className="h-4 w-4 mr-1" />
+                    Risiti WhatsApp
+                  </Button>
+                )}
+              </div>
+
               {/* Actions - Simplified: new → confirmed → delivering → delivered */}
               <div className="space-y-2 pt-2">
                 {selectedOrder.order_status === 'new' && (
@@ -372,6 +543,39 @@ export const SokoniOrderManagement = () => {
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Custom WhatsApp Message Dialog */}
+      <Dialog open={whatsappOpen} onOpenChange={setWhatsappOpen}>
+        <DialogContent className="sm:max-w-md rounded-2xl">
+          <div className="space-y-4">
+            <div className="flex items-center gap-2">
+              <MessageSquare className="h-5 w-5 text-green-600" />
+              <h3 className="font-bold">Tuma WhatsApp kwa Mteja</h3>
+            </div>
+            <div>
+              <Label className="text-xs text-muted-foreground">Simu</Label>
+              <p className="font-medium">{selectedOrder?.customer_phone}</p>
+            </div>
+            <div>
+              <Label className="text-xs">Ujumbe</Label>
+              <Textarea
+                value={whatsappMsg}
+                onChange={(e) => setWhatsappMsg(e.target.value)}
+                rows={6}
+                placeholder="Andika ujumbe..."
+              />
+            </div>
+            <Button 
+              onClick={sendCustomWhatsApp} 
+              disabled={!whatsappMsg.trim() || sendingWa} 
+              className="w-full rounded-2xl bg-green-600 hover:bg-green-700"
+            >
+              <Send className="h-4 w-4 mr-2" />
+              {sendingWa ? 'Inatuma...' : 'Tuma WhatsApp'}
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
