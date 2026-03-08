@@ -360,14 +360,8 @@ export const ScannerPage = () => {
 
   return (
     <div className="page-container">
-      <div className="bg-gradient-to-r from-primary/10 to-primary/5 p-2 rounded mb-2">
-        <h2 className="text-sm font-bold text-foreground mb-1">💰 Muuzo wa Haraka</h2>
-        <p className="text-xs text-muted-foreground">Tafuta bidhaa</p>
-        <div className="mt-1 p-1.5 bg-green-50 dark:bg-green-900/20 border-l-2 border-green-500 rounded">
-          <p className="text-xs text-green-800 dark:text-green-200">
-            💡 Tumia jina kwa haraka!
-          </p>
-        </div>
+      <div className="bg-gradient-to-r from-primary/10 to-primary/5 p-2 rounded-2xl mb-2">
+        <h2 className="text-sm font-bold text-foreground">💰 Muuzo wa Haraka</h2>
       </div>
 
       <CameraScanner
