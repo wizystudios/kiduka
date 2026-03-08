@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Calendar, Search, Download, Eye, DollarSign, Receipt, X } from 'lucide-react';
+import { Calendar, Search, Download, Eye, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useDataAccess } from '@/hooks/useDataAccess';
 import { toast } from 'sonner';
@@ -100,7 +100,6 @@ export const SalesPage = () => {
         toast.error('Imeshindwa kupakia historia ya mauzo');
         setSales([]);
       } else {
-        console.log('Sales loaded successfully:', data?.length || 0);
         setSales(data || []);
       }
     } catch (error) {
@@ -190,77 +189,62 @@ export const SalesPage = () => {
     return (
       <div className="p-4 space-y-4">
         <div className="text-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Inapakia historia ya mauzo...</p>
+          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary mx-auto mb-2"></div>
+          <p className="text-xs text-muted-foreground">Inapakia...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="p-4 space-y-6 pb-24">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+    <div className="p-4 space-y-4 pb-24">
+      {/* Header */}
+      <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-foreground">Historia ya Mauzo</h2>
-          <p className="text-muted-foreground">Fuatilia mauzo na miamala yako</p>
+          <h2 className="text-lg font-bold text-foreground">Historia ya Mauzo</h2>
+          <p className="text-xs text-muted-foreground">Fuatilia mauzo na miamala yako</p>
         </div>
         <Button 
           variant="outline" 
-          className="flex items-center"
+          size="sm"
           onClick={handleExportSales}
           disabled={filteredSales.length === 0}
         >
-          <Download className="h-4 w-4 mr-2" />
+          <Download className="h-4 w-4 mr-1" />
           Hamisha
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="border-border">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Jumla ya Mapato</p>
-                <p className="text-2xl font-bold text-green-600 dark:text-green-400">TZS {Number(getSalesStats.totalRevenue).toLocaleString()}</p>
-              </div>
-              <DollarSign className="h-8 w-8 text-green-600 dark:text-green-400" />
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card className="border-border">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Miamala</p>
-                <p className="text-2xl font-bold text-primary">{getSalesStats.totalTransactions}</p>
-              </div>
-              <Receipt className="h-8 w-8 text-primary" />
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card className="border-border">
-          <CardContent className="p-4">
-            <div>
-              <p className="text-sm text-muted-foreground">Wastani wa Muamala</p>
-              <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">TZS {Number(getSalesStats.averageTicket).toLocaleString()}</p>
-            </div>
-          </CardContent>
-        </Card>
+      {/* Stats - flat row */}
+      <div className="flex items-center justify-around py-3 border-y border-border/50">
+        <div className="text-center space-y-0.5">
+          <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Mapato</p>
+          <p className="text-sm font-bold text-success">TZS {Number(getSalesStats.totalRevenue).toLocaleString()}</p>
+        </div>
+        <div className="w-px h-8 bg-border/50" />
+        <div className="text-center space-y-0.5">
+          <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Miamala</p>
+          <p className="text-sm font-bold text-primary">{getSalesStats.totalTransactions}</p>
+        </div>
+        <div className="w-px h-8 bg-border/50" />
+        <div className="text-center space-y-0.5">
+          <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Wastani</p>
+          <p className="text-sm font-bold text-foreground">TZS {Number(getSalesStats.averageTicket).toLocaleString()}</p>
+        </div>
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-4">
+      {/* Filters */}
+      <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Tafuta kwa nambari ya muamala au bidhaa..."
+            placeholder="Tafuta..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10"
           />
         </div>
-        <div className="flex space-x-2">
+        <div className="flex gap-2">
           {periodOptions.map((period) => (
             <Button
               key={period.id}
@@ -274,114 +258,81 @@ export const SalesPage = () => {
         </div>
       </div>
 
-      <div className="space-y-4">
+      {/* Sales List */}
+      <div className="space-y-2">
         {filteredSales.map((sale) => (
-          <Card key={sale.id} className="hover:shadow-md transition-shadow border-border">
-            <CardContent className="p-4">
-              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-2">
-                    <h3 className="font-semibold text-lg text-foreground">#{sale.id.slice(0, 8).toUpperCase()}</h3>
-                    <Badge variant="outline">
-                      {sale.payment_method || 'Taslimu'}
-                    </Badge>
-                  </div>
-                  <p className="text-sm text-muted-foreground mb-3">{formatDate(sale.created_at)}</p>
-                  
-                  {sale.customers && (
-                    <p className="text-sm text-muted-foreground mb-3">
-                      Mteja: {sale.customers.name}
-                      {sale.customers.phone && ` (${sale.customers.phone})`}
-                    </p>
-                  )}
-                  
-                  <div className="space-y-1">
-                    {sale.sales_items.slice(0, 3).map((item, index) => (
-                      <div key={index} className="flex justify-between text-sm">
-                        <span className="text-foreground">{item.quantity}x {item.products.name}</span>
-                        <span className="font-medium text-foreground">TZS {item.subtotal.toLocaleString()}</span>
-                      </div>
-                    ))}
-                    {sale.sales_items.length > 3 && (
-                      <p className="text-sm text-muted-foreground">
-                        ...na mengine {sale.sales_items.length - 3}
-                      </p>
-                    )}
-                  </div>
-                </div>
-                
-                <div className="flex flex-col lg:items-end gap-3">
-                  <div className="text-right">
-                    <p className="text-sm text-muted-foreground">Jumla</p>
-                    <p className="text-2xl font-bold text-foreground">TZS {sale.total_amount.toLocaleString()}</p>
-                    {sale.discount_amount && sale.discount_amount > 0 && (
-                      <p className="text-sm text-destructive">Punguzo: -TZS {sale.discount_amount.toLocaleString()}</p>
-                    )}
-                  </div>
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => handleViewDetails(sale)}
-                  >
-                    <Eye className="h-4 w-4 mr-2" />
-                    Ona Maelezo
-                  </Button>
-                </div>
+          <div 
+            key={sale.id} 
+            className="p-3 border border-border/50 rounded-2xl hover:bg-muted/30 transition-all cursor-pointer"
+            onClick={() => handleViewDetails(sale)}
+          >
+            <div className="flex items-center justify-between mb-1">
+              <div className="flex items-center gap-2">
+                <h3 className="font-semibold text-sm text-foreground">#{sale.id.slice(0, 8).toUpperCase()}</h3>
+                <Badge variant="outline" className="text-[10px]">
+                  {sale.payment_method || 'Taslimu'}
+                </Badge>
               </div>
-            </CardContent>
-          </Card>
+              <p className="text-sm font-bold text-foreground">TZS {sale.total_amount.toLocaleString()}</p>
+            </div>
+            <div className="flex items-center justify-between">
+              <p className="text-xs text-muted-foreground">{formatDate(sale.created_at)}</p>
+              {sale.customers && (
+                <p className="text-xs text-muted-foreground">{sale.customers.name}</p>
+              )}
+            </div>
+            <div className="mt-1">
+              {sale.sales_items.slice(0, 2).map((item, index) => (
+                <span key={index} className="text-xs text-muted-foreground">
+                  {item.quantity}x {item.products.name}{index < Math.min(sale.sales_items.length, 2) - 1 ? ', ' : ''}
+                </span>
+              ))}
+              {sale.sales_items.length > 2 && (
+                <span className="text-xs text-muted-foreground"> +{sale.sales_items.length - 2}</span>
+              )}
+            </div>
+          </div>
         ))}
       </div>
 
       {filteredSales.length === 0 && (
-        <Card className="text-center py-12 border-border">
-          <CardContent>
-            <Calendar className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-foreground mb-2">Hakuna mauzo yaliyopatikana</h3>
-            <p className="text-muted-foreground">
-              {searchTerm ? "Jaribu kubadilisha maneno ya utafutaji" : "Hakuna mauzo ya kipindi hiki"}
-            </p>
-          </CardContent>
-        </Card>
+        <div className="text-center py-12">
+          <Calendar className="h-10 w-10 text-muted-foreground mx-auto mb-2" />
+          <p className="text-sm font-medium text-foreground mb-1">Hakuna mauzo</p>
+          <p className="text-xs text-muted-foreground">
+            {searchTerm ? "Jaribu kubadilisha maneno ya utafutaji" : "Hakuna mauzo ya kipindi hiki"}
+          </p>
+        </div>
       )}
 
+      {/* Detail Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <div className="flex items-center justify-between">
-              <DialogTitle className="text-foreground">Maelezo ya Muamala #{selectedSale?.id.slice(0, 8).toUpperCase()}</DialogTitle>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setDialogOpen(false)}
-                className="h-6 w-6 p-0"
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
+            <DialogTitle className="text-foreground">Maelezo ya Muamala #{selectedSale?.id.slice(0, 8).toUpperCase()}</DialogTitle>
           </DialogHeader>
           
           {selectedSale && (
-            <div className="space-y-6">
+            <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <p className="text-sm text-muted-foreground">Tarehe</p>
-                  <p className="font-medium text-foreground">{formatDate(selectedSale.created_at)}</p>
+                  <p className="text-xs text-muted-foreground">Tarehe</p>
+                  <p className="text-sm font-medium text-foreground">{formatDate(selectedSale.created_at)}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Njia ya Malipo</p>
-                  <p className="font-medium text-foreground">{selectedSale.payment_method || 'Taslimu'}</p>
+                  <p className="text-xs text-muted-foreground">Njia ya Malipo</p>
+                  <p className="text-sm font-medium text-foreground">{selectedSale.payment_method || 'Taslimu'}</p>
                 </div>
                 {selectedSale.customers && (
                   <>
                     <div>
-                      <p className="text-sm text-muted-foreground">Mteja</p>
-                      <p className="font-medium text-foreground">{selectedSale.customers.name}</p>
+                      <p className="text-xs text-muted-foreground">Mteja</p>
+                      <p className="text-sm font-medium text-foreground">{selectedSale.customers.name}</p>
                     </div>
                     {selectedSale.customers.phone && (
                       <div>
-                        <p className="text-sm text-muted-foreground">Simu</p>
-                        <p className="font-medium text-foreground">{selectedSale.customers.phone}</p>
+                        <p className="text-xs text-muted-foreground">Simu</p>
+                        <p className="text-sm font-medium text-foreground">{selectedSale.customers.phone}</p>
                       </div>
                     )}
                   </>
@@ -389,41 +340,30 @@ export const SalesPage = () => {
               </div>
 
               <div>
-                <h4 className="font-semibold mb-3 text-foreground">Bidhaa Zilizouzwa</h4>
-                <div className="space-y-2">
+                <h4 className="font-semibold text-sm mb-2 text-foreground">Bidhaa Zilizouzwa</h4>
+                <div className="space-y-1">
                   {selectedSale.sales_items.map((item, index) => (
-                    <div key={index} className="flex justify-between items-center p-3 bg-muted rounded-lg">
-                      <div className="flex-1">
-                        <p className="font-medium text-foreground">{item.products.name}</p>
-                        {item.products.category && (
-                          <p className="text-sm text-muted-foreground">{item.products.category}</p>
-                        )}
+                    <div key={index} className="flex justify-between items-center p-2 bg-muted/50 rounded-xl">
+                      <div>
+                        <p className="text-sm font-medium text-foreground">{item.products.name}</p>
+                        <p className="text-xs text-muted-foreground">{item.quantity} x TZS {item.unit_price.toLocaleString()}</p>
                       </div>
-                      <div className="text-right">
-                        <p className="font-medium text-foreground">{item.quantity} x TZS {item.unit_price.toLocaleString()}</p>
-                        <p className="text-sm text-muted-foreground">= TZS {item.subtotal.toLocaleString()}</p>
-                      </div>
+                      <p className="text-sm font-medium text-foreground">TZS {item.subtotal.toLocaleString()}</p>
                     </div>
                   ))}
                 </div>
               </div>
 
-              <div className="border-t border-border pt-4">
-                <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <span className="text-foreground">Jumla ya Bidhaa:</span>
-                    <span className="text-foreground">TZS {selectedSale.sales_items.reduce((sum, item) => sum + item.subtotal, 0).toLocaleString()}</span>
+              <div className="border-t border-border pt-3">
+                {selectedSale.discount_amount && selectedSale.discount_amount > 0 && (
+                  <div className="flex justify-between text-sm text-destructive mb-1">
+                    <span>Punguzo:</span>
+                    <span>-TZS {selectedSale.discount_amount.toLocaleString()}</span>
                   </div>
-                  {selectedSale.discount_amount && selectedSale.discount_amount > 0 && (
-                    <div className="flex justify-between text-destructive">
-                      <span>Punguzo:</span>
-                      <span>-TZS {selectedSale.discount_amount.toLocaleString()}</span>
-                    </div>
-                  )}
-                  <div className="flex justify-between text-lg font-bold border-t border-border pt-2">
-                    <span className="text-foreground">Jumla ya Malipo:</span>
-                    <span className="text-primary">TZS {selectedSale.total_amount.toLocaleString()}</span>
-                  </div>
+                )}
+                <div className="flex justify-between text-base font-bold">
+                  <span className="text-foreground">Jumla:</span>
+                  <span className="text-primary">TZS {selectedSale.total_amount.toLocaleString()}</span>
                 </div>
               </div>
             </div>
@@ -433,3 +373,4 @@ export const SalesPage = () => {
     </div>
   );
 };
+

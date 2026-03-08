@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Plus, Search, Edit, Trash2, Users, Mail, Phone, FileText, FileSpreadsheet, AlertTriangle, DollarSign, MessageSquare, Send } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, Users, Mail, Phone, FileText, FileSpreadsheet, MessageSquare, Send } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/integrations/supabase/client';
@@ -69,7 +69,6 @@ export const CustomersPage = () => {
         body: { phoneNumber: phone, message: whatsappMsg, messageType: 'general' }
       });
 
-      // Log message
       if (user) {
         await supabase.from('whatsapp_messages').insert({
           owner_id: user.id,
@@ -113,11 +112,7 @@ export const CustomersPage = () => {
       setCustomers(data || []);
     } catch (error) {
       console.error('Error fetching customers:', error);
-      toast({
-        title: 'Hitilafu',
-        description: 'Imeshindwa kupakia wateja',
-        variant: 'destructive'
-      });
+      toast({ title: 'Hitilafu', description: 'Imeshindwa kupakia wateja', variant: 'destructive' });
     } finally {
       setLoading(false);
     }
@@ -125,11 +120,7 @@ export const CustomersPage = () => {
 
   const handleSaveCustomer = async () => {
     if (!customerData.name.trim()) {
-      toast({
-        title: 'Hitilafu',
-        description: 'Jina la mteja linahitajika',
-        variant: 'destructive'
-      });
+      toast({ title: 'Hitilafu', description: 'Jina la mteja linahitajika', variant: 'destructive' });
       return;
     }
 
@@ -137,25 +128,14 @@ export const CustomersPage = () => {
       if (editingCustomer) {
         const { error } = await supabase
           .from('customers')
-          .update({
-            name: customerData.name,
-            email: customerData.email || null,
-            phone: customerData.phone || null
-          })
+          .update({ name: customerData.name, email: customerData.email || null, phone: customerData.phone || null })
           .eq('id', editingCustomer.id);
-
         if (error) throw error;
         toast({ title: 'Mafanikio', description: 'Mteja amesasishwa' });
       } else {
         const { error } = await supabase
           .from('customers')
-          .insert({
-            name: customerData.name,
-            email: customerData.email || null,
-            phone: customerData.phone || null,
-            owner_id: (await supabase.auth.getUser()).data.user?.id
-          });
-
+          .insert({ name: customerData.name, email: customerData.email || null, phone: customerData.phone || null, owner_id: (await supabase.auth.getUser()).data.user?.id });
         if (error) throw error;
         toast({ title: 'Mafanikio', description: 'Mteja ameongezwa' });
       }
@@ -166,44 +146,26 @@ export const CustomersPage = () => {
       fetchCustomers();
     } catch (error) {
       console.error('Error saving customer:', error);
-      toast({
-        title: 'Hitilafu',
-        description: 'Imeshindwa kuhifadhi mteja',
-        variant: 'destructive'
-      });
+      toast({ title: 'Hitilafu', description: 'Imeshindwa kuhifadhi mteja', variant: 'destructive' });
     }
   };
 
   const handleEditCustomer = (customer: Customer) => {
-    setCustomerData({
-      name: customer.name,
-      email: customer.email || '',
-      phone: customer.phone || ''
-    });
+    setCustomerData({ name: customer.name, email: customer.email || '', phone: customer.phone || '' });
     setEditingCustomer(customer);
     setDialogOpen(true);
   };
 
   const handleDeleteCustomer = async (id: string) => {
     if (!confirm('Una uhakika unataka kufuta mteja huyu?')) return;
-
     try {
-      const { error } = await supabase
-        .from('customers')
-        .delete()
-        .eq('id', id);
-
+      const { error } = await supabase.from('customers').delete().eq('id', id);
       if (error) throw error;
-      
       setCustomers(customers.filter(c => c.id !== id));
       toast({ title: 'Mafanikio', description: 'Mteja amefutwa' });
     } catch (error) {
       console.error('Error deleting customer:', error);
-      toast({
-        title: 'Hitilafu',
-        description: 'Imeshindwa kufuta mteja',
-        variant: 'destructive'
-      });
+      toast({ title: 'Hitilafu', description: 'Imeshindwa kufuta mteja', variant: 'destructive' });
     }
   };
 
@@ -216,12 +178,8 @@ export const CustomersPage = () => {
       { header: 'Deni (TSh)', key: 'outstanding_balance', formatter: (v) => Number(v || 0).toLocaleString() },
       { header: 'Tarehe ya Usajili', key: 'created_at', formatter: (v) => new Date(v).toLocaleDateString('sw-TZ') },
     ];
-
     exportToExcel(filteredCustomers, columns, 'wateja');
-    toast({
-      title: 'Mafanikio',
-      description: 'Wateja wamehamishwa kwa mafanikio'
-    });
+    toast({ title: 'Mafanikio', description: 'Wateja wamehamishwa kwa mafanikio' });
   };
 
   const filteredCustomers = customers.filter(customer =>
@@ -237,36 +195,29 @@ export const CustomersPage = () => {
     return (
       <div className="p-4 space-y-4">
         {[...Array(5)].map((_, i) => (
-          <div key={i} className="h-20 bg-muted rounded-2xl animate-pulse" />
+          <div key={i} className="h-16 bg-muted rounded-2xl animate-pulse" />
         ))}
       </div>
     );
   }
 
   return (
-    <div className="p-4 space-y-6">
+    <div className="p-4 space-y-4 pb-24">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold">Usimamizi wa Wateja</h2>
-          <p className="text-muted-foreground text-sm">Simamia wateja na madeni</p>
+          <h2 className="text-lg font-bold">Wateja</h2>
+          <p className="text-xs text-muted-foreground">Simamia wateja na madeni</p>
         </div>
-        
         <div className="flex gap-2">
-          <Button
-            variant="outline"
-            onClick={handleExport}
-            className="flex items-center gap-2"
-          >
+          <Button variant="outline" size="sm" onClick={handleExport}>
             <FileSpreadsheet className="h-4 w-4" />
-            Export
           </Button>
-          
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild>
-              <Button>
-                <Plus className="h-4 w-4 mr-2" />
-                Ongeza Mteja
+              <Button size="sm">
+                <Plus className="h-4 w-4 mr-1" />
+                Ongeza
               </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-md">
@@ -276,31 +227,15 @@ export const CustomersPage = () => {
               <div className="space-y-4">
                 <div>
                   <Label htmlFor="name">Jina *</Label>
-                  <Input
-                    id="name"
-                    value={customerData.name}
-                    onChange={(e) => setCustomerData({...customerData, name: e.target.value})}
-                    placeholder="Jina la mteja"
-                  />
+                  <Input id="name" value={customerData.name} onChange={(e) => setCustomerData({...customerData, name: e.target.value})} placeholder="Jina la mteja" />
                 </div>
                 <div>
                   <Label htmlFor="email">Barua Pepe</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={customerData.email}
-                    onChange={(e) => setCustomerData({...customerData, email: e.target.value})}
-                    placeholder="mteja@email.com"
-                  />
+                  <Input id="email" type="email" value={customerData.email} onChange={(e) => setCustomerData({...customerData, email: e.target.value})} placeholder="mteja@email.com" />
                 </div>
                 <div>
                   <Label htmlFor="phone">Simu</Label>
-                  <Input
-                    id="phone"
-                    value={customerData.phone}
-                    onChange={(e) => setCustomerData({...customerData, phone: e.target.value})}
-                    placeholder="+255 123 456 789"
-                  />
+                  <Input id="phone" value={customerData.phone} onChange={(e) => setCustomerData({...customerData, phone: e.target.value})} placeholder="+255 123 456 789" />
                 </div>
                 <Button onClick={handleSaveCustomer} className="w-full">
                   {editingCustomer ? 'Sasisha Mteja' : 'Ongeza Mteja'}
@@ -311,169 +246,89 @@ export const CustomersPage = () => {
         </div>
       </div>
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-xl">
-                <Users className="h-5 w-5 text-blue-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{customers.length}</p>
-                <p className="text-xs text-muted-foreground">Wateja Wote</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-xl">
-                <AlertTriangle className="h-5 w-5 text-red-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{customersWithDebt}</p>
-                <p className="text-xs text-muted-foreground">Wenye Madeni</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="col-span-2">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-xl">
-                <DollarSign className="h-5 w-5 text-orange-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-orange-600">TSh {totalDebt.toLocaleString()}</p>
-                <p className="text-xs text-muted-foreground">Jumla ya Madeni</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      {/* Stats - flat row */}
+      <div className="flex items-center justify-around py-3 border-y border-border/50">
+        <div className="text-center space-y-0.5">
+          <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Wateja</p>
+          <p className="text-sm font-bold text-foreground">{customers.length}</p>
+        </div>
+        <div className="w-px h-8 bg-border/50" />
+        <div className="text-center space-y-0.5">
+          <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Wenye Madeni</p>
+          <p className="text-sm font-bold text-destructive">{customersWithDebt}</p>
+        </div>
+        <div className="w-px h-8 bg-border/50" />
+        <div className="text-center space-y-0.5">
+          <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Jumla Madeni</p>
+          <p className="text-sm font-bold text-destructive">TSh {totalDebt.toLocaleString()}</p>
+        </div>
       </div>
 
       {/* Search */}
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          placeholder="Tafuta mteja kwa jina, email, au simu..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="pl-10"
-        />
+        <Input placeholder="Tafuta mteja..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10" />
       </div>
 
-      {/* Customer Grid */}
-      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+      {/* Customer List */}
+      <div className="space-y-2">
         {filteredCustomers.map((customer) => (
-          <Card key={customer.id} className="hover:shadow-lg transition-all duration-300">
-            <CardContent className="p-4">
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex items-start gap-3 flex-1 min-w-0">
-                  <div className="bg-primary/10 p-3 rounded-xl flex-shrink-0">
-                    <Users className="h-5 w-5 text-primary" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <h3 className="font-semibold truncate">{customer.name}</h3>
-                      {(customer.outstanding_balance || 0) > 0 && (
-                        <Badge className="bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300 text-xs">
-                          Deni: TSh {(customer.outstanding_balance || 0).toLocaleString()}
-                        </Badge>
-                      )}
-                    </div>
-                    <div className="space-y-1 text-sm text-muted-foreground mt-1">
-                      {customer.phone && (
-                        <div className="flex items-center gap-2">
-                          <Phone className="h-3 w-3" />
-                          <span className="truncate">{customer.phone}</span>
-                        </div>
-                      )}
-                      {customer.email && (
-                        <div className="flex items-center gap-2">
-                          <Mail className="h-3 w-3" />
-                          <span className="truncate">{customer.email}</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
+          <div key={customer.id} className="p-3 border border-border/50 rounded-2xl hover:bg-muted/30 transition-all">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h3 className="font-semibold text-sm truncate">{customer.name}</h3>
+                  {(customer.outstanding_balance || 0) > 0 && (
+                    <Badge className="bg-destructive/10 text-destructive text-[10px]">
+                      Deni: TSh {(customer.outstanding_balance || 0).toLocaleString()}
+                    </Badge>
+                  )}
                 </div>
-                
-                <div className="flex gap-1 flex-shrink-0">
-                  <Button 
-                    variant="ghost" 
-                    size="icon"
-                    className="h-8 w-8"
-                    onClick={() => {
-                      setSelectedCustomer({ id: customer.id, name: customer.name });
-                      setLedgerOpen(true);
-                    }}
-                    title="Ona Leja"
-                  >
-                    <FileText className="h-4 w-4" />
-                  </Button>
-                  <Button 
-                    variant="ghost" 
-                    size="icon"
-                    className="h-8 w-8 text-green-600 hover:text-green-700"
-                    onClick={() => openWhatsApp(customer)}
-                    title="Tuma WhatsApp"
-                  >
-                    <Send className="h-4 w-4" />
-                  </Button>
-                  <Button 
-                    variant="ghost" 
-                    size="icon"
-                    className="h-8 w-8 text-green-600/60 hover:text-green-700"
-                    onClick={() => navigate(`/whatsapp-history?customer_id=${customer.id}&customer_name=${encodeURIComponent(customer.name)}`)}
-                    title="Historia ya WhatsApp"
-                  >
-                    <MessageSquare className="h-4 w-4" />
-                  </Button>
-                  <Button 
-                    variant="ghost" 
-                    size="icon"
-                    className="h-8 w-8"
-                    onClick={() => handleEditCustomer(customer)}
-                  >
-                    <Edit className="h-4 w-4" />
-                  </Button>
-                  <Button 
-                    variant="ghost" 
-                    size="icon"
-                    className="h-8 w-8 text-red-500 hover:text-red-700"
-                    onClick={() => handleDeleteCustomer(customer.id)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
+                  {customer.phone && <span>{customer.phone}</span>}
+                  {customer.email && <span>{customer.email}</span>}
                 </div>
               </div>
-            </CardContent>
-          </Card>
+              
+              <div className="flex gap-1 flex-shrink-0">
+                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setSelectedCustomer({ id: customer.id, name: customer.name }); setLedgerOpen(true); }}>
+                  <FileText className="h-3.5 w-3.5" />
+                </Button>
+                <Button variant="ghost" size="icon" className="h-7 w-7 text-green-600" onClick={() => openWhatsApp(customer)}>
+                  <Send className="h-3.5 w-3.5" />
+                </Button>
+                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => navigate(`/whatsapp-history?customer_id=${customer.id}&customer_name=${encodeURIComponent(customer.name)}`)}>
+                  <MessageSquare className="h-3.5 w-3.5" />
+                </Button>
+                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleEditCustomer(customer)}>
+                  <Edit className="h-3.5 w-3.5" />
+                </Button>
+                <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => handleDeleteCustomer(customer.id)}>
+                  <Trash2 className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+            </div>
+          </div>
         ))}
       </div>
 
       {filteredCustomers.length === 0 && (
-        <Card className="text-center py-12">
-          <CardContent>
-            <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-lg font-semibold mb-2">Hakuna wateja</h3>
-            <p className="text-muted-foreground mb-4">
-              {searchTerm ? "Jaribu kutafuta kwa maneno mengine" : "Anza kwa kuongeza mteja wa kwanza"}
-            </p>
-            {!searchTerm && (
-              <Button onClick={() => setDialogOpen(true)}>
-                <Plus className="h-4 w-4 mr-2" />
-                Ongeza Mteja
-              </Button>
-            )}
-          </CardContent>
-        </Card>
+        <div className="text-center py-12">
+          <Users className="h-10 w-10 text-muted-foreground mx-auto mb-2" />
+          <p className="text-sm font-medium mb-1">Hakuna wateja</p>
+          <p className="text-xs text-muted-foreground mb-3">
+            {searchTerm ? "Jaribu kutafuta kwa maneno mengine" : "Anza kwa kuongeza mteja wa kwanza"}
+          </p>
+          {!searchTerm && (
+            <Button size="sm" onClick={() => setDialogOpen(true)}>
+              <Plus className="h-4 w-4 mr-1" />
+              Ongeza Mteja
+            </Button>
+          )}
+        </div>
       )}
 
-      {/* Customer Ledger Dialog */}
+      {/* Ledger Dialog */}
       {selectedCustomer && (
         <CustomerLedger
           customerId={selectedCustomer.id}
@@ -483,32 +338,17 @@ export const CustomersPage = () => {
         />
       )}
 
-      {/* WhatsApp Send Dialog */}
+      {/* WhatsApp Dialog */}
       <Dialog open={whatsappOpen} onOpenChange={setWhatsappOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent>
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <MessageSquare className="h-5 w-5 text-green-600" />
-              Tuma WhatsApp - {whatsappTarget?.name}
-            </DialogTitle>
+            <DialogTitle>WhatsApp kwa {whatsappTarget?.name}</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label>Simu</Label>
-              <Input value={whatsappTarget?.phone || ''} disabled />
-            </div>
-            <div>
-              <Label>Ujumbe</Label>
-              <Textarea
-                value={whatsappMsg}
-                onChange={(e) => setWhatsappMsg(e.target.value)}
-                rows={5}
-                placeholder="Andika ujumbe..."
-              />
-            </div>
-            <Button onClick={sendWhatsApp} disabled={!whatsappMsg.trim() || sendingWhatsapp} className="w-full bg-green-600 hover:bg-green-700">
+          <div className="space-y-3">
+            <Textarea value={whatsappMsg} onChange={(e) => setWhatsappMsg(e.target.value)} rows={4} placeholder="Andika ujumbe..." />
+            <Button onClick={sendWhatsApp} disabled={sendingWhatsapp} className="w-full">
               <Send className="h-4 w-4 mr-2" />
-              {sendingWhatsapp ? 'Inatuma...' : 'Tuma WhatsApp'}
+              {sendingWhatsapp ? 'Inatuma...' : 'Tuma Ujumbe'}
             </Button>
           </div>
         </DialogContent>
