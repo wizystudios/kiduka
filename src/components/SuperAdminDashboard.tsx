@@ -1120,6 +1120,11 @@ export const SuperAdminDashboard = () => {
           </DialogContent>
         </Dialog>
         
+        {/* Compliance Tab */}
+        <TabsContent value="compliance" className="space-y-4">
+          <AdminCompliancePanel />
+        </TabsContent>
+
         {/* Analytics Tab */}
         <TabsContent value="analytics" className="space-y-6">
           <div className="grid md:grid-cols-2 gap-6">
