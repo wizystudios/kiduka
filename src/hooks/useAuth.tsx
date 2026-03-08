@@ -317,6 +317,8 @@ export const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
 
   const signOut = async () => {
     try {
+      // Log logout before clearing state
+      await logActivity('logout', 'Mtumiaji ametoka');
       cleanupAuthState();
       try {
         await supabase.auth.signOut({ scope: 'global' });
