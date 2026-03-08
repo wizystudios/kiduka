@@ -479,7 +479,7 @@ export const SokoniProductDetail = ({
                     </div>
                     <Button 
                       size="lg"
-                      className="flex-1 h-14 text-base gap-2 rounded-[20%]"
+                      className="flex-1 h-14 text-base gap-2"
                       onClick={handleAddToCart}
                     >
                       <ShoppingCart className="h-5 w-5" />
