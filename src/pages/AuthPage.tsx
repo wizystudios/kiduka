@@ -480,7 +480,7 @@ export const AuthPage = () => {
       {mode === 'signin' && (
         <button
           type="button"
-          onClick={() => setShowForgotPassword(true)}
+          onClick={() => navigate('/forgot-password')}
           className="text-muted-foreground hover:text-primary text-sm mt-4 transition-colors"
         >
           Umesahau nywila?
@@ -504,11 +504,6 @@ export const AuthPage = () => {
         <Store className="h-4 w-4" />
         Tembelea Sokoni
       </Link>
-
-      <ForgotPasswordDialog 
-        open={showForgotPassword} 
-        onOpenChange={setShowForgotPassword} 
-      />
     </div>
   );
 };
