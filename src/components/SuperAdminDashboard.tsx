@@ -120,6 +120,7 @@ interface Subscription {
 
 export const SuperAdminDashboard = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const { notifications, unreadCount, markAsRead, markAllAsRead } = useAdminNotifications();
   const [activeTab, setActiveTab] = useState('overview');
   const [loading, setLoading] = useState(true);
