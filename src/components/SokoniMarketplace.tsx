@@ -353,6 +353,14 @@ export const SokoniMarketplace = () => {
   const cartTotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
+  // Location proximity score: 0 = same district, 1 = same region, 2 = different region
+  const getLocationScore = (product: MarketProduct) => {
+    if (!userRegion) return 1; // No user location, neutral
+    if (product.owner_district && userDistrict && product.owner_district === userDistrict) return 0;
+    if (product.owner_region && product.owner_region === userRegion) return 1;
+    return 2;
+  };
+
   // Filter products
   const filteredProducts = products.filter(product => {
     const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -363,7 +371,7 @@ export const SokoniMarketplace = () => {
     const matchesCategory = !selectedCategory || product.category === selectedCategory;
     
     return matchesSearch && matchesCategory;
-  });
+  }).sort((a, b) => getLocationScore(a) - getLocationScore(b));
 
   // Get top deals - products with real discounts first, then lowest prices
   const topDeals = [...products]
