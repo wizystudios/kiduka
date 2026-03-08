@@ -1454,6 +1454,11 @@ export const SuperAdminDashboard = () => {
               ))}
           </div>
         </TabsContent>
+
+        {/* Activities Tab */}
+        <TabsContent value="activities" className="space-y-4">
+          <AdminUserActivities />
+        </TabsContent>
         
         {/* Products Tab */}
         <TabsContent value="products" className="space-y-3">
