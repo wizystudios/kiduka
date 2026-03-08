@@ -326,20 +326,20 @@ export const UsersPage = () => {
   }
 
   return (
-    <div className="page-container p-4 space-y-4 pb-24">
-      {/* Business Info */}
-      <Card className="bg-gradient-to-r from-primary to-primary/80 text-primary-foreground">
-        <CardContent className="p-4">
-          <div className="flex items-center gap-3">
-            <Building className="h-10 w-10" />
-            <div>
-              <h2 className="text-lg font-bold">{userProfile?.business_name || 'Biashara Yako'}</h2>
-              <p className="text-sm opacity-90">Mmiliki: {userProfile?.full_name}</p>
-              <p className="text-xs opacity-75">{assistants.length} wasaidizi</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+    <div className="p-4 space-y-6 pb-24">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h2 className="text-2xl font-bold">Usimamizi wa Watumiaji</h2>
+          <p className="text-muted-foreground text-sm">{assistants.length} wasaidizi kwenye biashara yako</p>
+        </div>
+        
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={fetchAssistants}>
+            <RefreshCw className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
 
       <Tabs defaultValue="assistants" className="w-full">
         <TabsList className="grid w-full grid-cols-2">
@@ -353,7 +353,7 @@ export const UsersPage = () => {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="assistants" className="space-y-3 mt-4">
+        <TabsContent value="assistants" className="space-y-4 mt-4">
           <div className="flex items-center justify-between gap-2 flex-wrap">
             {/* Create New Assistant */}
             <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
