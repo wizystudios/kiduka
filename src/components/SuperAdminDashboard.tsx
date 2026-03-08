@@ -15,7 +15,7 @@ import {
   RefreshCw, BarChart3, Store, CreditCard, Bell,
   Settings, AlertTriangle, CheckCircle, XCircle,
   FileSpreadsheet, FileText, Clock, UserPlus, DollarSign,
-  Building2, Phone, Mail, LogIn, Lock, Ban, ShieldCheck, Key
+  Building2, Phone, Mail, LogIn, Lock, Ban, ShieldCheck, Key, Tag
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -28,6 +28,7 @@ import { AdminPasswordDialog } from './AdminPasswordDialog';
 import { AdminChatPanel } from './AdminChatPanel';
 import { AdminCompliancePanel } from './AdminCompliancePanel';
 import { AdminUserActivities } from './AdminUserActivities';
+import { AdminMarketplacePanel } from './AdminMarketplacePanel';
 
 interface User {
   id: string;
