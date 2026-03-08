@@ -273,6 +273,9 @@ export const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
         }
       }
 
+      // Log login activity
+      logActivity('login', 'Mtumiaji ameingia', { email });
+      
       // Redirect to dashboard after successful login
       window.location.href = '/dashboard';
     } catch (error: any) {
