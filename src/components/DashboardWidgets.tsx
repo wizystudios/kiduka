@@ -226,10 +226,10 @@ export const ExpensesWidget = () => {
           <SheetHeader>
             <SheetTitle className="flex items-center justify-between">
               <span className="flex items-center gap-2">
-                <TrendingDown className="h-5 w-5 text-red-600" />
+                <TrendingDown className="h-5 w-5 text-muted-foreground" />
                 Matumizi Leo
               </span>
-              <span className="text-red-600 font-bold">TZS {totalExpenses.toLocaleString()}</span>
+              <span className="text-foreground font-bold">TZS {totalExpenses.toLocaleString()}</span>
             </SheetTitle>
           </SheetHeader>
           <div className="py-4 space-y-2 overflow-y-auto max-h-[40vh]">
