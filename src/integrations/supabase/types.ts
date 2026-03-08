@@ -1014,30 +1014,48 @@ export type Database = {
       profiles: {
         Row: {
           business_name: string | null
+          country: string | null
           created_at: string
+          district: string | null
           email: string | null
           full_name: string | null
           id: string
+          location_set: boolean | null
           phone: string | null
+          region: string | null
+          street: string | null
           updated_at: string
+          ward: string | null
         }
         Insert: {
           business_name?: string | null
+          country?: string | null
           created_at?: string
+          district?: string | null
           email?: string | null
           full_name?: string | null
           id: string
+          location_set?: boolean | null
           phone?: string | null
+          region?: string | null
+          street?: string | null
           updated_at?: string
+          ward?: string | null
         }
         Update: {
           business_name?: string | null
+          country?: string | null
           created_at?: string
+          district?: string | null
           email?: string | null
           full_name?: string | null
           id?: string
+          location_set?: boolean | null
           phone?: string | null
+          region?: string | null
+          street?: string | null
           updated_at?: string
+          ward?: string | null
         }
         Relationships: []
       }
