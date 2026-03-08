@@ -471,7 +471,7 @@ export const ScannerPage = () => {
                 <div className="flex gap-2">
                   <Button 
                     onClick={() => handleSearchProduct(searchQuery)}
-                    className="flex-1 h-14 text-base"
+                    className="flex-1 h-14 text-base rounded-2xl"
                     disabled={!searchQuery || loading}
                   >
                     <Search className="h-5 w-5 mr-2" />
@@ -481,7 +481,7 @@ export const ScannerPage = () => {
                     <Button 
                       onClick={() => setShowCamera(true)}
                       variant="outline"
-                      className="h-14 px-6"
+                      className="h-14 px-6 rounded-2xl"
                     >
                       <Camera className="h-6 w-6" />
                     </Button>
