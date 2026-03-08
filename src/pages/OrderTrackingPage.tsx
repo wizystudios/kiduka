@@ -336,6 +336,54 @@ export const OrderTrackingPage = () => {
                             </p>
                           )}
                         </div>
+
+                        {/* Delivery Estimation */}
+                        {order.seller_region && (
+                          <div className="flex items-center justify-between p-2 bg-muted/50 rounded-xl text-xs">
+                            <div className="flex items-center gap-1">
+                              <MapPin className="h-3 w-3 text-muted-foreground" />
+                              <span className="text-muted-foreground">
+                                {order.seller_district ? `${order.seller_district}, ` : ''}{order.seller_region}
+                              </span>
+                            </div>
+                            <span className={`font-medium ${getDeliveryEstimateColor(estimateDeliveryDays(order.seller_region || null, null).min)}`}>
+                              📦 {estimateDeliveryDays(order.seller_region || null, null).label}
+                            </span>
+                          </div>
+                        )}
+
+                        {/* Delivery Person Info */}
+                        {order.delivery_person_name && (order.order_status === 'shipped' || order.order_status === 'delivering') && (
+                          <div className="flex items-center gap-2 p-2 bg-primary/5 rounded-xl text-xs">
+                            <Navigation className="h-3 w-3 text-primary" />
+                            <div className="flex-1">
+                              <span className="font-medium">{order.delivery_person_name}</span>
+                              {order.delivery_person_phone && (
+                                <a href={`tel:${order.delivery_person_phone}`} className="ml-2 text-primary underline">
+                                  {order.delivery_person_phone}
+                                </a>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Map for active deliveries */}
+                        {(order.order_status === 'shipped' || order.order_status === 'delivering') && order.delivery_address && (
+                          <div className="rounded-xl overflow-hidden border">
+                            <iframe
+                              title={`Map - ${order.tracking_code}`}
+                              width="100%"
+                              height="150"
+                              style={{ border: 0 }}
+                              loading="lazy"
+                              src={`https://www.openstreetmap.org/export/embed.html?bbox=29.0,-11.5,40.5,-1.0&layer=mapnik&marker=-6.8,39.3`}
+                            />
+                            <div className="p-2 bg-muted/30 text-[10px] text-muted-foreground flex items-center gap-1">
+                              <MapPin className="h-3 w-3" />
+                              Mahali: {order.delivery_address}
+                            </div>
+                          </div>
+                        )}
                         
                         {/* Total & Payment */}
                         <div className="flex items-center justify-between pt-2 border-t">
