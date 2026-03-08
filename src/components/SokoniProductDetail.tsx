@@ -197,7 +197,7 @@ export const SokoniProductDetail = ({
           >
             <Heart className={`h-5 w-5 ${isLiked ? 'fill-current' : ''}`} />
           </Button>
-          <Button variant="ghost" size="icon" className="rounded-[20%]" onClick={handleShare}>
+          <Button variant="ghost" size="icon" onClick={handleShare}>
             <Share2 className="h-5 w-5" />
           </Button>
         </div>
