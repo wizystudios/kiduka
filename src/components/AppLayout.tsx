@@ -6,6 +6,7 @@ import { UserInfoBar } from "@/components/UserInfoBar";
 import OfflineSyncBootstrap from "@/components/OfflineSyncBootstrap";
 import { ContractComplianceGate } from "@/components/ContractComplianceGate";
 import { AdminSessionBanner } from "@/components/AdminSessionBanner";
+import { LocationSetupGate } from "@/components/LocationSetupGate";
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -21,7 +22,9 @@ export function AppLayout({ children }: AppLayoutProps) {
         <AppSidebar />
         <SidebarInset className="flex-1">
           <main className="w-full pt-16 pb-36 md:pt-0 md:pb-0">
-            <ContractComplianceGate>{children}</ContractComplianceGate>
+            <LocationSetupGate>
+              <ContractComplianceGate>{children}</ContractComplianceGate>
+            </LocationSetupGate>
           </main>
         </SidebarInset>
       </div>

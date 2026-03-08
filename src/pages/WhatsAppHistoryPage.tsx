@@ -13,7 +13,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useDataAccess } from '@/hooks/useDataAccess';
 import { BackButton } from '@/components/BackButton';
-import { MessageSquare, Search, FileSpreadsheet, FileText, Eye, Clock, Plus, Trash2, CalendarClock } from 'lucide-react';
+import { MessageSquare, Search, FileSpreadsheet, FileText, Eye, Clock, Plus, Trash2, CalendarClock, Users, CheckSquare, Square } from 'lucide-react';
 import { format } from 'date-fns';
 import { exportToExcel, exportToPDF, createPrintableTable, ExportColumn } from '@/utils/exportUtils';
 import { useSearchParams } from 'react-router-dom';
@@ -115,11 +115,23 @@ export const WhatsAppHistoryPage = () => {
   });
   const [scheduling, setScheduling] = useState(false);
 
+  // Batch schedule state
+  const [batchScheduleOpen, setBatchScheduleOpen] = useState(false);
+  const [batchForm, setBatchForm] = useState({
+    message: '',
+    message_type: 'general',
+    scheduled_at: ''
+  });
+  const [batchScheduling, setBatchScheduling] = useState(false);
+  const [customers, setCustomers] = useState<{ id: string; name: string; phone: string }[]>([]);
+  const [selectedCustomerIds, setSelectedCustomerIds] = useState<string[]>([]);
+
   const isSuperAdmin = userProfile?.role === 'super_admin';
 
   useEffect(() => {
     fetchMessages();
     fetchScheduledMessages();
+    fetchCustomers();
   }, [user, dataOwnerId, customerId]);
 
   const fetchMessages = async () => {
@@ -243,6 +255,78 @@ export const WhatsAppHistoryPage = () => {
     }
   };
 
+  const fetchCustomers = async () => {
+    if (!user || !dataOwnerId) return;
+    try {
+      const { data, error } = await supabase
+        .from('customers')
+        .select('id, name, phone')
+        .eq('owner_id', dataOwnerId)
+        .not('phone', 'is', null)
+        .order('name');
+      if (!error && data) {
+        setCustomers(data.filter(c => c.phone) as { id: string; name: string; phone: string }[]);
+      }
+    } catch (e) {
+      console.error('Error fetching customers:', e);
+    }
+  };
+
+  const handleBatchSchedule = async () => {
+    if (!user || !dataOwnerId) return;
+    if (!batchForm.message || !batchForm.scheduled_at || selectedCustomerIds.length === 0) {
+      toast.error('Chagua wateja na jaza ujumbe na wakati');
+      return;
+    }
+
+    setBatchScheduling(true);
+    try {
+      const selectedCustomers = customers.filter(c => selectedCustomerIds.includes(c.id));
+      const scheduledAt = new Date(batchForm.scheduled_at).toISOString();
+      
+      const inserts = selectedCustomers.map(c => ({
+        owner_id: dataOwnerId,
+        customer_id: c.id,
+        customer_name: c.name,
+        phone_number: c.phone,
+        message: batchForm.message,
+        message_type: batchForm.message_type,
+        scheduled_at: scheduledAt,
+        status: 'pending'
+      }));
+
+      const { error } = await supabase
+        .from('scheduled_whatsapp_messages')
+        .insert(inserts as any);
+
+      if (error) throw error;
+      toast.success(`Ujumbe ${inserts.length} umepangwa!`);
+      setBatchScheduleOpen(false);
+      setBatchForm({ message: '', message_type: 'general', scheduled_at: '' });
+      setSelectedCustomerIds([]);
+      fetchScheduledMessages();
+    } catch (error) {
+      console.error('Batch schedule error:', error);
+      toast.error('Imeshindwa kupanga ujumbe wa batch');
+    } finally {
+      setBatchScheduling(false);
+    }
+  };
+
+  const toggleCustomerSelection = (id: string) => {
+    setSelectedCustomerIds(prev => 
+      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+    );
+  };
+
+  const selectAllCustomers = () => {
+    if (selectedCustomerIds.length === customers.length) {
+      setSelectedCustomerIds([]);
+    } else {
+      setSelectedCustomerIds(customers.map(c => c.id));
+    }
+  };
+
   const filtered = messages.filter(m => {
     const matchesSearch = search === '' ||
       m.customer_name.toLowerCase().includes(search.toLowerCase()) ||
@@ -303,7 +387,11 @@ export const WhatsAppHistoryPage = () => {
         <div className="flex gap-2">
           <Button size="sm" onClick={() => setScheduleOpen(true)} className="gap-1">
             <CalendarClock className="h-4 w-4" />
-            Panga Ujumbe
+            Panga
+          </Button>
+          <Button size="sm" variant="secondary" onClick={() => setBatchScheduleOpen(true)} className="gap-1">
+            <Users className="h-4 w-4" />
+            Batch
           </Button>
           <Button variant="outline" size="sm" onClick={handleExportExcel} disabled={filtered.length === 0}>
             <FileSpreadsheet className="h-4 w-4 mr-1" />
@@ -630,6 +718,94 @@ export const WhatsAppHistoryPage = () => {
             <Button onClick={handleScheduleMessage} disabled={scheduling} className="w-full gap-2">
               <CalendarClock className="h-4 w-4" />
               {scheduling ? 'Inapanga...' : 'Panga Ujumbe'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Batch Schedule Dialog */}
+      <Dialog open={batchScheduleOpen} onOpenChange={setBatchScheduleOpen}>
+        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5 text-primary" />
+              Panga Ujumbe kwa Wateja Wengi
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-medium text-muted-foreground">
+                  Chagua Wateja ({selectedCustomerIds.length}/{customers.length})
+                </label>
+                <Button variant="ghost" size="sm" onClick={selectAllCustomers} className="text-xs h-7">
+                  {selectedCustomerIds.length === customers.length ? 'Ondoa Wote' : 'Chagua Wote'}
+                </Button>
+              </div>
+              <ScrollArea className="h-[180px] border rounded-lg p-2">
+                {customers.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-4">Hakuna wateja wenye namba za simu</p>
+                ) : (
+                  customers.map(c => (
+                    <div 
+                      key={c.id} 
+                      className="flex items-center gap-2 p-2 hover:bg-muted/50 rounded cursor-pointer"
+                      onClick={() => toggleCustomerSelection(c.id)}
+                    >
+                      {selectedCustomerIds.includes(c.id) ? (
+                        <CheckSquare className="h-4 w-4 text-primary" />
+                      ) : (
+                        <Square className="h-4 w-4 text-muted-foreground" />
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{c.name}</p>
+                        <p className="text-xs text-muted-foreground">{c.phone}</p>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </ScrollArea>
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-muted-foreground">Aina ya Ujumbe</label>
+              <Select value={batchForm.message_type} onValueChange={v => setBatchForm(f => ({ ...f, message_type: v }))}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="general">Kawaida</SelectItem>
+                  <SelectItem value="debt_reminder">Ukumbusho Deni</SelectItem>
+                  <SelectItem value="order">Tangazo/Promo</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-muted-foreground">Tarehe na Saa ya Kutuma</label>
+              <Input
+                type="datetime-local"
+                value={batchForm.scheduled_at}
+                onChange={e => setBatchForm(f => ({ ...f, scheduled_at: e.target.value }))}
+                min={new Date().toISOString().slice(0, 16)}
+              />
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-muted-foreground">Ujumbe</label>
+              <Textarea
+                placeholder="Andika ujumbe utakaotumwa kwa wateja wote uliowachagua..."
+                value={batchForm.message}
+                onChange={e => setBatchForm(f => ({ ...f, message: e.target.value }))}
+                rows={4}
+              />
+            </div>
+
+            <Button 
+              onClick={handleBatchSchedule} 
+              disabled={batchScheduling || selectedCustomerIds.length === 0} 
+              className="w-full gap-2"
+            >
+              <CalendarClock className="h-4 w-4" />
+              {batchScheduling ? 'Inapanga...' : `Panga kwa Wateja ${selectedCustomerIds.length}`}
             </Button>
           </div>
         </DialogContent>

@@ -20,7 +20,7 @@ import {
   Search, ShoppingCart, Store, Package, Star, 
   ChevronRight, Sparkles, TrendingUp, Clock, Heart,
   Camera, ArrowLeft, Plus, Minus, Trash2, Phone,
-  ClipboardList, Truck, Eye, Grid3X3, ArrowUpRight
+  ClipboardList, Truck, Eye, Grid3X3, ArrowUpRight, MapPin
 } from 'lucide-react';
 import { SokoniLogo } from './SokoniLogo';
 import { supabase } from '@/integrations/supabase/client';
@@ -51,6 +51,8 @@ interface MarketProduct {
   owner_id: string;
   owner_business_name?: string;
   owner_phone?: string;
+  owner_region?: string;
+  owner_district?: string;
   created_at?: string;
   discount_price?: number;
   discount_percent?: number;
@@ -64,6 +66,8 @@ interface SellerProfile {
   id: string;
   business_name: string | null;
   phone: string | null;
+  region: string | null;
+  district: string | null;
 }
 
 interface GuestOrder {
@@ -160,6 +164,8 @@ export const SokoniMarketplace = () => {
   const [categories, setCategories] = useState<CategoryItem[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(searchParams.get('category'));
   const [imageSearchOpen, setImageSearchOpen] = useState(false);
+  const [userRegion, setUserRegion] = useState<string | null>(null);
+  const [userDistrict, setUserDistrict] = useState<string | null>(null);
   
   // Receipt dialog state
   const [receiptOpen, setReceiptOpen] = useState(false);
@@ -204,12 +210,16 @@ export const SokoniMarketplace = () => {
       setCurrentUser(user);
 
       if (user) {
-        const { count } = await supabase
-          .from('products')
-          .select('*', { count: 'exact', head: true })
-          .eq('owner_id', user.id);
+        const [countResult, profileResult] = await Promise.all([
+          supabase.from('products').select('*', { count: 'exact', head: true }).eq('owner_id', user.id),
+          supabase.from('profiles').select('region, district').eq('id', user.id).maybeSingle()
+        ]);
 
-        setIsSeller((count || 0) > 0);
+        setIsSeller((countResult.count || 0) > 0);
+        if (profileResult.data) {
+          setUserRegion((profileResult.data as any).region || null);
+          setUserDistrict((profileResult.data as any).district || null);
+        }
       }
 
       const { data: productsData, error: productsError } = await supabase
@@ -227,7 +237,7 @@ export const SokoniMarketplace = () => {
       
       if (sellerIds.length > 0) {
         const [profilesResult, discountsResult] = await Promise.all([
-          supabase.from('profiles').select('id, business_name, phone').in('id', sellerIds),
+          supabase.from('profiles').select('id, business_name, phone, region, district').in('id', sellerIds),
           supabase.from('discounts').select('id, discount_type, value, applicable_products').eq('active', true)
             .or(`end_date.is.null,end_date.gte.${new Date().toISOString().split('T')[0]}`)
         ]);
@@ -268,6 +278,8 @@ export const SokoniMarketplace = () => {
           ...product,
           owner_business_name: seller?.business_name || 'Duka',
           owner_phone: seller?.phone || undefined,
+          owner_region: seller?.region || undefined,
+          owner_district: seller?.district || undefined,
           discount_price,
           discount_percent
         };
@@ -341,6 +353,14 @@ export const SokoniMarketplace = () => {
   const cartTotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
+  // Location proximity score: 0 = same district, 1 = same region, 2 = different region
+  const getLocationScore = (product: MarketProduct) => {
+    if (!userRegion) return 1; // No user location, neutral
+    if (product.owner_district && userDistrict && product.owner_district === userDistrict) return 0;
+    if (product.owner_region && product.owner_region === userRegion) return 1;
+    return 2;
+  };
+
   // Filter products
   const filteredProducts = products.filter(product => {
     const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -351,7 +371,7 @@ export const SokoniMarketplace = () => {
     const matchesCategory = !selectedCategory || product.category === selectedCategory;
     
     return matchesSearch && matchesCategory;
-  });
+  }).sort((a, b) => getLocationScore(a) - getLocationScore(b));
 
   // Get top deals - products with real discounts first, then lowest prices
   const topDeals = [...products]
@@ -369,7 +389,7 @@ export const SokoniMarketplace = () => {
     const sellerId = product.owner_id;
     if (!acc[sellerId]) {
       acc[sellerId] = {
-        seller: sellers.find(s => s.id === sellerId) || { id: sellerId, business_name: 'Duka', phone: null },
+        seller: sellers.find(s => s.id === sellerId) || { id: sellerId, business_name: 'Duka', phone: null, region: null, district: null },
         products: []
       };
     }
@@ -533,6 +553,17 @@ export const SokoniMarketplace = () => {
           <Store className="h-3 w-3 text-muted-foreground" />
           <span className="text-xs text-muted-foreground truncate">{product.owner_business_name}</span>
         </div>
+        {product.owner_region && (
+          <div className="flex items-center gap-1 mt-0.5">
+            <MapPin className="h-3 w-3 text-muted-foreground" />
+            <span className="text-xs text-muted-foreground truncate">
+              {product.owner_district ? `${product.owner_district}, ` : ''}{product.owner_region}
+            </span>
+            {userRegion && product.owner_region === userRegion && (
+              <Badge className="text-[10px] px-1 py-0 bg-green-100 text-green-700 border-0">Karibu</Badge>
+            )}
+          </div>
+        )}
         <div className="mt-2">
           {hasDiscount && (
             <span className="text-xs text-muted-foreground line-through mr-2">
