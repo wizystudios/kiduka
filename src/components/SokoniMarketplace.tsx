@@ -167,6 +167,10 @@ export const SokoniMarketplace = () => {
   const [imageSearchOpen, setImageSearchOpen] = useState(false);
   const [userRegion, setUserRegion] = useState<string | null>(null);
   const [userDistrict, setUserDistrict] = useState<string | null>(null);
+  const [couponCode, setCouponCode] = useState('');
+  const [couponDiscount, setCouponDiscount] = useState(0);
+  const [couponApplied, setCouponApplied] = useState(false);
+  const [validatingCoupon, setValidatingCoupon] = useState(false);
   
   // Receipt dialog state
   const [receiptOpen, setReceiptOpen] = useState(false);
