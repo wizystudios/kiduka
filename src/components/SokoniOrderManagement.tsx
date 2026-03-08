@@ -254,6 +254,21 @@ export const SokoniOrderManagement = () => {
         sendWhatsAppToCustomer(updatedOrder, waMsg, waType);
       }
 
+      // Trigger push notification edge function for customer
+      try {
+        await supabase.functions.invoke('notify-order-status', {
+          body: {
+            order_id: orderId,
+            old_status: orders.find(o => o.id === orderId)?.order_status,
+            new_status: newStatus,
+            tracking_code: updatedOrder.tracking_code,
+            customer_phone: updatedOrder.customer_phone,
+          },
+        });
+      } catch (notifyErr) {
+        console.error('Push notification failed:', notifyErr);
+      }
+
       toast.success(`Oda: "${getStatusLabel(newStatus)}"`);
       setSelectedOrder(null);
       setDeliveryName('');

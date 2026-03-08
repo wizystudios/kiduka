@@ -4,15 +4,16 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   Search, Package, Truck, CheckCircle, Clock, XCircle,
-  Phone, Store, RefreshCw, CreditCard, ArrowUpRight, Sparkles, MapPin, Navigation
+  Phone, Store, RefreshCw, CreditCard, ArrowUpRight, Sparkles, MapPin, Navigation, Hash
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { KidukaLogo } from '@/components/KidukaLogo';
 import { normalizeTzPhoneDigits } from '@/utils/phoneUtils';
-import { estimateDeliveryDays, getDeliveryEstimateColor } from '@/utils/deliveryEstimation';
+import { estimateDeliveryDays, getDeliveryEstimateColor, getDistanceLabel } from '@/utils/deliveryEstimation';
 
 interface TrackedOrder {
   id: string;
@@ -35,7 +36,8 @@ interface TrackedOrder {
 export const OrderTrackingPage = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const [phone, setPhone] = useState('');
+  const [searchValue, setSearchValue] = useState('');
+  const [searchMode, setSearchMode] = useState<'phone' | 'tracking'>('phone');
   const [loading, setLoading] = useState(false);
   const [orders, setOrders] = useState<TrackedOrder[]>([]);
   const [notFound, setNotFound] = useState(false);
@@ -43,11 +45,38 @@ export const OrderTrackingPage = () => {
 
   useEffect(() => {
     const phoneParam = searchParams.get('phone');
-    if (phoneParam) {
-      setPhone(phoneParam);
+    const codeParam = searchParams.get('code');
+    if (codeParam) {
+      setSearchValue(codeParam);
+      setSearchMode('tracking');
+      setTimeout(() => handleSearchByTrackingCode(codeParam), 500);
+    } else if (phoneParam) {
+      setSearchValue(phoneParam);
+      setSearchMode('phone');
       setTimeout(() => handleSearchByPhone(phoneParam), 500);
     }
   }, [searchParams]);
+
+  const fetchSellerRegions = async (data: any[]) => {
+    const sellerIds = [...new Set(data.map(o => o.seller_id))];
+    const { data: sellerProfiles } = await supabase
+      .from('profiles')
+      .select('id, region, district')
+      .in('id', sellerIds);
+
+    const sellerMap: Record<string, { region?: string; district?: string }> = {};
+    sellerProfiles?.forEach(p => {
+      sellerMap[p.id] = { region: (p as any).region, district: (p as any).district };
+    });
+
+    return data.map(order => ({
+      ...order,
+      items: typeof order.items === 'string' ? JSON.parse(order.items) : order.items,
+      customer_received: order.customer_received || false,
+      seller_region: sellerMap[order.seller_id]?.region,
+      seller_district: sellerMap[order.seller_id]?.district,
+    }));
+  };
 
   const handleSearchByPhone = async (phoneValue: string) => {
     const normalizedPhone = normalizeTzPhoneDigits(phoneValue);
@@ -71,25 +100,41 @@ export const OrderTrackingPage = () => {
       if (error) throw error;
 
       if (data && data.length > 0) {
-        // Fetch seller regions
-        const sellerIds = [...new Set(data.map(o => o.seller_id))];
-        const { data: sellerProfiles } = await supabase
-          .from('profiles')
-          .select('id, region, district')
-          .in('id', sellerIds);
+        const parsedOrders = await fetchSellerRegions(data);
+        setOrders(parsedOrders);
+      } else {
+        setNotFound(true);
+      }
+    } catch (error) {
+      console.error('Error searching orders:', error);
+      toast.error('Imeshindwa kutafuta oda. Tafadhali jaribu tena.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-        const sellerMap: Record<string, { region?: string; district?: string }> = {};
-        sellerProfiles?.forEach(p => {
-          sellerMap[p.id] = { region: (p as any).region, district: (p as any).district };
-        });
+  const handleSearchByTrackingCode = async (code: string) => {
+    if (!code || code.trim().length < 3) {
+      toast.error('Tafadhali jaza tracking code sahihi');
+      return;
+    }
 
-        const parsedOrders = data.map(order => ({
-          ...order,
-          items: typeof order.items === 'string' ? JSON.parse(order.items) : order.items,
-          customer_received: order.customer_received || false,
-          seller_region: sellerMap[order.seller_id]?.region,
-          seller_district: sellerMap[order.seller_id]?.district,
-        }));
+    setLoading(true);
+    setNotFound(false);
+    setOrders([]);
+    setHasSearched(true);
+
+    try {
+      const { data, error } = await supabase
+        .from('sokoni_orders')
+        .select('id, tracking_code, order_status, payment_status, total_amount, items, created_at, updated_at, customer_received, seller_id, delivery_address, delivery_person_name, delivery_person_phone')
+        .ilike('tracking_code', `%${code.trim().toUpperCase()}%`)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        const parsedOrders = await fetchSellerRegions(data);
         setOrders(parsedOrders);
       } else {
         setNotFound(true);
@@ -103,11 +148,15 @@ export const OrderTrackingPage = () => {
   };
 
   const handleSearch = () => {
-    if (!phone) {
-      toast.error('Tafadhali jaza namba ya simu');
+    if (!searchValue) {
+      toast.error(searchMode === 'phone' ? 'Tafadhali jaza namba ya simu' : 'Tafadhali jaza tracking code');
       return;
     }
-    handleSearchByPhone(phone);
+    if (searchMode === 'phone') {
+      handleSearchByPhone(searchValue);
+    } else {
+      handleSearchByTrackingCode(searchValue);
+    }
   };
 
   const getStatusInfo = (status: string) => {
@@ -145,33 +194,18 @@ export const OrderTrackingPage = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-secondary/10">
       <div className="max-w-5xl mx-auto p-4 md:p-6">
-        {/* Split Layout Container */}
         <div className="flex flex-col lg:flex-row min-h-0 relative">
           {/* Center Divider */}
           <div className="hidden lg:flex absolute left-1/2 top-0 bottom-0 -translate-x-1/2 flex-col items-center z-10">
             <div className="w-px h-8 bg-gradient-to-b from-transparent to-primary/30" />
             <ArrowUpRight className="h-4 w-4 text-primary/50 -rotate-45" />
-            <div className="w-px flex-1 bg-gradient-to-b from-primary/30 via-primary to-primary/30 relative">
-              <div className="absolute top-1/3 left-0 -translate-x-full pr-1">
-                <ArrowUpRight className="h-3 w-3 text-primary/40 rotate-180" />
-              </div>
-              <div className="absolute top-1/3 right-0 translate-x-full pl-1">
-                <ArrowUpRight className="h-3 w-3 text-primary/40" />
-              </div>
-              <div className="absolute top-2/3 left-0 -translate-x-full pr-1">
-                <ArrowUpRight className="h-3 w-3 text-primary/40 rotate-180" />
-              </div>
-              <div className="absolute top-2/3 right-0 translate-x-full pl-1">
-                <ArrowUpRight className="h-3 w-3 text-primary/40" />
-              </div>
-            </div>
+            <div className="w-px flex-1 bg-gradient-to-b from-primary/30 via-primary to-primary/30" />
             <ArrowUpRight className="h-4 w-4 text-primary/50 rotate-135" />
             <div className="w-px h-8 bg-gradient-to-t from-transparent to-primary/30" />
           </div>
 
-          {/* LEFT SIDE - Timeline (Smaller) */}
+          {/* LEFT SIDE - Timeline */}
           <div className="flex-1 lg:pr-8 space-y-4 mb-6 lg:mb-0">
-            {/* Header */}
             <div className="text-center py-4">
               <KidukaLogo size="lg" animate />
               <div className="flex items-center justify-center gap-2 mt-3">
@@ -179,11 +213,10 @@ export const OrderTrackingPage = () => {
                 <h1 className="text-lg font-bold">Fuatilia Oda Zako</h1>
               </div>
               <p className="text-xs text-muted-foreground mt-1">
-                Ingiza namba ya simu kuona oda zako
+                Tafuta kwa namba ya simu au tracking code
               </p>
             </div>
 
-            {/* Compact Order Timeline */}
             {orders.length > 0 && (
               <Card className="shadow-md">
                 <CardHeader className="pb-2">
@@ -225,7 +258,6 @@ export const OrderTrackingPage = () => {
               </Card>
             )}
 
-            {/* Back to Sokoni */}
             <div className="text-center">
               <Link to="/sokoni" className="inline-flex items-center text-primary hover:underline text-sm font-medium">
                 <Store className="h-4 w-4 mr-1" />
@@ -240,18 +272,34 @@ export const OrderTrackingPage = () => {
             <Card className="shadow-md">
               <CardHeader className="pb-2">
                 <CardTitle className="flex items-center gap-2 text-sm">
-                  <Phone className="h-4 w-4" />
-                  Weka Namba ya Simu
+                  <Search className="h-4 w-4" />
+                  Tafuta Oda
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
+                {/* Search Mode Tabs */}
+                <Tabs value={searchMode} onValueChange={(v) => { setSearchMode(v as 'phone' | 'tracking'); setSearchValue(''); }}>
+                  <TabsList className="w-full grid grid-cols-2">
+                    <TabsTrigger value="phone" className="text-xs gap-1">
+                      <Phone className="h-3 w-3" /> Namba ya Simu
+                    </TabsTrigger>
+                    <TabsTrigger value="tracking" className="text-xs gap-1">
+                      <Hash className="h-3 w-3" /> Tracking Code
+                    </TabsTrigger>
+                  </TabsList>
+                </Tabs>
+
                 <div className="relative">
-                  <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  {searchMode === 'phone' ? (
+                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  ) : (
+                    <Hash className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  )}
                   <Input
-                    type="tel"
-                    placeholder="0712 345 678"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
+                    type={searchMode === 'phone' ? 'tel' : 'text'}
+                    placeholder={searchMode === 'phone' ? '0712 345 678' : 'SKN-XXXXXX'}
+                    value={searchValue}
+                    onChange={(e) => setSearchValue(e.target.value)}
                     onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
                     className="pl-10"
                   />
@@ -284,13 +332,13 @@ export const OrderTrackingPage = () => {
                   <Package className="h-10 w-10 text-muted-foreground mx-auto mb-2" />
                   <h3 className="font-bold text-sm">Hakuna Oda</h3>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Hakuna oda zilizopatikana.
+                    Hakuna oda zilizopatikana. Jaribu {searchMode === 'phone' ? 'tracking code' : 'namba ya simu'} badala yake.
                   </p>
                 </CardContent>
               </Card>
             )}
 
-            {/* Orders List (Compact) */}
+            {/* Orders List */}
             {orders.length > 0 && (
               <div className="space-y-3">
                 <h2 className="font-bold text-sm flex items-center gap-2">
@@ -302,6 +350,7 @@ export const OrderTrackingPage = () => {
                   const statusInfo = getStatusInfo(order.order_status);
                   const StatusIcon = statusInfo.icon;
                   const paymentInfo = getPaymentStatusInfo(order.payment_status);
+                  const deliveryEst = estimateDeliveryDays(order.seller_region || null, null);
                   
                   return (
                     <Card key={order.id} className="shadow-sm">
@@ -337,7 +386,7 @@ export const OrderTrackingPage = () => {
                           )}
                         </div>
 
-                        {/* Delivery Estimation */}
+                        {/* Delivery Estimation with distance */}
                         {order.seller_region && (
                           <div className="flex items-center justify-between p-2 bg-muted/50 rounded-xl text-xs">
                             <div className="flex items-center gap-1">
@@ -346,9 +395,16 @@ export const OrderTrackingPage = () => {
                                 {order.seller_district ? `${order.seller_district}, ` : ''}{order.seller_region}
                               </span>
                             </div>
-                            <span className={`font-medium ${getDeliveryEstimateColor(estimateDeliveryDays(order.seller_region || null, null).min)}`}>
-                              📦 {estimateDeliveryDays(order.seller_region || null, null).label}
-                            </span>
+                            <div className="flex items-center gap-2">
+                              {deliveryEst.distanceKm !== undefined && deliveryEst.distanceKm > 0 && (
+                                <span className="text-[10px] text-muted-foreground">
+                                  {getDistanceLabel(deliveryEst.distanceKm)}
+                                </span>
+                              )}
+                              <span className={`font-medium ${getDeliveryEstimateColor(deliveryEst.min)}`}>
+                                📦 {deliveryEst.label}
+                              </span>
+                            </div>
                           </div>
                         )}
 
@@ -398,7 +454,7 @@ export const OrderTrackingPage = () => {
                           <Button 
                             size="sm"
                             className="w-full"
-                            onClick={() => navigate(`/customer-payment?phone=${phone}&code=${order.tracking_code}`)}
+                            onClick={() => navigate(`/customer-payment?phone=${searchValue}&code=${order.tracking_code}`)}
                           >
                             <CreditCard className="h-3 w-3 mr-1" />
                             Thibitisha na Lipa
