@@ -482,6 +482,37 @@ export const CustomersPage = () => {
           onOpenChange={setLedgerOpen}
         />
       )}
+
+      {/* WhatsApp Send Dialog */}
+      <Dialog open={whatsappOpen} onOpenChange={setWhatsappOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <MessageSquare className="h-5 w-5 text-green-600" />
+              Tuma WhatsApp - {whatsappTarget?.name}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Simu</Label>
+              <Input value={whatsappTarget?.phone || ''} disabled />
+            </div>
+            <div>
+              <Label>Ujumbe</Label>
+              <Textarea
+                value={whatsappMsg}
+                onChange={(e) => setWhatsappMsg(e.target.value)}
+                rows={5}
+                placeholder="Andika ujumbe..."
+              />
+            </div>
+            <Button onClick={sendWhatsApp} disabled={!whatsappMsg.trim() || sendingWhatsapp} className="w-full bg-green-600 hover:bg-green-700">
+              <Send className="h-4 w-4 mr-2" />
+              {sendingWhatsapp ? 'Inatuma...' : 'Tuma WhatsApp'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
