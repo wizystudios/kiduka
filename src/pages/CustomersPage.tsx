@@ -5,7 +5,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Plus, Search, Edit, Trash2, Users, Mail, Phone, FileText, FileSpreadsheet, AlertTriangle, DollarSign } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, Users, Mail, Phone, FileText, FileSpreadsheet, AlertTriangle, DollarSign, MessageSquare } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { CustomerLedger } from '@/components/CustomerLedger';
@@ -22,6 +23,7 @@ interface Customer {
 }
 
 export const CustomersPage = () => {
+  const navigate = useNavigate();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
@@ -351,6 +353,15 @@ export const CustomersPage = () => {
                     title="Ona Leja"
                   >
                     <FileText className="h-4 w-4" />
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="icon"
+                    className="h-8 w-8 text-green-600 hover:text-green-700"
+                    onClick={() => navigate(`/whatsapp-history?customer_id=${customer.id}&customer_name=${encodeURIComponent(customer.name)}`)}
+                    title="Historia ya WhatsApp"
+                  >
+                    <MessageSquare className="h-4 w-4" />
                   </Button>
                   <Button 
                     variant="ghost" 

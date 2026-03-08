@@ -10,7 +10,7 @@ import {
   Bell, Check, Trash2, ShoppingCart, Package, AlertTriangle, 
   RefreshCw, Wifi, WifiOff, CheckCheck, Store, Search,
   Activity, LogIn, UserPlus, UserMinus, CreditCard, Receipt,
-  Settings, Eye, Clock, Filter
+  Settings, Eye, Clock, Filter, MessageSquare
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useDataAccess } from '@/hooks/useDataAccess';
@@ -328,7 +328,7 @@ export const NotificationsPage = () => {
 
       {/* Main tabs: Arifa / Shughuli */}
       <Tabs value={mainTab} onValueChange={setMainTab}>
-        <TabsList className="grid grid-cols-2 w-full">
+        <TabsList className="grid grid-cols-3 w-full">
           <TabsTrigger value="arifa" className="text-xs flex items-center gap-1">
             <Bell className="h-3 w-3" />
             Arifa
@@ -340,7 +340,11 @@ export const NotificationsPage = () => {
           </TabsTrigger>
           <TabsTrigger value="shughuli" className="text-xs flex items-center gap-1">
             <Activity className="h-3 w-3" />
-            Shughuli ({activities.length})
+            Shughuli
+          </TabsTrigger>
+          <TabsTrigger value="whatsapp" className="text-xs flex items-center gap-1" onClick={() => navigate('/whatsapp-history')}>
+            <MessageSquare className="h-3 w-3" />
+            WhatsApp
           </TabsTrigger>
         </TabsList>
 
