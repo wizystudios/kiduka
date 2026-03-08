@@ -213,13 +213,13 @@ export const ExpensesWidget = () => {
         <SheetTrigger asChild>
           <Button
             variant="outline"
-            className="flex-1 h-10 justify-between bg-red-50 border-red-200 hover:bg-red-100 dark:bg-red-950 dark:border-red-800"
+            className="flex-1 h-10 justify-between bg-muted/50 border-border hover:bg-muted"
           >
             <div className="flex items-center gap-2">
-              <TrendingDown className="h-4 w-4 text-red-600" />
+              <TrendingDown className="h-4 w-4 text-muted-foreground" />
               <span className="text-xs font-medium">Matumizi</span>
             </div>
-            <span className="text-xs font-bold text-red-600">TZS {totalExpenses.toLocaleString()}</span>
+            <span className="text-xs font-bold text-muted-foreground">TZS {totalExpenses.toLocaleString()}</span>
           </Button>
         </SheetTrigger>
         <SheetContent side="bottom" className="rounded-t-2xl max-h-[70vh]">
