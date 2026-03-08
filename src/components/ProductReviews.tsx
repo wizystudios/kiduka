@@ -39,10 +39,13 @@ interface ProductReviewsProps {
 }
 
 export const ProductReviews = ({ productId, productName }: ProductReviewsProps) => {
+  const { user } = useAuth();
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddReview, setShowAddReview] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [replyingTo, setReplyingTo] = useState<string | null>(null);
+  const [replyText, setReplyText] = useState('');
   
   // Form state
   const [rating, setRating] = useState(5);
