@@ -116,8 +116,8 @@ export const UsersPage = () => {
       return;
     }
 
-    if (newUser.password.length < 6) {
-      toast.error('Nywila lazima iwe na angalau herufi 6');
+    if (newUser.password.length < 8) {
+      toast.error('Nywila lazima iwe na angalau herufi 8');
       return;
     }
 
