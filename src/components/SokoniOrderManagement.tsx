@@ -58,7 +58,21 @@ export const SokoniOrderManagement = () => {
   const [batchMsg, setBatchMsg] = useState('');
   const [sendingBatch, setSendingBatch] = useState(false);
   const [batchProgress, setBatchProgress] = useState({ sent: 0, total: 0 });
+  const [sellerProfileRegion, setSellerProfileRegion] = useState<string | null>(null);
 
+  // Fetch seller profile region for delivery estimates
+  useEffect(() => {
+    const fetchRegion = async () => {
+      if (!dataOwnerId) return;
+      const { data } = await supabase
+        .from('profiles')
+        .select('region')
+        .eq('id', dataOwnerId)
+        .single();
+      if (data) setSellerProfileRegion((data as any).region || null);
+    };
+    fetchRegion();
+  }, [dataOwnerId]);
   useEffect(() => {
     if (dataOwnerId) {
       fetchOrders();
