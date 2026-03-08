@@ -733,6 +733,52 @@ export const SuperAdminDashboard = () => {
     });
   };
   
+  const handleEnterBusiness = async (ownerId: string, businessName: string) => {
+    setPasswordDialog({
+      action: `Kuingia biashara: ${businessName}`,
+      description: 'Utaingia kwenye akaunti ya biashara hii kama admin.',
+      callback: async () => {
+        setPasswordDialog(null);
+        try {
+          // End any existing active sessions first
+          await supabase
+            .from('admin_business_sessions')
+            .update({ active: false, ended_at: new Date().toISOString() })
+            .eq('admin_id', user!.id)
+            .eq('active', true);
+
+          // Create new session
+          const { error } = await supabase
+            .from('admin_business_sessions')
+            .insert({ owner_id: ownerId, admin_id: user!.id, active: true });
+
+          if (error) throw error;
+
+          toast.success(`Umeingia biashara: ${businessName}`);
+          setSelectedBusiness(ownerId);
+          setActiveTab('overview');
+        } catch (err: any) {
+          toast.error(`Imeshindwa: ${err.message}`);
+        }
+      }
+    });
+  };
+
+  const handleExitBusiness = async () => {
+    try {
+      await supabase
+        .from('admin_business_sessions')
+        .update({ active: false, ended_at: new Date().toISOString() })
+        .eq('admin_id', user!.id)
+        .eq('active', true);
+      
+      setSelectedBusiness(null);
+      toast.success('Umetoka kwenye biashara');
+    } catch (err: any) {
+      toast.error(`Imeshindwa: ${err.message}`);
+    }
+  };
+
   const statCards = [
     { title: 'Watumiaji', value: stats.totalUsers, icon: <Users className="h-5 w-5" />, color: 'text-blue-600' },
     { title: 'Bidhaa', value: stats.totalProducts, icon: <Package className="h-5 w-5" />, color: 'text-green-600' },
