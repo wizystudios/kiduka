@@ -250,7 +250,16 @@ export function AppSidebar() {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               )}
-            </SidebarMenu>
+
+              {/* Help & Chat link at bottom */}
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={isActive('/help')}>
+                  <NavLink to="/help" className="flex items-center gap-3 px-3 py-2 rounded-lg">
+                    <Headphones className="h-4 w-4" />
+                    {!collapsed && <span>Msaada & Mazungumzo</span>}
+                  </NavLink>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>

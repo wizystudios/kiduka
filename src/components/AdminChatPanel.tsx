@@ -73,15 +73,37 @@ export const AdminChatPanel = () => {
 
     if (!data) return;
 
+    // Collect unique user IDs
+    const userIds = new Set<string>();
+    data.forEach(msg => {
+      const userId = msg.sender_type === 'user' ? msg.sender_id : msg.recipient_id;
+      if (userId && userId !== user?.id) userIds.add(userId);
+    });
+
+    // Fetch profiles for all users
+    let profileMap: Record<string, { full_name: string | null; business_name: string | null }> = {};
+    if (userIds.size > 0) {
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, full_name, business_name')
+        .in('id', Array.from(userIds));
+      if (profiles) {
+        profiles.forEach(p => { profileMap[p.id] = { full_name: p.full_name, business_name: p.business_name }; });
+      }
+    }
+
     const userMap = new Map<string, ChatUser>();
     data.forEach(msg => {
       const userId = msg.sender_type === 'user' ? msg.sender_id : msg.recipient_id;
       if (!userId || userId === user?.id) return;
       
       if (!userMap.has(userId)) {
+        const profile = profileMap[userId];
+        const displayName = profile?.full_name || profile?.business_name || msg.sender_name || 'Mtumiaji';
+        const businessLabel = profile?.business_name ? ` (${profile.business_name})` : '';
         userMap.set(userId, {
           id: userId,
-          name: msg.sender_type === 'user' ? (msg.sender_name || 'Mtumiaji') : 'Mtumiaji',
+          name: displayName + businessLabel,
           lastMessage: msg.message,
           lastTime: msg.created_at,
           unread: 0
