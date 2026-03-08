@@ -391,6 +391,9 @@ export default function App() {
               {/* Order Tracking - Public access */}
               <Route path="/track-order" element={<OrderTrackingPage />} />
               
+              {/* Online Storefront - Public access */}
+              <Route path="/duka/:slug" element={<StorefrontPage />} />
+              
               {/* Customer Payment - Public access */}
               <Route path="/customer-payment" element={<CustomerPaymentPage />} />
               {/* Sokoni Orders (seller dashboard) */}
