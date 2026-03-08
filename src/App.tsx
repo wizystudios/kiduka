@@ -89,6 +89,7 @@ export default function App() {
               <Route path="/" element={<Index />} />
               <Route path="/auth" element={<AuthPage />} />
               <Route path="/reset-password" element={<ResetPasswordPage />} />
+              <Route path="/forgot-password" element={<ForgotPasswordPage />} />
               <Route path="/verify-email" element={<EmailVerificationStatus />} />
               
               {/* Protected Routes */}
