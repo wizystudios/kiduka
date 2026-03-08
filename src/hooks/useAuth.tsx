@@ -305,6 +305,11 @@ export const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
       }
     }
     
+    // Log registration activity
+    if (data.user) {
+      logActivity('register', 'Akaunti mpya imeundwa', { email, full_name: fullName });
+    }
+
     if (data.user && !data.user.email_confirmed_at) {
       throw new Error('CONFIRMATION_REQUIRED');
     }
