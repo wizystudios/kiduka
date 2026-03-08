@@ -357,6 +357,15 @@ export const CustomersPage = () => {
                   <Button 
                     variant="ghost" 
                     size="icon"
+                    className="h-8 w-8 text-green-600 hover:text-green-700"
+                    onClick={() => navigate(`/whatsapp-history?customer_id=${customer.id}&customer_name=${encodeURIComponent(customer.name)}`)}
+                    title="Historia ya WhatsApp"
+                  >
+                    <MessageSquare className="h-4 w-4" />
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="icon"
                     className="h-8 w-8"
                     onClick={() => handleEditCustomer(customer)}
                   >
