@@ -507,7 +507,7 @@ export const LoansWidget = () => {
   const getDueStatus = (dueDate: string) => {
     const days = Math.ceil((new Date(dueDate).getTime() - Date.now()) / 86400000);
     if (days < 0) return { label: 'Imepita', color: 'bg-destructive text-destructive-foreground' };
-    if (days <= 3) return { label: `Siku ${days}`, color: 'bg-yellow-100 text-yellow-800' };
+    if (days <= 3) return { label: `Siku ${days}`, color: 'bg-primary/10 text-primary' };
     return { label: `Siku ${days}`, color: 'bg-muted text-muted-foreground' };
   };
 
