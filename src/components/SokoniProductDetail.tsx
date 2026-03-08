@@ -453,7 +453,7 @@ export const SokoniProductDetail = ({
                     <div className="flex items-center gap-3">
                       <Button
                         variant="outline" size="icon"
-                        className="h-10 w-10 rounded-[20%]"
+                        className="h-10 w-10"
                         onClick={() => setQuantity(Math.max(1, quantity - 1))}
                         disabled={quantity <= 1}
                       >
