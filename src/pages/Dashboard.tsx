@@ -105,6 +105,6 @@ export const Dashboard = () => {
         <LoansWidget />
         <DebtorsWidget />
       </div>
-
+    </div>
   );
 };
