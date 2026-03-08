@@ -104,7 +104,7 @@ export const StockAlertWidget = () => {
       <SheetContent side="bottom" className="rounded-t-2xl max-h-[70vh]">
         <SheetHeader>
           <SheetTitle className="flex items-center gap-2">
-            <AlertTriangle className="h-5 w-5 text-yellow-600" />
+            <AlertTriangle className="h-5 w-5 text-primary" />
             Stock Ndogo ({lowStockProducts.length})
           </SheetTitle>
         </SheetHeader>
