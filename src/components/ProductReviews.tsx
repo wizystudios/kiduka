@@ -11,9 +11,10 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { Star, MessageSquare, User, CheckCircle, Send } from 'lucide-react';
+import { Star, MessageSquare, User, CheckCircle, Send, Reply } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useAuth } from '@/hooks/useAuth';
 
 interface Review {
   id: string;
