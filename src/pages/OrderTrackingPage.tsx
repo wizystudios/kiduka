@@ -6,12 +6,13 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { 
   Search, Package, Truck, CheckCircle, Clock, XCircle,
-  Phone, Store, RefreshCw, CreditCard, ArrowUpRight, Sparkles
+  Phone, Store, RefreshCw, CreditCard, ArrowUpRight, Sparkles, MapPin, Navigation
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { KidukaLogo } from '@/components/KidukaLogo';
 import { normalizeTzPhoneDigits } from '@/utils/phoneUtils';
+import { estimateDeliveryDays, getDeliveryEstimateColor } from '@/utils/deliveryEstimation';
 
 interface TrackedOrder {
   id: string;
