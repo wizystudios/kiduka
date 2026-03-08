@@ -355,8 +355,89 @@ export const SokoniMarketplace = () => {
     setCart(prev => prev.filter(item => item.id !== productId));
   };
 
-  const cartTotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  const cartSubtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  const cartTotal = Math.max(0, cartSubtotal - couponDiscount);
   const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+
+  const validateCoupon = async () => {
+    if (!couponCode.trim()) return;
+    setValidatingCoupon(true);
+    try {
+      const sellerIds = [...new Set(cart.map(i => i.owner_id))];
+      const { data, error } = await supabase
+        .from('coupon_codes')
+        .select('*')
+        .eq('is_active', true)
+        .ilike('code', couponCode.trim().toUpperCase())
+        .in('owner_id', sellerIds)
+        .maybeSingle();
+
+      if (error || !data) {
+        toast.error('Coupon code si sahihi au haifanyi kazi');
+        setCouponDiscount(0);
+        setCouponApplied(false);
+        setValidatingCoupon(false);
+        return;
+      }
+
+      const coupon = data as any;
+      if (coupon.expires_at && new Date(coupon.expires_at) < new Date()) {
+        toast.error('Coupon imeisha muda');
+        setValidatingCoupon(false);
+        return;
+      }
+      if (coupon.max_uses && coupon.used_count >= coupon.max_uses) {
+        toast.error('Coupon imekwisha matumizi');
+        setValidatingCoupon(false);
+        return;
+      }
+      if (coupon.min_order_amount && cartSubtotal < coupon.min_order_amount) {
+        toast.error(`Oda ya chini ni TSh ${coupon.min_order_amount.toLocaleString()}`);
+        setValidatingCoupon(false);
+        return;
+      }
+
+      let discount = 0;
+      if (coupon.discount_type === 'percentage') {
+        discount = Math.round(cartSubtotal * (coupon.discount_value / 100));
+      } else {
+        discount = coupon.discount_value;
+      }
+      
+      setCouponDiscount(discount);
+      setCouponApplied(true);
+      toast.success(`Punguzo la TSh ${discount.toLocaleString()} limeongezwa!`);
+
+      // Increment used_count
+      await supabase.from('coupon_codes').update({ used_count: coupon.used_count + 1 }).eq('id', coupon.id);
+    } catch (e) {
+      toast.error('Imeshindwa kuthibitisha coupon');
+    }
+    setValidatingCoupon(false);
+  };
+
+  // Track abandoned cart when user has items but leaves checkout
+  useEffect(() => {
+    if (!checkoutOpen || cart.length === 0 || !customerPhone || customerPhone.length < 9) return;
+    
+    const timeout = setTimeout(async () => {
+      const normalizedPhone = normalizeTzPhoneDigits(customerPhone);
+      if (!normalizedPhone) return;
+      
+      const sellerIds = [...new Set(cart.map(i => i.owner_id))];
+      for (const sellerId of sellerIds) {
+        const sellerItems = cart.filter(i => i.owner_id === sellerId);
+        await supabase.from('abandoned_carts').insert({
+          customer_phone: normalizedPhone,
+          seller_id: sellerId,
+          items: sellerItems.map(i => ({ product_name: i.name, quantity: i.quantity, unit_price: i.price })),
+          total_amount: sellerItems.reduce((s, i) => s + i.price * i.quantity, 0),
+        });
+      }
+    }, 60000); // Track after 1 minute of being on checkout
+
+    return () => clearTimeout(timeout);
+  }, [checkoutOpen, customerPhone]);
 
   // Location proximity score: 0 = same district, 1 = same region, 2 = different region
   const getLocationScore = (product: MarketProduct) => {
