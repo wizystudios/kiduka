@@ -231,7 +231,7 @@ export const SokoniMarketplace = () => {
       
       if (sellerIds.length > 0) {
         const [profilesResult, discountsResult] = await Promise.all([
-          supabase.from('profiles').select('id, business_name, phone').in('id', sellerIds),
+          supabase.from('profiles').select('id, business_name, phone, region, district').in('id', sellerIds),
           supabase.from('discounts').select('id, discount_type, value, applicable_products').eq('active', true)
             .or(`end_date.is.null,end_date.gte.${new Date().toISOString().split('T')[0]}`)
         ]);
