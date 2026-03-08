@@ -344,7 +344,7 @@ export const SokoniProductDetail = ({
                     <>
                       <Button
                         variant="secondary" size="icon"
-                        className="absolute left-2 top-1/2 -translate-y-1/2 rounded-[20%] bg-background/80 backdrop-blur-sm shadow-lg h-9 w-9"
+                        className="absolute left-2 top-1/2 -translate-y-1/2 bg-background/80 backdrop-blur-sm shadow-lg h-9 w-9"
                         onClick={(e) => { e.stopPropagation(); prevImage(); }}
                       >
                         <ChevronLeft className="h-4 w-4" />
