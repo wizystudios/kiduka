@@ -1034,6 +1034,33 @@ export const SokoniMarketplace = () => {
                       />
                     </div>
 
+                    {/* Delivery Estimation */}
+                    {cart.length > 0 && userRegion && (
+                      <div className="bg-muted/50 rounded-2xl p-3 space-y-2">
+                        <h4 className="text-xs font-semibold flex items-center gap-1">
+                          <Truck className="h-3 w-3" /> Makadirio ya Usafirishaji
+                        </h4>
+                        {Object.entries(
+                          cart.reduce((acc, item) => {
+                            const region = item.owner_region || 'Unknown';
+                            if (!acc[region]) acc[region] = [];
+                            acc[region].push(item.name);
+                            return acc;
+                          }, {} as Record<string, string[]>)
+                        ).map(([region, items]) => {
+                          const est = estimateDeliveryDays(region === 'Unknown' ? null : region, userRegion);
+                          return (
+                            <div key={region} className="flex justify-between items-center text-xs">
+                              <span className="text-muted-foreground truncate">{region}</span>
+                              <span className={`font-medium ${getDeliveryEstimateColor(est.min)}`}>
+                                📦 {est.label}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+
                     <div>
                       <label className="text-xs font-medium text-muted-foreground mb-2 block">Malipo</label>
                       <div className="grid grid-cols-2 gap-2">
