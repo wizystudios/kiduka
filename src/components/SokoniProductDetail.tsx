@@ -192,7 +192,7 @@ export const SokoniProductDetail = ({
           <div className="flex-1" />
           <Button 
             variant="ghost" size="icon"
-            className={`rounded-[20%] ${isLiked ? 'text-red-500' : ''}`}
+            className={`${isLiked ? 'text-red-500' : ''}`}
             onClick={handleToggleWishlist}
           >
             <Heart className={`h-5 w-5 ${isLiked ? 'fill-current' : ''}`} />
