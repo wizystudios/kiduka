@@ -25,7 +25,7 @@ interface WhatsAppMessageRecord {
 }
 
 export const WhatsAppHistoryPage = () => {
-  const { user, userRole } = useAuth();
+  const { user, userProfile } = useAuth();
   const { dataOwnerId } = useDataAccess();
   const [messages, setMessages] = useState<WhatsAppMessageRecord[]>([]);
   const [loading, setLoading] = useState(true);
@@ -33,7 +33,7 @@ export const WhatsAppHistoryPage = () => {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [ownerProfiles, setOwnerProfiles] = useState<Record<string, string>>({});
-  const isSuperAdmin = userRole === 'super_admin';
+  const isSuperAdmin = userProfile?.role === 'super_admin';
 
   useEffect(() => {
     fetchMessages();
