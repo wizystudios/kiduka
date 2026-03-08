@@ -32,12 +32,20 @@ export const PublishToSokoni = ({ product, onPublished }: PublishToSokoniProps) 
   const { dataOwnerId, isReady } = useDataAccess();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  
+  // Auto-fill location from profile
+  const profileLocation = [
+    userProfile?.ward || userProfile?.street,
+    userProfile?.district,
+    userProfile?.region
+  ].filter(Boolean).join(', ');
+
   const [formData, setFormData] = useState({
     quantity: product.stock_quantity.toString(),
     price: product.price.toString(),
     description: product.description || '',
-    location: '',
-    phone: ''
+    location: profileLocation,
+    phone: userProfile?.phone || ''
   });
 
   const handlePublish = async () => {
