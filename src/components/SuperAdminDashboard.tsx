@@ -1394,6 +1394,46 @@ export const SuperAdminDashboard = () => {
                             <Trash2 className="h-3 w-3" />
                           </Button>
                         </div>
+                        <div className="flex gap-1 mt-1">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="flex-1 text-xs h-7"
+                            onClick={() => handleChangeUserPassword(u.id, u.full_name || u.email)}
+                          >
+                            <Key className="h-3 w-3 mr-1" />
+                            Nenosiri
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="flex-1 text-xs h-7 text-orange-600"
+                            onClick={() => handleBanUser(u.id, u.full_name || u.email)}
+                          >
+                            <Ban className="h-3 w-3 mr-1" />
+                            Zuia
+                          </Button>
+                        </div>
+                        <div className="flex gap-1 mt-1">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="flex-1 text-xs h-7 text-green-600"
+                            onClick={() => handleUnbanUser(u.id, u.full_name || u.email)}
+                          >
+                            <ShieldCheck className="h-3 w-3 mr-1" />
+                            Rudisha
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            className="flex-1 text-xs h-7"
+                            onClick={() => handleDeleteUserFull(u.id, u.full_name || u.email)}
+                          >
+                            <Trash2 className="h-3 w-3 mr-1" />
+                            Futa Kabisa
+                          </Button>
+                        </div>
                         {u.role === 'owner' && (
                           <Button
                             variant="default"
