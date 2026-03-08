@@ -326,13 +326,13 @@ export const TransactionsWidget = () => {
       <SheetTrigger asChild>
         <Button
           variant="outline"
-          className="flex-1 h-10 justify-between bg-blue-50 border-blue-200 hover:bg-blue-100 dark:bg-blue-950 dark:border-blue-800"
+          className="flex-1 h-10 justify-between bg-primary/5 border-primary/20 hover:bg-primary/10"
         >
           <div className="flex items-center gap-2">
-            <ShoppingCart className="h-4 w-4 text-blue-600" />
+            <ShoppingCart className="h-4 w-4 text-primary" />
             <span className="text-xs font-medium">Miamala</span>
           </div>
-          <Badge variant="outline" className="text-xs bg-blue-100 text-blue-800 border-blue-300">
+          <Badge variant="outline" className="text-xs bg-primary/10 text-primary border-primary/20">
             {transactions.length}
           </Badge>
         </Button>
