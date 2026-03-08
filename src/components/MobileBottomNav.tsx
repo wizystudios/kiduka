@@ -104,6 +104,12 @@ const navigationGroups: NavGroup[] = [
     ]
   },
   {
+    id: 'watumiaji', label: 'Watumiaji', icon: UserCheck, permission: null,
+    children: [
+      { id: 'users', label: 'Wasaidizi', icon: UserCheck, href: '/users', permission: null },
+    ]
+  },
+  {
     id: 'mipangilio', label: 'Mipangilio', icon: Settings, permission: null,
     children: [
       { id: 'settings', label: 'Mipangilio', icon: Settings, href: '/settings', permission: null },
