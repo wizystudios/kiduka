@@ -27,6 +27,7 @@ import { exportToExcel, exportToPDF, createPrintableTable } from '@/utils/export
 import { AdminPasswordDialog } from './AdminPasswordDialog';
 import { AdminChatPanel } from './AdminChatPanel';
 import { AdminCompliancePanel } from './AdminCompliancePanel';
+import { AdminUserActivities } from './AdminUserActivities';
 
 interface User {
   id: string;
