@@ -185,7 +185,7 @@ export const SokoniProductDetail = ({
       <div className="fixed inset-0 z-50 bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-background dark:via-background dark:to-background overflow-y-auto animate-in fade-in slide-in-from-bottom-4 duration-300">
         {/* Header */}
         <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-md border-b border-border px-4 py-3 flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={onClose} className="rounded-[20%]">
+          <Button variant="ghost" size="icon" onClick={onClose}>
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <SokoniLogo size="sm" />
