@@ -53,6 +53,7 @@ import { VoicePOSPage } from '@/pages/VoicePOSPage';
 // Super Admin Pages
 import { SuperAdminPage } from '@/pages/SuperAdminPage';
 import { WhatsAppPage } from '@/pages/WhatsAppPage';
+import { WhatsAppHistoryPage } from '@/pages/WhatsAppHistoryPage';
 
 // New Feature Pages
 import SalesForecastingPage from '@/pages/SalesForecastingPage';
