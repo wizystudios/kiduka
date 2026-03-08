@@ -188,13 +188,6 @@ export const MobileBottomNav = () => {
         </div>
       </nav>
 
-      {/* Notification Sheet */}
-      <Sheet open={notificationOpen} onOpenChange={setNotificationOpen}>
-        <SheetContent side="right" className="w-full sm:w-96">
-          <SheetHeader><SheetTitle>Arifa</SheetTitle></SheetHeader>
-          <div className="mt-4"><NotificationCenter /></div>
-        </SheetContent>
-      </Sheet>
 
       {/* Full Menu Sheet - Airtel-style Grid */}
       <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
