@@ -22,7 +22,9 @@ import {
   Trash2, 
   HelpCircle,
   UserMinus,
-  Camera
+  Camera,
+  MapPin,
+  Loader2
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -30,6 +32,38 @@ import { useToast } from '@/hooks/use-toast';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { HelpCenter } from '@/components/HelpCenter';
+
+// Tanzania regions and districts (imported from LocationSetupGate concept)
+const TANZANIA_REGIONS: Record<string, string[]> = {
+  'Dar es Salaam': ['Ilala', 'Kinondoni', 'Temeke', 'Ubungo', 'Kigamboni'],
+  'Arusha': ['Arusha City', 'Arusha DC', 'Karatu', 'Longido', 'Meru', 'Monduli', 'Ngorongoro'],
+  'Dodoma': ['Dodoma City', 'Bahi', 'Chamwino', 'Chemba', 'Kondoa', 'Kongwa', 'Mpwapwa'],
+  'Geita': ['Geita', 'Bukombe', 'Chato', 'Mbogwe', "Nyang'hwale"],
+  'Iringa': ['Iringa MC', 'Iringa DC', 'Kilolo', 'Mafinga', 'Mufindi'],
+  'Kagera': ['Bukoba MC', 'Bukoba DC', 'Biharamulo', 'Karagwe', 'Kyerwa', 'Missenyi', 'Muleba', 'Ngara'],
+  'Katavi': ['Mpanda MC', 'Mpanda DC', 'Mlele'],
+  'Kigoma': ['Kigoma MC', 'Kigoma DC', 'Buhigwe', 'Kakonko', 'Kasulu MC', 'Kasulu DC', 'Kibondo', 'Uvinza'],
+  'Kilimanjaro': ['Moshi MC', 'Moshi DC', 'Hai', 'Rombo', 'Same', 'Siha', 'Mwanga'],
+  'Lindi': ['Lindi MC', 'Lindi DC', 'Kilwa', 'Liwale', 'Nachingwea', 'Ruangwa'],
+  'Manyara': ['Babati MC', 'Babati DC', 'Hanang', 'Kiteto', 'Mbulu MC', 'Mbulu DC', 'Simanjiro'],
+  'Mara': ['Musoma MC', 'Musoma DC', 'Bunda', 'Butiama', 'Rorya', 'Serengeti', 'Tarime MC', 'Tarime DC'],
+  'Mbeya': ['Mbeya City', 'Mbeya DC', 'Busokelo', 'Chunya', 'Mbarali', 'Rungwe'],
+  'Morogoro': ['Morogoro MC', 'Morogoro DC', 'Gairo', 'Ifakara', 'Kilombero', 'Kilosa', 'Mvomero', 'Ulanga', 'Malinyi'],
+  'Mtwara': ['Mtwara MC', 'Mtwara DC', 'Masasi MC', 'Masasi DC', 'Nanyumbu', 'Newala', 'Tandahimba'],
+  'Mwanza': ['Mwanza City', 'Ilemela', 'Nyamagana', 'Kwimba', 'Magu', 'Misungwi', 'Sengerema', 'Ukerewe'],
+  'Njombe': ['Njombe MC', 'Njombe DC', 'Ludewa', 'Makambako', 'Makete', "Wanging'ombe"],
+  'Pwani': ['Kibaha MC', 'Kibaha DC', 'Bagamoyo', 'Chalinze', 'Kisarawe', 'Mafia', 'Mkuranga', 'Rufiji'],
+  'Rukwa': ['Sumbawanga MC', 'Sumbawanga DC', 'Kalambo', 'Nkasi'],
+  'Ruvuma': ['Songea MC', 'Songea DC', 'Mbinga MC', 'Mbinga DC', 'Namtumbo', 'Nyasa', 'Tunduru'],
+  'Shinyanga': ['Shinyanga MC', 'Shinyanga DC', 'Kahama MC', 'Kahama DC', 'Kishapu', 'Ushetu'],
+  'Simiyu': ['Bariadi', 'Busega', 'Itilima', 'Maswa', 'Meatu'],
+  'Singida': ['Singida MC', 'Singida DC', 'Ikungi', 'Iramba', 'Manyoni', 'Mkalama'],
+  'Songwe': ['Tunduma', 'Ileje', 'Mbozi', 'Momba', 'Songwe'],
+  'Tabora': ['Tabora MC', 'Igunga', 'Kaliua', 'Nzega', 'Sikonge', 'Urambo', 'Uyui'],
+  'Tanga': ['Tanga City', 'Handeni MC', 'Handeni DC', 'Kilindi', 'Korogwe MC', 'Korogwe DC', 'Lushoto', 'Mkinga', 'Muheza', 'Pangani', 'Bumbuli'],
+};
+
+const REGION_LIST = Object.keys(TANZANIA_REGIONS).sort();
 
 export const EnhancedSettingsPage = () => {
   const [loading, setLoading] = useState(false);
@@ -41,6 +75,14 @@ export const EnhancedSettingsPage = () => {
     business_name: '',
     avatar_url: ''
   });
+  const [locationSettings, setLocationSettings] = useState({
+    country: 'Tanzania',
+    region: '',
+    district: '',
+    ward: '',
+    street: ''
+  });
+  const [savingLocation, setSavingLocation] = useState(false);
   const [businessSettings, setBusinessSettings] = useState({
     business_name: '',
     tax_rate: '0',
@@ -48,7 +90,7 @@ export const EnhancedSettingsPage = () => {
     receipt_footer: '',
     enable_notifications: true
   });
-  const { userProfile, user, signOut } = useAuth();
+  const { userProfile, user, signOut, refreshProfile } = useAuth();
   const { toast } = useToast();
   const { language, setLanguage, t } = useLanguage();
   const { theme, setTheme } = useTheme();
@@ -60,6 +102,13 @@ export const EnhancedSettingsPage = () => {
         email: userProfile.email || '',
         business_name: userProfile.business_name || '',
         avatar_url: userProfile.avatar_url || ''
+      });
+      setLocationSettings({
+        country: userProfile.country || 'Tanzania',
+        region: userProfile.region || '',
+        district: userProfile.district || '',
+        ward: userProfile.ward || '',
+        street: userProfile.street || ''
       });
       fetchBusinessSettings();
     }
@@ -82,6 +131,38 @@ export const EnhancedSettingsPage = () => {
       .map(word => word.charAt(0).toUpperCase())
       .join('')
       .slice(0, 2);
+  };
+
+  const locationDistricts = locationSettings.region ? TANZANIA_REGIONS[locationSettings.region] || [] : [];
+
+  const handleLocationUpdate = async () => {
+    if (!locationSettings.region || !locationSettings.district) {
+      toast({ title: 'Kosa', description: 'Tafadhali chagua mkoa na wilaya', variant: 'destructive' });
+      return;
+    }
+    setSavingLocation(true);
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          country: locationSettings.country,
+          region: locationSettings.region,
+          district: locationSettings.district,
+          ward: locationSettings.ward || null,
+          street: locationSettings.street || null,
+          location_set: true,
+          updated_at: new Date().toISOString()
+        } as any)
+        .eq('id', userProfile?.id);
+      if (error) throw error;
+      toast({ title: t('success'), description: 'Eneo limehifadhiwa!' });
+      await refreshProfile();
+    } catch (error) {
+      console.error('Error updating location:', error);
+      toast({ title: t('error'), description: 'Imeshindwa kuhifadhi eneo', variant: 'destructive' });
+    } finally {
+      setSavingLocation(false);
+    }
   };
 
   const handleProfileUpdate = async () => {
@@ -306,6 +387,66 @@ export const EnhancedSettingsPage = () => {
                   {loading ? t('loading') : t('update_profile')}
                 </Button>
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Location Settings */}
+          <Card className="mt-6">
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <MapPin className="h-5 w-5 mr-2" />
+                Eneo Lako
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <Label>Nchi</Label>
+                <Select value={locationSettings.country} onValueChange={v => setLocationSettings(s => ({...s, country: v}))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Tanzania">Tanzania 🇹🇿</SelectItem>
+                    <SelectItem value="Kenya">Kenya 🇰🇪</SelectItem>
+                    <SelectItem value="Uganda">Uganda 🇺🇬</SelectItem>
+                    <SelectItem value="Rwanda">Rwanda 🇷🇼</SelectItem>
+                    <SelectItem value="Burundi">Burundi 🇧🇮</SelectItem>
+                    <SelectItem value="DRC">DRC 🇨🇩</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label>Mkoa *</Label>
+                  <Select value={locationSettings.region} onValueChange={v => setLocationSettings(s => ({...s, region: v, district: ''}))}>
+                    <SelectTrigger><SelectValue placeholder="Chagua mkoa..." /></SelectTrigger>
+                    <SelectContent>
+                      {REGION_LIST.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Wilaya *</Label>
+                  <Select value={locationSettings.district} onValueChange={v => setLocationSettings(s => ({...s, district: v}))} disabled={!locationSettings.region}>
+                    <SelectTrigger><SelectValue placeholder="Chagua wilaya..." /></SelectTrigger>
+                    <SelectContent>
+                      {locationDistricts.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label>Kata / Ward</Label>
+                  <Input value={locationSettings.ward} onChange={e => setLocationSettings(s => ({...s, ward: e.target.value}))} placeholder="Mfano: Mwananyamala" />
+                </div>
+                <div>
+                  <Label>Mtaa</Label>
+                  <Input value={locationSettings.street} onChange={e => setLocationSettings(s => ({...s, street: e.target.value}))} placeholder="Mfano: Mtaa wa Uhuru" />
+                </div>
+              </div>
+              <Button onClick={handleLocationUpdate} disabled={savingLocation} className="w-full gap-2">
+                {savingLocation ? <Loader2 className="h-4 w-4 animate-spin" /> : <MapPin className="h-4 w-4" />}
+                {savingLocation ? 'Inahifadhi...' : 'Hifadhi Eneo'}
+              </Button>
             </CardContent>
           </Card>
         </TabsContent>

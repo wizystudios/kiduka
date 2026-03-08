@@ -6,12 +6,13 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { 
   Search, Package, Truck, CheckCircle, Clock, XCircle,
-  Phone, Store, RefreshCw, CreditCard, ArrowUpRight, Sparkles
+  Phone, Store, RefreshCw, CreditCard, ArrowUpRight, Sparkles, MapPin, Navigation
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { KidukaLogo } from '@/components/KidukaLogo';
 import { normalizeTzPhoneDigits } from '@/utils/phoneUtils';
+import { estimateDeliveryDays, getDeliveryEstimateColor } from '@/utils/deliveryEstimation';
 
 interface TrackedOrder {
   id: string;
@@ -23,6 +24,12 @@ interface TrackedOrder {
   created_at: string;
   updated_at: string;
   customer_received: boolean;
+  seller_id: string;
+  delivery_address: string;
+  seller_region?: string;
+  seller_district?: string;
+  delivery_person_name?: string;
+  delivery_person_phone?: string;
 }
 
 export const OrderTrackingPage = () => {
@@ -57,17 +64,31 @@ export const OrderTrackingPage = () => {
     try {
       const { data, error } = await supabase
         .from('sokoni_orders')
-        .select('id, tracking_code, order_status, payment_status, total_amount, items, created_at, updated_at, customer_received')
+        .select('id, tracking_code, order_status, payment_status, total_amount, items, created_at, updated_at, customer_received, seller_id, delivery_address, delivery_person_name, delivery_person_phone')
         .or(`customer_phone.eq.${normalizedPhone},customer_phone.eq.${phoneValue}`)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
 
       if (data && data.length > 0) {
+        // Fetch seller regions
+        const sellerIds = [...new Set(data.map(o => o.seller_id))];
+        const { data: sellerProfiles } = await supabase
+          .from('profiles')
+          .select('id, region, district')
+          .in('id', sellerIds);
+
+        const sellerMap: Record<string, { region?: string; district?: string }> = {};
+        sellerProfiles?.forEach(p => {
+          sellerMap[p.id] = { region: (p as any).region, district: (p as any).district };
+        });
+
         const parsedOrders = data.map(order => ({
           ...order,
           items: typeof order.items === 'string' ? JSON.parse(order.items) : order.items,
-          customer_received: order.customer_received || false
+          customer_received: order.customer_received || false,
+          seller_region: sellerMap[order.seller_id]?.region,
+          seller_district: sellerMap[order.seller_id]?.district,
         }));
         setOrders(parsedOrders);
       } else {
@@ -315,6 +336,54 @@ export const OrderTrackingPage = () => {
                             </p>
                           )}
                         </div>
+
+                        {/* Delivery Estimation */}
+                        {order.seller_region && (
+                          <div className="flex items-center justify-between p-2 bg-muted/50 rounded-xl text-xs">
+                            <div className="flex items-center gap-1">
+                              <MapPin className="h-3 w-3 text-muted-foreground" />
+                              <span className="text-muted-foreground">
+                                {order.seller_district ? `${order.seller_district}, ` : ''}{order.seller_region}
+                              </span>
+                            </div>
+                            <span className={`font-medium ${getDeliveryEstimateColor(estimateDeliveryDays(order.seller_region || null, null).min)}`}>
+                              📦 {estimateDeliveryDays(order.seller_region || null, null).label}
+                            </span>
+                          </div>
+                        )}
+
+                        {/* Delivery Person Info */}
+                        {order.delivery_person_name && (order.order_status === 'shipped' || order.order_status === 'delivering') && (
+                          <div className="flex items-center gap-2 p-2 bg-primary/5 rounded-xl text-xs">
+                            <Navigation className="h-3 w-3 text-primary" />
+                            <div className="flex-1">
+                              <span className="font-medium">{order.delivery_person_name}</span>
+                              {order.delivery_person_phone && (
+                                <a href={`tel:${order.delivery_person_phone}`} className="ml-2 text-primary underline">
+                                  {order.delivery_person_phone}
+                                </a>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Map for active deliveries */}
+                        {(order.order_status === 'shipped' || order.order_status === 'delivering') && order.delivery_address && (
+                          <div className="rounded-xl overflow-hidden border">
+                            <iframe
+                              title={`Map - ${order.tracking_code}`}
+                              width="100%"
+                              height="150"
+                              style={{ border: 0 }}
+                              loading="lazy"
+                              src={`https://www.openstreetmap.org/export/embed.html?bbox=29.0,-11.5,40.5,-1.0&layer=mapnik&marker=-6.8,39.3`}
+                            />
+                            <div className="p-2 bg-muted/30 text-[10px] text-muted-foreground flex items-center gap-1">
+                              <MapPin className="h-3 w-3" />
+                              Mahali: {order.delivery_address}
+                            </div>
+                          </div>
+                        )}
                         
                         {/* Total & Payment */}
                         <div className="flex items-center justify-between pt-2 border-t">
