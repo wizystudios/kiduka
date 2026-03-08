@@ -12,7 +12,7 @@ import {
   FileSpreadsheet, Settings, Percent, Banknote, ClipboardCheck, Smartphone,
   Zap, UserCheck, Home, Calculator, Wallet, Store, Bell, LucideIcon, Crown
 } from 'lucide-react';
-import { StockAlertWidget, ExpensesWidget, TransactionsWidget, ProductsWidget } from '@/components/DashboardWidgets';
+import { StockAlertWidget, ExpensesWidget, TransactionsWidget, ProductsWidget, RecentActivitiesWidget } from '@/components/DashboardWidgets';
 
 const HARAKA_ITEMS_MAP: Record<string, { title: string; icon: LucideIcon; color: string; bg: string; path: string }> = {
   dashboard: { title: "Dashboard", icon: Home, color: "text-blue-600", bg: "bg-blue-50", path: '/dashboard' },
