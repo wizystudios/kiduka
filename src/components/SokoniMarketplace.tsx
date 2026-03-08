@@ -1048,19 +1048,29 @@ export const SokoniMarketplace = () => {
         </div>
       )}
 
-      {/* Payment Dialog */}
-      <Dialog open={paymentOpen} onOpenChange={setPaymentOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Lipa kwa Simu</DialogTitle>
-          </DialogHeader>
-          <MobileMoneyPayment 
-            amount={cartTotal}
-            onPaymentComplete={handlePaymentComplete}
-            onCancel={() => setPaymentOpen(false)}
-          />
-        </DialogContent>
-      </Dialog>
+      {/* Payment Full-Page Overlay */}
+      {paymentOpen && (
+        <div className="fixed inset-0 z-50 bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-background dark:via-background dark:to-background overflow-y-auto animate-in fade-in slide-in-from-bottom-4 duration-300">
+          <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-md border-b border-border px-4 py-3 flex items-center gap-3">
+            <Button variant="ghost" size="icon" onClick={() => setPaymentOpen(false)}>
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <SokoniLogo size="sm" />
+            <h2 className="font-bold text-sm">Lipa kwa Simu</h2>
+          </div>
+          <div className="max-w-md mx-auto p-4 md:p-6">
+            <Card className="rounded-3xl">
+              <CardContent className="p-4">
+                <MobileMoneyPayment 
+                  amount={cartTotal}
+                  onPaymentComplete={handlePaymentComplete}
+                  onCancel={() => setPaymentOpen(false)}
+                />
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      )}
 
       {/* Order Receipt Dialog */}
       {receiptData && (
