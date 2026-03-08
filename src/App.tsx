@@ -12,6 +12,7 @@ import { Toaster } from '@/components/ui/toaster';
 // Pages
 import Index from '@/pages/Index';
 import { AuthPage } from '@/pages/AuthPage';
+import { ResetPasswordPage } from '@/pages/ResetPasswordPage';
 import { EmailVerificationStatus } from '@/components/EmailVerificationStatus';
 import { Dashboard } from '@/pages/Dashboard';
 import { ProductsPage } from '@/pages/ProductsPage';
@@ -86,6 +87,7 @@ export default function App() {
               {/* Public Routes */}
               <Route path="/" element={<Index />} />
               <Route path="/auth" element={<AuthPage />} />
+              <Route path="/reset-password" element={<ResetPasswordPage />} />
               <Route path="/verify-email" element={<EmailVerificationStatus />} />
               
               {/* Protected Routes */}

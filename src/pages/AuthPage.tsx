@@ -8,6 +8,8 @@ import { Mail, Lock, User, Eye, EyeOff, Phone, ArrowRight, ArrowLeft, Store } fr
 import { toast } from 'sonner';
 import { EmailConfirmationPage } from '@/components/EmailConfirmationPage';
 import { normalizeTzPhoneDigits } from '@/utils/phoneUtils';
+import { ForgotPasswordDialog } from '@/components/ForgotPasswordDialog';
+import { supabase } from '@/integrations/supabase/client';
 
 type AuthStep = 'method' | 'identifier' | 'password' | 'name';
 type AuthMethod = 'email' | 'phone' | 'name';
@@ -27,6 +29,7 @@ export const AuthPage = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
 
   if (user?.email_confirmed_at) {
     return <Navigate to="/dashboard" replace />;
@@ -115,35 +118,63 @@ export const AuthPage = () => {
       return;
     }
 
+    // Determine the login email
+    let loginEmail: string;
+    if (authMethod === 'phone') {
+      loginEmail = `${normalizedPhone}@kiduka.phone`;
+    } else if (authMethod === 'name') {
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('email')
+        .ilike('full_name', username)
+        .limit(1);
+      
+      if (!profiles || profiles.length === 0 || !profiles[0].email) {
+        toast.error('Jina hili halijapatikana. Jaribu barua pepe au simu.');
+        return;
+      }
+      loginEmail = profiles[0].email;
+    } else {
+      loginEmail = email;
+    }
+
+    // Check if account is locked
+    try {
+      const { data: lockCheck } = await supabase.functions.invoke('check-login-attempt', {
+        body: { action: 'check', email: loginEmail }
+      });
+      if (lockCheck?.locked) {
+        toast.error('Akaunti imezuiwa kwa masaa 24. Wasiliana na msimamizi.');
+        return;
+      }
+    } catch { /* proceed if check fails */ }
+
     setLoading(true);
     try {
-      let loginEmail: string;
-      
-      if (authMethod === 'phone') {
-        loginEmail = `${normalizedPhone}@kiduka.phone`;
-      } else if (authMethod === 'name') {
-        // Name-based login: look up email by full_name in profiles
-        const { supabase } = await import('@/integrations/supabase/client');
-        const { data: profiles } = await supabase
-          .from('profiles')
-          .select('email')
-          .ilike('full_name', username)
-          .limit(1);
-        
-        if (!profiles || profiles.length === 0 || !profiles[0].email) {
-          toast.error('Jina hili halijapatikana. Jaribu barua pepe au simu.');
-          setLoading(false);
-          return;
-        }
-        loginEmail = profiles[0].email;
-      } else {
-        loginEmail = email;
-      }
-
       await signIn(loginEmail, password);
+
+      // Reset attempts on success
+      supabase.functions.invoke('check-login-attempt', {
+        body: { action: 'reset', email: loginEmail }
+      }).catch(() => {});
+
       toast.success('Karibu tena!');
     } catch (error: any) {
-      toast.error(error.message);
+      // Record failed attempt
+      try {
+        const { data: attemptResult } = await supabase.functions.invoke('check-login-attempt', {
+          body: { action: 'record_failure', email: loginEmail }
+        });
+        if (attemptResult?.locked) {
+          toast.error('Akaunti imezuiwa kwa masaa 24 baada ya majaribio 5 yasiyofanikiwa!');
+        } else if (attemptResult?.remaining !== undefined) {
+          toast.error(`${error.message} (Majaribio ${attemptResult.remaining} yamebaki)`);
+        } else {
+          toast.error(error.message);
+        }
+      } catch {
+        toast.error(error.message);
+      }
     } finally {
       setLoading(false);
     }
@@ -445,11 +476,22 @@ export const AuthPage = () => {
         </div>
       </div>
 
+      {/* Forgot Password */}
+      {mode === 'signin' && (
+        <button
+          type="button"
+          onClick={() => setShowForgotPassword(true)}
+          className="text-muted-foreground hover:text-primary text-sm mt-4 transition-colors"
+        >
+          Umesahau nywila?
+        </button>
+      )}
+
       {/* Switch Mode */}
       <button
         type="button"
         onClick={switchMode}
-        className="text-primary hover:underline text-sm mt-8"
+        className="text-primary hover:underline text-sm mt-4"
       >
         {mode === 'signin' ? 'Unda akaunti mpya' : 'Tayari una akaunti? Ingia'}
       </button>
@@ -462,6 +504,11 @@ export const AuthPage = () => {
         <Store className="h-4 w-4" />
         Tembelea Sokoni
       </Link>
+
+      <ForgotPasswordDialog 
+        open={showForgotPassword} 
+        onOpenChange={setShowForgotPassword} 
+      />
     </div>
   );
 };

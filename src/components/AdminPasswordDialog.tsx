@@ -14,7 +14,7 @@ interface AdminPasswordDialogProps {
   description?: string;
 }
 
-const ADMIN_PASSWORD = 'NURATHZUBERI';
+const ADMIN_PASSWORD = '5112Kharif@1';
 
 export const AdminPasswordDialog = ({ open, onClose, onConfirm, action, description }: AdminPasswordDialogProps) => {
   const [password, setPassword] = useState('');
