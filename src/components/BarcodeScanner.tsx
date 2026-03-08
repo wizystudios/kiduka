@@ -1,67 +1,97 @@
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Camera, ShoppingCart, Scan, Search, Plus, Minus } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { Camera, ShoppingCart, Scan, Search, Plus, Minus, Loader2 } from "lucide-react";
+import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { CameraScanner } from "@/components/CameraScanner";
+
+interface ScannedProduct {
+  id: string;
+  name: string;
+  price: number;
+  stock_quantity: number;
+  barcode: string | null;
+  category: string | null;
+}
 
 export const BarcodeScanner = () => {
-  const { toast } = useToast();
-  const [scanMode, setScanMode] = useState<"camera" | "manual">("camera");
+  const { user } = useAuth();
+  const [scanMode, setScanMode] = useState<"camera" | "manual">("manual");
   const [manualBarcode, setManualBarcode] = useState("");
-  const [cart, setCart] = useState<Array<{id: number, name: string, price: number, quantity: number}>>([]);
-  const [scannedProduct, setScannedProduct] = useState<any>(null);
+  const [cart, setCart] = useState<Array<{ id: string; name: string; price: number; quantity: number; stock: number }>>([]);
+  const [scannedProduct, setScannedProduct] = useState<ScannedProduct | null>(null);
+  const [searching, setSearching] = useState(false);
+  const [cameraOpen, setCameraOpen] = useState(false);
 
-  // Mock product database
-  const mockProducts = {
-    "1234567890123": { id: 1, name: "Wireless Earbuds", price: 79.99, stock: 25 },
-    "2345678901234": { id: 2, name: "Smartphone Case", price: 24.99, stock: 8 },
-    "3456789012345": { id: 3, name: "Bluetooth Speaker", price: 129.99, stock: 15 },
-    "4567890123456": { id: 4, name: "USB Cable", price: 12.99, stock: 50 }
-  };
+  const handleScanBarcode = async (barcode: string) => {
+    if (!barcode.trim() || !user) return;
+    
+    setSearching(true);
+    setScannedProduct(null);
 
-  const handleScanBarcode = (barcode: string) => {
-    const product = mockProducts[barcode as keyof typeof mockProducts];
-    if (product) {
-      setScannedProduct(product);
-      toast({
-        title: "Product Found!",
-        description: `${product.name} - $${product.price}`,
-      });
-    } else {
-      toast({
-        title: "Product Not Found",
-        description: "This barcode is not in your inventory",
-        variant: "destructive"
-      });
-      setScannedProduct(null);
+    try {
+      const { data, error } = await supabase
+        .from('products')
+        .select('id, name, price, stock_quantity, barcode, category')
+        .eq('owner_id', user.id)
+        .eq('barcode', barcode.trim())
+        .maybeSingle();
+
+      if (error) throw error;
+
+      if (data) {
+        setScannedProduct(data);
+        toast.success(`Bidhaa Imepatikana: ${data.name}`);
+      } else {
+        toast.error('Bidhaa haijapatikana', {
+          description: 'Barcode hii haipo kwenye bidhaa zako'
+        });
+      }
+    } catch (error) {
+      console.error('Error searching product:', error);
+      toast.error('Imeshindwa kutafuta bidhaa');
+    } finally {
+      setSearching(false);
     }
   };
 
-  const addToCart = (product: any) => {
+  const handleCameraScan = (barcode: string) => {
+    setCameraOpen(false);
+    setManualBarcode(barcode);
+    handleScanBarcode(barcode);
+  };
+
+  const addToCart = (product: ScannedProduct) => {
     const existingItem = cart.find(item => item.id === product.id);
     if (existingItem) {
-      setCart(cart.map(item => 
-        item.id === product.id 
+      if (existingItem.quantity >= product.stock_quantity) {
+        toast.error('Stock haitoshi');
+        return;
+      }
+      setCart(cart.map(item =>
+        item.id === product.id
           ? { ...item, quantity: item.quantity + 1 }
           : item
       ));
     } else {
-      setCart([...cart, { ...product, quantity: 1 }]);
+      setCart([...cart, { id: product.id, name: product.name, price: product.price, quantity: 1, stock: product.stock_quantity }]);
     }
-    
-    toast({
-      title: "Added to Cart",
-      description: `${product.name} added to cart`,
-    });
+
+    toast.success(`${product.name} imeongezwa kwenye kikapu`);
   };
 
-  const updateQuantity = (id: number, change: number) => {
+  const updateQuantity = (id: string, change: number) => {
     setCart(cart.map(item => {
       if (item.id === id) {
         const newQuantity = Math.max(0, item.quantity + change);
+        if (newQuantity > item.stock) {
+          toast.error('Stock haitoshi');
+          return item;
+        }
         return newQuantity === 0 ? null : { ...item, quantity: newQuantity };
       }
       return item;
@@ -69,39 +99,69 @@ export const BarcodeScanner = () => {
   };
 
   const getTotalAmount = () => {
-    return cart.reduce((total, item) => total + (item.price * item.quantity), 0).toFixed(2);
+    return cart.reduce((total, item) => total + (item.price * item.quantity), 0);
   };
 
-  const completeSale = () => {
-    if (cart.length === 0) {
-      toast({
-        title: "Empty Cart",
-        description: "Please add items to cart before completing sale",
-        variant: "destructive"
-      });
+  const completeSale = async () => {
+    if (cart.length === 0 || !user) {
+      toast.error('Kikapu kiko tupu');
       return;
     }
 
-    toast({
-      title: "Sale Completed!",
-      description: `Total: $${getTotalAmount()}`,
-    });
-    setCart([]);
-    setScannedProduct(null);
-  };
+    try {
+      // Create sale
+      const { data: sale, error: saleError } = await supabase
+        .from('sales')
+        .insert({
+          owner_id: user.id,
+          total_amount: getTotalAmount(),
+          payment_method: 'cash',
+          payment_status: 'completed',
+        })
+        .select()
+        .single();
 
-  // Mock camera scanning simulation
-  const simulateBarcodeScan = () => {
-    const barcodes = Object.keys(mockProducts);
-    const randomBarcode = barcodes[Math.floor(Math.random() * barcodes.length)];
-    handleScanBarcode(randomBarcode);
+      if (saleError) throw saleError;
+
+      // Create sale items and update stock
+      for (const item of cart) {
+        await supabase.from('sales_items').insert({
+          sale_id: sale.id,
+          product_id: item.id,
+          quantity: item.quantity,
+          unit_price: item.price,
+          subtotal: item.price * item.quantity,
+        });
+
+        // Update stock
+        const { data: product } = await supabase
+          .from('products')
+          .select('stock_quantity')
+          .eq('id', item.id)
+          .single();
+
+        if (product) {
+          await supabase
+            .from('products')
+            .update({ stock_quantity: product.stock_quantity - item.quantity })
+            .eq('id', item.id);
+        }
+      }
+
+      toast.success(`Mauzo yamekamilika! Jumla: TSh ${getTotalAmount().toLocaleString()}`);
+      setCart([]);
+      setScannedProduct(null);
+    } catch (error) {
+      console.error('Sale error:', error);
+      toast.error('Imeshindwa kukamilisha mauzo');
+    }
   };
 
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Barcode Scanner</h2>
-        <p className="text-gray-600">Scan products to add them to your sale</p>
+        <h2 className="text-2xl font-bold mb-2">Barcode Scanner</h2>
+        <p className="text-muted-foreground">Scan bidhaa kuongeza kwenye mauzo</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -111,15 +171,14 @@ export const BarcodeScanner = () => {
             <CardHeader>
               <CardTitle className="flex items-center">
                 <Scan className="h-5 w-5 mr-2" />
-                Product Scanner
+                Tafuta Bidhaa
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {/* Scanner Mode Toggle */}
               <div className="flex space-x-2">
                 <Button
                   variant={scanMode === "camera" ? "default" : "outline"}
-                  onClick={() => setScanMode("camera")}
+                  onClick={() => { setScanMode("camera"); setCameraOpen(true); }}
                   className="flex-1"
                 >
                   <Camera className="h-4 w-4 mr-2" />
@@ -136,31 +195,34 @@ export const BarcodeScanner = () => {
               </div>
 
               {scanMode === "camera" ? (
-                <div className="text-center py-8">
-                  <div className="bg-gray-100 rounded-lg p-8 mb-4">
-                    <Camera className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                    <p className="text-gray-600 mb-4">Camera view would appear here</p>
-                    <Button onClick={simulateBarcodeScan} className="bg-blue-600 hover:bg-blue-700">
-                      Simulate Scan
+                <div className="text-center py-4">
+                  <CameraScanner
+                    isOpen={cameraOpen}
+                    onScan={handleCameraScan}
+                    onClose={() => setCameraOpen(false)}
+                  />
+                  {!cameraOpen && (
+                    <Button onClick={() => setCameraOpen(true)} className="mt-4">
+                      <Camera className="h-4 w-4 mr-2" />
+                      Fungua Camera
                     </Button>
-                  </div>
-                  <p className="text-sm text-gray-500">
-                    Point your camera at a barcode to scan
-                  </p>
+                  )}
                 </div>
               ) : (
                 <div className="space-y-3">
                   <Input
-                    placeholder="Enter barcode manually..."
+                    placeholder="Ingiza barcode..."
                     value={manualBarcode}
                     onChange={(e) => setManualBarcode(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleScanBarcode(manualBarcode)}
                   />
-                  <Button 
+                  <Button
                     onClick={() => handleScanBarcode(manualBarcode)}
                     className="w-full"
-                    disabled={!manualBarcode}
+                    disabled={!manualBarcode || searching}
                   >
-                    Search Product
+                    {searching ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Search className="h-4 w-4 mr-2" />}
+                    Tafuta Bidhaa
                   </Button>
                 </div>
               )}
@@ -169,26 +231,26 @@ export const BarcodeScanner = () => {
 
           {/* Scanned Product */}
           {scannedProduct && (
-            <Card className="border-green-200 bg-green-50">
+            <Card className="border-green-200 bg-green-50 dark:bg-green-900/20">
               <CardHeader>
-                <CardTitle className="text-green-800">Product Found</CardTitle>
+                <CardTitle className="text-green-800 dark:text-green-300">Bidhaa Imepatikana</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
                   <div>
                     <h3 className="font-semibold text-lg">{scannedProduct.name}</h3>
-                    <p className="text-green-600 font-bold text-xl">${scannedProduct.price}</p>
+                    <p className="text-green-600 dark:text-green-400 font-bold text-xl">TSh {scannedProduct.price.toLocaleString()}</p>
                   </div>
                   <div className="flex justify-between items-center">
-                    <Badge variant="outline" className="text-blue-600">
-                      Stock: {scannedProduct.stock}
+                    <Badge variant="outline">
+                      Stock: {scannedProduct.stock_quantity}
                     </Badge>
-                    <Button 
+                    <Button
                       onClick={() => addToCart(scannedProduct)}
-                      className="bg-green-600 hover:bg-green-700"
+                      disabled={scannedProduct.stock_quantity <= 0}
                     >
                       <Plus className="h-4 w-4 mr-2" />
-                      Add to Cart
+                      Ongeza
                     </Button>
                   </div>
                 </div>
@@ -202,23 +264,23 @@ export const BarcodeScanner = () => {
           <CardHeader>
             <CardTitle className="flex items-center">
               <ShoppingCart className="h-5 w-5 mr-2" />
-              Shopping Cart ({cart.length})
+              Kikapu ({cart.length})
             </CardTitle>
           </CardHeader>
           <CardContent>
             {cart.length === 0 ? (
               <div className="text-center py-8">
-                <ShoppingCart className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-600">Cart is empty</p>
-                <p className="text-sm text-gray-500">Scan products to add them</p>
+                <ShoppingCart className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <p className="text-muted-foreground">Kikapu kiko tupu</p>
+                <p className="text-sm text-muted-foreground">Scan bidhaa kuongeza</p>
               </div>
             ) : (
               <div className="space-y-4">
                 {cart.map((item) => (
-                  <div key={item.id} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                  <div key={item.id} className="flex justify-between items-center p-3 bg-muted/50 rounded-lg">
                     <div className="flex-1">
-                      <h4 className="font-medium">{item.name}</h4>
-                      <p className="text-sm text-gray-600">${item.price} each</p>
+                      <h4 className="font-medium text-sm">{item.name}</h4>
+                      <p className="text-xs text-muted-foreground">TSh {item.price.toLocaleString()} kila moja</p>
                     </div>
                     <div className="flex items-center space-x-2">
                       <Button
@@ -240,21 +302,21 @@ export const BarcodeScanner = () => {
                       </Button>
                     </div>
                     <div className="text-right ml-4">
-                      <p className="font-bold">${(item.price * item.quantity).toFixed(2)}</p>
+                      <p className="font-bold text-sm">TSh {(item.price * item.quantity).toLocaleString()}</p>
                     </div>
                   </div>
                 ))}
-                
+
                 <div className="border-t pt-4">
                   <div className="flex justify-between items-center mb-4">
-                    <span className="text-xl font-bold">Total:</span>
-                    <span className="text-2xl font-bold text-green-600">${getTotalAmount()}</span>
+                    <span className="text-xl font-bold">Jumla:</span>
+                    <span className="text-2xl font-bold text-primary">TSh {getTotalAmount().toLocaleString()}</span>
                   </div>
-                  <Button 
+                  <Button
                     onClick={completeSale}
-                    className="w-full bg-green-600 hover:bg-green-700 text-white py-3"
+                    className="w-full"
                   >
-                    Complete Sale
+                    Kamilisha Mauzo
                   </Button>
                 </div>
               </div>
