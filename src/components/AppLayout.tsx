@@ -22,7 +22,9 @@ export function AppLayout({ children }: AppLayoutProps) {
         <AppSidebar />
         <SidebarInset className="flex-1">
           <main className="w-full pt-16 pb-36 md:pt-0 md:pb-0">
-            <ContractComplianceGate>{children}</ContractComplianceGate>
+            <LocationSetupGate>
+              <ContractComplianceGate>{children}</ContractComplianceGate>
+            </LocationSetupGate>
           </main>
         </SidebarInset>
       </div>
