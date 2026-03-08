@@ -400,7 +400,7 @@ export const UsersPage = () => {
                       type="password"
                       value={newUser.password}
                       onChange={(e) => setNewUser({...newUser, password: e.target.value})}
-                      placeholder="Herufi 6+"
+                      placeholder="Herufi 8+"
                     />
                   </div>
                   <Button 
