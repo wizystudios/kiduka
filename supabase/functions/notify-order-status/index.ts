@@ -30,15 +30,19 @@ serve(async (req) => {
       });
     }
 
-    const message = STATUS_MESSAGES[new_status] || `Hali ya oda yako imebadilika kuwa: ${new_status}`;
-    const fullMessage = `Habari! ${message}\n\n📋 Tracking: ${tracking_code || 'N/A'}\n\n🔗 Fuatilia oda yako: https://kiduka.lovable.app/track-order?code=${tracking_code}`;
-
-    // Send WhatsApp notification using existing send-whatsapp function
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Try to send via WhatsApp
+    const message = STATUS_MESSAGES[new_status] || `Hali ya oda yako imebadilika kuwa: ${new_status}`;
+    const trackingLink = `https://kiduka.lovable.app/track-order?code=${tracking_code}`;
+    const fullMessage = `Habari! ${message}\n\n📋 Tracking: ${tracking_code || 'N/A'}\n\n🔗 Fuatilia oda yako: ${trackingLink}`;
+    
+    // Shorter SMS version (to save cost)
+    const smsMessage = `${message} Tracking: ${tracking_code || 'N/A'}. Fuatilia: ${trackingLink}`;
+
+    let whatsappSent = false;
+
+    // 1. Try WhatsApp first
     try {
       const whatsappResponse = await fetch(`${supabaseUrl}/functions/v1/send-whatsapp`, {
         method: 'POST',
@@ -47,19 +51,57 @@ serve(async (req) => {
           'Authorization': `Bearer ${supabaseKey}`,
         },
         body: JSON.stringify({
-          phone: customer_phone,
+          phoneNumber: customer_phone,
           message: fullMessage,
         }),
       });
       
-      console.log('WhatsApp notification sent:', whatsappResponse.status);
+      const waBody = await whatsappResponse.text();
+      console.log('WhatsApp response:', whatsappResponse.status, waBody);
+      
+      if (whatsappResponse.ok) {
+        whatsappSent = true;
+      }
     } catch (whatsappError) {
       console.error('WhatsApp send failed:', whatsappError);
     }
 
+    // 2. If WhatsApp failed, try SMS as backup
+    let smsSent = false;
+    if (!whatsappSent) {
+      console.log('WhatsApp failed, attempting SMS backup...');
+      try {
+        const smsResponse = await fetch(`${supabaseUrl}/functions/v1/send-sms`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${supabaseKey}`,
+          },
+          body: JSON.stringify({
+            phoneNumber: customer_phone,
+            message: smsMessage,
+            transactionId: `order-status-${order_id}-${new_status}`,
+          }),
+        });
+
+        const smsBody = await smsResponse.text();
+        console.log('SMS response:', smsResponse.status, smsBody);
+
+        if (smsResponse.ok) {
+          smsSent = true;
+        }
+      } catch (smsError) {
+        console.error('SMS backup also failed:', smsError);
+      }
+    }
+
+    const method = whatsappSent ? 'whatsapp' : smsSent ? 'sms' : 'none';
+    console.log(`Notification result: ${method} for ${old_status} → ${new_status}`);
+
     return new Response(JSON.stringify({ 
-      success: true, 
-      message: `Notification sent for status change: ${old_status} → ${new_status}` 
+      success: whatsappSent || smsSent,
+      method,
+      message: `Notification via ${method} for status change: ${old_status} → ${new_status}` 
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
