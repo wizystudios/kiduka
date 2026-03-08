@@ -476,11 +476,22 @@ export const AuthPage = () => {
         </div>
       </div>
 
+      {/* Forgot Password */}
+      {mode === 'signin' && (
+        <button
+          type="button"
+          onClick={() => setShowForgotPassword(true)}
+          className="text-muted-foreground hover:text-primary text-sm mt-4 transition-colors"
+        >
+          Umesahau nywila?
+        </button>
+      )}
+
       {/* Switch Mode */}
       <button
         type="button"
         onClick={switchMode}
-        className="text-primary hover:underline text-sm mt-8"
+        className="text-primary hover:underline text-sm mt-4"
       >
         {mode === 'signin' ? 'Unda akaunti mpya' : 'Tayari una akaunti? Ingia'}
       </button>
@@ -493,6 +504,11 @@ export const AuthPage = () => {
         <Store className="h-4 w-4" />
         Tembelea Sokoni
       </Link>
+
+      <ForgotPasswordDialog 
+        open={showForgotPassword} 
+        onOpenChange={setShowForgotPassword} 
+      />
     </div>
   );
 };
