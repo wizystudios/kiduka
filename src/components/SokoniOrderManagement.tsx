@@ -53,6 +53,10 @@ export const SokoniOrderManagement = () => {
   const [whatsappOpen, setWhatsappOpen] = useState(false);
   const [whatsappMsg, setWhatsappMsg] = useState('');
   const [sendingWa, setSendingWa] = useState(false);
+  const [batchOpen, setBatchOpen] = useState(false);
+  const [batchMsg, setBatchMsg] = useState('');
+  const [sendingBatch, setSendingBatch] = useState(false);
+  const [batchProgress, setBatchProgress] = useState({ sent: 0, total: 0 });
 
   useEffect(() => {
     if (dataOwnerId) {
