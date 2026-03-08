@@ -27,14 +27,14 @@ const sendBrowserNotification = (title: string, body: string, icon?: string) => 
   if (!('Notification' in window) || Notification.permission !== 'granted') return;
   
   try {
-    const notification = new Notification(title, {
+    const options: NotificationOptions = {
       body,
       icon: icon || '/icon-192.png',
       badge: '/icon-192.png',
       tag: `kiduka-${Date.now()}`,
-      vibrate: [200, 100, 200],
       requireInteraction: false,
-    });
+    };
+    const notification = new Notification(title, options);
 
     notification.onclick = () => {
       window.focus();
