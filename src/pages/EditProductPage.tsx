@@ -175,6 +175,7 @@ export const EditProductPage = () => {
       }
 
       console.log('Product updated successfully:', data);
+      logActivity('product_edit', `Bidhaa "${formData.name}" imesasishwa`, { product_id: id, product_name: formData.name });
       toast({
         title: 'Mafanikio',
         description: 'Bidhaa imesasishwa kwa mafanikio'

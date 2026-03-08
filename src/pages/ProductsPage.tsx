@@ -74,6 +74,7 @@ export const ProductsPage = () => {
 
     // Use the offline-first delete
     await deleteProduct(id);
+    logActivity('product_delete', `Bidhaa "${productName}" imefutwa`, { product_name: productName });
   };
 
   const handleArchiveProduct = async (id: string, productName: string, currentArchived: boolean) => {
