@@ -15,7 +15,7 @@ import {
   RefreshCw, BarChart3, Store, CreditCard, Bell,
   Settings, AlertTriangle, CheckCircle, XCircle,
   FileSpreadsheet, FileText, Clock, UserPlus, DollarSign,
-  Building2, Phone, Mail, LogIn
+  Building2, Phone, Mail, LogIn, Lock, Ban, ShieldCheck, Key
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -161,6 +161,8 @@ export const SuperAdminDashboard = () => {
   const [passwordDialog, setPasswordDialog] = useState<{action: string; callback: () => void; description?: string} | null>(null);
   const [selectedBusiness, setSelectedBusiness] = useState<string | null>(null);
   const [approvalDialog, setApprovalDialog] = useState<{subId: string; duration: string} | null>(null);
+  const [userPasswordChange, setUserPasswordChange] = useState<{userId: string; userName: string; newPassword: string} | null>(null);
+  const [banDialog, setBanDialog] = useState<{userId: string; userName: string; duration: string} | null>(null);
   
   useEffect(() => {
     fetchAllData();
@@ -780,6 +782,102 @@ export const SuperAdminDashboard = () => {
     }
   };
 
+  const callAdminManageUser = async (action: string, userId: string, params: Record<string, any> = {}) => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) throw new Error('Not authenticated');
+    
+    const response = await supabase.functions.invoke('admin-manage-user', {
+      body: { action, user_id: userId, ...params },
+    });
+    
+    if (response.error) throw response.error;
+    if (response.data?.error) throw new Error(response.data.error);
+    return response.data;
+  };
+
+  const handleChangeUserPassword = (userId: string, userName: string) => {
+    setUserPasswordChange({ userId, userName, newPassword: '' });
+  };
+
+  const executePasswordChange = async () => {
+    if (!userPasswordChange || !userPasswordChange.newPassword) return;
+    setPasswordDialog({
+      action: `Kubadilisha nenosiri la ${userPasswordChange.userName}`,
+      description: 'Toa nenosiri la admin ili kuendelea.',
+      callback: async () => {
+        setPasswordDialog(null);
+        try {
+          await callAdminManageUser('change_password', userPasswordChange.userId, {
+            new_password: userPasswordChange.newPassword,
+          });
+          toast.success('Nenosiri limebadilishwa!');
+          setUserPasswordChange(null);
+        } catch (err: any) {
+          toast.error(`Imeshindwa: ${err.message}`);
+        }
+      }
+    });
+  };
+
+  const handleBanUser = (userId: string, userName: string) => {
+    setBanDialog({ userId, userName, duration: '7d' });
+  };
+
+  const executeBanUser = async () => {
+    if (!banDialog) return;
+    setPasswordDialog({
+      action: `Kuzuia mtumiaji: ${banDialog.userName}`,
+      description: 'Mtumiaji hataweza kuingia. Toa nenosiri la admin.',
+      callback: async () => {
+        setPasswordDialog(null);
+        try {
+          await callAdminManageUser('ban_user', banDialog.userId, {
+            ban_duration: banDialog.duration,
+          });
+          toast.success(`${banDialog.userName} amezuiwa!`);
+          setBanDialog(null);
+          fetchUsers();
+        } catch (err: any) {
+          toast.error(`Imeshindwa: ${err.message}`);
+        }
+      }
+    });
+  };
+
+  const handleUnbanUser = (userId: string, userName: string) => {
+    setPasswordDialog({
+      action: `Kurudisha mtumiaji: ${userName}`,
+      description: 'Mtumiaji ataweza kuingia tena.',
+      callback: async () => {
+        setPasswordDialog(null);
+        try {
+          await callAdminManageUser('unban_user', userId);
+          toast.success(`${userName} amerudishwa!`);
+          fetchUsers();
+        } catch (err: any) {
+          toast.error(`Imeshindwa: ${err.message}`);
+        }
+      }
+    });
+  };
+
+  const handleDeleteUserFull = (userId: string, userName: string) => {
+    setPasswordDialog({
+      action: `Kufuta mtumiaji kabisa: ${userName}`,
+      description: 'Hatua hii haiwezi kurejeshwa. Mtumiaji, data yake yote, na akaunti yake itafutwa.',
+      callback: async () => {
+        setPasswordDialog(null);
+        try {
+          await callAdminManageUser('delete_user', userId);
+          toast.success(`${userName} amefutwa kabisa`);
+          fetchAllData();
+        } catch (err: any) {
+          toast.error(`Imeshindwa: ${err.message}`);
+        }
+      }
+    });
+  };
+
   const statCards = [
     { title: 'Watumiaji', value: stats.totalUsers, icon: <Users className="h-5 w-5" />, color: 'text-blue-600' },
     { title: 'Bidhaa', value: stats.totalProducts, icon: <Package className="h-5 w-5" />, color: 'text-green-600' },
@@ -1296,6 +1394,46 @@ export const SuperAdminDashboard = () => {
                             <Trash2 className="h-3 w-3" />
                           </Button>
                         </div>
+                        <div className="flex gap-1 mt-1">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="flex-1 text-xs h-7"
+                            onClick={() => handleChangeUserPassword(u.id, u.full_name || u.email)}
+                          >
+                            <Key className="h-3 w-3 mr-1" />
+                            Nenosiri
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="flex-1 text-xs h-7 text-orange-600"
+                            onClick={() => handleBanUser(u.id, u.full_name || u.email)}
+                          >
+                            <Ban className="h-3 w-3 mr-1" />
+                            Zuia
+                          </Button>
+                        </div>
+                        <div className="flex gap-1 mt-1">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="flex-1 text-xs h-7 text-green-600"
+                            onClick={() => handleUnbanUser(u.id, u.full_name || u.email)}
+                          >
+                            <ShieldCheck className="h-3 w-3 mr-1" />
+                            Rudisha
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            className="flex-1 text-xs h-7"
+                            onClick={() => handleDeleteUserFull(u.id, u.full_name || u.email)}
+                          >
+                            <Trash2 className="h-3 w-3 mr-1" />
+                            Futa Kabisa
+                          </Button>
+                        </div>
                         {u.role === 'owner' && (
                           <Button
                             variant="default"
@@ -1662,13 +1800,53 @@ export const SuperAdminDashboard = () => {
                     variant="outline" 
                     size="sm"
                     onClick={() => {
+                      const d = viewDialog.data;
                       setViewDialog(null);
-                      handleDelete('user', viewDialog.data.id, viewDialog.data.full_name || viewDialog.data.email);
+                      handleChangeUserPassword(d.id, d.full_name || d.email);
                     }}
-                    className="rounded-xl text-destructive hover:bg-destructive/10"
+                    className="rounded-xl"
+                  >
+                    <Key className="h-4 w-4 mr-2" />
+                    Nenosiri
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => {
+                      const d = viewDialog.data;
+                      setViewDialog(null);
+                      handleBanUser(d.id, d.full_name || d.email);
+                    }}
+                    className="rounded-xl text-orange-600"
+                  >
+                    <Ban className="h-4 w-4 mr-2" />
+                    Zuia
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => {
+                      const d = viewDialog.data;
+                      setViewDialog(null);
+                      handleUnbanUser(d.id, d.full_name || d.email);
+                    }}
+                    className="rounded-xl text-green-600"
+                  >
+                    <ShieldCheck className="h-4 w-4 mr-2" />
+                    Rudisha
+                  </Button>
+                  <Button 
+                    variant="destructive" 
+                    size="sm"
+                    onClick={() => {
+                      const d = viewDialog.data;
+                      setViewDialog(null);
+                      handleDeleteUserFull(d.id, d.full_name || d.email);
+                    }}
+                    className="rounded-xl col-span-2"
                   >
                     <Trash2 className="h-4 w-4 mr-2" />
-                    Futa
+                    Futa Mtumiaji Kabisa
                   </Button>
                 </div>
               </div>
@@ -1963,6 +2141,79 @@ export const SuperAdminDashboard = () => {
         </DialogContent>
       </Dialog>
       
+      {/* Password Change Dialog */}
+      <Dialog open={!!userPasswordChange} onOpenChange={() => setUserPasswordChange(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Key className="h-5 w-5" />
+              Badilisha Nenosiri - {userPasswordChange?.userName}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <Label>Nenosiri Jipya</Label>
+              <Input
+                type="password"
+                placeholder="Angalau herufi 6"
+                value={userPasswordChange?.newPassword || ''}
+                onChange={(e) => setUserPasswordChange(prev => prev ? { ...prev, newPassword: e.target.value } : null)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setUserPasswordChange(null)}>Ghairi</Button>
+            <Button 
+              onClick={executePasswordChange}
+              disabled={!userPasswordChange?.newPassword || userPasswordChange.newPassword.length < 6}
+            >
+              Badilisha
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Ban User Dialog */}
+      <Dialog open={!!banDialog} onOpenChange={() => setBanDialog(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Ban className="h-5 w-5 text-orange-600" />
+              Zuia Mtumiaji - {banDialog?.userName}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">Mtumiaji hataweza kuingia kwa muda uliochaguliwa.</p>
+            <div>
+              <Label>Muda wa Kuzuia</Label>
+              <Select
+                value={banDialog?.duration || '7d'}
+                onValueChange={(v) => setBanDialog(prev => prev ? { ...prev, duration: v } : null)}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1h">Saa 1</SelectItem>
+                  <SelectItem value="24h">Siku 1</SelectItem>
+                  <SelectItem value="7d">Wiki 1</SelectItem>
+                  <SelectItem value="30d">Mwezi 1</SelectItem>
+                  <SelectItem value="90d">Miezi 3</SelectItem>
+                  <SelectItem value="365d">Mwaka 1</SelectItem>
+                  <SelectItem value="permanent">Kudumu (Milele)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setBanDialog(null)}>Ghairi</Button>
+            <Button variant="destructive" onClick={executeBanUser}>
+              Zuia Mtumiaji
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Admin Password Dialog */}
       <AdminPasswordDialog
         open={!!passwordDialog}
