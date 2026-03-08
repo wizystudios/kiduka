@@ -1,10 +1,9 @@
 import { useEffect, useState } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useDataAccess } from '@/hooks/useDataAccess';
 import { useNavigate } from 'react-router-dom';
-import { DollarSign, Store } from 'lucide-react';
+import { DollarSign, Store, AlertTriangle, TrendingDown, ShoppingCart, Package, Banknote, Users, Activity } from 'lucide-react';
 import { StockAlertWidget, ExpensesWidget, TransactionsWidget, ProductsWidget, RecentActivitiesWidget, LoansWidget, DebtorsWidget } from '@/components/DashboardWidgets';
 
 export const Dashboard = () => {
@@ -63,31 +62,41 @@ export const Dashboard = () => {
     </div>
   );
 
-  const dashboardMetrics = [
-    { title: "Mauzo Leo", value: `TZS ${metrics.todaysSales.toLocaleString()}`, icon: DollarSign, border: "border-l-success" },
-    { title: "Oda Sokoni", value: metrics.pendingSokoniOrders, icon: Store, border: "border-l-primary", action: () => navigate('/sokoni-orders') },
-  ];
-
   return (
-    <div className="p-2 space-y-2 pb-20">
-      <div className="grid grid-cols-2 gap-2">
-        {dashboardMetrics.map((m, i) => (
-          <Card key={i} className={`border-0 border-l-2 ${m.border} ${m.action ? 'cursor-pointer hover:shadow-md transition-shadow' : ''}`} onClick={m.action}>
-            <CardContent className="p-2">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs text-muted-foreground">{m.title}</p>
-                  <p className="text-sm font-bold">{m.value}</p>
-                </div>
-                <div className="p-1 rounded-full bg-muted">
-                  <m.icon className="h-3 w-3 text-primary" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+    <div className="px-4 pt-6 pb-24 space-y-6">
+      {/* Hero Sales Section - centered, no box */}
+      <div className="text-center pt-2">
+        <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Mauzo Leo</p>
+        <p className="text-3xl font-black text-foreground tracking-tight">
+          TZS {metrics.todaysSales.toLocaleString()}
+        </p>
+        <p className="text-xs text-muted-foreground mt-1">
+          {metrics.todaysTransactions} miamala
+        </p>
       </div>
 
+      {/* Key stats - flat, no containers, centered row */}
+      <div className="flex items-center justify-around py-3 border-y border-border/50">
+        <button onClick={() => navigate('/sokoni-orders')} className="text-center space-y-0.5">
+          <Store className="h-4 w-4 mx-auto text-primary" />
+          <p className="text-lg font-bold text-foreground">{metrics.pendingSokoniOrders}</p>
+          <p className="text-[10px] text-muted-foreground">Oda Sokoni</p>
+        </button>
+        <div className="w-px h-8 bg-border/50" />
+        <div className="text-center space-y-0.5">
+          <Package className="h-4 w-4 mx-auto text-success" />
+          <p className="text-lg font-bold text-foreground">{metrics.totalProducts}</p>
+          <p className="text-[10px] text-muted-foreground">Bidhaa</p>
+        </div>
+        <div className="w-px h-8 bg-border/50" />
+        <div className="text-center space-y-0.5">
+          <AlertTriangle className="h-4 w-4 mx-auto text-primary" />
+          <p className="text-lg font-bold text-foreground">{metrics.lowStockItems}</p>
+          <p className="text-[10px] text-muted-foreground">Stock Ndogo</p>
+        </div>
+      </div>
+
+      {/* Action widgets - clean grid */}
       <div className="grid grid-cols-2 gap-2">
         <StockAlertWidget />
         <ExpensesWidget />
@@ -95,8 +104,10 @@ export const Dashboard = () => {
         <ProductsWidget />
         <LoansWidget />
         <DebtorsWidget />
-        <RecentActivitiesWidget />
       </div>
+
+      {/* Recent activity - full width */}
+      <RecentActivitiesWidget />
     </div>
   );
 };
