@@ -480,40 +480,40 @@ export const UsersPage = () => {
             />
           </div>
 
-          <div className="space-y-2">
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredAssistants.map((assistant) => (
-              <Card key={assistant.id}>
-                <CardContent className="p-3">
-                  <div className="flex justify-between items-start">
-                    <div className="flex items-center space-x-3 flex-1">
+              <Card key={assistant.id} className="hover:shadow-lg transition-all duration-300">
+                <CardContent className="p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-start gap-3 flex-1 min-w-0">
                       <Avatar className="h-10 w-10">
-                        <AvatarFallback className="bg-gradient-to-br from-green-500 to-blue-600 text-white text-xs">
+                        <AvatarFallback className="bg-primary/10 text-primary text-xs">
                           {getInitials(assistant.profile?.full_name || '')}
                         </AvatarFallback>
                       </Avatar>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-0.5">
-                          <h3 className="font-semibold text-sm">{assistant.profile?.full_name || 'N/A'}</h3>
-                          <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100 text-xs">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h3 className="font-semibold truncate">{assistant.profile?.full_name || 'N/A'}</h3>
+                          <Badge variant="secondary" className="text-xs">
                             Msaidizi
                           </Badge>
                         </div>
-                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                          <Mail className="h-3 w-3" />
-                          <span>{assistant.profile?.email || 'N/A'}</span>
+                        <div className="space-y-1 text-sm text-muted-foreground mt-1">
+                          <div className="flex items-center gap-2">
+                            <Mail className="h-3 w-3" />
+                            <span className="truncate">{assistant.profile?.email || 'N/A'}</span>
+                          </div>
                         </div>
-                        <p className="text-xs text-muted-foreground mt-0.5">
-                          Biashara: {assistant.profile?.business_name || userProfile?.business_name || 'N/A'}
-                        </p>
                       </div>
                     </div>
+                    
                     <Button 
                       variant="ghost" 
-                      size="sm" 
+                      size="icon"
+                      className="h-8 w-8 text-destructive hover:text-destructive"
                       onClick={() => handleDeleteAssistant(assistant.assistant_id, assistant.profile?.full_name || '')}
-                      className="h-7 w-7 p-0 text-destructive hover:text-destructive"
                     >
-                      <Trash2 className="h-3 w-3" />
+                      <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
                 </CardContent>
@@ -522,20 +522,20 @@ export const UsersPage = () => {
           </div>
 
           {filteredAssistants.length === 0 && (
-            <Card className="text-center py-8">
+            <Card className="text-center py-12">
               <CardContent>
-                <UsersIcon className="h-10 w-10 text-muted-foreground mx-auto mb-2" />
-                <h3 className="text-sm font-semibold mb-1">Hakuna wasaidizi</h3>
-                <p className="text-xs text-muted-foreground mb-3">
+                <UsersIcon className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-lg font-semibold mb-2">Hakuna wasaidizi</h3>
+                <p className="text-muted-foreground mb-4">
                   {searchTerm ? "Hakuna matokeo" : "Ongeza msaidizi wa kwanza au funga aliyepo"}
                 </p>
                 {!searchTerm && (
                   <div className="flex gap-2 justify-center">
-                    <Button size="sm" onClick={() => setDialogOpen(true)}>
+                    <Button onClick={() => setDialogOpen(true)}>
                       <Plus className="h-4 w-4 mr-1" />
                       Unda Mpya
                     </Button>
-                    <Button size="sm" variant="outline" onClick={() => setLinkDialogOpen(true)}>
+                    <Button variant="outline" onClick={() => setLinkDialogOpen(true)}>
                       <UserPlus className="h-4 w-4 mr-1" />
                       Funga Aliyepo
                     </Button>
