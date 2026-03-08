@@ -26,6 +26,7 @@ interface Customer {
 
 export const CustomersPage = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
@@ -33,6 +34,10 @@ export const CustomersPage = () => {
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
   const [ledgerOpen, setLedgerOpen] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<{ id: string; name: string } | null>(null);
+  const [whatsappOpen, setWhatsappOpen] = useState(false);
+  const [whatsappTarget, setWhatsappTarget] = useState<Customer | null>(null);
+  const [whatsappMsg, setWhatsappMsg] = useState('');
+  const [sendingWhatsapp, setSendingWhatsapp] = useState(false);
   const [customerData, setCustomerData] = useState({
     name: '',
     email: '',
