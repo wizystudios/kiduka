@@ -15,6 +15,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useDataAccess } from '@/hooks/useDataAccess';
 import { useAuth } from '@/hooks/useAuth';
+import { estimateDeliveryDays } from '@/utils/deliveryEstimation';
 
 interface OrderItem {
   product_name: string;
@@ -57,7 +58,21 @@ export const SokoniOrderManagement = () => {
   const [batchMsg, setBatchMsg] = useState('');
   const [sendingBatch, setSendingBatch] = useState(false);
   const [batchProgress, setBatchProgress] = useState({ sent: 0, total: 0 });
+  const [sellerProfileRegion, setSellerProfileRegion] = useState<string | null>(null);
 
+  // Fetch seller profile region for delivery estimates
+  useEffect(() => {
+    const fetchRegion = async () => {
+      if (!dataOwnerId) return;
+      const { data } = await supabase
+        .from('profiles')
+        .select('region')
+        .eq('id', dataOwnerId)
+        .single();
+      if (data) setSellerProfileRegion((data as any).region || null);
+    };
+    fetchRegion();
+  }, [dataOwnerId]);
   useEffect(() => {
     if (dataOwnerId) {
       fetchOrders();
@@ -143,12 +158,27 @@ export const SokoniOrderManagement = () => {
 
   const buildOrderConfirmationMsg = (order: SokoniOrder) => {
     const itemsList = order.items.map(i => `• ${i.product_name} x${i.quantity} = TSh ${(i.unit_price * i.quantity).toLocaleString()}`).join('\n');
+    
+    // Get seller's region for delivery estimate
+    let deliveryLine = '';
+    if (user) {
+      // Fetch seller profile region asynchronously isn't ideal here, so we use a cached approach
+      // The delivery estimate will be added via the profile region stored in component
+      const sellerRegion = sellerProfileRegion;
+      if (sellerRegion) {
+        const estimate = estimateDeliveryDays(sellerRegion, null);
+        deliveryLine = `\n🚚 Makadirio ya usafirishaji: ${estimate.label}${estimate.distanceKm ? ` (~${estimate.distanceKm} km)` : ''}\n`;
+      }
+    }
+    
     return `✅ ODA YAKO IMETHIBITISHWA!\n\n` +
       `📦 Namba: #${order.id.slice(0, 8).toUpperCase()}\n` +
       `${order.tracking_code ? `🔍 Tracking: ${order.tracking_code}\n` : ''}` +
       `\n📋 Bidhaa:\n${itemsList}\n\n` +
       `💰 Jumla: TSh ${order.total_amount.toLocaleString()}\n` +
-      `📍 Anwani: ${order.delivery_address}\n\n` +
+      `📍 Anwani: ${order.delivery_address}\n` +
+      deliveryLine +
+      `\n🔗 Fuatilia oda: https://kiduka.lovable.app/track-order?code=${order.tracking_code || ''}\n\n` +
       `Tutakuarifu oda yako itakapokuwa njiani! 🚚\nAsante! 🙏`;
   };
 
