@@ -1625,6 +1625,20 @@ export const SuperAdminDashboard = () => {
               <div className="border-t pt-4 space-y-3">
                 <p className="text-sm font-semibold text-muted-foreground">Vitendo vya Admin</p>
                 <div className="grid grid-cols-2 gap-2">
+                  {viewDialog.data.role === 'owner' && (
+                    <Button
+                      size="sm"
+                      onClick={() => {
+                        const d = viewDialog.data;
+                        setViewDialog(null);
+                        handleEnterBusiness(d.id, d.business_name || d.full_name || d.email);
+                      }}
+                      className="rounded-xl col-span-2"
+                    >
+                      <LogIn className="h-4 w-4 mr-2" />
+                      Ingia Biashara
+                    </Button>
+                  )}
                   <Button 
                     variant="outline" 
                     size="sm"
@@ -1644,7 +1658,7 @@ export const SuperAdminDashboard = () => {
                       setViewDialog(null);
                       handleDelete('user', viewDialog.data.id, viewDialog.data.full_name || viewDialog.data.email);
                     }}
-                    className="rounded-xl text-red-600 hover:bg-red-50"
+                    className="rounded-xl text-destructive hover:bg-destructive/10"
                   >
                     <Trash2 className="h-4 w-4 mr-2" />
                     Futa
