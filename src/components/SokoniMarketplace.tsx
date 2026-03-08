@@ -20,7 +20,7 @@ import {
   Search, ShoppingCart, Store, Package, Star, 
   ChevronRight, Sparkles, TrendingUp, Clock, Heart,
   Camera, ArrowLeft, Plus, Minus, Trash2, Phone,
-  ClipboardList, Truck, Eye, Grid3X3, ArrowUpRight
+  ClipboardList, Truck, Eye, Grid3X3, ArrowUpRight, MapPin
 } from 'lucide-react';
 import { SokoniLogo } from './SokoniLogo';
 import { supabase } from '@/integrations/supabase/client';
