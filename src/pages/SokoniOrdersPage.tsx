@@ -4,11 +4,12 @@ import { useOrderNotifications } from "@/hooks/useOrderNotifications";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Bell, BellRing, Package, Tag, RotateCcw, Store } from "lucide-react";
+import { Bell, BellRing, Package, Tag, RotateCcw, Store, BarChart3 } from "lucide-react";
 import { toast } from "sonner";
 import { CouponCodeManager } from "@/components/CouponCodeManager";
 import { ReturnRequestManager } from "@/components/ReturnRequestManager";
 import { StoreSettings } from "@/components/StoreSettings";
+import { SokoniAnalyticsDashboard } from "@/components/SokoniAnalyticsDashboard";
 
 export const SokoniOrdersPage = () => {
   const [userId, setUserId] = useState<string | null>(null);
