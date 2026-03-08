@@ -327,6 +327,7 @@ export const WhatsAppHistoryPage = () => {
     }
   };
 
+  const filtered = messages.filter(m => {
     const matchesSearch = search === '' ||
       m.customer_name.toLowerCase().includes(search.toLowerCase()) ||
       m.phone_number.includes(search) ||
