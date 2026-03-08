@@ -210,12 +210,16 @@ export const SokoniMarketplace = () => {
       setCurrentUser(user);
 
       if (user) {
-        const { count } = await supabase
-          .from('products')
-          .select('*', { count: 'exact', head: true })
-          .eq('owner_id', user.id);
+        const [countResult, profileResult] = await Promise.all([
+          supabase.from('products').select('*', { count: 'exact', head: true }).eq('owner_id', user.id),
+          supabase.from('profiles').select('region, district').eq('id', user.id).maybeSingle()
+        ]);
 
-        setIsSeller((count || 0) > 0);
+        setIsSeller((countResult.count || 0) > 0);
+        if (profileResult.data) {
+          setUserRegion((profileResult.data as any).region || null);
+          setUserDistrict((profileResult.data as any).district || null);
+        }
       }
 
       const { data: productsData, error: productsError } = await supabase
