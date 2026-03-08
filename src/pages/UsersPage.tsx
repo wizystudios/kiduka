@@ -11,6 +11,7 @@ import { Plus, Search, Trash2, Users as UsersIcon, Mail, Settings as SettingsIco
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
+import { logActivity } from '@/hooks/useActivityLogger';
 import { AssistantPermissionsManager } from '@/components/AssistantPermissionsManager';
 import { AssistantHarakaManager } from '@/components/AssistantHarakaManager';
 
