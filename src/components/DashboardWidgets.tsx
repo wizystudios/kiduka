@@ -533,10 +533,10 @@ export const LoansWidget = () => {
         <SheetHeader>
           <SheetTitle className="flex items-center justify-between">
             <span className="flex items-center gap-2">
-              <Banknote className="h-5 w-5 text-lime-600" />
+              <Banknote className="h-5 w-5 text-success" />
               Mikopo Hai
             </span>
-            <span className="text-lime-700 font-bold">TZS {totalBalance.toLocaleString()}</span>
+            <span className="text-success font-bold">TZS {totalBalance.toLocaleString()}</span>
           </SheetTitle>
         </SheetHeader>
         <div className="py-4 space-y-2 overflow-y-auto max-h-[50vh]">
