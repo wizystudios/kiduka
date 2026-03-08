@@ -657,6 +657,10 @@ export const DebtorsWidget = () => {
   const [sendingTo, setSendingTo] = useState<Debtor | null>(null);
   const [whatsappMsg, setWhatsappMsg] = useState('');
   const [sending, setSending] = useState(false);
+  const [batchMode, setBatchMode] = useState(false);
+  const [batchMsg, setBatchMsg] = useState('');
+  const [batchSending, setBatchSending] = useState(false);
+  const [batchProgress, setBatchProgress] = useState({ sent: 0, total: 0 });
 
   useEffect(() => {
     if (isReady && dataOwnerId) {
@@ -701,7 +705,6 @@ export const DebtorsWidget = () => {
       toast.success(`Ujumbe umetumwa kwa ${sendingTo.name}`);
       setSendingTo(null);
     } catch (e) {
-      // Fallback: open WhatsApp web
       const phone = sendingTo.phone.startsWith('0') ? `255${sendingTo.phone.slice(1)}` : sendingTo.phone;
       const url = `https://wa.me/${phone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(whatsappMsg)}`;
       window.open(url, '_blank');
@@ -710,6 +713,48 @@ export const DebtorsWidget = () => {
     } finally {
       setSending(false);
     }
+  };
+
+  const openBatchMode = () => {
+    const debtorsWithPhone = debtors.filter(d => d.phone);
+    if (debtorsWithPhone.length === 0) {
+      toast.error('Hakuna wateja wenye nambari za simu');
+      return;
+    }
+    setBatchMsg('Habari, tunakukumbusha kuwa una deni kwetu. Tafadhali fanya malipo haraka iwezekanavyo. Asante!');
+    setBatchProgress({ sent: 0, total: debtorsWithPhone.length });
+    setBatchMode(true);
+  };
+
+  const sendBatchWhatsApp = async () => {
+    const debtorsWithPhone = debtors.filter(d => d.phone);
+    if (debtorsWithPhone.length === 0) return;
+
+    setBatchSending(true);
+    setBatchProgress({ sent: 0, total: debtorsWithPhone.length });
+
+    for (let i = 0; i < debtorsWithPhone.length; i++) {
+      const d = debtorsWithPhone[i];
+      const personalMsg = batchMsg
+        .replace('{jina}', d.name)
+        .replace('{deni}', `TZS ${d.outstanding_balance.toLocaleString()}`);
+      
+      const finalMsg = personalMsg.includes(d.name) ? personalMsg : 
+        `Habari ${d.name}, ${personalMsg} Deni lako: TZS ${d.outstanding_balance.toLocaleString()}.`;
+
+      try {
+        await supabase.functions.invoke('send-whatsapp', {
+          body: { phoneNumber: d.phone!, message: finalMsg, messageType: 'debt_reminder_batch' }
+        });
+      } catch (e) {
+        // Continue with next
+      }
+      setBatchProgress({ sent: i + 1, total: debtorsWithPhone.length });
+    }
+
+    toast.success(`Ujumbe ${debtorsWithPhone.length} zimetumwa!`);
+    setBatchSending(false);
+    setBatchMode(false);
   };
 
   return (
@@ -737,29 +782,41 @@ export const DebtorsWidget = () => {
             {debtors.length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-4">Hakuna wateja wenye madeni</p>
             ) : (
-              debtors.map((d) => (
-                <div key={d.id} className="flex items-center justify-between p-2 border rounded-md">
-                  <div>
-                    <p className="text-sm font-medium">{d.name}</p>
-                    {d.phone && <p className="text-[10px] text-muted-foreground">{d.phone}</p>}
+              <>
+                {debtors.filter(d => d.phone).length > 1 && (
+                  <Button
+                    variant="outline"
+                    className="w-full text-green-600 border-green-200 hover:bg-green-50"
+                    onClick={openBatchMode}
+                  >
+                    <Send className="h-4 w-4 mr-2" />
+                    Tuma WhatsApp kwa Wote ({debtors.filter(d => d.phone).length})
+                  </Button>
+                )}
+                {debtors.map((d) => (
+                  <div key={d.id} className="flex items-center justify-between p-2 border rounded-md">
+                    <div>
+                      <p className="text-sm font-medium">{d.name}</p>
+                      {d.phone && <p className="text-[10px] text-muted-foreground">{d.phone}</p>}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {d.phone && (
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-7 w-7 text-green-600 hover:text-green-700 hover:bg-green-50"
+                          onClick={() => openWhatsApp(d)}
+                        >
+                          <MessageCircle className="h-4 w-4" />
+                        </Button>
+                      )}
+                      <Badge variant="destructive" className="text-xs">
+                        TZS {d.outstanding_balance.toLocaleString()}
+                      </Badge>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    {d.phone && (
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="h-7 w-7 text-green-600 hover:text-green-700 hover:bg-green-50"
-                        onClick={() => openWhatsApp(d)}
-                      >
-                        <MessageCircle className="h-4 w-4" />
-                      </Button>
-                    )}
-                    <Badge variant="destructive" className="text-xs">
-                      TZS {d.outstanding_balance.toLocaleString()}
-                    </Badge>
-                  </div>
-                </div>
-              ))
+                ))}
+              </>
             )}
           </div>
           <Button className="w-full mt-3" variant="outline" onClick={() => navigate('/customers')}>
@@ -769,6 +826,7 @@ export const DebtorsWidget = () => {
         </SheetContent>
       </Sheet>
 
+      {/* Single WhatsApp Dialog */}
       <Dialog open={!!sendingTo} onOpenChange={(open) => !open && setSendingTo(null)}>
         <DialogContent>
           <DialogHeader>
@@ -794,6 +852,54 @@ export const DebtorsWidget = () => {
             <Button className="w-full bg-green-600 hover:bg-green-700" onClick={sendWhatsApp} disabled={sending}>
               <Send className="h-4 w-4 mr-2" />
               {sending ? 'Inatuma...' : 'Tuma WhatsApp'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Batch WhatsApp Dialog */}
+      <Dialog open={batchMode} onOpenChange={(open) => { if (!batchSending) setBatchMode(open); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Send className="h-5 w-5 text-green-600" />
+              Tuma WhatsApp kwa Wote
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <p className="text-xs text-muted-foreground">
+              Wateja {debtors.filter(d => d.phone).length} wenye nambari watapokea ujumbe. Tumia {'{jina}'} na {'{deni}'} kwa maelezo binafsi.
+            </p>
+            <div>
+              <Label>Ujumbe</Label>
+              <Textarea
+                value={batchMsg}
+                onChange={(e) => setBatchMsg(e.target.value)}
+                rows={4}
+                className="text-sm"
+                disabled={batchSending}
+              />
+            </div>
+            {batchSending && (
+              <div className="space-y-1">
+                <div className="w-full bg-muted rounded-full h-2">
+                  <div
+                    className="bg-green-600 h-2 rounded-full transition-all"
+                    style={{ width: `${(batchProgress.sent / batchProgress.total) * 100}%` }}
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground text-center">
+                  {batchProgress.sent}/{batchProgress.total} zimetumwa
+                </p>
+              </div>
+            )}
+            <Button
+              className="w-full bg-green-600 hover:bg-green-700"
+              onClick={sendBatchWhatsApp}
+              disabled={batchSending}
+            >
+              <Send className="h-4 w-4 mr-2" />
+              {batchSending ? `Inatuma ${batchProgress.sent}/${batchProgress.total}...` : `Tuma kwa Wote (${debtors.filter(d => d.phone).length})`}
             </Button>
           </div>
         </DialogContent>
