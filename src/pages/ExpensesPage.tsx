@@ -161,11 +161,8 @@ export default function ExpensesPage() {
       </div>
 
       {showForm && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Matumizi Mapya</CardTitle>
-          </CardHeader>
-          <CardContent>
+        <div className="border border-border rounded-2xl p-4">
+          <h3 className="text-sm font-semibold mb-3">Matumizi Mapya</h3>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
                 <Label>Aina ya Matumizi</Label>
