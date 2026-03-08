@@ -31,7 +31,8 @@ import {
   Trash2,
   UserPlus,
   Banknote,
-  ClipboardCheck
+  ClipboardCheck,
+  Users
 } from 'lucide-react';
 
 interface LowStockProduct {
