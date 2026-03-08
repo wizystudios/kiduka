@@ -399,13 +399,13 @@ export const ProductsWidget = () => {
       <SheetTrigger asChild>
         <Button
           variant="outline"
-          className="flex-1 h-10 justify-between bg-purple-50 border-purple-200 hover:bg-purple-100 dark:bg-purple-950 dark:border-purple-800"
+          className="flex-1 h-10 justify-between bg-success/5 border-success/20 hover:bg-success/10"
         >
           <div className="flex items-center gap-2">
-            <Package className="h-4 w-4 text-purple-600" />
+            <Package className="h-4 w-4 text-success" />
             <span className="text-xs font-medium">Bidhaa</span>
           </div>
-          <Badge variant="outline" className="text-xs bg-purple-100 text-purple-800 border-purple-300">
+          <Badge variant="outline" className="text-xs bg-success/10 text-success border-success/20">
             {products.length}
           </Badge>
         </Button>
