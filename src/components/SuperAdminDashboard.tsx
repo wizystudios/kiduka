@@ -1099,7 +1099,7 @@ export const SuperAdminDashboard = () => {
       
       {/* Main Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid grid-cols-5 md:grid-cols-10 mb-4">
+        <TabsList className="grid grid-cols-5 md:grid-cols-11 mb-4">
           <TabsTrigger value="overview" className="text-xs">Overview</TabsTrigger>
           <TabsTrigger value="analytics" className="text-xs">Analytics</TabsTrigger>
           <TabsTrigger value="subscriptions" className="text-xs relative">
@@ -1112,6 +1112,7 @@ export const SuperAdminDashboard = () => {
           </TabsTrigger>
           <TabsTrigger value="compliance" className="text-xs">Sheria</TabsTrigger>
           <TabsTrigger value="users" className="text-xs">Watumiaji</TabsTrigger>
+          <TabsTrigger value="activities" className="text-xs">Shughuli</TabsTrigger>
           <TabsTrigger value="products" className="text-xs hidden md:block">Bidhaa</TabsTrigger>
           <TabsTrigger value="sales" className="text-xs hidden md:block">Mauzo</TabsTrigger>
           <TabsTrigger value="orders" className="text-xs hidden md:block">Oda</TabsTrigger>
