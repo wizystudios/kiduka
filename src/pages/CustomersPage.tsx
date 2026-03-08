@@ -5,10 +5,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Plus, Search, Edit, Trash2, Users, Mail, Phone, FileText, FileSpreadsheet, AlertTriangle, DollarSign, MessageSquare } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, Users, Mail, Phone, FileText, FileSpreadsheet, AlertTriangle, DollarSign, MessageSquare, Send } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
 import { CustomerLedger } from '@/components/CustomerLedger';
 import { exportToExcel, ExportColumn } from '@/utils/exportUtils';
 
@@ -24,6 +26,7 @@ interface Customer {
 
 export const CustomersPage = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
@@ -31,6 +34,10 @@ export const CustomersPage = () => {
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
   const [ledgerOpen, setLedgerOpen] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<{ id: string; name: string } | null>(null);
+  const [whatsappOpen, setWhatsappOpen] = useState(false);
+  const [whatsappTarget, setWhatsappTarget] = useState<Customer | null>(null);
+  const [whatsappMsg, setWhatsappMsg] = useState('');
+  const [sendingWhatsapp, setSendingWhatsapp] = useState(false);
   const [customerData, setCustomerData] = useState({
     name: '',
     email: '',
@@ -41,6 +48,59 @@ export const CustomersPage = () => {
   useEffect(() => {
     fetchCustomers();
   }, []);
+
+  const openWhatsApp = (customer: Customer) => {
+    if (!customer.phone) {
+      toast({ title: 'Hitilafu', description: 'Mteja hana namba ya simu', variant: 'destructive' });
+      return;
+    }
+    setWhatsappTarget(customer);
+    setWhatsappMsg(`Habari ${customer.name}, `);
+    setWhatsappOpen(true);
+  };
+
+  const sendWhatsApp = async () => {
+    if (!whatsappTarget?.phone || !whatsappMsg.trim()) return;
+    setSendingWhatsapp(true);
+    const phone = whatsappTarget.phone.startsWith('+') ? whatsappTarget.phone : `+255${whatsappTarget.phone.replace(/^0/, '')}`;
+    
+    try {
+      const { error } = await supabase.functions.invoke('send-whatsapp', {
+        body: { phoneNumber: phone, message: whatsappMsg, messageType: 'general' }
+      });
+
+      // Log message
+      if (user) {
+        await supabase.from('whatsapp_messages').insert({
+          owner_id: user.id,
+          customer_id: whatsappTarget.id,
+          customer_name: whatsappTarget.name,
+          phone_number: phone,
+          message: whatsappMsg,
+          message_type: 'general',
+          status: error ? 'sent_wa_link' : 'sent',
+        });
+      }
+
+      if (error) {
+        window.open(`https://wa.me/${phone.replace('+', '')}?text=${encodeURIComponent(whatsappMsg)}`, '_blank');
+      }
+
+      toast({ title: 'Ujumbe umetumwa', description: `Ujumbe kwa ${whatsappTarget.name}` });
+      setWhatsappOpen(false);
+    } catch {
+      window.open(`https://wa.me/${phone.replace('+', '')}?text=${encodeURIComponent(whatsappMsg)}`, '_blank');
+      if (user) {
+        await supabase.from('whatsapp_messages').insert({
+          owner_id: user.id, customer_id: whatsappTarget.id, customer_name: whatsappTarget.name,
+          phone_number: phone, message: whatsappMsg, message_type: 'general', status: 'sent_wa_link',
+        });
+      }
+      setWhatsappOpen(false);
+    } finally {
+      setSendingWhatsapp(false);
+    }
+  };
 
   const fetchCustomers = async () => {
     try {
@@ -358,6 +418,15 @@ export const CustomersPage = () => {
                     variant="ghost" 
                     size="icon"
                     className="h-8 w-8 text-green-600 hover:text-green-700"
+                    onClick={() => openWhatsApp(customer)}
+                    title="Tuma WhatsApp"
+                  >
+                    <Send className="h-4 w-4" />
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="icon"
+                    className="h-8 w-8 text-green-600/60 hover:text-green-700"
                     onClick={() => navigate(`/whatsapp-history?customer_id=${customer.id}&customer_name=${encodeURIComponent(customer.name)}`)}
                     title="Historia ya WhatsApp"
                   >
@@ -413,6 +482,37 @@ export const CustomersPage = () => {
           onOpenChange={setLedgerOpen}
         />
       )}
+
+      {/* WhatsApp Send Dialog */}
+      <Dialog open={whatsappOpen} onOpenChange={setWhatsappOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <MessageSquare className="h-5 w-5 text-green-600" />
+              Tuma WhatsApp - {whatsappTarget?.name}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Simu</Label>
+              <Input value={whatsappTarget?.phone || ''} disabled />
+            </div>
+            <div>
+              <Label>Ujumbe</Label>
+              <Textarea
+                value={whatsappMsg}
+                onChange={(e) => setWhatsappMsg(e.target.value)}
+                rows={5}
+                placeholder="Andika ujumbe..."
+              />
+            </div>
+            <Button onClick={sendWhatsApp} disabled={!whatsappMsg.trim() || sendingWhatsapp} className="w-full bg-green-600 hover:bg-green-700">
+              <Send className="h-4 w-4 mr-2" />
+              {sendingWhatsapp ? 'Inatuma...' : 'Tuma WhatsApp'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
