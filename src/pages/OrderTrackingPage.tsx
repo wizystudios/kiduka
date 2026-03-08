@@ -64,17 +64,31 @@ export const OrderTrackingPage = () => {
     try {
       const { data, error } = await supabase
         .from('sokoni_orders')
-        .select('id, tracking_code, order_status, payment_status, total_amount, items, created_at, updated_at, customer_received')
+        .select('id, tracking_code, order_status, payment_status, total_amount, items, created_at, updated_at, customer_received, seller_id, delivery_address, delivery_person_name, delivery_person_phone')
         .or(`customer_phone.eq.${normalizedPhone},customer_phone.eq.${phoneValue}`)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
 
       if (data && data.length > 0) {
+        // Fetch seller regions
+        const sellerIds = [...new Set(data.map(o => o.seller_id))];
+        const { data: sellerProfiles } = await supabase
+          .from('profiles')
+          .select('id, region, district')
+          .in('id', sellerIds);
+
+        const sellerMap: Record<string, { region?: string; district?: string }> = {};
+        sellerProfiles?.forEach(p => {
+          sellerMap[p.id] = { region: (p as any).region, district: (p as any).district };
+        });
+
         const parsedOrders = data.map(order => ({
           ...order,
           items: typeof order.items === 'string' ? JSON.parse(order.items) : order.items,
-          customer_received: order.customer_received || false
+          customer_received: order.customer_received || false,
+          seller_region: sellerMap[order.seller_id]?.region,
+          seller_district: sellerMap[order.seller_id]?.district,
         }));
         setOrders(parsedOrders);
       } else {
