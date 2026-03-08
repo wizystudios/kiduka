@@ -410,6 +410,15 @@ export default function App() {
                 </ProtectedRoute>
               } />
               
+              {/* WhatsApp History */}
+              <Route path="/whatsapp-history" element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <WhatsAppHistoryPage />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+              
               {/* Subscription */}
               <Route path="/subscription" element={
                 <ProtectedRoute>
