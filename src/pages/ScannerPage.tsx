@@ -446,14 +446,14 @@ export const ScannerPage = () => {
                 <Button
                   variant={searchType === "name" ? "default" : "outline"}
                   onClick={() => setSearchType("name")}
-                  className="flex-1 h-12 text-base"
+                  className="flex-1 h-12 text-base rounded-2xl"
                 >
                   📝 Jina
                 </Button>
                 <Button
                   variant={searchType === "barcode" ? "default" : "outline"}
                   onClick={() => setSearchType("barcode")}
-                  className="flex-1 h-12 text-base"
+                  className="flex-1 h-12 text-base rounded-2xl"
                 >
                   📷 Barcode
                 </Button>
