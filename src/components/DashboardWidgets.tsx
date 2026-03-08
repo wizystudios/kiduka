@@ -239,7 +239,7 @@ export const ExpensesWidget = () => {
                   <p className="font-medium text-sm">{expense.name}</p>
                   <p className="text-xs text-muted-foreground">{expense.count} miamala</p>
                 </div>
-                <span className="font-bold text-red-600">TZS {expense.amount.toLocaleString()}</span>
+                <span className="font-bold text-foreground">TZS {expense.amount.toLocaleString()}</span>
               </div>
             )) : (
               <p className="text-center text-muted-foreground py-4">Hakuna matumizi leo</p>
