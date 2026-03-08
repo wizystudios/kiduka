@@ -11,6 +11,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { MultiImageUpload } from '@/components/MultiImageUpload';
+import { logActivity } from '@/hooks/useActivityLogger';
 
 interface ProductImage {
   id?: string;
@@ -174,6 +175,7 @@ export const EditProductPage = () => {
       }
 
       console.log('Product updated successfully:', data);
+      logActivity('product_edit', `Bidhaa "${formData.name}" imesasishwa`, { product_id: id, product_name: formData.name });
       toast({
         title: 'Mafanikio',
         description: 'Bidhaa imesasishwa kwa mafanikio'

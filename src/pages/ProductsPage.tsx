@@ -8,6 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import { useDataAccess } from '@/hooks/useDataAccess';
 import { useOfflineProducts } from '@/hooks/useOfflineProducts';
 import { toast } from 'sonner';
+import { logActivity } from '@/hooks/useActivityLogger';
 import * as XLSX from 'xlsx';
 import { WeightQuantitySelector } from '@/components/WeightQuantitySelector';
 
@@ -73,6 +74,7 @@ export const ProductsPage = () => {
 
     // Use the offline-first delete
     await deleteProduct(id);
+    logActivity('product_delete', `Bidhaa "${productName}" imefutwa`, { product_name: productName });
   };
 
   const handleArchiveProduct = async (id: string, productName: string, currentArchived: boolean) => {

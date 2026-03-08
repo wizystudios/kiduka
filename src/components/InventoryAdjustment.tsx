@@ -8,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
+import { logActivity } from '@/hooks/useActivityLogger';
 import { Package, ClipboardCheck } from 'lucide-react';
 
 interface Product {
@@ -104,6 +105,9 @@ export const InventoryAdjustment = () => {
 
       if (movementError) throw movementError;
 
+      logActivity('inventory_adjustment', `Stock ya "${product.name}" imebadilishwa: ${product.stock_quantity} → ${actualCount}`, {
+        product_name: product.name, before: product.stock_quantity, after: actualCount, difference
+      });
       toast.success('Marekebisho ya stock yamefanywa!');
       setFormData({
         product_id: '',
