@@ -8,7 +8,6 @@ import { Mail, Lock, User, Eye, EyeOff, Phone, ArrowRight, ArrowLeft, Store } fr
 import { toast } from 'sonner';
 import { EmailConfirmationPage } from '@/components/EmailConfirmationPage';
 import { normalizeTzPhoneDigits } from '@/utils/phoneUtils';
-import { ForgotPasswordDialog } from '@/components/ForgotPasswordDialog';
 import { supabase } from '@/integrations/supabase/client';
 
 type AuthStep = 'method' | 'identifier' | 'password' | 'name';
