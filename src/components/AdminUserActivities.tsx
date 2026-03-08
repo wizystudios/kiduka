@@ -71,7 +71,7 @@ export const AdminUserActivities = () => {
       if (error) throw error;
 
       // Fetch user profiles for activities
-      const userIds = [...new Set((data || []).map((a: any) => a.user_id))];
+      const userIds = [...new Set((data || []).map((a: any) => a.user_id))] as string[];
       let profiles: Record<string, any> = {};
       
       if (userIds.length > 0) {
