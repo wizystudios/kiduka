@@ -17,7 +17,8 @@ import {
   Users, CreditCard, Percent, TrendingUp, BarChart3, Download,
   Calculator as CalcIcon, Receipt, Store, Shield, Crown,
   ClipboardList, Smartphone, Zap, Banknote, LineChart, UserCheck,
-  ChevronDown, Menu, HelpCircle, Plus, Wallet, MessageSquare
+  ChevronDown, Menu, HelpCircle, Plus, Wallet, MessageSquare,
+  Brain, Mic, Headphones
 } from 'lucide-react';
 
 interface NavItem {
