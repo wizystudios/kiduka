@@ -777,14 +777,14 @@ export const DebtorsWidget = () => {
     <>
       <Sheet>
         <SheetTrigger asChild>
-          <Button variant="outline" className="h-auto p-2 flex flex-col items-start w-full border-l-2 border-l-destructive">
-            <div className="flex items-center gap-1 w-full">
-              <Users className="h-3 w-3 text-destructive" />
-              <span className="text-[10px] text-muted-foreground">Wadaiwa</span>
+          <Button variant="outline" className="flex-1 h-10 justify-between bg-primary/5 border-primary/20 hover:bg-primary/10">
+            <div className="flex items-center gap-2">
+              <Users className="h-4 w-4 text-primary" />
+              <span className="text-xs font-medium">Wadaiwa</span>
             </div>
-            <p className="text-sm font-bold text-destructive">
-              {debtors.length > 0 ? `${debtors.length} (TZS ${totalDebt.toLocaleString()})` : '0'}
-            </p>
+            <span className="text-xs font-bold text-primary">
+              {debtors.length > 0 ? `${debtors.length}` : '0'}
+            </span>
           </Button>
         </SheetTrigger>
         <SheetContent side="bottom" className="max-h-[70vh] overflow-y-auto">
