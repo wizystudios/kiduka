@@ -413,7 +413,7 @@ export const ProductsWidget = () => {
       <SheetContent side="bottom" className="rounded-t-2xl max-h-[70vh]">
         <SheetHeader>
           <SheetTitle className="flex items-center gap-2">
-            <Package className="h-5 w-5 text-purple-600" />
+            <Package className="h-5 w-5 text-success" />
             Bidhaa za Hivi Karibuni
           </SheetTitle>
         </SheetHeader>
