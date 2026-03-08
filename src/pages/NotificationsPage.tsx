@@ -10,7 +10,7 @@ import {
   Bell, Check, Trash2, ShoppingCart, Package, AlertTriangle, 
   RefreshCw, Wifi, WifiOff, CheckCheck, Store, Search,
   Activity, LogIn, UserPlus, UserMinus, CreditCard, Receipt,
-  Settings, Eye, Clock, Filter
+  Settings, Eye, Clock, Filter, MessageSquare
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useDataAccess } from '@/hooks/useDataAccess';
