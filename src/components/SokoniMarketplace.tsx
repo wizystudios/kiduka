@@ -66,6 +66,8 @@ interface SellerProfile {
   id: string;
   business_name: string | null;
   phone: string | null;
+  region: string | null;
+  district: string | null;
 }
 
 interface GuestOrder {
