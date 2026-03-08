@@ -24,7 +24,7 @@ import {
   Shield, Home, Package, QrCode, ShoppingCart, BarChart3, Settings, Users,
   UserCheck, Percent, CreditCard, Store, Brain, TrendingUp, LogOut, Crown,
   ClipboardList, Smartphone, Zap, Banknote, Download, Calculator as CalcIcon,
-  Receipt, LineChart, ChevronDown
+  Receipt, LineChart, ChevronDown, Headphones
 } from 'lucide-react';
 
 interface NavGroup {
@@ -250,6 +250,16 @@ export function AppSidebar() {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               )}
+
+              {/* Help & Chat link at bottom */}
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={isActive('/help')}>
+                  <NavLink to="/help" className="flex items-center gap-3 px-3 py-2 rounded-lg">
+                    <Headphones className="h-4 w-4" />
+                    {!collapsed && <span>Msaada & Mazungumzo</span>}
+                  </NavLink>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

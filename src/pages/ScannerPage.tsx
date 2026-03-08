@@ -360,14 +360,8 @@ export const ScannerPage = () => {
 
   return (
     <div className="page-container">
-      <div className="bg-gradient-to-r from-primary/10 to-primary/5 p-2 rounded mb-2">
-        <h2 className="text-sm font-bold text-foreground mb-1">💰 Muuzo wa Haraka</h2>
-        <p className="text-xs text-muted-foreground">Tafuta bidhaa</p>
-        <div className="mt-1 p-1.5 bg-green-50 dark:bg-green-900/20 border-l-2 border-green-500 rounded">
-          <p className="text-xs text-green-800 dark:text-green-200">
-            💡 Tumia jina kwa haraka!
-          </p>
-        </div>
+      <div className="bg-gradient-to-r from-primary/10 to-primary/5 p-2 rounded-2xl mb-2">
+        <h2 className="text-sm font-bold text-foreground">💰 Muuzo wa Haraka</h2>
       </div>
 
       <CameraScanner
@@ -452,14 +446,14 @@ export const ScannerPage = () => {
                 <Button
                   variant={searchType === "name" ? "default" : "outline"}
                   onClick={() => setSearchType("name")}
-                  className="flex-1 h-12 text-base"
+                  className="flex-1 h-12 text-base rounded-2xl"
                 >
                   📝 Jina
                 </Button>
                 <Button
                   variant={searchType === "barcode" ? "default" : "outline"}
                   onClick={() => setSearchType("barcode")}
-                  className="flex-1 h-12 text-base"
+                  className="flex-1 h-12 text-base rounded-2xl"
                 >
                   📷 Barcode
                 </Button>
@@ -477,7 +471,7 @@ export const ScannerPage = () => {
                 <div className="flex gap-2">
                   <Button 
                     onClick={() => handleSearchProduct(searchQuery)}
-                    className="flex-1 h-14 text-base"
+                    className="flex-1 h-14 text-base rounded-2xl"
                     disabled={!searchQuery || loading}
                   >
                     <Search className="h-5 w-5 mr-2" />
@@ -487,7 +481,7 @@ export const ScannerPage = () => {
                     <Button 
                       onClick={() => setShowCamera(true)}
                       variant="outline"
-                      className="h-14 px-6"
+                      className="h-14 px-6 rounded-2xl"
                     >
                       <Camera className="h-6 w-6" />
                     </Button>
