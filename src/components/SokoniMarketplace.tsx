@@ -33,6 +33,7 @@ import { SokoniProductDetail } from './SokoniProductDetail';
 import { useWishlist } from '@/hooks/useWishlist';
 import { SokoniBottomNav } from './SokoniBottomNav';
 import { ImageSearchModal } from './ImageSearchModal';
+import { estimateDeliveryDays, getDeliveryEstimateColor } from '@/utils/deliveryEstimation';
 interface ActiveDiscount {
   id: string;
   discount_type: string;
