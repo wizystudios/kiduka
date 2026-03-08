@@ -654,6 +654,9 @@ export const DebtorsWidget = () => {
   const navigate = useNavigate();
   const [debtors, setDebtors] = useState<Debtor[]>([]);
   const [totalDebt, setTotalDebt] = useState(0);
+  const [sendingTo, setSendingTo] = useState<Debtor | null>(null);
+  const [whatsappMsg, setWhatsappMsg] = useState('');
+  const [sending, setSending] = useState(false);
 
   useEffect(() => {
     if (isReady && dataOwnerId) {
@@ -678,48 +681,123 @@ export const DebtorsWidget = () => {
     }
   };
 
+  const openWhatsApp = (debtor: Debtor) => {
+    const defaultMsg = `Habari ${debtor.name}, tunakukumbusha kuwa una deni la TZS ${debtor.outstanding_balance.toLocaleString()}. Tafadhali fanya malipo haraka iwezekanavyo. Asante!`;
+    setWhatsappMsg(defaultMsg);
+    setSendingTo(debtor);
+  };
+
+  const sendWhatsApp = async () => {
+    if (!sendingTo?.phone) {
+      toast.error('Mteja hana nambari ya simu');
+      return;
+    }
+    setSending(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('send-whatsapp', {
+        body: { phoneNumber: sendingTo.phone, message: whatsappMsg, messageType: 'debt_reminder' }
+      });
+      if (error) throw error;
+      toast.success(`Ujumbe umetumwa kwa ${sendingTo.name}`);
+      setSendingTo(null);
+    } catch (e) {
+      // Fallback: open WhatsApp web
+      const phone = sendingTo.phone.startsWith('0') ? `255${sendingTo.phone.slice(1)}` : sendingTo.phone;
+      const url = `https://wa.me/${phone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(whatsappMsg)}`;
+      window.open(url, '_blank');
+      toast.success('Imefungua WhatsApp');
+      setSendingTo(null);
+    } finally {
+      setSending(false);
+    }
+  };
+
   return (
-    <Sheet>
-      <SheetTrigger asChild>
-        <Button variant="outline" className="h-auto p-2 flex flex-col items-start w-full border-l-2 border-l-destructive">
-          <div className="flex items-center gap-1 w-full">
-            <Users className="h-3 w-3 text-destructive" />
-            <span className="text-[10px] text-muted-foreground">Wadaiwa</span>
-          </div>
-          <p className="text-sm font-bold text-destructive">
-            {debtors.length > 0 ? `${debtors.length} (TZS ${totalDebt.toLocaleString()})` : '0'}
-          </p>
-        </Button>
-      </SheetTrigger>
-      <SheetContent side="bottom" className="max-h-[70vh] overflow-y-auto">
-        <SheetHeader>
-          <SheetTitle className="flex items-center gap-2">
-            <Users className="h-5 w-5 text-destructive" />
-            Wateja Wenye Madeni
-          </SheetTitle>
-        </SheetHeader>
-        <div className="space-y-2 mt-4">
-          {debtors.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-4">Hakuna wateja wenye madeni</p>
-          ) : (
-            debtors.map((d) => (
-              <div key={d.id} className="flex items-center justify-between p-2 border rounded-md">
-                <div>
-                  <p className="text-sm font-medium">{d.name}</p>
-                  {d.phone && <p className="text-[10px] text-muted-foreground">{d.phone}</p>}
+    <>
+      <Sheet>
+        <SheetTrigger asChild>
+          <Button variant="outline" className="h-auto p-2 flex flex-col items-start w-full border-l-2 border-l-destructive">
+            <div className="flex items-center gap-1 w-full">
+              <Users className="h-3 w-3 text-destructive" />
+              <span className="text-[10px] text-muted-foreground">Wadaiwa</span>
+            </div>
+            <p className="text-sm font-bold text-destructive">
+              {debtors.length > 0 ? `${debtors.length} (TZS ${totalDebt.toLocaleString()})` : '0'}
+            </p>
+          </Button>
+        </SheetTrigger>
+        <SheetContent side="bottom" className="max-h-[70vh] overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5 text-destructive" />
+              Wateja Wenye Madeni
+            </SheetTitle>
+          </SheetHeader>
+          <div className="space-y-2 mt-4">
+            {debtors.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-4">Hakuna wateja wenye madeni</p>
+            ) : (
+              debtors.map((d) => (
+                <div key={d.id} className="flex items-center justify-between p-2 border rounded-md">
+                  <div>
+                    <p className="text-sm font-medium">{d.name}</p>
+                    {d.phone && <p className="text-[10px] text-muted-foreground">{d.phone}</p>}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {d.phone && (
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-7 w-7 text-green-600 hover:text-green-700 hover:bg-green-50"
+                        onClick={() => openWhatsApp(d)}
+                      >
+                        <MessageCircle className="h-4 w-4" />
+                      </Button>
+                    )}
+                    <Badge variant="destructive" className="text-xs">
+                      TZS {d.outstanding_balance.toLocaleString()}
+                    </Badge>
+                  </div>
                 </div>
-                <Badge variant="destructive" className="text-xs">
-                  TZS {d.outstanding_balance.toLocaleString()}
-                </Badge>
-              </div>
-            ))
-          )}
-        </div>
-        <Button className="w-full mt-3" variant="outline" onClick={() => navigate('/customers')}>
-          Tazama Wateja Wote
-          <ChevronRight className="h-4 w-4 ml-2" />
-        </Button>
-      </SheetContent>
-    </Sheet>
+              ))
+            )}
+          </div>
+          <Button className="w-full mt-3" variant="outline" onClick={() => navigate('/customers')}>
+            Tazama Wateja Wote
+            <ChevronRight className="h-4 w-4 ml-2" />
+          </Button>
+        </SheetContent>
+      </Sheet>
+
+      <Dialog open={!!sendingTo} onOpenChange={(open) => !open && setSendingTo(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <MessageCircle className="h-5 w-5 text-green-600" />
+              Tuma WhatsApp - {sendingTo?.name}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <Label>Nambari</Label>
+              <p className="text-sm text-muted-foreground">{sendingTo?.phone}</p>
+            </div>
+            <div>
+              <Label>Ujumbe</Label>
+              <Textarea
+                value={whatsappMsg}
+                onChange={(e) => setWhatsappMsg(e.target.value)}
+                rows={4}
+                className="text-sm"
+              />
+            </div>
+            <Button className="w-full bg-green-600 hover:bg-green-700" onClick={sendWhatsApp} disabled={sending}>
+              <Send className="h-4 w-4 mr-2" />
+              {sending ? 'Inatuma...' : 'Tuma WhatsApp'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };
