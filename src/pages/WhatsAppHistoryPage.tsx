@@ -387,7 +387,11 @@ export const WhatsAppHistoryPage = () => {
         <div className="flex gap-2">
           <Button size="sm" onClick={() => setScheduleOpen(true)} className="gap-1">
             <CalendarClock className="h-4 w-4" />
-            Panga Ujumbe
+            Panga
+          </Button>
+          <Button size="sm" variant="secondary" onClick={() => setBatchScheduleOpen(true)} className="gap-1">
+            <Users className="h-4 w-4" />
+            Batch
           </Button>
           <Button variant="outline" size="sm" onClick={handleExportExcel} disabled={filtered.length === 0}>
             <FileSpreadsheet className="h-4 w-4 mr-1" />
