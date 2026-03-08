@@ -290,8 +290,7 @@ export default function ExpensesPage() {
               ))}
             </div>
           )}
-        </CardContent>
-      </Card>
-    </div>
+        </div>
+      </div>
   );
 }
