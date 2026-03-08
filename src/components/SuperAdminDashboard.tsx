@@ -26,6 +26,7 @@ import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, R
 import { exportToExcel, exportToPDF, createPrintableTable } from '@/utils/exportUtils';
 import { AdminPasswordDialog } from './AdminPasswordDialog';
 import { AdminChatPanel } from './AdminChatPanel';
+import { AdminCompliancePanel } from './AdminCompliancePanel';
 
 interface User {
   id: string;
@@ -999,7 +1000,7 @@ export const SuperAdminDashboard = () => {
       
       {/* Main Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid grid-cols-4 md:grid-cols-9 mb-4">
+        <TabsList className="grid grid-cols-5 md:grid-cols-10 mb-4">
           <TabsTrigger value="overview" className="text-xs">Overview</TabsTrigger>
           <TabsTrigger value="analytics" className="text-xs">Analytics</TabsTrigger>
           <TabsTrigger value="subscriptions" className="text-xs relative">
@@ -1010,6 +1011,7 @@ export const SuperAdminDashboard = () => {
               </Badge>
             )}
           </TabsTrigger>
+          <TabsTrigger value="compliance" className="text-xs">Sheria</TabsTrigger>
           <TabsTrigger value="users" className="text-xs">Watumiaji</TabsTrigger>
           <TabsTrigger value="products" className="text-xs hidden md:block">Bidhaa</TabsTrigger>
           <TabsTrigger value="sales" className="text-xs hidden md:block">Mauzo</TabsTrigger>
@@ -1118,6 +1120,11 @@ export const SuperAdminDashboard = () => {
           </DialogContent>
         </Dialog>
         
+        {/* Compliance Tab */}
+        <TabsContent value="compliance" className="space-y-4">
+          <AdminCompliancePanel />
+        </TabsContent>
+
         {/* Analytics Tab */}
         <TabsContent value="analytics" className="space-y-6">
           <div className="grid md:grid-cols-2 gap-6">
