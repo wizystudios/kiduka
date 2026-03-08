@@ -103,6 +103,13 @@ export const EnhancedSettingsPage = () => {
         business_name: userProfile.business_name || '',
         avatar_url: userProfile.avatar_url || ''
       });
+      setLocationSettings({
+        country: userProfile.country || 'Tanzania',
+        region: userProfile.region || '',
+        district: userProfile.district || '',
+        ward: userProfile.ward || '',
+        street: userProfile.street || ''
+      });
       fetchBusinessSettings();
     }
   }, [userProfile]);
