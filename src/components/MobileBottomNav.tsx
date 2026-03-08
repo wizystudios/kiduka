@@ -107,7 +107,6 @@ const navigationGroups: NavGroup[] = [
 
 export const MobileBottomNav = () => {
   const [menuOpen, setMenuOpen] = useState(false);
-  const [notificationOpen, setNotificationOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   const { user, userProfile, signOut } = useAuth();
