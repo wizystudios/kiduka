@@ -133,6 +133,38 @@ export const EnhancedSettingsPage = () => {
       .slice(0, 2);
   };
 
+  const locationDistricts = locationSettings.region ? TANZANIA_REGIONS[locationSettings.region] || [] : [];
+
+  const handleLocationUpdate = async () => {
+    if (!locationSettings.region || !locationSettings.district) {
+      toast({ title: 'Kosa', description: 'Tafadhali chagua mkoa na wilaya', variant: 'destructive' });
+      return;
+    }
+    setSavingLocation(true);
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          country: locationSettings.country,
+          region: locationSettings.region,
+          district: locationSettings.district,
+          ward: locationSettings.ward || null,
+          street: locationSettings.street || null,
+          location_set: true,
+          updated_at: new Date().toISOString()
+        } as any)
+        .eq('id', userProfile?.id);
+      if (error) throw error;
+      toast({ title: t('success'), description: 'Eneo limehifadhiwa!' });
+      await refreshProfile();
+    } catch (error) {
+      console.error('Error updating location:', error);
+      toast({ title: t('error'), description: 'Imeshindwa kuhifadhi eneo', variant: 'destructive' });
+    } finally {
+      setSavingLocation(false);
+    }
+  };
+
   const handleProfileUpdate = async () => {
     setLoading(true);
     try {
