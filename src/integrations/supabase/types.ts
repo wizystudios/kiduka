@@ -14,6 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
+      abandoned_carts: {
+        Row: {
+          created_at: string | null
+          customer_name: string | null
+          customer_phone: string
+          id: string
+          items: Json
+          recovered: boolean | null
+          reminder_sent: boolean | null
+          reminder_sent_at: string | null
+          seller_id: string
+          total_amount: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          customer_name?: string | null
+          customer_phone: string
+          id?: string
+          items?: Json
+          recovered?: boolean | null
+          reminder_sent?: boolean | null
+          reminder_sent_at?: string | null
+          seller_id: string
+          total_amount?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          customer_name?: string | null
+          customer_phone?: string
+          id?: string
+          items?: Json
+          recovered?: boolean | null
+          reminder_sent?: boolean | null
+          reminder_sent_at?: string | null
+          seller_id?: string
+          total_amount?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       admin_business_sessions: {
         Row: {
           active: boolean
@@ -314,6 +356,54 @@ export type Database = {
           sender_id?: string
           sender_name?: string | null
           sender_type?: string
+        }
+        Relationships: []
+      }
+      coupon_codes: {
+        Row: {
+          code: string
+          created_at: string | null
+          discount_type: string
+          discount_value: number
+          expires_at: string | null
+          id: string
+          is_active: boolean | null
+          max_uses: number | null
+          min_order_amount: number | null
+          owner_id: string
+          starts_at: string | null
+          updated_at: string | null
+          used_count: number | null
+        }
+        Insert: {
+          code: string
+          created_at?: string | null
+          discount_type?: string
+          discount_value?: number
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          max_uses?: number | null
+          min_order_amount?: number | null
+          owner_id: string
+          starts_at?: string | null
+          updated_at?: string | null
+          used_count?: number | null
+        }
+        Update: {
+          code?: string
+          created_at?: string | null
+          discount_type?: string
+          discount_value?: number
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          max_uses?: number | null
+          min_order_amount?: number | null
+          owner_id?: string
+          starts_at?: string | null
+          updated_at?: string | null
+          used_count?: number | null
         }
         Relationships: []
       }
@@ -1018,11 +1108,16 @@ export type Database = {
           created_at: string
           district: string | null
           email: string | null
+          facebook_pixel_id: string | null
           full_name: string | null
+          google_pixel_id: string | null
           id: string
           location_set: boolean | null
           phone: string | null
           region: string | null
+          store_description: string | null
+          store_logo_url: string | null
+          store_slug: string | null
           street: string | null
           updated_at: string
           ward: string | null
@@ -1033,11 +1128,16 @@ export type Database = {
           created_at?: string
           district?: string | null
           email?: string | null
+          facebook_pixel_id?: string | null
           full_name?: string | null
+          google_pixel_id?: string | null
           id: string
           location_set?: boolean | null
           phone?: string | null
           region?: string | null
+          store_description?: string | null
+          store_logo_url?: string | null
+          store_slug?: string | null
           street?: string | null
           updated_at?: string
           ward?: string | null
@@ -1048,16 +1148,74 @@ export type Database = {
           created_at?: string
           district?: string | null
           email?: string | null
+          facebook_pixel_id?: string | null
           full_name?: string | null
+          google_pixel_id?: string | null
           id?: string
           location_set?: boolean | null
           phone?: string | null
           region?: string | null
+          store_description?: string | null
+          store_logo_url?: string | null
+          store_slug?: string | null
           street?: string | null
           updated_at?: string
           ward?: string | null
         }
         Relationships: []
+      }
+      return_requests: {
+        Row: {
+          created_at: string | null
+          customer_phone: string
+          id: string
+          items: Json | null
+          order_id: string | null
+          reason: string
+          refund_amount: number | null
+          refund_method: string | null
+          seller_id: string
+          seller_notes: string | null
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          customer_phone: string
+          id?: string
+          items?: Json | null
+          order_id?: string | null
+          reason: string
+          refund_amount?: number | null
+          refund_method?: string | null
+          seller_id: string
+          seller_notes?: string | null
+          status?: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          customer_phone?: string
+          id?: string
+          items?: Json | null
+          order_id?: string | null
+          reason?: string
+          refund_amount?: number | null
+          refund_method?: string | null
+          seller_id?: string
+          seller_notes?: string | null
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "return_requests_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "sokoni_orders"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       sales: {
         Row: {
