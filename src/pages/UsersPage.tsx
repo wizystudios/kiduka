@@ -342,7 +342,7 @@ export const UsersPage = () => {
       </Card>
 
       <Tabs defaultValue="assistants" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="assistants">
             <UsersIcon className="h-4 w-4 mr-1" />
             Wasaidizi
@@ -350,10 +350,6 @@ export const UsersPage = () => {
           <TabsTrigger value="permissions">
             <SettingsIcon className="h-4 w-4 mr-1" />
             Ruhusa
-          </TabsTrigger>
-          <TabsTrigger value="haraka">
-            <Shield className="h-4 w-4 mr-1" />
-            Haraka
           </TabsTrigger>
         </TabsList>
 
