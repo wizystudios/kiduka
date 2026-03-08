@@ -11,9 +11,16 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { Star, MessageSquare, User, CheckCircle, Send } from 'lucide-react';
+import { Star, MessageSquare, User, CheckCircle, Send, Reply } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useAuth } from '@/hooks/useAuth';
+
+interface ReviewReply {
+  id: string;
+  reply_text: string;
+  created_at: string;
+}
 
 interface Review {
   id: string;
@@ -23,6 +30,7 @@ interface Review {
   review_text: string | null;
   is_verified_purchase: boolean;
   created_at: string;
+  reply?: ReviewReply | null;
 }
 
 interface ProductReviewsProps {
@@ -31,10 +39,13 @@ interface ProductReviewsProps {
 }
 
 export const ProductReviews = ({ productId, productName }: ProductReviewsProps) => {
+  const { user } = useAuth();
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddReview, setShowAddReview] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [replyingTo, setReplyingTo] = useState<string | null>(null);
+  const [replyText, setReplyText] = useState('');
   
   // Form state
   const [rating, setRating] = useState(5);
@@ -55,7 +66,21 @@ export const ProductReviews = ({ productId, productName }: ProductReviewsProps) 
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setReviews(data || []);
+      
+      // Fetch replies for these reviews
+      const reviewIds = (data || []).map(r => r.id);
+      let repliesMap: Record<string, ReviewReply> = {};
+      if (reviewIds.length > 0) {
+        const { data: replies } = await supabase
+          .from('review_replies')
+          .select('*')
+          .in('review_id', reviewIds);
+        (replies || []).forEach((r: any) => {
+          repliesMap[r.review_id] = { id: r.id, reply_text: r.reply_text, created_at: r.created_at };
+        });
+      }
+      
+      setReviews((data || []).map(r => ({ ...r, reply: repliesMap[r.id] || null })));
     } catch (error) {
       console.error('Error fetching reviews:', error);
     } finally {
@@ -293,6 +318,51 @@ export const ProductReviews = ({ productId, productName }: ProductReviewsProps) 
                   <p className="text-sm text-muted-foreground leading-relaxed">
                     {review.review_text}
                   </p>
+                )}
+                {/* Seller Reply */}
+                {review.reply && (
+                  <div className="mt-2 p-2 bg-primary/5 rounded-lg border-l-2 border-primary">
+                    <p className="text-xs font-medium flex items-center gap-1 text-primary">
+                      <Reply className="h-3 w-3" /> Jibu la duka
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{review.reply.reply_text}</p>
+                  </div>
+                )}
+                {/* Reply button for seller */}
+                {user && !review.reply && (
+                  replyingTo === review.id ? (
+                    <div className="mt-2 space-y-2">
+                      <Textarea
+                        placeholder="Andika jibu lako..."
+                        value={replyText}
+                        onChange={(e) => setReplyText(e.target.value)}
+                        rows={2}
+                        className="text-xs"
+                      />
+                      <div className="flex gap-1">
+                        <Button size="sm" className="text-xs" disabled={!replyText.trim()} onClick={async () => {
+                          await supabase.from('review_replies').insert({
+                            review_id: review.id,
+                            seller_id: user.id,
+                            reply_text: replyText,
+                          });
+                          toast.success('Jibu limetumwa!');
+                          setReplyingTo(null);
+                          setReplyText('');
+                          fetchReviews();
+                        }}>
+                          <Send className="h-3 w-3 mr-1" /> Tuma
+                        </Button>
+                        <Button size="sm" variant="ghost" className="text-xs" onClick={() => { setReplyingTo(null); setReplyText(''); }}>
+                          Ghairi
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <Button variant="ghost" size="sm" className="mt-1 text-xs" onClick={() => setReplyingTo(review.id)}>
+                      <Reply className="h-3 w-3 mr-1" /> Jibu
+                    </Button>
+                  )
                 )}
               </CardContent>
             </Card>
