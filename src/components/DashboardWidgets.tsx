@@ -76,27 +76,27 @@ export const StockAlertWidget = () => {
   };
 
   const getStockLevel = (product: LowStockProduct) => {
-    if (product.stock_quantity === 0) return { label: 'Imeisha', color: 'bg-red-500 text-white' };
+    if (product.stock_quantity === 0) return { label: 'Imeisha', color: 'bg-destructive text-destructive-foreground' };
     const percentage = (product.stock_quantity / (product.low_stock_threshold || 10)) * 100;
-    if (percentage <= 25) return { label: 'Hatari', color: 'bg-red-100 text-red-800' };
-    if (percentage <= 50) return { label: 'Chini', color: 'bg-yellow-100 text-yellow-800' };
-    return { label: 'Angalia', color: 'bg-orange-100 text-orange-800' };
+    if (percentage <= 25) return { label: 'Hatari', color: 'bg-destructive/10 text-destructive' };
+    if (percentage <= 50) return { label: 'Chini', color: 'bg-primary/10 text-primary' };
+    return { label: 'Angalia', color: 'bg-muted text-muted-foreground' };
   };
 
   if (lowStockProducts.length === 0) return null;
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
-      <SheetTrigger asChild>
+       <SheetTrigger asChild>
         <Button
           variant="outline"
-          className="flex-1 h-10 justify-between bg-yellow-50 border-yellow-200 hover:bg-yellow-100 dark:bg-yellow-950 dark:border-yellow-800"
+          className="flex-1 h-10 justify-between bg-primary/5 border-primary/20 hover:bg-primary/10"
         >
           <div className="flex items-center gap-2">
-            <AlertTriangle className="h-4 w-4 text-yellow-600" />
+            <AlertTriangle className="h-4 w-4 text-primary" />
             <span className="text-xs font-medium">Stock Ndogo</span>
           </div>
-          <Badge variant="outline" className="text-xs bg-yellow-100 text-yellow-800 border-yellow-300">
+          <Badge variant="outline" className="text-xs bg-primary/10 text-primary border-primary/20">
             {lowStockProducts.length}
           </Badge>
         </Button>
@@ -104,7 +104,7 @@ export const StockAlertWidget = () => {
       <SheetContent side="bottom" className="rounded-t-2xl max-h-[70vh]">
         <SheetHeader>
           <SheetTitle className="flex items-center gap-2">
-            <AlertTriangle className="h-5 w-5 text-yellow-600" />
+            <AlertTriangle className="h-5 w-5 text-primary" />
             Stock Ndogo ({lowStockProducts.length})
           </SheetTitle>
         </SheetHeader>
@@ -213,23 +213,23 @@ export const ExpensesWidget = () => {
         <SheetTrigger asChild>
           <Button
             variant="outline"
-            className="flex-1 h-10 justify-between bg-red-50 border-red-200 hover:bg-red-100 dark:bg-red-950 dark:border-red-800"
+            className="flex-1 h-10 justify-between bg-muted/50 border-border hover:bg-muted"
           >
             <div className="flex items-center gap-2">
-              <TrendingDown className="h-4 w-4 text-red-600" />
+              <TrendingDown className="h-4 w-4 text-muted-foreground" />
               <span className="text-xs font-medium">Matumizi</span>
             </div>
-            <span className="text-xs font-bold text-red-600">TZS {totalExpenses.toLocaleString()}</span>
+            <span className="text-xs font-bold text-muted-foreground">TZS {totalExpenses.toLocaleString()}</span>
           </Button>
         </SheetTrigger>
         <SheetContent side="bottom" className="rounded-t-2xl max-h-[70vh]">
           <SheetHeader>
             <SheetTitle className="flex items-center justify-between">
               <span className="flex items-center gap-2">
-                <TrendingDown className="h-5 w-5 text-red-600" />
+                <TrendingDown className="h-5 w-5 text-muted-foreground" />
                 Matumizi Leo
               </span>
-              <span className="text-red-600 font-bold">TZS {totalExpenses.toLocaleString()}</span>
+              <span className="text-foreground font-bold">TZS {totalExpenses.toLocaleString()}</span>
             </SheetTitle>
           </SheetHeader>
           <div className="py-4 space-y-2 overflow-y-auto max-h-[40vh]">
@@ -239,7 +239,7 @@ export const ExpensesWidget = () => {
                   <p className="font-medium text-sm">{expense.name}</p>
                   <p className="text-xs text-muted-foreground">{expense.count} miamala</p>
                 </div>
-                <span className="font-bold text-red-600">TZS {expense.amount.toLocaleString()}</span>
+                <span className="font-bold text-foreground">TZS {expense.amount.toLocaleString()}</span>
               </div>
             )) : (
               <p className="text-center text-muted-foreground py-4">Hakuna matumizi leo</p>
@@ -326,13 +326,13 @@ export const TransactionsWidget = () => {
       <SheetTrigger asChild>
         <Button
           variant="outline"
-          className="flex-1 h-10 justify-between bg-blue-50 border-blue-200 hover:bg-blue-100 dark:bg-blue-950 dark:border-blue-800"
+          className="flex-1 h-10 justify-between bg-primary/5 border-primary/20 hover:bg-primary/10"
         >
           <div className="flex items-center gap-2">
-            <ShoppingCart className="h-4 w-4 text-blue-600" />
+            <ShoppingCart className="h-4 w-4 text-primary" />
             <span className="text-xs font-medium">Miamala</span>
           </div>
-          <Badge variant="outline" className="text-xs bg-blue-100 text-blue-800 border-blue-300">
+          <Badge variant="outline" className="text-xs bg-primary/10 text-primary border-primary/20">
             {transactions.length}
           </Badge>
         </Button>
@@ -341,10 +341,10 @@ export const TransactionsWidget = () => {
         <SheetHeader>
           <SheetTitle className="flex items-center justify-between">
             <span className="flex items-center gap-2">
-              <ShoppingCart className="h-5 w-5 text-blue-600" />
+              <ShoppingCart className="h-5 w-5 text-primary" />
               Miamala Leo
             </span>
-            <span className="text-green-600 font-bold">TZS {total.toLocaleString()}</span>
+            <span className="text-success font-bold">TZS {total.toLocaleString()}</span>
           </SheetTitle>
         </SheetHeader>
         <div className="py-4 space-y-2 overflow-y-auto max-h-[50vh]">
@@ -356,7 +356,7 @@ export const TransactionsWidget = () => {
                   {tx.payment_method || 'Cash'} • {new Date(tx.created_at).toLocaleTimeString('sw-TZ', { hour: '2-digit', minute: '2-digit' })}
                 </p>
               </div>
-              <Badge variant="secondary" className="text-green-600">Imelipwa</Badge>
+              <Badge variant="secondary" className="text-success">Imelipwa</Badge>
             </div>
           )) : (
             <p className="text-center text-muted-foreground py-4">Hakuna miamala leo</p>
@@ -399,13 +399,13 @@ export const ProductsWidget = () => {
       <SheetTrigger asChild>
         <Button
           variant="outline"
-          className="flex-1 h-10 justify-between bg-purple-50 border-purple-200 hover:bg-purple-100 dark:bg-purple-950 dark:border-purple-800"
+          className="flex-1 h-10 justify-between bg-success/5 border-success/20 hover:bg-success/10"
         >
           <div className="flex items-center gap-2">
-            <Package className="h-4 w-4 text-purple-600" />
+            <Package className="h-4 w-4 text-success" />
             <span className="text-xs font-medium">Bidhaa</span>
           </div>
-          <Badge variant="outline" className="text-xs bg-purple-100 text-purple-800 border-purple-300">
+          <Badge variant="outline" className="text-xs bg-success/10 text-success border-success/20">
             {products.length}
           </Badge>
         </Button>
@@ -413,7 +413,7 @@ export const ProductsWidget = () => {
       <SheetContent side="bottom" className="rounded-t-2xl max-h-[70vh]">
         <SheetHeader>
           <SheetTitle className="flex items-center gap-2">
-            <Package className="h-5 w-5 text-purple-600" />
+            <Package className="h-5 w-5 text-success" />
             Bidhaa za Hivi Karibuni
           </SheetTitle>
         </SheetHeader>
@@ -457,13 +457,13 @@ const getActivityIcon = (type: string) => {
 };
 
 const getActivityColor = (type: string) => {
-  if (type.includes('sale')) return 'text-green-600 bg-green-50';
-  if (type.includes('product')) return 'text-purple-600 bg-purple-50';
-  if (type.includes('expense')) return 'text-red-600 bg-red-50';
-  if (type.includes('loan')) return 'text-lime-600 bg-lime-50';
-  if (type.includes('login') || type.includes('logout')) return 'text-blue-600 bg-blue-50';
-  if (type.includes('assistant')) return 'text-indigo-600 bg-indigo-50';
-  if (type.includes('inventory')) return 'text-yellow-600 bg-yellow-50';
+  if (type.includes('sale')) return 'text-success bg-success/10';
+  if (type.includes('product')) return 'text-primary bg-primary/10';
+  if (type.includes('expense')) return 'text-muted-foreground bg-muted';
+  if (type.includes('loan')) return 'text-success bg-success/10';
+  if (type.includes('login') || type.includes('logout')) return 'text-primary bg-primary/10';
+  if (type.includes('assistant')) return 'text-primary bg-primary/10';
+  if (type.includes('inventory')) return 'text-primary bg-primary/10';
   return 'text-muted-foreground bg-muted';
 };
 
@@ -507,7 +507,7 @@ export const LoansWidget = () => {
   const getDueStatus = (dueDate: string) => {
     const days = Math.ceil((new Date(dueDate).getTime() - Date.now()) / 86400000);
     if (days < 0) return { label: 'Imepita', color: 'bg-destructive text-destructive-foreground' };
-    if (days <= 3) return { label: `Siku ${days}`, color: 'bg-yellow-100 text-yellow-800' };
+    if (days <= 3) return { label: `Siku ${days}`, color: 'bg-primary/10 text-primary' };
     return { label: `Siku ${days}`, color: 'bg-muted text-muted-foreground' };
   };
 
@@ -518,13 +518,13 @@ export const LoansWidget = () => {
       <SheetTrigger asChild>
         <Button
           variant="outline"
-          className="flex-1 h-10 justify-between bg-lime-50 border-lime-200 hover:bg-lime-100 dark:bg-lime-950 dark:border-lime-800"
+          className="flex-1 h-10 justify-between bg-success/5 border-success/20 hover:bg-success/10"
         >
           <div className="flex items-center gap-2">
-            <Banknote className="h-4 w-4 text-lime-600" />
+            <Banknote className="h-4 w-4 text-success" />
             <span className="text-xs font-medium">Mikopo</span>
           </div>
-          <Badge variant="outline" className="text-xs bg-lime-100 text-lime-800 border-lime-300">
+          <Badge variant="outline" className="text-xs bg-success/10 text-success border-success/20">
             {activeLoans}
           </Badge>
         </Button>
@@ -533,10 +533,10 @@ export const LoansWidget = () => {
         <SheetHeader>
           <SheetTitle className="flex items-center justify-between">
             <span className="flex items-center gap-2">
-              <Banknote className="h-5 w-5 text-lime-600" />
+              <Banknote className="h-5 w-5 text-success" />
               Mikopo Hai
             </span>
-            <span className="text-lime-700 font-bold">TZS {totalBalance.toLocaleString()}</span>
+            <span className="text-success font-bold">TZS {totalBalance.toLocaleString()}</span>
           </SheetTitle>
         </SheetHeader>
         <div className="py-4 space-y-2 overflow-y-auto max-h-[50vh]">
