@@ -471,6 +471,98 @@ const timeAgo = (date: string) => {
   return `siku ${Math.floor(seconds / 86400)}`;
 };
 
+// Loans Widget
+export const LoansWidget = () => {
+  const navigate = useNavigate();
+  const { dataOwnerId, isReady } = useDataAccess();
+  const [activeLoans, setActiveLoans] = useState(0);
+  const [totalBalance, setTotalBalance] = useState(0);
+  const [upcomingLoans, setUpcomingLoans] = useState<any[]>([]);
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    if (isReady && dataOwnerId) fetchLoans();
+  }, [isReady, dataOwnerId]);
+
+  const fetchLoans = async () => {
+    if (!dataOwnerId) return;
+    const { data } = await supabase
+      .from('micro_loans')
+      .select('id, customer_name, balance, due_date, status, phone')
+      .eq('owner_id', dataOwnerId)
+      .eq('status', 'active')
+      .order('due_date', { ascending: true })
+      .limit(10);
+
+    const loans = data || [];
+    setActiveLoans(loans.length);
+    setTotalBalance(loans.reduce((s, l) => s + Number(l.balance || 0), 0));
+    setUpcomingLoans(loans);
+  };
+
+  const getDueStatus = (dueDate: string) => {
+    const days = Math.ceil((new Date(dueDate).getTime() - Date.now()) / 86400000);
+    if (days < 0) return { label: 'Imepita', color: 'bg-destructive text-destructive-foreground' };
+    if (days <= 3) return { label: `Siku ${days}`, color: 'bg-yellow-100 text-yellow-800' };
+    return { label: `Siku ${days}`, color: 'bg-muted text-muted-foreground' };
+  };
+
+  if (activeLoans === 0) return null;
+
+  return (
+    <Sheet open={open} onOpenChange={setOpen}>
+      <SheetTrigger asChild>
+        <Button
+          variant="outline"
+          className="flex-1 h-10 justify-between bg-lime-50 border-lime-200 hover:bg-lime-100 dark:bg-lime-950 dark:border-lime-800"
+        >
+          <div className="flex items-center gap-2">
+            <Banknote className="h-4 w-4 text-lime-600" />
+            <span className="text-xs font-medium">Mikopo</span>
+          </div>
+          <Badge variant="outline" className="text-xs bg-lime-100 text-lime-800 border-lime-300">
+            {activeLoans}
+          </Badge>
+        </Button>
+      </SheetTrigger>
+      <SheetContent side="bottom" className="rounded-t-2xl max-h-[70vh]">
+        <SheetHeader>
+          <SheetTitle className="flex items-center justify-between">
+            <span className="flex items-center gap-2">
+              <Banknote className="h-5 w-5 text-lime-600" />
+              Mikopo Hai
+            </span>
+            <span className="text-lime-700 font-bold">TZS {totalBalance.toLocaleString()}</span>
+          </SheetTitle>
+        </SheetHeader>
+        <div className="py-4 space-y-2 overflow-y-auto max-h-[50vh]">
+          {upcomingLoans.map((loan) => {
+            const due = getDueStatus(loan.due_date);
+            return (
+              <div key={loan.id} className="flex justify-between items-center p-3 bg-muted rounded-lg">
+                <div>
+                  <p className="font-medium text-sm">{loan.customer_name}</p>
+                  <p className="text-xs text-muted-foreground">{loan.phone || 'Hakuna simu'}</p>
+                </div>
+                <div className="text-right flex items-center gap-2">
+                  <div>
+                    <p className="font-bold text-sm">TZS {Number(loan.balance).toLocaleString()}</p>
+                    <Badge className={`text-[10px] ${due.color}`}>{due.label}</Badge>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        <Button className="w-full" onClick={() => { navigate('/micro-loans'); setOpen(false); }}>
+          Tazama Mikopo Yote
+          <ChevronRight className="h-4 w-4 ml-2" />
+        </Button>
+      </SheetContent>
+    </Sheet>
+  );
+};
+
 // Recent Activities Widget
 export const RecentActivitiesWidget = () => {
   const navigate = useNavigate();
