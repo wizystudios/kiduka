@@ -356,7 +356,7 @@ export const TransactionsWidget = () => {
                   {tx.payment_method || 'Cash'} • {new Date(tx.created_at).toLocaleTimeString('sw-TZ', { hour: '2-digit', minute: '2-digit' })}
                 </p>
               </div>
-              <Badge variant="secondary" className="text-green-600">Imelipwa</Badge>
+              <Badge variant="secondary" className="text-success">Imelipwa</Badge>
             </div>
           )) : (
             <p className="text-center text-muted-foreground py-4">Hakuna miamala leo</p>
