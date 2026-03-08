@@ -24,7 +24,14 @@ import {
   Package,
   Plus,
   Wallet,
-  ChevronRight
+  ChevronRight,
+  Activity,
+  LogIn,
+  Edit,
+  Trash2,
+  UserPlus,
+  Banknote,
+  ClipboardCheck
 } from 'lucide-react';
 
 interface LowStockProduct {
