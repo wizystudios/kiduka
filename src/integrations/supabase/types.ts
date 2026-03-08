@@ -1171,6 +1171,62 @@ export type Database = {
           },
         ]
       }
+      scheduled_whatsapp_messages: {
+        Row: {
+          created_at: string
+          customer_id: string | null
+          customer_name: string
+          error_message: string | null
+          id: string
+          message: string
+          message_type: string
+          owner_id: string
+          phone_number: string
+          scheduled_at: string
+          sent_at: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          customer_id?: string | null
+          customer_name: string
+          error_message?: string | null
+          id?: string
+          message: string
+          message_type?: string
+          owner_id: string
+          phone_number: string
+          scheduled_at: string
+          sent_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          customer_id?: string | null
+          customer_name?: string
+          error_message?: string | null
+          id?: string
+          message?: string
+          message_type?: string
+          owner_id?: string
+          phone_number?: string
+          scheduled_at?: string
+          sent_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scheduled_whatsapp_messages_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sokoni_customers: {
         Row: {
           created_at: string
