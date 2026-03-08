@@ -14,6 +14,9 @@ import { toast } from 'sonner';
 import { KidukaLogo } from '@/components/KidukaLogo';
 import { normalizeTzPhoneDigits } from '@/utils/phoneUtils';
 import { estimateDeliveryDays, getDeliveryEstimateColor, getDistanceLabel } from '@/utils/deliveryEstimation';
+import { OrderProgressBar } from '@/components/OrderProgressBar';
+import { OrderReviewForm } from '@/components/OrderReviewForm';
+import { ReturnRequestForm } from '@/components/ReturnRequestForm';
 
 interface TrackedOrder {
   id: string;
