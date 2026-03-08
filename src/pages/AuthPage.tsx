@@ -14,6 +14,7 @@ type AuthStep = 'method' | 'identifier' | 'password' | 'name';
 type AuthMethod = 'email' | 'phone' | 'name';
 
 export const AuthPage = () => {
+  const navigate = useNavigate();
   const { user, signIn, signUp } = useAuth();
   const [loading, setLoading] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);
