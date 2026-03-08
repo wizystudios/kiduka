@@ -341,10 +341,10 @@ export const TransactionsWidget = () => {
         <SheetHeader>
           <SheetTitle className="flex items-center justify-between">
             <span className="flex items-center gap-2">
-              <ShoppingCart className="h-5 w-5 text-blue-600" />
+              <ShoppingCart className="h-5 w-5 text-primary" />
               Miamala Leo
             </span>
-            <span className="text-green-600 font-bold">TZS {total.toLocaleString()}</span>
+            <span className="text-success font-bold">TZS {total.toLocaleString()}</span>
           </SheetTitle>
         </SheetHeader>
         <div className="py-4 space-y-2 overflow-y-auto max-h-[50vh]">
