@@ -66,6 +66,7 @@ import OrderTrackingPage from '@/pages/OrderTrackingPage';
 import WishlistPage from '@/pages/WishlistPage';
 import CustomerPaymentPage from '@/pages/CustomerPaymentPage';
 import { ForgotPasswordPage } from '@/pages/ForgotPasswordPage';
+import StorefrontPage from '@/pages/StorefrontPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -389,6 +390,9 @@ export default function App() {
               
               {/* Order Tracking - Public access */}
               <Route path="/track-order" element={<OrderTrackingPage />} />
+              
+              {/* Online Storefront - Public access */}
+              <Route path="/duka/:slug" element={<StorefrontPage />} />
               
               {/* Customer Payment - Public access */}
               <Route path="/customer-payment" element={<CustomerPaymentPage />} />

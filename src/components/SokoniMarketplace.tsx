@@ -167,6 +167,10 @@ export const SokoniMarketplace = () => {
   const [imageSearchOpen, setImageSearchOpen] = useState(false);
   const [userRegion, setUserRegion] = useState<string | null>(null);
   const [userDistrict, setUserDistrict] = useState<string | null>(null);
+  const [couponCode, setCouponCode] = useState('');
+  const [couponDiscount, setCouponDiscount] = useState(0);
+  const [couponApplied, setCouponApplied] = useState(false);
+  const [validatingCoupon, setValidatingCoupon] = useState(false);
   
   // Receipt dialog state
   const [receiptOpen, setReceiptOpen] = useState(false);
@@ -351,8 +355,89 @@ export const SokoniMarketplace = () => {
     setCart(prev => prev.filter(item => item.id !== productId));
   };
 
-  const cartTotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  const cartSubtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  const cartTotal = Math.max(0, cartSubtotal - couponDiscount);
   const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+
+  const validateCoupon = async () => {
+    if (!couponCode.trim()) return;
+    setValidatingCoupon(true);
+    try {
+      const sellerIds = [...new Set(cart.map(i => i.owner_id))];
+      const { data, error } = await supabase
+        .from('coupon_codes')
+        .select('*')
+        .eq('is_active', true)
+        .ilike('code', couponCode.trim().toUpperCase())
+        .in('owner_id', sellerIds)
+        .maybeSingle();
+
+      if (error || !data) {
+        toast.error('Coupon code si sahihi au haifanyi kazi');
+        setCouponDiscount(0);
+        setCouponApplied(false);
+        setValidatingCoupon(false);
+        return;
+      }
+
+      const coupon = data as any;
+      if (coupon.expires_at && new Date(coupon.expires_at) < new Date()) {
+        toast.error('Coupon imeisha muda');
+        setValidatingCoupon(false);
+        return;
+      }
+      if (coupon.max_uses && coupon.used_count >= coupon.max_uses) {
+        toast.error('Coupon imekwisha matumizi');
+        setValidatingCoupon(false);
+        return;
+      }
+      if (coupon.min_order_amount && cartSubtotal < coupon.min_order_amount) {
+        toast.error(`Oda ya chini ni TSh ${coupon.min_order_amount.toLocaleString()}`);
+        setValidatingCoupon(false);
+        return;
+      }
+
+      let discount = 0;
+      if (coupon.discount_type === 'percentage') {
+        discount = Math.round(cartSubtotal * (coupon.discount_value / 100));
+      } else {
+        discount = coupon.discount_value;
+      }
+      
+      setCouponDiscount(discount);
+      setCouponApplied(true);
+      toast.success(`Punguzo la TSh ${discount.toLocaleString()} limeongezwa!`);
+
+      // Increment used_count
+      await supabase.from('coupon_codes').update({ used_count: coupon.used_count + 1 }).eq('id', coupon.id);
+    } catch (e) {
+      toast.error('Imeshindwa kuthibitisha coupon');
+    }
+    setValidatingCoupon(false);
+  };
+
+  // Track abandoned cart when user has items but leaves checkout
+  useEffect(() => {
+    if (!checkoutOpen || cart.length === 0 || !customerPhone || customerPhone.length < 9) return;
+    
+    const timeout = setTimeout(async () => {
+      const normalizedPhone = normalizeTzPhoneDigits(customerPhone);
+      if (!normalizedPhone) return;
+      
+      const sellerIds = [...new Set(cart.map(i => i.owner_id))];
+      for (const sellerId of sellerIds) {
+        const sellerItems = cart.filter(i => i.owner_id === sellerId);
+        await supabase.from('abandoned_carts').insert({
+          customer_phone: normalizedPhone,
+          seller_id: sellerId,
+          items: sellerItems.map(i => ({ product_name: i.name, quantity: i.quantity, unit_price: i.price })),
+          total_amount: sellerItems.reduce((s, i) => s + i.price * i.quantity, 0),
+        });
+      }
+    }, 60000); // Track after 1 minute of being on checkout
+
+    return () => clearTimeout(timeout);
+  }, [checkoutOpen, customerPhone]);
 
   // Location proximity score: 0 = same district, 1 = same region, 2 = different region
   const getLocationScore = (product: MarketProduct) => {
@@ -477,9 +562,19 @@ export const SokoniMarketplace = () => {
       });
       setReceiptOpen(true);
 
+      // Mark abandoned carts as recovered
+      await supabase
+        .from('abandoned_carts')
+        .update({ recovered: true })
+        .eq('customer_phone', normalizedCustomerPhone)
+        .eq('recovered', false);
+
       setCart([]);
       setCustomerPhone('');
       setDeliveryAddress('');
+      setCouponCode('');
+      setCouponDiscount(0);
+      setCouponApplied(false);
       setPaymentOpen(false);
       setCheckoutOpen(false);
     } catch (error) {
@@ -1002,9 +1097,47 @@ export const SokoniMarketplace = () => {
                         <span className="font-bold text-primary ml-2">TSh {(item.price * item.quantity).toLocaleString()}</span>
                       </div>
                     ))}
-                    <div className="border-t pt-3 flex justify-between font-bold text-lg">
-                      <span>Jumla</span>
-                      <span className="text-primary">TSh {cartTotal.toLocaleString()}</span>
+                    
+                    {/* Coupon Code */}
+                    <div className="flex gap-2 items-end">
+                      <div className="flex-1">
+                        <label className="text-xs font-medium text-muted-foreground">Coupon Code</label>
+                        <Input
+                          placeholder="KARIBU10"
+                          value={couponCode}
+                          onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                          className="mt-1 rounded-2xl text-xs"
+                          disabled={couponApplied}
+                        />
+                      </div>
+                      <Button
+                        size="sm"
+                        variant={couponApplied ? 'secondary' : 'outline'}
+                        onClick={couponApplied ? () => { setCouponApplied(false); setCouponDiscount(0); setCouponCode(''); } : validateCoupon}
+                        disabled={validatingCoupon}
+                        className="rounded-2xl"
+                      >
+                        {couponApplied ? '✕ Ondoa' : validatingCoupon ? '...' : 'Tumia'}
+                      </Button>
+                    </div>
+                    {couponApplied && couponDiscount > 0 && (
+                      <div className="flex justify-between text-xs text-green-600 dark:text-green-400 px-1">
+                        <span>Punguzo la Coupon</span>
+                        <span>-TSh {couponDiscount.toLocaleString()}</span>
+                      </div>
+                    )}
+
+                    <div className="border-t pt-3">
+                      {couponDiscount > 0 && (
+                        <div className="flex justify-between text-sm text-muted-foreground mb-1">
+                          <span>Jumla ndogo</span>
+                          <span>TSh {cartSubtotal.toLocaleString()}</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between font-bold text-lg">
+                        <span>Jumla</span>
+                        <span className="text-primary">TSh {cartTotal.toLocaleString()}</span>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>

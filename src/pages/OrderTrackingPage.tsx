@@ -14,6 +14,9 @@ import { toast } from 'sonner';
 import { KidukaLogo } from '@/components/KidukaLogo';
 import { normalizeTzPhoneDigits } from '@/utils/phoneUtils';
 import { estimateDeliveryDays, getDeliveryEstimateColor, getDistanceLabel } from '@/utils/deliveryEstimation';
+import { OrderProgressBar } from '@/components/OrderProgressBar';
+import { OrderReviewForm } from '@/components/OrderReviewForm';
+import { ReturnRequestForm } from '@/components/ReturnRequestForm';
 
 interface TrackedOrder {
   id: string;
@@ -354,7 +357,7 @@ export const OrderTrackingPage = () => {
                   
                   return (
                     <Card key={order.id} className="shadow-sm">
-                      <CardContent className="p-3 space-y-2">
+                       <CardContent className="p-3 space-y-2">
                         <div className="flex items-center justify-between">
                           <code className="font-mono text-sm font-bold text-primary">
                             {order.tracking_code}
@@ -364,6 +367,9 @@ export const OrderTrackingPage = () => {
                             {statusInfo.label}
                           </Badge>
                         </div>
+                        
+                        {/* Progress Bar */}
+                        <OrderProgressBar status={order.order_status} />
                         
                         <div className="text-[10px] text-muted-foreground">
                           {new Date(order.created_at).toLocaleDateString('sw-TZ', {
@@ -466,6 +472,26 @@ export const OrderTrackingPage = () => {
                             <CheckCircle className="h-3 w-3" />
                             <span>Malipo yamekamilika</span>
                           </div>
+                        )}
+
+                        {/* Review Form - show after delivery */}
+                        {(order.order_status === 'delivered' || order.customer_received) && (
+                          <OrderReviewForm
+                            orderId={order.id}
+                            items={order.items}
+                            customerPhone={searchValue}
+                          />
+                        )}
+
+                        {/* Return Request - show after delivery */}
+                        {(order.order_status === 'delivered' || order.customer_received) && order.payment_status === 'paid' && (
+                          <ReturnRequestForm
+                            orderId={order.id}
+                            sellerId={order.seller_id}
+                            customerPhone={searchValue}
+                            items={order.items}
+                            totalAmount={order.total_amount}
+                          />
                         )}
                       </CardContent>
                     </Card>
