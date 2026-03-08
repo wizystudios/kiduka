@@ -134,7 +134,7 @@ export const SubscriptionBlocker = ({ children }: SubscriptionBlockerProps) => {
         </div>
 
         {/* Split Layout */}
-        <div className="flex flex-col lg:flex-row gap-6 relative">
+        <div className="flex flex-col lg:flex-row gap-6 relative min-h-0">
           {/* Center Divider */}
           <div className="hidden lg:flex absolute left-1/2 top-0 bottom-0 -translate-x-1/2 flex-col items-center z-10">
             <div className="w-px h-8 bg-gradient-to-b from-transparent to-primary/30" />

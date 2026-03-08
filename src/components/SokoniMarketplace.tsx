@@ -20,7 +20,7 @@ import {
   Search, ShoppingCart, Store, Package, Star, 
   ChevronRight, Sparkles, TrendingUp, Clock, Heart,
   Camera, ArrowLeft, Plus, Minus, Trash2, Phone,
-  ClipboardList, Truck, Eye, Grid3X3
+  ClipboardList, Truck, Eye, Grid3X3, ArrowUpRight
 } from 'lucide-react';
 import { SokoniLogo } from './SokoniLogo';
 import { supabase } from '@/integrations/supabase/client';
@@ -918,94 +918,159 @@ export const SokoniMarketplace = () => {
         </TabsContent>
       </Tabs>
 
-      {/* Checkout Dialog */}
-      <Dialog open={checkoutOpen && !paymentOpen} onOpenChange={setCheckoutOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Maelezo ya Oda</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="p-3 bg-muted rounded-lg">
-              <p className="text-sm font-medium">Jumla ya bidhaa: {cartCount}</p>
-              <p className="text-lg font-bold text-primary">TSh {cartTotal.toLocaleString()}</p>
-            </div>
-            
-            <div>
-              <label className="text-sm font-medium">Namba ya Simu *</label>
-              <Input 
-                placeholder="07xx xxx xxx" 
-                className="mt-1" 
-                value={customerPhone}
-                onChange={(e) => setCustomerPhone(e.target.value)}
-              />
-            </div>
-            
-            <div>
-              <label className="text-sm font-medium">Mahali pa Kupeleka *</label>
-              <Input 
-                placeholder="Eneo, mtaa, namba ya nyumba" 
-                className="mt-1" 
-                value={deliveryAddress}
-                onChange={(e) => setDeliveryAddress(e.target.value)}
-              />
-            </div>
+      {/* Checkout Full-Page Overlay */}
+      {checkoutOpen && !paymentOpen && (
+        <div className="fixed inset-0 z-50 bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-background dark:via-background dark:to-background overflow-y-auto animate-in fade-in slide-in-from-bottom-4 duration-300">
+          <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-md border-b border-border px-4 py-3 flex items-center gap-3">
+            <Button variant="ghost" size="icon" onClick={() => setCheckoutOpen(false)}>
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <SokoniLogo size="sm" />
+            <h2 className="font-bold text-sm">Maelezo ya Oda</h2>
+          </div>
 
-            {/* Payment Timing Choice */}
-            <div>
-              <label className="text-sm font-medium mb-2 block">Malipo</label>
-              <div className="grid grid-cols-2 gap-2">
-                <Button
-                  type="button"
-                  variant={paymentTiming === 'now' ? 'default' : 'outline'}
-                  className="h-12 flex-col gap-1"
-                  onClick={() => setPaymentTiming('now')}
-                >
-                  <span className="text-xs">💵 Lipa Sasa</span>
-                  <span className="text-[10px] opacity-70">M-Pesa / Tigo Pesa</span>
-                </Button>
-                <Button
-                  type="button"
-                  variant={paymentTiming === 'on_delivery' ? 'default' : 'outline'}
-                  className="h-12 flex-col gap-1"
-                  onClick={() => setPaymentTiming('on_delivery')}
-                >
-                  <span className="text-xs">📦 Lipa Unapopokea</span>
-                  <span className="text-[10px] opacity-70">Cash on Delivery</span>
-                </Button>
+          <div className="max-w-6xl mx-auto p-4 md:p-6">
+            <div className="flex flex-col lg:flex-row gap-6 relative min-h-0">
+              {/* Center Divider */}
+              <div className="hidden lg:flex absolute left-1/2 top-0 bottom-0 -translate-x-1/2 flex-col items-center z-10">
+                <div className="w-px h-8 bg-gradient-to-b from-transparent to-primary/30" />
+                <ArrowUpRight className="h-4 w-4 text-primary/50 -rotate-45" />
+                <div className="w-px flex-1 bg-gradient-to-b from-primary/30 via-primary to-primary/30 relative">
+                  <div className="absolute top-1/3 left-0 -translate-x-full pr-2">
+                    <ArrowUpRight className="h-3 w-3 text-primary/40 rotate-180" />
+                  </div>
+                  <div className="absolute top-1/3 right-0 translate-x-full pl-2">
+                    <ArrowUpRight className="h-3 w-3 text-primary/40" />
+                  </div>
+                  <div className="absolute top-2/3 left-0 -translate-x-full pr-2">
+                    <ArrowUpRight className="h-3 w-3 text-primary/40 rotate-180" />
+                  </div>
+                  <div className="absolute top-2/3 right-0 translate-x-full pl-2">
+                    <ArrowUpRight className="h-3 w-3 text-primary/40" />
+                  </div>
+                </div>
+                <ArrowUpRight className="h-4 w-4 text-primary/50 rotate-135" />
+                <div className="w-px h-8 bg-gradient-to-t from-transparent to-primary/30" />
+              </div>
+
+              {/* LEFT - Order Summary */}
+              <div className="flex-1 lg:pr-8 space-y-4">
+                <Card className="rounded-3xl">
+                  <CardContent className="p-4 space-y-3">
+                    <h3 className="font-semibold flex items-center gap-2 text-sm">
+                      <ShoppingCart className="h-4 w-4 text-primary" />
+                      Bidhaa ({cartCount})
+                    </h3>
+                    {cart.map(item => (
+                      <div key={item.id} className="flex justify-between items-center text-sm p-2 bg-muted/50 rounded-2xl">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium truncate">{item.name}</p>
+                          <p className="text-xs text-muted-foreground">{item.owner_business_name} • x{item.quantity}</p>
+                        </div>
+                        <span className="font-bold text-primary ml-2">TSh {(item.price * item.quantity).toLocaleString()}</span>
+                      </div>
+                    ))}
+                    <div className="border-t pt-3 flex justify-between font-bold text-lg">
+                      <span>Jumla</span>
+                      <span className="text-primary">TSh {cartTotal.toLocaleString()}</span>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* RIGHT - Customer Info & Payment */}
+              <div className="flex-1 lg:pl-8 space-y-4">
+                <Card className="rounded-3xl">
+                  <CardContent className="p-4 space-y-4">
+                    <h3 className="font-semibold text-sm">Taarifa za Mteja</h3>
+                    <div>
+                      <label className="text-xs font-medium text-muted-foreground">Namba ya Simu *</label>
+                      <Input 
+                        placeholder="07xx xxx xxx" 
+                        className="mt-1 rounded-2xl" 
+                        value={customerPhone}
+                        onChange={(e) => setCustomerPhone(e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium text-muted-foreground">Mahali pa Kupeleka *</label>
+                      <Input 
+                        placeholder="Eneo, mtaa, namba ya nyumba" 
+                        className="mt-1 rounded-2xl" 
+                        value={deliveryAddress}
+                        onChange={(e) => setDeliveryAddress(e.target.value)}
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-xs font-medium text-muted-foreground mb-2 block">Malipo</label>
+                      <div className="grid grid-cols-2 gap-2">
+                        <Button
+                          type="button"
+                          variant={paymentTiming === 'now' ? 'default' : 'outline'}
+                          className="h-14 flex-col gap-1"
+                          onClick={() => setPaymentTiming('now')}
+                        >
+                          <span className="text-xs">💵 Lipa Sasa</span>
+                          <span className="text-[10px] opacity-70">M-Pesa / Tigo Pesa</span>
+                        </Button>
+                        <Button
+                          type="button"
+                          variant={paymentTiming === 'on_delivery' ? 'default' : 'outline'}
+                          className="h-14 flex-col gap-1"
+                          onClick={() => setPaymentTiming('on_delivery')}
+                        >
+                          <span className="text-xs">📦 Lipa Unapopokea</span>
+                          <span className="text-[10px] opacity-70">Cash on Delivery</span>
+                        </Button>
+                      </div>
+                    </div>
+                    
+                    <Button 
+                      className="w-full" 
+                      size="lg"
+                      disabled={!customerPhone || !deliveryAddress || customerPhone.length < 9}
+                      onClick={() => {
+                        if (paymentTiming === 'on_delivery') {
+                          handlePaymentComplete('COD-' + Date.now(), 'cash_on_delivery');
+                        } else {
+                          setPaymentOpen(true);
+                        }
+                      }}
+                    >
+                      {paymentTiming === 'on_delivery' ? 'Tuma Oda' : 'Endelea Kulipa'}
+                    </Button>
+                  </CardContent>
+                </Card>
               </div>
             </div>
-            
-            <Button 
-              className="w-full" 
-              size="lg"
-              disabled={!customerPhone || !deliveryAddress || customerPhone.length < 9}
-              onClick={() => {
-                if (paymentTiming === 'on_delivery') {
-                  handlePaymentComplete('COD-' + Date.now(), 'cash_on_delivery');
-                } else {
-                  setPaymentOpen(true);
-                }
-              }}
-            >
-              {paymentTiming === 'on_delivery' ? 'Tuma Oda' : 'Endelea Kulipa'}
-            </Button>
           </div>
-        </DialogContent>
-      </Dialog>
+        </div>
+      )}
 
-      {/* Payment Dialog */}
-      <Dialog open={paymentOpen} onOpenChange={setPaymentOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Lipa kwa Simu</DialogTitle>
-          </DialogHeader>
-          <MobileMoneyPayment 
-            amount={cartTotal}
-            onPaymentComplete={handlePaymentComplete}
-            onCancel={() => setPaymentOpen(false)}
-          />
-        </DialogContent>
-      </Dialog>
+      {/* Payment Full-Page Overlay */}
+      {paymentOpen && (
+        <div className="fixed inset-0 z-50 bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-background dark:via-background dark:to-background overflow-y-auto animate-in fade-in slide-in-from-bottom-4 duration-300">
+          <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-md border-b border-border px-4 py-3 flex items-center gap-3">
+            <Button variant="ghost" size="icon" onClick={() => setPaymentOpen(false)}>
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <SokoniLogo size="sm" />
+            <h2 className="font-bold text-sm">Lipa kwa Simu</h2>
+          </div>
+          <div className="max-w-md mx-auto p-4 md:p-6">
+            <Card className="rounded-3xl">
+              <CardContent className="p-4">
+                <MobileMoneyPayment 
+                  amount={cartTotal}
+                  onPaymentComplete={handlePaymentComplete}
+                  onCancel={() => setPaymentOpen(false)}
+                />
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      )}
 
       {/* Order Receipt Dialog */}
       {receiptData && (

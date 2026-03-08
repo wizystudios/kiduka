@@ -185,19 +185,19 @@ export const SokoniProductDetail = ({
       <div className="fixed inset-0 z-50 bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-background dark:via-background dark:to-background overflow-y-auto animate-in fade-in slide-in-from-bottom-4 duration-300">
         {/* Header */}
         <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-md border-b border-border px-4 py-3 flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={onClose} className="rounded-[20%]">
+          <Button variant="ghost" size="icon" onClick={onClose}>
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <SokoniLogo size="sm" />
           <div className="flex-1" />
           <Button 
             variant="ghost" size="icon"
-            className={`rounded-[20%] ${isLiked ? 'text-red-500' : ''}`}
+            className={`${isLiked ? 'text-red-500' : ''}`}
             onClick={handleToggleWishlist}
           >
             <Heart className={`h-5 w-5 ${isLiked ? 'fill-current' : ''}`} />
           </Button>
-          <Button variant="ghost" size="icon" className="rounded-[20%]" onClick={handleShare}>
+          <Button variant="ghost" size="icon" onClick={handleShare}>
             <Share2 className="h-5 w-5" />
           </Button>
         </div>
@@ -233,7 +233,7 @@ export const SokoniProductDetail = ({
               <Card className="rounded-3xl overflow-hidden">
                 <CardContent className="p-4">
                   <div className="flex items-center gap-3">
-                    <div className="h-12 w-12 rounded-[20%] bg-primary/10 flex items-center justify-center">
+                    <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
                       <Store className="h-6 w-6 text-primary" />
                     </div>
                     <div className="flex-1 min-w-0">
@@ -344,14 +344,14 @@ export const SokoniProductDetail = ({
                     <>
                       <Button
                         variant="secondary" size="icon"
-                        className="absolute left-2 top-1/2 -translate-y-1/2 rounded-[20%] bg-background/80 backdrop-blur-sm shadow-lg h-9 w-9"
+                        className="absolute left-2 top-1/2 -translate-y-1/2 bg-background/80 backdrop-blur-sm shadow-lg h-9 w-9"
                         onClick={(e) => { e.stopPropagation(); prevImage(); }}
                       >
                         <ChevronLeft className="h-4 w-4" />
                       </Button>
                       <Button
                         variant="secondary" size="icon"
-                        className="absolute right-2 top-1/2 -translate-y-1/2 rounded-[20%] bg-background/80 backdrop-blur-sm shadow-lg h-9 w-9"
+                        className="absolute right-2 top-1/2 -translate-y-1/2 bg-background/80 backdrop-blur-sm shadow-lg h-9 w-9"
                         onClick={(e) => { e.stopPropagation(); nextImage(); }}
                       >
                         <ChevronRight className="h-4 w-4" />
@@ -453,7 +453,7 @@ export const SokoniProductDetail = ({
                     <div className="flex items-center gap-3">
                       <Button
                         variant="outline" size="icon"
-                        className="h-10 w-10 rounded-[20%]"
+                        className="h-10 w-10"
                         onClick={() => setQuantity(Math.max(1, quantity - 1))}
                         disabled={quantity <= 1}
                       >
@@ -462,7 +462,7 @@ export const SokoniProductDetail = ({
                       <span className="w-8 text-center font-bold text-lg">{quantity}</span>
                       <Button
                         variant="outline" size="icon"
-                        className="h-10 w-10 rounded-[20%]"
+                        className="h-10 w-10"
                         onClick={() => setQuantity(Math.min(product.stock_quantity, quantity + 1))}
                         disabled={quantity >= product.stock_quantity}
                       >
@@ -479,7 +479,7 @@ export const SokoniProductDetail = ({
                     </div>
                     <Button 
                       size="lg"
-                      className="flex-1 h-14 text-base gap-2 rounded-[20%]"
+                      className="flex-1 h-14 text-base gap-2"
                       onClick={handleAddToCart}
                     >
                       <ShoppingCart className="h-5 w-5" />
