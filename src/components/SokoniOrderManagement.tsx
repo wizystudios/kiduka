@@ -283,6 +283,56 @@ export const SokoniOrderManagement = () => {
     toast.success('Risiti imetumwa kwa WhatsApp!');
   };
 
+  // Get unique Sokoni customer phones
+  const getUniqueCustomers = () => {
+    const seen = new Map<string, string>();
+    orders.forEach(o => {
+      const phone = formatPhone(o.customer_phone);
+      if (!seen.has(phone)) seen.set(phone, o.customer_phone);
+    });
+    return Array.from(seen.entries());
+  };
+
+  const sendBatchWhatsApp = async () => {
+    if (!batchMsg.trim() || !user) return;
+    const customers = getUniqueCustomers();
+    if (customers.length === 0) { toast.error('Hakuna wateja wa Sokoni'); return; }
+
+    setSendingBatch(true);
+    setBatchProgress({ sent: 0, total: customers.length });
+
+    let sentCount = 0;
+    for (const [phone, rawPhone] of customers) {
+      try {
+        const { error } = await supabase.functions.invoke('send-whatsapp', {
+          body: { phoneNumber: phone, message: batchMsg, messageType: 'general' }
+        });
+
+        await supabase.from('whatsapp_messages').insert({
+          owner_id: user.id,
+          customer_name: `Sokoni - ${rawPhone}`,
+          phone_number: phone,
+          message: batchMsg,
+          message_type: 'general',
+          status: error ? 'sent_wa_link' : 'sent',
+        });
+
+        if (error) {
+          window.open(`https://wa.me/${phone.replace('+', '')}?text=${encodeURIComponent(batchMsg)}`, '_blank');
+        }
+      } catch {
+        // fallback
+      }
+      sentCount++;
+      setBatchProgress({ sent: sentCount, total: customers.length });
+    }
+
+    toast.success(`Ujumbe umetumwa kwa wateja ${sentCount}!`);
+    setSendingBatch(false);
+    setBatchOpen(false);
+    setBatchMsg('');
+  };
+
   const filteredOrders = orders.filter(order => {
     if (activeTab === 'new') return order.order_status === 'new';
     if (activeTab === 'active') return ['confirmed', 'delivering'].includes(order.order_status);
