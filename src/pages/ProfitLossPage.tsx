@@ -331,58 +331,54 @@ export const ProfitLossPage = () => {
       </div>
 
       {/* Date Range Selector */}
-      <Card>
-        <CardContent className="p-3">
-          <div className="flex items-center gap-2 flex-wrap">
-            <Button 
-              variant={range === 7 ? 'default' : 'outline'} 
-              size="sm" 
-              onClick={() => setRange(7)}
-            >
-              7 Siku
-            </Button>
-            <Button 
-              variant={range === 30 ? 'default' : 'outline'} 
-              size="sm" 
-              onClick={() => setRange(30)}
-            >
-              30 Siku
-            </Button>
-            <Button 
-              variant={range === 90 ? 'default' : 'outline'} 
-              size="sm" 
-              onClick={() => setRange(90)}
-            >
-              90 Siku
-            </Button>
-            <Button 
-              variant={range === "custom" ? 'default' : 'outline'} 
-              size="sm" 
-              onClick={() => setRange("custom")}
-            >
-              Chagua
-            </Button>
-            
-            {range === "custom" && (
-              <div className="flex gap-2 items-center">
-                <Input 
-                  type="date" 
-                  value={startDate} 
-                  onChange={(e) => setStartDate(e.target.value)} 
-                  className="h-8 w-32"
-                />
-                <span>-</span>
-                <Input 
-                  type="date" 
-                  value={endDate} 
-                  onChange={(e) => setEndDate(e.target.value)} 
-                  className="h-8 w-32"
-                />
-              </div>
-            )}
+      <div className="flex items-center gap-2 flex-wrap">
+        <Button 
+          variant={range === 7 ? 'default' : 'outline'} 
+          size="sm" 
+          onClick={() => setRange(7)}
+        >
+          7 Siku
+        </Button>
+        <Button 
+          variant={range === 30 ? 'default' : 'outline'} 
+          size="sm" 
+          onClick={() => setRange(30)}
+        >
+          30 Siku
+        </Button>
+        <Button 
+          variant={range === 90 ? 'default' : 'outline'} 
+          size="sm" 
+          onClick={() => setRange(90)}
+        >
+          90 Siku
+        </Button>
+        <Button 
+          variant={range === "custom" ? 'default' : 'outline'} 
+          size="sm" 
+          onClick={() => setRange("custom")}
+        >
+          Chagua
+        </Button>
+        
+        {range === "custom" && (
+          <div className="flex gap-2 items-center">
+            <Input 
+              type="date" 
+              value={startDate} 
+              onChange={(e) => setStartDate(e.target.value)} 
+              className="h-8 w-32"
+            />
+            <span>-</span>
+            <Input 
+              type="date" 
+              value={endDate} 
+              onChange={(e) => setEndDate(e.target.value)} 
+              className="h-8 w-32"
+            />
           </div>
-        </CardContent>
-      </Card>
+        )}
+      </div>
 
       {/* Summary - flat */}
       <div className="flex items-center justify-around py-3 border-y border-border/50">
