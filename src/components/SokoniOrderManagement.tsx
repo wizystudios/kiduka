@@ -8,8 +8,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { 
-  Package, Truck, CheckCircle, XCircle, Clock, Phone, MapPin, Eye, RefreshCw, User, MessageSquare, Send, Receipt
+  Package, Truck, CheckCircle, XCircle, Clock, Phone, MapPin, Eye, RefreshCw, User, MessageSquare, Send, Receipt, Megaphone, Users
 } from 'lucide-react';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useDataAccess } from '@/hooks/useDataAccess';
