@@ -553,6 +553,17 @@ export const SokoniMarketplace = () => {
           <Store className="h-3 w-3 text-muted-foreground" />
           <span className="text-xs text-muted-foreground truncate">{product.owner_business_name}</span>
         </div>
+        {product.owner_region && (
+          <div className="flex items-center gap-1 mt-0.5">
+            <MapPin className="h-3 w-3 text-muted-foreground" />
+            <span className="text-xs text-muted-foreground truncate">
+              {product.owner_district ? `${product.owner_district}, ` : ''}{product.owner_region}
+            </span>
+            {userRegion && product.owner_region === userRegion && (
+              <Badge className="text-[10px] px-1 py-0 bg-green-100 text-green-700 border-0">Karibu</Badge>
+            )}
+          </div>
+        )}
         <div className="mt-2">
           {hasDiscount && (
             <span className="text-xs text-muted-foreground line-through mr-2">
