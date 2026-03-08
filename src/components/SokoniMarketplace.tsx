@@ -562,9 +562,19 @@ export const SokoniMarketplace = () => {
       });
       setReceiptOpen(true);
 
+      // Mark abandoned carts as recovered
+      await supabase
+        .from('abandoned_carts')
+        .update({ recovered: true })
+        .eq('customer_phone', normalizedCustomerPhone)
+        .eq('recovered', false);
+
       setCart([]);
       setCustomerPhone('');
       setDeliveryAddress('');
+      setCouponCode('');
+      setCouponDiscount(0);
+      setCouponApplied(false);
       setPaymentOpen(false);
       setCheckoutOpen(false);
     } catch (error) {
