@@ -307,38 +307,22 @@ export const MicroLoansManagementPage = () => {
         </Dialog>
       </div>
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Jumla ya Mikopo</p>
-                <p className="text-2xl font-bold">TZS {totalLoaned.toLocaleString()}</p>
-              </div>
-              <CreditCard className="h-8 w-8 text-primary" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Imekusanywa</p>
-                <p className="text-2xl font-bold text-green-600">TZS {totalCollected.toLocaleString()}</p>
-              </div>
-              <DollarSign className="h-8 w-8 text-green-600" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div>
-              <p className="text-sm text-muted-foreground">Salio</p>
-              <p className="text-2xl font-bold text-red-600">TZS {totalOutstanding.toLocaleString()}</p>
-            </div>
-          </CardContent>
-        </Card>
+      {/* Summary Stats - flat */}
+      <div className="flex items-center justify-around py-3 border-y border-border/50">
+        <div className="text-center space-y-0.5">
+          <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Jumla Mikopo</p>
+          <p className="text-lg font-bold text-foreground">TZS {totalLoaned.toLocaleString()}</p>
+        </div>
+        <div className="w-px h-8 bg-border/50" />
+        <div className="text-center space-y-0.5">
+          <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Imekusanywa</p>
+          <p className="text-lg font-bold text-success">TZS {totalCollected.toLocaleString()}</p>
+        </div>
+        <div className="w-px h-8 bg-border/50" />
+        <div className="text-center space-y-0.5">
+          <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Salio</p>
+          <p className="text-lg font-bold text-destructive">TZS {totalOutstanding.toLocaleString()}</p>
+        </div>
       </div>
 
       {/* Loans List */}

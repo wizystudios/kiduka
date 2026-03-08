@@ -234,69 +234,37 @@ export const ReportsPage = () => {
         ))}
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-2 gap-2">
-        <Card className="bg-green-500/10">
-          <CardContent className="p-3">
-            <div className="flex items-center gap-2">
-              <TrendingUp className="h-4 w-4 text-green-600" />
-              <span className="text-xs text-muted-foreground">Mapato</span>
-            </div>
-            <p className="text-lg font-bold text-green-600">
-              TZS {stats.totalRevenue.toLocaleString()}
-            </p>
-          </CardContent>
-        </Card>
-        
-        <Card className="bg-red-500/10">
-          <CardContent className="p-3">
-            <div className="flex items-center gap-2">
-              <TrendingDown className="h-4 w-4 text-red-600" />
-              <span className="text-xs text-muted-foreground">Matumizi</span>
-            </div>
-            <p className="text-lg font-bold text-red-600">
-              TZS {stats.totalExpenses.toLocaleString()}
-            </p>
-          </CardContent>
-        </Card>
-        
-        <Card className="bg-blue-500/10">
-          <CardContent className="p-3">
-            <div className="flex items-center gap-2">
-              <Wallet className="h-4 w-4 text-blue-600" />
-              <span className="text-xs text-muted-foreground">Faida</span>
-            </div>
-            <p className={`text-lg font-bold ${stats.totalProfit >= 0 ? 'text-blue-600' : 'text-red-600'}`}>
-              TZS {stats.totalProfit.toLocaleString()}
-            </p>
-          </CardContent>
-        </Card>
-        
-        <Card className="bg-orange-500/10">
-          <CardContent className="p-3">
-            <div className="flex items-center gap-2">
-              <Receipt className="h-4 w-4 text-orange-600" />
-              <span className="text-xs text-muted-foreground">Mauzo Haraka</span>
-            </div>
-            <p className="text-lg font-bold text-orange-600">
-              TZS {stats.quickSalesRevenue.toLocaleString()}
-            </p>
-          </CardContent>
-        </Card>
+      {/* Stats - flat row */}
+      <div className="flex items-center justify-around py-3 border-y border-border/50">
+        <div className="text-center space-y-0.5">
+          <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Mapato</p>
+          <p className="text-sm font-bold text-success">TZS {stats.totalRevenue.toLocaleString()}</p>
+        </div>
+        <div className="w-px h-8 bg-border/50" />
+        <div className="text-center space-y-0.5">
+          <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Matumizi</p>
+          <p className="text-sm font-bold text-destructive">TZS {stats.totalExpenses.toLocaleString()}</p>
+        </div>
+        <div className="w-px h-8 bg-border/50" />
+        <div className="text-center space-y-0.5">
+          <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Faida</p>
+          <p className={`text-sm font-bold ${stats.totalProfit >= 0 ? 'text-primary' : 'text-destructive'}`}>
+            TZS {stats.totalProfit.toLocaleString()}
+          </p>
+        </div>
       </div>
 
-      {/* Product Costs Card */}
-      <Card className="bg-purple-500/10">
-        <CardContent className="p-3">
-          <div className="flex items-center gap-2">
-            <Package className="h-4 w-4 text-purple-600" />
-            <span className="text-xs text-muted-foreground">Gharama za Bidhaa (Stock)</span>
-          </div>
-          <p className="text-lg font-bold text-purple-600">
-            TZS {stats.productCosts.toLocaleString()}
-          </p>
-        </CardContent>
-      </Card>
+      <div className="flex items-center justify-around py-2">
+        <div className="text-center space-y-0.5">
+          <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Mauzo Haraka</p>
+          <p className="text-sm font-bold text-foreground">TZS {stats.quickSalesRevenue.toLocaleString()}</p>
+        </div>
+        <div className="w-px h-6 bg-border/50" />
+        <div className="text-center space-y-0.5">
+          <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Gharama Bidhaa</p>
+          <p className="text-sm font-bold text-foreground">TZS {stats.productCosts.toLocaleString()}</p>
+        </div>
+      </div>
 
       {/* Revenue Chart */}
       <Card>

@@ -331,101 +331,83 @@ export const ProfitLossPage = () => {
       </div>
 
       {/* Date Range Selector */}
-      <Card>
-        <CardContent className="p-3">
-          <div className="flex items-center gap-2 flex-wrap">
-            <Button 
-              variant={range === 7 ? 'default' : 'outline'} 
-              size="sm" 
-              onClick={() => setRange(7)}
-            >
-              7 Siku
-            </Button>
-            <Button 
-              variant={range === 30 ? 'default' : 'outline'} 
-              size="sm" 
-              onClick={() => setRange(30)}
-            >
-              30 Siku
-            </Button>
-            <Button 
-              variant={range === 90 ? 'default' : 'outline'} 
-              size="sm" 
-              onClick={() => setRange(90)}
-            >
-              90 Siku
-            </Button>
-            <Button 
-              variant={range === "custom" ? 'default' : 'outline'} 
-              size="sm" 
-              onClick={() => setRange("custom")}
-            >
-              Chagua
-            </Button>
-            
-            {range === "custom" && (
-              <div className="flex gap-2 items-center">
-                <Input 
-                  type="date" 
-                  value={startDate} 
-                  onChange={(e) => setStartDate(e.target.value)} 
-                  className="h-8 w-32"
-                />
-                <span>-</span>
-                <Input 
-                  type="date" 
-                  value={endDate} 
-                  onChange={(e) => setEndDate(e.target.value)} 
-                  className="h-8 w-32"
-                />
-              </div>
-            )}
+      <div className="flex items-center gap-2 flex-wrap">
+        <Button 
+          variant={range === 7 ? 'default' : 'outline'} 
+          size="sm" 
+          onClick={() => setRange(7)}
+        >
+          7 Siku
+        </Button>
+        <Button 
+          variant={range === 30 ? 'default' : 'outline'} 
+          size="sm" 
+          onClick={() => setRange(30)}
+        >
+          30 Siku
+        </Button>
+        <Button 
+          variant={range === 90 ? 'default' : 'outline'} 
+          size="sm" 
+          onClick={() => setRange(90)}
+        >
+          90 Siku
+        </Button>
+        <Button 
+          variant={range === "custom" ? 'default' : 'outline'} 
+          size="sm" 
+          onClick={() => setRange("custom")}
+        >
+          Chagua
+        </Button>
+        
+        {range === "custom" && (
+          <div className="flex gap-2 items-center">
+            <Input 
+              type="date" 
+              value={startDate} 
+              onChange={(e) => setStartDate(e.target.value)} 
+              className="h-8 w-32"
+            />
+            <span>-</span>
+            <Input 
+              type="date" 
+              value={endDate} 
+              onChange={(e) => setEndDate(e.target.value)} 
+              className="h-8 w-32"
+            />
           </div>
-        </CardContent>
-      </Card>
+        )}
+      </div>
 
-      {/* Summary */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
-        <Card className="bg-green-500/10">
-          <CardContent className="p-3">
-            <p className="text-xs text-muted-foreground">Mapato</p>
-            <p className="text-lg font-bold text-green-600">
-              TZS {totals.revenue.toLocaleString()}
-            </p>
-          </CardContent>
-        </Card>
-        <Card className="bg-orange-500/10">
-          <CardContent className="p-3">
-            <p className="text-xs text-muted-foreground">Gharama</p>
-            <p className="text-lg font-bold text-orange-600">
-              TZS {totals.cost.toLocaleString()}
-            </p>
-          </CardContent>
-        </Card>
-        <Card className="bg-amber-500/10">
-          <CardContent className="p-3">
-            <p className="text-xs text-muted-foreground">Matumizi</p>
-            <p className="text-lg font-bold text-amber-600">
-              TZS {totals.expenses.toLocaleString()}
-            </p>
-          </CardContent>
-        </Card>
-        <Card className="bg-blue-500/10">
-          <CardContent className="p-3">
-            <p className="text-xs text-muted-foreground">Faida</p>
-            <p className={`text-lg font-bold ${totals.profit >= 0 ? 'text-blue-600' : 'text-red-600'}`}>
-              TZS {totals.profit.toLocaleString()}
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-3">
-            <p className="text-xs text-muted-foreground">Margin</p>
-            <p className="text-lg font-bold">
-              {totals.margin.toFixed(1)}%
-            </p>
-          </CardContent>
-        </Card>
+      {/* Summary - flat */}
+      <div className="flex items-center justify-around py-3 border-y border-border/50">
+        <div className="text-center space-y-0.5">
+          <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Mapato</p>
+          <p className="text-sm font-bold text-success">TZS {totals.revenue.toLocaleString()}</p>
+        </div>
+        <div className="w-px h-8 bg-border/50" />
+        <div className="text-center space-y-0.5">
+          <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Gharama</p>
+          <p className="text-sm font-bold text-foreground">TZS {totals.cost.toLocaleString()}</p>
+        </div>
+        <div className="w-px h-8 bg-border/50" />
+        <div className="text-center space-y-0.5">
+          <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Matumizi</p>
+          <p className="text-sm font-bold text-foreground">TZS {totals.expenses.toLocaleString()}</p>
+        </div>
+        <div className="w-px h-8 bg-border/50" />
+        <div className="text-center space-y-0.5">
+          <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Faida</p>
+          <p className={`text-sm font-bold ${totals.profit >= 0 ? 'text-success' : 'text-destructive'}`}>
+            TZS {totals.profit.toLocaleString()}
+          </p>
+        </div>
+        <div className="w-px h-8 bg-border/50" />
+        <div className="text-center space-y-0.5">
+          <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Margin</p>
+          <p className="text-sm font-bold text-foreground">{totals.margin.toFixed(1)}%</p>
+        </div>
       </div>
 
       {/* Chart */}

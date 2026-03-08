@@ -132,37 +132,25 @@ export default function ExpensesPage() {
   return (
     <div className="page-container p-4 pb-24 md:p-6 space-y-4">
 
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm">Jumla ya Matumizi</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">TZS {totalExpenses.toLocaleString()}</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm">Matumizi Mwezi Huu</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">
-              TZS {expenses.filter(e => 
-                new Date(e.expense_date).getMonth() === new Date().getMonth()
-              ).reduce((sum, exp) => sum + exp.amount, 0).toLocaleString()}
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm">Idadi ya Matumizi</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">{expenses.length}</p>
-          </CardContent>
-        </Card>
+      <div className="flex items-center justify-around py-3 border-y border-border/50">
+        <div className="text-center space-y-0.5">
+          <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Jumla</p>
+          <p className="text-lg font-bold text-foreground">TZS {totalExpenses.toLocaleString()}</p>
+        </div>
+        <div className="w-px h-8 bg-border/50" />
+        <div className="text-center space-y-0.5">
+          <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Mwezi Huu</p>
+          <p className="text-lg font-bold text-foreground">
+            TZS {expenses.filter(e => 
+              new Date(e.expense_date).getMonth() === new Date().getMonth()
+            ).reduce((sum, exp) => sum + exp.amount, 0).toLocaleString()}
+          </p>
+        </div>
+        <div className="w-px h-8 bg-border/50" />
+        <div className="text-center space-y-0.5">
+          <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Idadi</p>
+          <p className="text-lg font-bold text-foreground">{expenses.length}</p>
+        </div>
       </div>
 
       <div className="flex gap-2">
@@ -173,11 +161,8 @@ export default function ExpensesPage() {
       </div>
 
       {showForm && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Matumizi Mapya</CardTitle>
-          </CardHeader>
-          <CardContent>
+        <div className="border border-border rounded-2xl p-4">
+          <h3 className="text-sm font-semibold mb-3">Matumizi Mapya</h3>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
                 <Label>Aina ya Matumizi</Label>
@@ -262,15 +247,11 @@ export default function ExpensesPage() {
                 </Button>
               </div>
             </form>
-          </CardContent>
-        </Card>
+        </div>
       )}
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Historia ya Matumizi</CardTitle>
-        </CardHeader>
-        <CardContent>
+      <div>
+        <h3 className="text-sm font-semibold mb-3">Historia ya Matumizi</h3>
           {loading ? (
             <p className="text-center text-muted-foreground py-8">Inapakia...</p>
           ) : expenses.length === 0 ? (
@@ -309,8 +290,7 @@ export default function ExpensesPage() {
               ))}
             </div>
           )}
-        </CardContent>
-      </Card>
+      </div>
     </div>
   );
 }
