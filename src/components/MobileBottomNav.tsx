@@ -20,7 +20,7 @@ import {
   ClipboardList, Smartphone, Zap, Banknote, LineChart, UserCheck,
   ChevronDown, Menu, HelpCircle
 } from 'lucide-react';
-import { NotificationCenter } from '@/components/NotificationCenter';
+
 
 interface NavItem {
   id: string;
