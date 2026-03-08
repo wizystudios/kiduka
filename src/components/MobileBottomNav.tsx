@@ -159,7 +159,7 @@ export const MobileBottomNav = () => {
     { id: 'home', label: 'Home', icon: Home, action: () => handleNav('/dashboard') },
     { id: 'sales', label: 'Mauzo', icon: ShoppingCart, action: () => handleNav('/sales') },
     { id: 'scanner', label: 'Scan', icon: QrCode, action: () => handleNav('/scanner') },
-    { id: 'notifications', label: 'Arifa', icon: Bell, action: () => setNotificationOpen(true) },
+    { id: 'notifications', label: 'Arifa', icon: Bell, action: () => navigate('/notifications') },
     { id: 'menu', label: 'Zaidi', icon: Menu, action: () => setMenuOpen(true) },
   ];
 
