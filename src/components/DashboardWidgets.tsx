@@ -31,7 +31,8 @@ import {
   Trash2,
   UserPlus,
   Banknote,
-  ClipboardCheck
+  ClipboardCheck,
+  Users
 } from 'lucide-react';
 
 interface LowStockProduct {
@@ -629,6 +630,90 @@ export const RecentActivitiesWidget = () => {
         </div>
         <Button className="w-full mt-3" variant="outline" onClick={() => navigate('/notifications')}>
           Tazama Zote
+          <ChevronRight className="h-4 w-4 ml-2" />
+        </Button>
+      </SheetContent>
+    </Sheet>
+  );
+};
+
+// ===== DEBTORS WIDGET =====
+interface Debtor {
+  id: string;
+  name: string;
+  phone: string | null;
+  outstanding_balance: number;
+}
+
+export const DebtorsWidget = () => {
+  const { user } = useAuth();
+  const { dataOwnerId, isReady } = useDataAccess();
+  const navigate = useNavigate();
+  const [debtors, setDebtors] = useState<Debtor[]>([]);
+  const [totalDebt, setTotalDebt] = useState(0);
+
+  useEffect(() => {
+    if (isReady && dataOwnerId) {
+      fetchDebtors();
+      const interval = setInterval(fetchDebtors, 30000);
+      return () => clearInterval(interval);
+    }
+  }, [isReady, dataOwnerId]);
+
+  const fetchDebtors = async () => {
+    if (!dataOwnerId) return;
+    const { data } = await supabase
+      .from('customers')
+      .select('id, name, phone, outstanding_balance')
+      .eq('owner_id', dataOwnerId)
+      .gt('outstanding_balance', 0)
+      .order('outstanding_balance', { ascending: false })
+      .limit(10);
+    if (data) {
+      setDebtors(data);
+      setTotalDebt(data.reduce((sum, d) => sum + (d.outstanding_balance || 0), 0));
+    }
+  };
+
+  return (
+    <Sheet>
+      <SheetTrigger asChild>
+        <Button variant="outline" className="h-auto p-2 flex flex-col items-start w-full border-l-2 border-l-destructive">
+          <div className="flex items-center gap-1 w-full">
+            <Users className="h-3 w-3 text-destructive" />
+            <span className="text-[10px] text-muted-foreground">Wadaiwa</span>
+          </div>
+          <p className="text-sm font-bold text-destructive">
+            {debtors.length > 0 ? `${debtors.length} (TZS ${totalDebt.toLocaleString()})` : '0'}
+          </p>
+        </Button>
+      </SheetTrigger>
+      <SheetContent side="bottom" className="max-h-[70vh] overflow-y-auto">
+        <SheetHeader>
+          <SheetTitle className="flex items-center gap-2">
+            <Users className="h-5 w-5 text-destructive" />
+            Wateja Wenye Madeni
+          </SheetTitle>
+        </SheetHeader>
+        <div className="space-y-2 mt-4">
+          {debtors.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-4">Hakuna wateja wenye madeni</p>
+          ) : (
+            debtors.map((d) => (
+              <div key={d.id} className="flex items-center justify-between p-2 border rounded-md">
+                <div>
+                  <p className="text-sm font-medium">{d.name}</p>
+                  {d.phone && <p className="text-[10px] text-muted-foreground">{d.phone}</p>}
+                </div>
+                <Badge variant="destructive" className="text-xs">
+                  TZS {d.outstanding_balance.toLocaleString()}
+                </Badge>
+              </div>
+            ))
+          )}
+        </div>
+        <Button className="w-full mt-3" variant="outline" onClick={() => navigate('/customers')}>
+          Tazama Wateja Wote
           <ChevronRight className="h-4 w-4 ml-2" />
         </Button>
       </SheetContent>
