@@ -67,6 +67,7 @@ export const ResetPasswordPage = () => {
         localStorage.setItem(`kiduka_pw_updated_${user.id}`, 'true');
       }
       
+      logActivity('password_reset', 'Nywila imebadilishwa kupitia reset link');
       setSuccess(true);
       toast.success('Nywila imebadilishwa!');
       setTimeout(() => navigate('/auth'), 2000);
