@@ -10,7 +10,7 @@ import { useOfflineSync } from '@/hooks/useOfflineSync';
 import { OfflineIndicator } from '@/components/OfflineIndicator';
 import { useNavigate } from 'react-router-dom';
 import { KidukaLogo } from './KidukaLogo';
-import { LogOut, Settings, Crown, Smartphone, Package, ShoppingCart, AlertTriangle, CheckCheck } from 'lucide-react';
+import { LogOut, Settings, Crown, Smartphone } from 'lucide-react';
 
 export const TopNavbar = () => {
   const { user, userProfile, signOut } = useAuth();
@@ -25,12 +25,7 @@ export const TopNavbar = () => {
                        user?.user_metadata?.full_name || 
                        user?.email?.split('@')[0] || 
                        'User';
-    
-    return displayName
-      .split(' ')
-      .map((n: string) => n.charAt(0).toUpperCase())
-      .join('')
-      .slice(0, 2);
+    return displayName.split(' ').map((n: string) => n.charAt(0).toUpperCase()).join('').slice(0, 2);
   };
 
   const getDisplayName = () => {
@@ -38,6 +33,10 @@ export const TopNavbar = () => {
            user?.user_metadata?.full_name || 
            user?.email?.split('@')[0] || 
            'User';
+  };
+
+  const getBusinessName = () => {
+    return userProfile?.business_name || 'Kiduka';
   };
 
   const getUserRole = () => {
@@ -59,26 +58,21 @@ export const TopNavbar = () => {
     }
   };
 
-  const getNotificationIcon = (type: string) => {
-    switch (type) {
-      case 'new_sale': return <ShoppingCart className="h-3 w-3 text-green-600" />;
-      case 'low_stock': return <Package className="h-3 w-3 text-yellow-600" />;
-      case 'alert': return <AlertTriangle className="h-3 w-3 text-red-600" />;
-      default: return <AlertTriangle className="h-3 w-3" />;
-    }
-  };
-
   if (!user) return null;
 
   return (
     <div className="fixed top-0 left-0 right-0 bg-background/95 backdrop-blur-sm border-b border-border z-50 md:hidden">
-      <div className="flex items-center justify-between p-3">
+      <div className="flex items-center justify-between px-3 py-2">
+        {/* Left: Business name above logo */}
         <div className="flex items-center gap-2">
-          <KidukaLogo size="sm" showText={false} />
+          <div className="flex flex-col">
+            <span className="text-[10px] font-semibold text-primary leading-none mb-0.5">{getBusinessName()}</span>
+            <KidukaLogo size="sm" showText={false} />
+          </div>
         </div>
         
+        {/* Right: Actions */}
         <div className="flex items-center gap-1">
-          {/* Offline Indicator with Sync History */}
           <OfflineIndicator
             isOnline={offlineSync.isOnline}
             isSyncing={offlineSync.isSyncing}
@@ -89,29 +83,19 @@ export const TopNavbar = () => {
             onClearHistory={offlineSync.clearHistory}
           />
 
-          {/* Notification Bell - links to unified page */}
           <Button variant="ghost" size="sm" className="relative p-2" onClick={() => navigate('/notifications')}>
             <NotificationIcon count={unreadCount} />
           </Button>
 
-          {/* User Menu */}
           <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
             <SheetTrigger asChild>
               <Button variant="ghost" size="sm" className="p-0 h-auto">
-                <div className="flex items-center gap-2">
-                  <div className="text-right">
-                    <p className="text-xs font-semibold">{getDisplayName()}</p>
-                    <Badge variant="outline" className="text-[10px] h-4 px-1">
-                      {getUserRole()}
-                    </Badge>
-                  </div>
-                  <Avatar className="h-8 w-8">
-                    <AvatarImage src={userProfile?.avatar_url} />
-                    <AvatarFallback className="bg-gradient-to-br from-emerald-500 to-blue-600 text-white text-xs">
-                      {getUserInitials()}
-                    </AvatarFallback>
-                  </Avatar>
-                </div>
+                <Avatar className="h-8 w-8">
+                  <AvatarImage src={userProfile?.avatar_url} />
+                  <AvatarFallback className="bg-gradient-to-br from-success to-primary text-white text-xs">
+                    {getUserInitials()}
+                  </AvatarFallback>
+                </Avatar>
               </Button>
             </SheetTrigger>
             <SheetContent side="right" className="w-72 overflow-y-auto">
@@ -119,55 +103,35 @@ export const TopNavbar = () => {
                 <SheetTitle className="flex items-center gap-2">
                   <Avatar className="h-10 w-10">
                     <AvatarImage src={userProfile?.avatar_url} />
-                    <AvatarFallback className="bg-gradient-to-br from-emerald-500 to-blue-600 text-white">
+                    <AvatarFallback className="bg-gradient-to-br from-success to-primary text-white">
                       {getUserInitials()}
                     </AvatarFallback>
                   </Avatar>
                   <div className="text-left">
                     <p className="text-sm font-semibold">{getDisplayName()}</p>
-                    <Badge variant="outline" className="text-xs">
+                    <p className="text-[10px] text-muted-foreground">{getBusinessName()}</p>
+                    <Badge variant="outline" className="text-xs mt-0.5">
                       {getUserRole()}
                     </Badge>
                   </div>
                 </SheetTitle>
               </SheetHeader>
               <div className="mt-6 space-y-2 pb-4">
-                <Button
-                  variant="ghost" 
-                  className="w-full justify-start"
-                  onClick={() => {
-                    navigate('/settings');
-                    setMenuOpen(false);
-                  }}
-                >
+                <Button variant="ghost" className="w-full justify-start" onClick={() => { navigate('/settings'); setMenuOpen(false); }}>
                   <Settings className="h-4 w-4 mr-2" />
                   Mipangilio
                 </Button>
-                <Button 
-                  variant="ghost" 
-                  className="w-full justify-start"
-                  onClick={() => {
-                    navigate('/pwa-install');
-                    setMenuOpen(false);
-                  }}
-                >
+                <Button variant="ghost" className="w-full justify-start" onClick={() => { navigate('/pwa-install'); setMenuOpen(false); }}>
                   <Smartphone className="h-4 w-4 mr-2" />
                   Sakinisha App
                 </Button>
-                <Button 
-                  variant="ghost" 
-                  className="w-full justify-start"
-                  onClick={() => {
-                    navigate('/subscription');
-                    setMenuOpen(false);
-                  }}
-                >
+                <Button variant="ghost" className="w-full justify-start" onClick={() => { navigate('/subscription'); setMenuOpen(false); }}>
                   <Crown className="h-4 w-4 mr-2" />
                   Michango
                 </Button>
                 <Button 
                   variant="outline" 
-                  className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50"
+                  className="w-full justify-start text-destructive hover:text-destructive hover:bg-destructive/5"
                   onClick={handleSignOut}
                 >
                   <LogOut className="h-4 w-4 mr-2" />

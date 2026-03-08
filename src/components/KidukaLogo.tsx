@@ -19,17 +19,17 @@ export const KidukaLogo = ({ size = 'md', showText = true, animate = false }: Ki
   }, [animate]);
 
   const sizeClasses = {
-    sm: 'h-6 w-6',
-    md: 'h-8 w-8',
-    lg: 'h-12 w-12',
-    xl: 'h-16 w-16'
+    sm: 'h-5 w-5',
+    md: 'h-7 w-7',
+    lg: 'h-10 w-10',
+    xl: 'h-14 w-14'
   };
 
   const containerSizes = {
-    sm: 'p-2',
-    md: 'p-3',
-    lg: 'p-4',
-    xl: 'p-5'
+    sm: 'p-1.5',
+    md: 'p-2',
+    lg: 'p-3',
+    xl: 'p-4'
   };
 
   const textSizeClasses = {
@@ -40,37 +40,24 @@ export const KidukaLogo = ({ size = 'md', showText = true, animate = false }: Ki
   };
 
   return (
-    <div className="flex items-center space-x-3">
-      {/* Unique Kiduka Logo Design with building animation */}
+    <div className="flex items-center space-x-2">
       <div className={`relative ${isBuilding ? 'animate-bounce' : ''}`}>
         <div 
-          className={`bg-gradient-to-br from-emerald-500 via-blue-500 to-purple-600 ${containerSizes[size]} rounded-2xl shadow-lg transform rotate-12 transition-all duration-500 ${isBuilding ? 'scale-0 opacity-0' : 'scale-100 opacity-100'}`}
+          className={`bg-gradient-to-br from-success to-primary ${containerSizes[size]} rounded-xl shadow-md transition-all duration-500 ${isBuilding ? 'scale-0 opacity-0' : 'scale-100 opacity-100'}`}
           style={{ transitionDelay: isBuilding ? '0ms' : '200ms' }}
         >
-          <div className={`bg-white p-1 rounded-lg transform -rotate-12 transition-all duration-300 ${isBuilding ? 'scale-0' : 'scale-100'}`}>
-            <ShoppingBag className={`${sizeClasses[size]} text-emerald-600`} />
-          </div>
+          <ShoppingBag className={`${sizeClasses[size]} text-white`} />
         </div>
-        {/* Accent dots with staggered animation */}
-        <div 
-          className={`absolute -top-1 -right-1 w-3 h-3 bg-yellow-400 rounded-full transition-all duration-300 ${isBuilding ? 'scale-0' : 'scale-100 animate-bounce'}`}
-          style={{ transitionDelay: '400ms' }}
-        />
-        <div 
-          className={`absolute -bottom-1 -left-1 w-2 h-2 bg-pink-400 rounded-full transition-all duration-300 ${isBuilding ? 'scale-0' : 'scale-100 animate-pulse'}`}
-          style={{ transitionDelay: '600ms' }}
-        />
       </div>
       
       {showText && (
         <div className={`transition-all duration-500 ${isBuilding ? 'opacity-0 translate-x-4' : 'opacity-100 translate-x-0'}`}>
-          <h1 className={`${textSizeClasses[size]} font-black bg-gradient-to-r from-emerald-600 via-blue-600 to-purple-600 bg-clip-text text-transparent tracking-tight`}>
+          <h1 className={`${textSizeClasses[size]} font-black bg-gradient-to-r from-success to-primary bg-clip-text text-transparent tracking-tight`}>
             Kiduka
           </h1>
-          <p className="text-xs text-muted-foreground font-medium">Smart Business</p>
+          <p className="text-[10px] text-muted-foreground font-medium">Smart Business</p>
         </div>
       )}
     </div>
   );
 };
-
