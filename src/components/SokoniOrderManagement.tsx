@@ -367,10 +367,26 @@ export const SokoniOrderManagement = () => {
               <Package className="h-5 w-5 text-primary" />
               Oda za Sokoni
             </CardTitle>
-            <Button variant="outline" size="sm" onClick={fetchOrders} className="rounded-2xl">
-              <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-              Refresh
-            </Button>
+            <div className="flex gap-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="rounded-2xl text-green-600 border-green-300 hover:bg-green-50 dark:hover:bg-green-950"
+                onClick={() => {
+                  const customers = getUniqueCustomers();
+                  if (customers.length === 0) { toast.error('Hakuna wateja wa Sokoni bado'); return; }
+                  setBatchMsg(`🎉 HABARI NJEMA!\n\nTuna bidhaa mpya na matoleo mazuri kwenye duka letu!\n\nTembelea Sokoni yetu leo na upate bidhaa bora kwa bei nzuri.\n\nKaribuni sana! 🛍️`);
+                  setBatchOpen(true);
+                }}
+              >
+                <Megaphone className="h-4 w-4 mr-1" />
+                Tuma kwa Wote ({getUniqueCustomers().length})
+              </Button>
+              <Button variant="outline" size="sm" onClick={fetchOrders} className="rounded-2xl">
+                <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+                Refresh
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
