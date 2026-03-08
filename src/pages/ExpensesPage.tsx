@@ -247,15 +247,11 @@ export default function ExpensesPage() {
                 </Button>
               </div>
             </form>
-          </CardContent>
-        </Card>
+        </div>
       )}
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Historia ya Matumizi</CardTitle>
-        </CardHeader>
-        <CardContent>
+      <div>
+        <h3 className="text-sm font-semibold mb-3">Historia ya Matumizi</h3>
           {loading ? (
             <p className="text-center text-muted-foreground py-8">Inapakia...</p>
           ) : expenses.length === 0 ? (
