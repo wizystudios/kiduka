@@ -1630,6 +1630,11 @@ export const SuperAdminDashboard = () => {
           </div>
         </TabsContent>
         
+        {/* Marketplace Tab - Coupons, Returns, Reviews, Abandoned Carts */}
+        <TabsContent value="marketplace" className="space-y-4">
+          <AdminMarketplacePanel />
+        </TabsContent>
+
         {/* Chat Tab */}
         <TabsContent value="chat" className="space-y-4">
           <AdminChatPanel />
