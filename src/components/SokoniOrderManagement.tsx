@@ -649,6 +649,54 @@ export const SokoniOrderManagement = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Batch WhatsApp Dialog */}
+      <Dialog open={batchOpen} onOpenChange={(open) => { if (!sendingBatch) setBatchOpen(open); }}>
+        <DialogContent className="sm:max-w-md rounded-2xl">
+          <div className="space-y-4">
+            <div className="flex items-center gap-2">
+              <Megaphone className="h-5 w-5 text-green-600" />
+              <h3 className="font-bold">Tuma WhatsApp kwa Wateja Wote</h3>
+            </div>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Users className="h-4 w-4" />
+              <span>Wateja {getUniqueCustomers().length} watapata ujumbe huu</span>
+            </div>
+            <div>
+              <Label className="text-xs">Ujumbe wa Tangazo</Label>
+              <Textarea
+                value={batchMsg}
+                onChange={(e) => setBatchMsg(e.target.value)}
+                rows={8}
+                placeholder="Andika ujumbe wa tangazo kwa wateja wako wote..."
+                disabled={sendingBatch}
+              />
+            </div>
+            {sendingBatch && (
+              <div className="space-y-2">
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>Inatuma...</span>
+                  <span>{batchProgress.sent}/{batchProgress.total}</span>
+                </div>
+                <div className="w-full bg-muted rounded-full h-2">
+                  <div 
+                    className="bg-green-600 h-2 rounded-full transition-all" 
+                    style={{ width: `${batchProgress.total > 0 ? (batchProgress.sent / batchProgress.total) * 100 : 0}%` }}
+                  />
+                </div>
+              </div>
+            )}
+            <Button 
+              onClick={sendBatchWhatsApp} 
+              disabled={!batchMsg.trim() || sendingBatch} 
+              className="w-full rounded-2xl bg-green-600 hover:bg-green-700"
+            >
+              <Send className="h-4 w-4 mr-2" />
+              {sendingBatch ? `Inatuma ${batchProgress.sent}/${batchProgress.total}...` : `Tuma kwa Wateja ${getUniqueCustomers().length}`}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
