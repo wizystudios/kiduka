@@ -17,7 +17,8 @@ import {
   Users, CreditCard, Percent, TrendingUp, BarChart3, Download,
   Calculator as CalcIcon, Receipt, Store, Shield, Crown,
   ClipboardList, Smartphone, Zap, Banknote, LineChart, UserCheck,
-  ChevronDown, Menu, HelpCircle, Plus, Wallet, MessageSquare
+  ChevronDown, Menu, HelpCircle, Plus, Wallet, MessageSquare,
+  Brain, Mic, Headphones
 } from 'lucide-react';
 
 interface NavItem {
@@ -90,17 +91,26 @@ const navigationGroups: NavGroup[] = [
       { id: 'profit-loss', label: 'Faida/Hasara', icon: TrendingUp, href: '/profit-loss', permission: 'can_view_reports' },
       { id: 'sales-analytics', label: 'Takwimu', icon: LineChart, href: '/sales-analytics', permission: 'can_view_reports' },
       { id: 'expenses', label: 'Matumizi', icon: Receipt, href: '/expenses', permission: null },
+      { id: 'forecasting', label: 'Utabiri', icon: Brain, href: '/forecasting', permission: 'can_view_reports' },
     ]
   },
-  { id: 'calculator', label: 'Kikokotoo', icon: CalcIcon, permission: null, children: [], href: '/calculator' },
+  {
+    id: 'ai', label: 'AI & Zana', icon: Brain, permission: null,
+    children: [
+      { id: 'ai-advisor', label: 'Mshauri AI', icon: Brain, href: '/ai-advisor', permission: null },
+      { id: 'business-intelligence', label: 'Takwimu AI', icon: TrendingUp, href: '/business-intelligence', permission: null },
+      { id: 'voice-pos', label: 'Sauti POS', icon: Mic, href: '/voice-pos', permission: null },
+      { id: 'calculator', label: 'Kikokotoo', icon: CalcIcon, href: '/calculator', permission: null },
+    ]
+  },
   {
     id: 'mipangilio', label: 'Mipangilio', icon: Settings, permission: null,
     children: [
       { id: 'settings', label: 'Mipangilio', icon: Settings, href: '/settings', permission: null },
       { id: 'subscription', label: 'Michango', icon: Crown, href: '/subscription', permission: null },
-      { id: 'pwa-install', label: 'Sakinisha App', icon: Smartphone, href: '/pwa-install', permission: null },
       { id: 'whatsapp', label: 'WhatsApp', icon: MessageSquare, href: '/whatsapp', permission: null },
       { id: 'notifications-settings', label: 'Arifa', icon: Bell, href: '/notification-settings', permission: null },
+      { id: 'pwa-install', label: 'Sakinisha App', icon: Smartphone, href: '/pwa-install', permission: null },
     ]
   },
 ];

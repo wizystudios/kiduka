@@ -54,6 +54,7 @@ import { VoicePOSPage } from '@/pages/VoicePOSPage';
 import { SuperAdminPage } from '@/pages/SuperAdminPage';
 import { WhatsAppPage } from '@/pages/WhatsAppPage';
 import { WhatsAppHistoryPage } from '@/pages/WhatsAppHistoryPage';
+import { HelpPage } from '@/pages/HelpPage';
 
 // New Feature Pages
 import SalesForecastingPage from '@/pages/SalesForecastingPage';
@@ -414,11 +415,27 @@ export default function App() {
                 </ProtectedRoute>
               } />
               
-              {/* WhatsApp History */}
+              {/* WhatsApp */}
+              <Route path="/whatsapp" element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <WhatsAppPage />
+                  </AppLayout>
+                </ProtectedRoute>
+              } />
               <Route path="/whatsapp-history" element={
                 <ProtectedRoute>
                   <AppLayout>
                     <WhatsAppHistoryPage />
+                  </AppLayout>
+                </ProtectedRoute>
+              } />
+              
+              {/* Help */}
+              <Route path="/help" element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <HelpPage />
                   </AppLayout>
                 </ProtectedRoute>
               } />

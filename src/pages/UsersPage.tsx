@@ -116,8 +116,8 @@ export const UsersPage = () => {
       return;
     }
 
-    if (newUser.password.length < 6) {
-      toast.error('Nywila lazima iwe na angalau herufi 6');
+    if (newUser.password.length < 8) {
+      toast.error('Nywila lazima iwe na angalau herufi 8');
       return;
     }
 
@@ -342,7 +342,7 @@ export const UsersPage = () => {
       </Card>
 
       <Tabs defaultValue="assistants" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="assistants">
             <UsersIcon className="h-4 w-4 mr-1" />
             Wasaidizi
@@ -350,10 +350,6 @@ export const UsersPage = () => {
           <TabsTrigger value="permissions">
             <SettingsIcon className="h-4 w-4 mr-1" />
             Ruhusa
-          </TabsTrigger>
-          <TabsTrigger value="haraka">
-            <Shield className="h-4 w-4 mr-1" />
-            Haraka
           </TabsTrigger>
         </TabsList>
 
@@ -400,7 +396,7 @@ export const UsersPage = () => {
                       type="password"
                       value={newUser.password}
                       onChange={(e) => setNewUser({...newUser, password: e.target.value})}
-                      placeholder="Herufi 6+"
+                      placeholder="Herufi 8+"
                     />
                   </div>
                   <Button 
@@ -554,19 +550,6 @@ export const UsersPage = () => {
           <AssistantPermissionsManager />
         </TabsContent>
 
-        <TabsContent value="haraka" className="mt-4">
-          <Card>
-            <CardContent className="p-4 space-y-4">
-              <div>
-                <h3 className="font-semibold text-sm mb-2">Simamia Vitu vya Haraka</h3>
-                <p className="text-xs text-muted-foreground mb-4">
-                  Chagua vitu vya haraka ambavyo kila msaidizi anaweza kuona kwenye Dashboard.
-                </p>
-                <AssistantHarakaManager />
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
       </Tabs>
     </div>
   );
