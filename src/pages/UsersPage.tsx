@@ -11,6 +11,7 @@ import { Plus, Search, Trash2, Users as UsersIcon, Mail, Settings as SettingsIco
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
+import { logActivity } from '@/hooks/useActivityLogger';
 import { AssistantPermissionsManager } from '@/components/AssistantPermissionsManager';
 import { AssistantHarakaManager } from '@/components/AssistantHarakaManager';
 
@@ -192,6 +193,7 @@ export const UsersPage = () => {
         toast.error('Msaidizi ameundwa lakini ruhusa hazijawekwa. Jaribu tena.');
       } else {
         console.log('RPC result:', rpcResult);
+        logActivity('assistant_add', `Msaidizi "${newUser.full_name}" ameongezwa`, { assistant_email: newUser.email });
         toast.success(`Msaidizi "${newUser.full_name}" ameongezwa! Anaweza kuingia na: ${newUser.email}`);
       }
 
@@ -280,6 +282,7 @@ export const UsersPage = () => {
       if (permError) throw permError;
 
       setAssistants(assistants.filter(a => a.assistant_id !== assistantId));
+      logActivity('assistant_remove', `Msaidizi "${assistantName}" amefutwa`, { assistant_id: assistantId });
       toast.success('Msaidizi amefutwa');
     } catch (error) {
       console.error('Error deleting assistant:', error);

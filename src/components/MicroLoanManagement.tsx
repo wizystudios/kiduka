@@ -10,6 +10,7 @@ import { Plus, Search, DollarSign, Calendar, User, Phone, History, ArrowRight } 
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
+import { logActivity } from '@/hooks/useActivityLogger';
 import { format } from 'date-fns';
 // PageHeader removed for cleaner UI
 
@@ -107,6 +108,7 @@ export const MicroLoanManagement = () => {
 
       if (error) throw error;
 
+      logActivity('loan_create', `Mkopo wa TSh ${newLoan.loan_amount} kwa ${newLoan.customer_name}`, { amount: newLoan.loan_amount, customer: newLoan.customer_name });
       toast.success('Mkopo umeongezwa kwa mafanikio');
       setNewLoan({
         customer_name: '',
@@ -149,6 +151,7 @@ export const MicroLoanManagement = () => {
 
       if (error) throw error;
 
+      logActivity('loan_payment', `Malipo ya TSh ${amount.toLocaleString()} kwa mkopo`, { amount, loan_id: selectedLoan.id });
       toast.success('Malipo yamerekodishwa!');
       setPaymentDialogOpen(false);
       setPaymentAmount('');

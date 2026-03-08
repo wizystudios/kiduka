@@ -9,7 +9,7 @@ import { Plus, Trash2, Download } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
-// PageHeader removed for cleaner UI
+import { logActivity } from '@/hooks/useActivityLogger';
 import { format } from 'date-fns';
 
 interface Expense {
@@ -89,6 +89,7 @@ export default function ExpensesPage() {
 
       if (error) throw error;
 
+      logActivity('expense_add', `Matumizi ya TSh ${formData.amount} - ${formData.category}`, { amount: formData.amount, category: formData.category });
       toast.success('Matumizi yamehifadhiwa');
       setFormData({
         category: '',

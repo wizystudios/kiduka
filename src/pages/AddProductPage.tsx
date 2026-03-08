@@ -13,6 +13,7 @@ import { useOfflineProducts } from '@/hooks/useOfflineProducts';
 import { MultiImageUpload } from '@/components/MultiImageUpload';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { logActivity } from '@/hooks/useActivityLogger';
 
 interface ProductImage {
   id?: string;
@@ -113,6 +114,8 @@ export const AddProductPage = () => {
       }
 
       console.log('Product added successfully:', result);
+      
+      logActivity('product_add', `Bidhaa "${formData.name}" imeongezwa`, { product_name: formData.name, price: formData.price });
       
       setFormData({
         name: '',

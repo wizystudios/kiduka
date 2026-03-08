@@ -20,7 +20,7 @@ import {
   ClipboardList, Smartphone, Zap, Banknote, LineChart, UserCheck,
   ChevronDown, Menu, HelpCircle
 } from 'lucide-react';
-import { NotificationCenter } from '@/components/NotificationCenter';
+
 
 interface NavItem {
   id: string;
@@ -107,7 +107,6 @@ const navigationGroups: NavGroup[] = [
 
 export const MobileBottomNav = () => {
   const [menuOpen, setMenuOpen] = useState(false);
-  const [notificationOpen, setNotificationOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   const { user, userProfile, signOut } = useAuth();
@@ -159,7 +158,7 @@ export const MobileBottomNav = () => {
     { id: 'home', label: 'Home', icon: Home, action: () => handleNav('/dashboard') },
     { id: 'sales', label: 'Mauzo', icon: ShoppingCart, action: () => handleNav('/sales') },
     { id: 'scanner', label: 'Scan', icon: QrCode, action: () => handleNav('/scanner') },
-    { id: 'notifications', label: 'Arifa', icon: Bell, action: () => setNotificationOpen(true) },
+    { id: 'notifications', label: 'Arifa', icon: Bell, action: () => navigate('/notifications') },
     { id: 'menu', label: 'Zaidi', icon: Menu, action: () => setMenuOpen(true) },
   ];
 
@@ -189,13 +188,6 @@ export const MobileBottomNav = () => {
         </div>
       </nav>
 
-      {/* Notification Sheet */}
-      <Sheet open={notificationOpen} onOpenChange={setNotificationOpen}>
-        <SheetContent side="right" className="w-full sm:w-96">
-          <SheetHeader><SheetTitle>Arifa</SheetTitle></SheetHeader>
-          <div className="mt-4"><NotificationCenter /></div>
-        </SheetContent>
-      </Sheet>
 
       {/* Full Menu Sheet - Airtel-style Grid */}
       <Sheet open={menuOpen} onOpenChange={setMenuOpen}>

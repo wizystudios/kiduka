@@ -3,8 +3,6 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { useAuth } from '@/hooks/useAuth';
 import { useRealTimeNotifications, NotificationIcon } from '@/hooks/useRealTimeNotifications';
 import { useDataAccess } from '@/hooks/useDataAccess';
@@ -91,49 +89,10 @@ export const TopNavbar = () => {
             onClearHistory={offlineSync.clearHistory}
           />
 
-          {/* Notification Bell */}
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button variant="ghost" size="sm" className="relative p-2">
-                <NotificationIcon count={unreadCount} />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-72 p-0" align="end">
-              <div className="flex items-center justify-between p-2 border-b">
-                <span className="text-sm font-semibold">Arifa</span>
-                {unreadCount > 0 && (
-                  <Button variant="ghost" size="sm" className="h-6 text-xs" onClick={markAllAsRead}>
-                    <CheckCheck className="h-3 w-3 mr-1" />
-                    Soma zote
-                  </Button>
-                )}
-              </div>
-              <ScrollArea className="h-64">
-                {notifications.length > 0 ? (
-                  <div className="p-1">
-                    {notifications.slice(0, 10).map((notif) => (
-                      <div 
-                        key={notif.id} 
-                        className={`p-2 rounded mb-1 ${notif.read ? 'bg-muted/30' : 'bg-primary/5'}`}
-                      >
-                        <div className="flex items-start gap-2">
-                          {getNotificationIcon(notif.type)}
-                          <div className="flex-1 min-w-0">
-                            <p className="text-xs font-medium truncate">{notif.title}</p>
-                            <p className="text-xs text-muted-foreground truncate">{notif.message}</p>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="p-4 text-center text-xs text-muted-foreground">
-                    Hakuna arifa
-                  </div>
-                )}
-              </ScrollArea>
-            </PopoverContent>
-          </Popover>
+          {/* Notification Bell - links to unified page */}
+          <Button variant="ghost" size="sm" className="relative p-2" onClick={() => navigate('/notifications')}>
+            <NotificationIcon count={unreadCount} />
+          </Button>
 
           {/* User Menu */}
           <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
