@@ -10,10 +10,10 @@ if (!rootElement) {
 }
 
 // Render the app first
-createRoot(rootElement).render(
-  <StrictMode>
+ReactDOM.createRoot(rootElement).render(
+  <React.StrictMode>
     <App />
-  </StrictMode>
+  </React.StrictMode>
 );
 
 // Register service worker AFTER React has mounted
