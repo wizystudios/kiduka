@@ -49,6 +49,59 @@ export const CustomersPage = () => {
     fetchCustomers();
   }, []);
 
+  const openWhatsApp = (customer: Customer) => {
+    if (!customer.phone) {
+      toast({ title: 'Hitilafu', description: 'Mteja hana namba ya simu', variant: 'destructive' });
+      return;
+    }
+    setWhatsappTarget(customer);
+    setWhatsappMsg(`Habari ${customer.name}, `);
+    setWhatsappOpen(true);
+  };
+
+  const sendWhatsApp = async () => {
+    if (!whatsappTarget?.phone || !whatsappMsg.trim()) return;
+    setSendingWhatsapp(true);
+    const phone = whatsappTarget.phone.startsWith('+') ? whatsappTarget.phone : `+255${whatsappTarget.phone.replace(/^0/, '')}`;
+    
+    try {
+      const { error } = await supabase.functions.invoke('send-whatsapp', {
+        body: { phoneNumber: phone, message: whatsappMsg, messageType: 'general' }
+      });
+
+      // Log message
+      if (user) {
+        await supabase.from('whatsapp_messages').insert({
+          owner_id: user.id,
+          customer_id: whatsappTarget.id,
+          customer_name: whatsappTarget.name,
+          phone_number: phone,
+          message: whatsappMsg,
+          message_type: 'general',
+          status: error ? 'sent_wa_link' : 'sent',
+        });
+      }
+
+      if (error) {
+        window.open(`https://wa.me/${phone.replace('+', '')}?text=${encodeURIComponent(whatsappMsg)}`, '_blank');
+      }
+
+      toast({ title: 'Ujumbe umetumwa', description: `Ujumbe kwa ${whatsappTarget.name}` });
+      setWhatsappOpen(false);
+    } catch {
+      window.open(`https://wa.me/${phone.replace('+', '')}?text=${encodeURIComponent(whatsappMsg)}`, '_blank');
+      if (user) {
+        await supabase.from('whatsapp_messages').insert({
+          owner_id: user.id, customer_id: whatsappTarget.id, customer_name: whatsappTarget.name,
+          phone_number: phone, message: whatsappMsg, message_type: 'general', status: 'sent_wa_link',
+        });
+      }
+      setWhatsappOpen(false);
+    } finally {
+      setSendingWhatsapp(false);
+    }
+  };
+
   const fetchCustomers = async () => {
     try {
       const { data, error } = await supabase
