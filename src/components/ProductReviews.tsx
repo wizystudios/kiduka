@@ -66,7 +66,21 @@ export const ProductReviews = ({ productId, productName }: ProductReviewsProps) 
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setReviews(data || []);
+      
+      // Fetch replies for these reviews
+      const reviewIds = (data || []).map(r => r.id);
+      let repliesMap: Record<string, ReviewReply> = {};
+      if (reviewIds.length > 0) {
+        const { data: replies } = await supabase
+          .from('review_replies')
+          .select('*')
+          .in('review_id', reviewIds);
+        (replies || []).forEach((r: any) => {
+          repliesMap[r.review_id] = { id: r.id, reply_text: r.reply_text, created_at: r.created_at };
+        });
+      }
+      
+      setReviews((data || []).map(r => ({ ...r, reply: repliesMap[r.id] || null })));
     } catch (error) {
       console.error('Error fetching reviews:', error);
     } finally {
