@@ -13,7 +13,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useDataAccess } from '@/hooks/useDataAccess';
 import { BackButton } from '@/components/BackButton';
-import { MessageSquare, Search, FileSpreadsheet, FileText, Eye, Clock, Plus, Trash2, CalendarClock } from 'lucide-react';
+import { MessageSquare, Search, FileSpreadsheet, FileText, Eye, Clock, Plus, Trash2, CalendarClock, Users, CheckSquare, Square } from 'lucide-react';
 import { format } from 'date-fns';
 import { exportToExcel, exportToPDF, createPrintableTable, ExportColumn } from '@/utils/exportUtils';
 import { useSearchParams } from 'react-router-dom';
