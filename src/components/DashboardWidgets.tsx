@@ -76,11 +76,11 @@ export const StockAlertWidget = () => {
   };
 
   const getStockLevel = (product: LowStockProduct) => {
-    if (product.stock_quantity === 0) return { label: 'Imeisha', color: 'bg-red-500 text-white' };
+    if (product.stock_quantity === 0) return { label: 'Imeisha', color: 'bg-destructive text-destructive-foreground' };
     const percentage = (product.stock_quantity / (product.low_stock_threshold || 10)) * 100;
-    if (percentage <= 25) return { label: 'Hatari', color: 'bg-red-100 text-red-800' };
-    if (percentage <= 50) return { label: 'Chini', color: 'bg-yellow-100 text-yellow-800' };
-    return { label: 'Angalia', color: 'bg-orange-100 text-orange-800' };
+    if (percentage <= 25) return { label: 'Hatari', color: 'bg-destructive/10 text-destructive' };
+    if (percentage <= 50) return { label: 'Chini', color: 'bg-primary/10 text-primary' };
+    return { label: 'Angalia', color: 'bg-muted text-muted-foreground' };
   };
 
   if (lowStockProducts.length === 0) return null;
