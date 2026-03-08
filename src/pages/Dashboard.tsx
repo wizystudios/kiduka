@@ -106,8 +106,5 @@ export const Dashboard = () => {
         <DebtorsWidget />
       </div>
 
-      {/* Recent activity - full width */}
-      <RecentActivitiesWidget />
-    </div>
   );
 };
