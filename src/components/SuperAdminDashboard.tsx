@@ -26,6 +26,7 @@ import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, R
 import { exportToExcel, exportToPDF, createPrintableTable } from '@/utils/exportUtils';
 import { AdminPasswordDialog } from './AdminPasswordDialog';
 import { AdminChatPanel } from './AdminChatPanel';
+import { AdminCompliancePanel } from './AdminCompliancePanel';
 
 interface User {
   id: string;
