@@ -9,7 +9,7 @@ import { Plus, Trash2, Download } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
-// PageHeader removed for cleaner UI
+import { logActivity } from '@/hooks/useActivityLogger';
 import { format } from 'date-fns';
 
 interface Expense {
