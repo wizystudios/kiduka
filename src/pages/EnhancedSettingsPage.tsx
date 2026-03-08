@@ -33,6 +33,38 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { HelpCenter } from '@/components/HelpCenter';
 
+// Tanzania regions and districts (imported from LocationSetupGate concept)
+const TANZANIA_REGIONS: Record<string, string[]> = {
+  'Dar es Salaam': ['Ilala', 'Kinondoni', 'Temeke', 'Ubungo', 'Kigamboni'],
+  'Arusha': ['Arusha City', 'Arusha DC', 'Karatu', 'Longido', 'Meru', 'Monduli', 'Ngorongoro'],
+  'Dodoma': ['Dodoma City', 'Bahi', 'Chamwino', 'Chemba', 'Kondoa', 'Kongwa', 'Mpwapwa'],
+  'Geita': ['Geita', 'Bukombe', 'Chato', 'Mbogwe', "Nyang'hwale"],
+  'Iringa': ['Iringa MC', 'Iringa DC', 'Kilolo', 'Mafinga', 'Mufindi'],
+  'Kagera': ['Bukoba MC', 'Bukoba DC', 'Biharamulo', 'Karagwe', 'Kyerwa', 'Missenyi', 'Muleba', 'Ngara'],
+  'Katavi': ['Mpanda MC', 'Mpanda DC', 'Mlele'],
+  'Kigoma': ['Kigoma MC', 'Kigoma DC', 'Buhigwe', 'Kakonko', 'Kasulu MC', 'Kasulu DC', 'Kibondo', 'Uvinza'],
+  'Kilimanjaro': ['Moshi MC', 'Moshi DC', 'Hai', 'Rombo', 'Same', 'Siha', 'Mwanga'],
+  'Lindi': ['Lindi MC', 'Lindi DC', 'Kilwa', 'Liwale', 'Nachingwea', 'Ruangwa'],
+  'Manyara': ['Babati MC', 'Babati DC', 'Hanang', 'Kiteto', 'Mbulu MC', 'Mbulu DC', 'Simanjiro'],
+  'Mara': ['Musoma MC', 'Musoma DC', 'Bunda', 'Butiama', 'Rorya', 'Serengeti', 'Tarime MC', 'Tarime DC'],
+  'Mbeya': ['Mbeya City', 'Mbeya DC', 'Busokelo', 'Chunya', 'Mbarali', 'Rungwe'],
+  'Morogoro': ['Morogoro MC', 'Morogoro DC', 'Gairo', 'Ifakara', 'Kilombero', 'Kilosa', 'Mvomero', 'Ulanga', 'Malinyi'],
+  'Mtwara': ['Mtwara MC', 'Mtwara DC', 'Masasi MC', 'Masasi DC', 'Nanyumbu', 'Newala', 'Tandahimba'],
+  'Mwanza': ['Mwanza City', 'Ilemela', 'Nyamagana', 'Kwimba', 'Magu', 'Misungwi', 'Sengerema', 'Ukerewe'],
+  'Njombe': ['Njombe MC', 'Njombe DC', 'Ludewa', 'Makambako', 'Makete', "Wanging'ombe"],
+  'Pwani': ['Kibaha MC', 'Kibaha DC', 'Bagamoyo', 'Chalinze', 'Kisarawe', 'Mafia', 'Mkuranga', 'Rufiji'],
+  'Rukwa': ['Sumbawanga MC', 'Sumbawanga DC', 'Kalambo', 'Nkasi'],
+  'Ruvuma': ['Songea MC', 'Songea DC', 'Mbinga MC', 'Mbinga DC', 'Namtumbo', 'Nyasa', 'Tunduru'],
+  'Shinyanga': ['Shinyanga MC', 'Shinyanga DC', 'Kahama MC', 'Kahama DC', 'Kishapu', 'Ushetu'],
+  'Simiyu': ['Bariadi', 'Busega', 'Itilima', 'Maswa', 'Meatu'],
+  'Singida': ['Singida MC', 'Singida DC', 'Ikungi', 'Iramba', 'Manyoni', 'Mkalama'],
+  'Songwe': ['Tunduma', 'Ileje', 'Mbozi', 'Momba', 'Songwe'],
+  'Tabora': ['Tabora MC', 'Igunga', 'Kaliua', 'Nzega', 'Sikonge', 'Urambo', 'Uyui'],
+  'Tanga': ['Tanga City', 'Handeni MC', 'Handeni DC', 'Kilindi', 'Korogwe MC', 'Korogwe DC', 'Lushoto', 'Mkinga', 'Muheza', 'Pangani', 'Bumbuli'],
+};
+
+const REGION_LIST = Object.keys(TANZANIA_REGIONS).sort();
+
 export const EnhancedSettingsPage = () => {
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('profile');
@@ -43,6 +75,14 @@ export const EnhancedSettingsPage = () => {
     business_name: '',
     avatar_url: ''
   });
+  const [locationSettings, setLocationSettings] = useState({
+    country: 'Tanzania',
+    region: '',
+    district: '',
+    ward: '',
+    street: ''
+  });
+  const [savingLocation, setSavingLocation] = useState(false);
   const [businessSettings, setBusinessSettings] = useState({
     business_name: '',
     tax_rate: '0',
@@ -50,7 +90,7 @@ export const EnhancedSettingsPage = () => {
     receipt_footer: '',
     enable_notifications: true
   });
-  const { userProfile, user, signOut } = useAuth();
+  const { userProfile, user, signOut, refreshProfile } = useAuth();
   const { toast } = useToast();
   const { language, setLanguage, t } = useLanguage();
   const { theme, setTheme } = useTheme();
