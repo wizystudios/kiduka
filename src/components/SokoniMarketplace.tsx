@@ -272,6 +272,8 @@ export const SokoniMarketplace = () => {
           ...product,
           owner_business_name: seller?.business_name || 'Duka',
           owner_phone: seller?.phone || undefined,
+          owner_region: seller?.region || undefined,
+          owner_district: seller?.district || undefined,
           discount_price,
           discount_percent
         };
