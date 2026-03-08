@@ -15,7 +15,7 @@ import {
   RefreshCw, BarChart3, Store, CreditCard, Bell,
   Settings, AlertTriangle, CheckCircle, XCircle,
   FileSpreadsheet, FileText, Clock, UserPlus, DollarSign,
-  Building2, Phone, Mail, LogIn
+  Building2, Phone, Mail, LogIn, Lock, Ban, ShieldCheck, Key
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
