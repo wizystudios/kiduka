@@ -452,6 +452,9 @@ export const ProfitLossPage = () => {
           )}
         </CardContent>
       </Card>
+
+      {/* Per-Product Profit */}
+      <ProductProfitTable />
     </div>
   );
 };
