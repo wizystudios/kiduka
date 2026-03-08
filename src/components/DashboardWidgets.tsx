@@ -32,8 +32,11 @@ import {
   UserPlus,
   Banknote,
   ClipboardCheck,
-  Users
+  Users,
+  MessageCircle,
+  Send
 } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
 
 interface LowStockProduct {
   id: string;
