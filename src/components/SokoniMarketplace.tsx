@@ -1087,9 +1087,47 @@ export const SokoniMarketplace = () => {
                         <span className="font-bold text-primary ml-2">TSh {(item.price * item.quantity).toLocaleString()}</span>
                       </div>
                     ))}
-                    <div className="border-t pt-3 flex justify-between font-bold text-lg">
-                      <span>Jumla</span>
-                      <span className="text-primary">TSh {cartTotal.toLocaleString()}</span>
+                    
+                    {/* Coupon Code */}
+                    <div className="flex gap-2 items-end">
+                      <div className="flex-1">
+                        <label className="text-xs font-medium text-muted-foreground">Coupon Code</label>
+                        <Input
+                          placeholder="KARIBU10"
+                          value={couponCode}
+                          onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                          className="mt-1 rounded-2xl text-xs"
+                          disabled={couponApplied}
+                        />
+                      </div>
+                      <Button
+                        size="sm"
+                        variant={couponApplied ? 'secondary' : 'outline'}
+                        onClick={couponApplied ? () => { setCouponApplied(false); setCouponDiscount(0); setCouponCode(''); } : validateCoupon}
+                        disabled={validatingCoupon}
+                        className="rounded-2xl"
+                      >
+                        {couponApplied ? '✕ Ondoa' : validatingCoupon ? '...' : 'Tumia'}
+                      </Button>
+                    </div>
+                    {couponApplied && couponDiscount > 0 && (
+                      <div className="flex justify-between text-xs text-green-600 dark:text-green-400 px-1">
+                        <span>Punguzo la Coupon</span>
+                        <span>-TSh {couponDiscount.toLocaleString()}</span>
+                      </div>
+                    )}
+
+                    <div className="border-t pt-3">
+                      {couponDiscount > 0 && (
+                        <div className="flex justify-between text-sm text-muted-foreground mb-1">
+                          <span>Jumla ndogo</span>
+                          <span>TSh {cartSubtotal.toLocaleString()}</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between font-bold text-lg">
+                        <span>Jumla</span>
+                        <span className="text-primary">TSh {cartTotal.toLocaleString()}</span>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
