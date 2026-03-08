@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Plus, Search, Trash2, Users as UsersIcon, Mail, Settings as SettingsIcon, Shield, Building, RefreshCw, UserPlus, Loader2 } from 'lucide-react';
+import { Plus, Search, Trash2, Users as UsersIcon, Mail, Settings as SettingsIcon, Shield, RefreshCw, UserPlus, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
