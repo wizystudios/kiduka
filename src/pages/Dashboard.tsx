@@ -160,6 +160,7 @@ export const Dashboard = () => {
         <TransactionsWidget />
         <ProductsWidget />
         <LoansWidget />
+        <DebtorsWidget />
         <RecentActivitiesWidget />
       </div>
 
