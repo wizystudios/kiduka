@@ -64,8 +64,11 @@ export const SokoniOrdersPage = () => {
         )}
       </header>
 
-      <Tabs defaultValue="orders">
-        <TabsList className="w-full grid grid-cols-4">
+      <Tabs defaultValue="analytics">
+        <TabsList className="w-full grid grid-cols-5">
+          <TabsTrigger value="analytics" className="text-xs gap-1">
+            <BarChart3 className="h-3 w-3" /> Takwimu
+          </TabsTrigger>
           <TabsTrigger value="orders" className="text-xs gap-1">
             <Package className="h-3 w-3" /> Oda
           </TabsTrigger>
@@ -79,6 +82,10 @@ export const SokoniOrdersPage = () => {
             <Store className="h-3 w-3" /> Duka
           </TabsTrigger>
         </TabsList>
+
+        <TabsContent value="analytics">
+          <SokoniAnalyticsDashboard />
+        </TabsContent>
 
         <TabsContent value="orders">
           <SokoniOrderManagement />
