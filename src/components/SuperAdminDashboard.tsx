@@ -15,11 +15,12 @@ import {
   RefreshCw, BarChart3, Store, CreditCard, Bell,
   Settings, AlertTriangle, CheckCircle, XCircle,
   FileSpreadsheet, FileText, Clock, UserPlus, DollarSign,
-  Building2, Phone, Mail
+  Building2, Phone, Mail, LogIn
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
+import { useNavigate } from 'react-router-dom';
 import { useAdminNotifications } from '@/hooks/useAdminNotifications';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 import { exportToExcel, exportToPDF, createPrintableTable } from '@/utils/exportUtils';
@@ -119,6 +120,7 @@ interface Subscription {
 
 export const SuperAdminDashboard = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const { notifications, unreadCount, markAsRead, markAllAsRead } = useAdminNotifications();
   const [activeTab, setActiveTab] = useState('overview');
   const [loading, setLoading] = useState(true);
@@ -731,6 +733,52 @@ export const SuperAdminDashboard = () => {
     });
   };
   
+  const handleEnterBusiness = async (ownerId: string, businessName: string) => {
+    setPasswordDialog({
+      action: `Kuingia biashara: ${businessName}`,
+      description: 'Utaingia kwenye akaunti ya biashara hii kama admin.',
+      callback: async () => {
+        setPasswordDialog(null);
+        try {
+          // End any existing active sessions first
+          await supabase
+            .from('admin_business_sessions')
+            .update({ active: false, ended_at: new Date().toISOString() })
+            .eq('admin_id', user!.id)
+            .eq('active', true);
+
+          // Create new session
+          const { error } = await supabase
+            .from('admin_business_sessions')
+            .insert({ owner_id: ownerId, admin_id: user!.id, active: true });
+
+          if (error) throw error;
+
+          toast.success(`Umeingia biashara: ${businessName}`);
+          setSelectedBusiness(ownerId);
+          setActiveTab('overview');
+        } catch (err: any) {
+          toast.error(`Imeshindwa: ${err.message}`);
+        }
+      }
+    });
+  };
+
+  const handleExitBusiness = async () => {
+    try {
+      await supabase
+        .from('admin_business_sessions')
+        .update({ active: false, ended_at: new Date().toISOString() })
+        .eq('admin_id', user!.id)
+        .eq('active', true);
+      
+      setSelectedBusiness(null);
+      toast.success('Umetoka kwenye biashara');
+    } catch (err: any) {
+      toast.error(`Imeshindwa: ${err.message}`);
+    }
+  };
+
   const statCards = [
     { title: 'Watumiaji', value: stats.totalUsers, icon: <Users className="h-5 w-5" />, color: 'text-blue-600' },
     { title: 'Bidhaa', value: stats.totalProducts, icon: <Package className="h-5 w-5" />, color: 'text-green-600' },
@@ -854,6 +902,21 @@ export const SuperAdminDashboard = () => {
           </div>
         </CardHeader>
       </Card>
+
+      {/* Active Business Session Banner */}
+      {selectedBusiness && (
+        <div className="flex items-center justify-between bg-primary/10 border border-primary/20 rounded-2xl px-4 py-2">
+          <div className="flex items-center gap-2 text-sm">
+            <Shield className="h-4 w-4 text-primary" />
+            <span className="font-medium">
+              Unaangalia biashara: {businessOwners.find(o => o.id === selectedBusiness)?.business_name || 'Unknown'}
+            </span>
+          </div>
+          <Button variant="outline" size="sm" className="rounded-xl" onClick={handleExitBusiness}>
+            Toka Biashara
+          </Button>
+        </div>
+      )}
       
       {/* Notifications Panel */}
       <Dialog open={notificationsPanelOpen} onOpenChange={setNotificationsPanelOpen}>
@@ -1226,6 +1289,17 @@ export const SuperAdminDashboard = () => {
                             <Trash2 className="h-3 w-3" />
                           </Button>
                         </div>
+                        {u.role === 'owner' && (
+                          <Button
+                            variant="default"
+                            size="sm"
+                            className="w-full mt-1 rounded-xl text-xs h-7"
+                            onClick={() => handleEnterBusiness(u.id, u.business_name || u.full_name || u.email)}
+                          >
+                            <LogIn className="h-3 w-3 mr-1" />
+                            Ingia Biashara
+                          </Button>
+                        )}
                       </div>
                     </div>
                   </CardContent>
@@ -1551,6 +1625,20 @@ export const SuperAdminDashboard = () => {
               <div className="border-t pt-4 space-y-3">
                 <p className="text-sm font-semibold text-muted-foreground">Vitendo vya Admin</p>
                 <div className="grid grid-cols-2 gap-2">
+                  {viewDialog.data.role === 'owner' && (
+                    <Button
+                      size="sm"
+                      onClick={() => {
+                        const d = viewDialog.data;
+                        setViewDialog(null);
+                        handleEnterBusiness(d.id, d.business_name || d.full_name || d.email);
+                      }}
+                      className="rounded-xl col-span-2"
+                    >
+                      <LogIn className="h-4 w-4 mr-2" />
+                      Ingia Biashara
+                    </Button>
+                  )}
                   <Button 
                     variant="outline" 
                     size="sm"
@@ -1570,7 +1658,7 @@ export const SuperAdminDashboard = () => {
                       setViewDialog(null);
                       handleDelete('user', viewDialog.data.id, viewDialog.data.full_name || viewDialog.data.email);
                     }}
-                    className="rounded-xl text-red-600 hover:bg-red-50"
+                    className="rounded-xl text-destructive hover:bg-destructive/10"
                   >
                     <Trash2 className="h-4 w-4 mr-2" />
                     Futa

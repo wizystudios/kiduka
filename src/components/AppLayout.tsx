@@ -5,6 +5,7 @@ import { TopNavbar } from "@/components/TopNavbar";
 import { UserInfoBar } from "@/components/UserInfoBar";
 import OfflineSyncBootstrap from "@/components/OfflineSyncBootstrap";
 import { ContractComplianceGate } from "@/components/ContractComplianceGate";
+import { AdminSessionBanner } from "@/components/AdminSessionBanner";
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -13,6 +14,7 @@ interface AppLayoutProps {
 export function AppLayout({ children }: AppLayoutProps) {
   return (
     <SidebarProvider>
+      <AdminSessionBanner />
       <TopNavbar />
       <OfflineSyncBootstrap />
       <div className="flex min-h-screen w-full">
