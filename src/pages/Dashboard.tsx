@@ -159,6 +159,7 @@ export const Dashboard = () => {
         <ExpensesWidget />
         <TransactionsWidget />
         <ProductsWidget />
+        <RecentActivitiesWidget />
       </div>
 
       <Card>
