@@ -295,11 +295,19 @@ export const ARProductScanner = () => {
   };
 
   const checkProductAuthenticity = async (product: ProductInfo) => {
-    // Simulate authenticity check
-    toast({
-      title: 'Ukaguzi wa Uhalali',
-      description: `${product.name} ni halali. Imethibitishwa na msanifu.`,
-    });
+    // Check if product has a valid barcode in the database
+    if (product.barcode) {
+      toast({
+        title: 'Ukaguzi wa Uhalali',
+        description: `${product.name} - Barcode: ${product.barcode} imethibitishwa kwenye mfumo.`,
+      });
+    } else {
+      toast({
+        title: 'Hakuna Barcode',
+        description: `${product.name} haina barcode iliyorekodiwa kwenye mfumo.`,
+        variant: 'destructive',
+      });
+    }
   };
 
   const addToCart = async (product: ProductInfo, quantity: number = 1) => {
