@@ -550,19 +550,6 @@ export const UsersPage = () => {
           <AssistantPermissionsManager />
         </TabsContent>
 
-        <TabsContent value="haraka" className="mt-4">
-          <Card>
-            <CardContent className="p-4 space-y-4">
-              <div>
-                <h3 className="font-semibold text-sm mb-2">Simamia Vitu vya Haraka</h3>
-                <p className="text-xs text-muted-foreground mb-4">
-                  Chagua vitu vya haraka ambavyo kila msaidizi anaweza kuona kwenye Dashboard.
-                </p>
-                <AssistantHarakaManager />
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
       </Tabs>
     </div>
   );
