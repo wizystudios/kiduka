@@ -22,7 +22,9 @@ import {
   Trash2, 
   HelpCircle,
   UserMinus,
-  Camera
+  Camera,
+  MapPin,
+  Loader2
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
