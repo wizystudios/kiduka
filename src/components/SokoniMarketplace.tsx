@@ -375,7 +375,7 @@ export const SokoniMarketplace = () => {
     const sellerId = product.owner_id;
     if (!acc[sellerId]) {
       acc[sellerId] = {
-        seller: sellers.find(s => s.id === sellerId) || { id: sellerId, business_name: 'Duka', phone: null },
+        seller: sellers.find(s => s.id === sellerId) || { id: sellerId, business_name: 'Duka', phone: null, region: null, district: null },
         products: []
       };
     }
