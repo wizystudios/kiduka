@@ -761,8 +761,9 @@ export const DebtorsWidget = () => {
         await supabase.functions.invoke('send-whatsapp', {
           body: { phoneNumber: d.phone!, message: finalMsg, messageType: 'debt_reminder_batch' }
         });
+        await logMessage(d, finalMsg, 'debt_reminder_batch', 'sent');
       } catch (e) {
-        // Continue with next
+        await logMessage(d, finalMsg, 'debt_reminder_batch', 'failed');
       }
       setBatchProgress({ sent: i + 1, total: debtorsWithPhone.length });
     }
