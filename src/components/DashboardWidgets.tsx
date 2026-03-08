@@ -518,13 +518,13 @@ export const LoansWidget = () => {
       <SheetTrigger asChild>
         <Button
           variant="outline"
-          className="flex-1 h-10 justify-between bg-lime-50 border-lime-200 hover:bg-lime-100 dark:bg-lime-950 dark:border-lime-800"
+          className="flex-1 h-10 justify-between bg-success/5 border-success/20 hover:bg-success/10"
         >
           <div className="flex items-center gap-2">
-            <Banknote className="h-4 w-4 text-lime-600" />
+            <Banknote className="h-4 w-4 text-success" />
             <span className="text-xs font-medium">Mikopo</span>
           </div>
-          <Badge variant="outline" className="text-xs bg-lime-100 text-lime-800 border-lime-300">
+          <Badge variant="outline" className="text-xs bg-success/10 text-success border-success/20">
             {activeLoans}
           </Badge>
         </Button>
