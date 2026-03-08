@@ -782,6 +782,102 @@ export const SuperAdminDashboard = () => {
     }
   };
 
+  const callAdminManageUser = async (action: string, userId: string, params: Record<string, any> = {}) => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) throw new Error('Not authenticated');
+    
+    const response = await supabase.functions.invoke('admin-manage-user', {
+      body: { action, user_id: userId, ...params },
+    });
+    
+    if (response.error) throw response.error;
+    if (response.data?.error) throw new Error(response.data.error);
+    return response.data;
+  };
+
+  const handleChangeUserPassword = (userId: string, userName: string) => {
+    setUserPasswordChange({ userId, userName, newPassword: '' });
+  };
+
+  const executePasswordChange = async () => {
+    if (!userPasswordChange || !userPasswordChange.newPassword) return;
+    setPasswordDialog({
+      action: `Kubadilisha nenosiri la ${userPasswordChange.userName}`,
+      description: 'Toa nenosiri la admin ili kuendelea.',
+      callback: async () => {
+        setPasswordDialog(null);
+        try {
+          await callAdminManageUser('change_password', userPasswordChange.userId, {
+            new_password: userPasswordChange.newPassword,
+          });
+          toast.success('Nenosiri limebadilishwa!');
+          setUserPasswordChange(null);
+        } catch (err: any) {
+          toast.error(`Imeshindwa: ${err.message}`);
+        }
+      }
+    });
+  };
+
+  const handleBanUser = (userId: string, userName: string) => {
+    setBanDialog({ userId, userName, duration: '7d' });
+  };
+
+  const executeBanUser = async () => {
+    if (!banDialog) return;
+    setPasswordDialog({
+      action: `Kuzuia mtumiaji: ${banDialog.userName}`,
+      description: 'Mtumiaji hataweza kuingia. Toa nenosiri la admin.',
+      callback: async () => {
+        setPasswordDialog(null);
+        try {
+          await callAdminManageUser('ban_user', banDialog.userId, {
+            ban_duration: banDialog.duration,
+          });
+          toast.success(`${banDialog.userName} amezuiwa!`);
+          setBanDialog(null);
+          fetchUsers();
+        } catch (err: any) {
+          toast.error(`Imeshindwa: ${err.message}`);
+        }
+      }
+    });
+  };
+
+  const handleUnbanUser = (userId: string, userName: string) => {
+    setPasswordDialog({
+      action: `Kurudisha mtumiaji: ${userName}`,
+      description: 'Mtumiaji ataweza kuingia tena.',
+      callback: async () => {
+        setPasswordDialog(null);
+        try {
+          await callAdminManageUser('unban_user', userId);
+          toast.success(`${userName} amerudishwa!`);
+          fetchUsers();
+        } catch (err: any) {
+          toast.error(`Imeshindwa: ${err.message}`);
+        }
+      }
+    });
+  };
+
+  const handleDeleteUserFull = (userId: string, userName: string) => {
+    setPasswordDialog({
+      action: `Kufuta mtumiaji kabisa: ${userName}`,
+      description: 'Hatua hii haiwezi kurejeshwa. Mtumiaji, data yake yote, na akaunti yake itafutwa.',
+      callback: async () => {
+        setPasswordDialog(null);
+        try {
+          await callAdminManageUser('delete_user', userId);
+          toast.success(`${userName} amefutwa kabisa`);
+          fetchAllData();
+        } catch (err: any) {
+          toast.error(`Imeshindwa: ${err.message}`);
+        }
+      }
+    });
+  };
+
   const statCards = [
     { title: 'Watumiaji', value: stats.totalUsers, icon: <Users className="h-5 w-5" />, color: 'text-blue-600' },
     { title: 'Bidhaa', value: stats.totalProducts, icon: <Package className="h-5 w-5" />, color: 'text-green-600' },
