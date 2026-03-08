@@ -8,6 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import { useDataAccess } from '@/hooks/useDataAccess';
 import { useOfflineProducts } from '@/hooks/useOfflineProducts';
 import { toast } from 'sonner';
+import { logActivity } from '@/hooks/useActivityLogger';
 import * as XLSX from 'xlsx';
 import { WeightQuantitySelector } from '@/components/WeightQuantitySelector';
 
