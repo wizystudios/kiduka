@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { format, subDays } from "date-fns";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, CartesianGrid } from "recharts";
 import { Download, FileSpreadsheet, FileText } from "lucide-react";
+import { ProductProfitTable } from "@/components/ProductProfitTable";
 import * as XLSX from "xlsx";
 
 interface DayPoint { 
