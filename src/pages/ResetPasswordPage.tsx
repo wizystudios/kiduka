@@ -54,8 +54,18 @@ export const ResetPasswordPage = () => {
 
     setLoading(true);
     try {
-      const { error } = await supabase.auth.updateUser({ password });
+      const { error } = await supabase.auth.updateUser({ 
+        password,
+        data: { pw_policy_compliant: true }
+      });
       if (error) throw error;
+      
+      // Mark in localStorage too so SubscriptionGuard doesn't force change again
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        localStorage.setItem(`kiduka_pw_updated_${user.id}`, 'true');
+      }
+      
       setSuccess(true);
       toast.success('Nywila imebadilishwa!');
       setTimeout(() => navigate('/auth'), 2000);

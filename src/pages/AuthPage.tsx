@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
-import { Navigate, Link } from 'react-router-dom';
+import { Navigate, Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { KidukaLogo } from '@/components/KidukaLogo';
@@ -8,13 +8,13 @@ import { Mail, Lock, User, Eye, EyeOff, Phone, ArrowRight, ArrowLeft, Store } fr
 import { toast } from 'sonner';
 import { EmailConfirmationPage } from '@/components/EmailConfirmationPage';
 import { normalizeTzPhoneDigits } from '@/utils/phoneUtils';
-import { ForgotPasswordDialog } from '@/components/ForgotPasswordDialog';
 import { supabase } from '@/integrations/supabase/client';
 
 type AuthStep = 'method' | 'identifier' | 'password' | 'name';
 type AuthMethod = 'email' | 'phone' | 'name';
 
 export const AuthPage = () => {
+  const navigate = useNavigate();
   const { user, signIn, signUp } = useAuth();
   const [loading, setLoading] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);
@@ -29,7 +29,7 @@ export const AuthPage = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
-  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  
 
   if (user?.email_confirmed_at) {
     return <Navigate to="/dashboard" replace />;
@@ -480,7 +480,7 @@ export const AuthPage = () => {
       {mode === 'signin' && (
         <button
           type="button"
-          onClick={() => setShowForgotPassword(true)}
+          onClick={() => navigate('/forgot-password')}
           className="text-muted-foreground hover:text-primary text-sm mt-4 transition-colors"
         >
           Umesahau nywila?
@@ -504,11 +504,6 @@ export const AuthPage = () => {
         <Store className="h-4 w-4" />
         Tembelea Sokoni
       </Link>
-
-      <ForgotPasswordDialog 
-        open={showForgotPassword} 
-        onOpenChange={setShowForgotPassword} 
-      />
     </div>
   );
 };

@@ -64,6 +64,7 @@ import NotificationsPage from '@/pages/NotificationsPage';
 import OrderTrackingPage from '@/pages/OrderTrackingPage';
 import WishlistPage from '@/pages/WishlistPage';
 import CustomerPaymentPage from '@/pages/CustomerPaymentPage';
+import { ForgotPasswordPage } from '@/pages/ForgotPasswordPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -88,6 +89,7 @@ export default function App() {
               <Route path="/" element={<Index />} />
               <Route path="/auth" element={<AuthPage />} />
               <Route path="/reset-password" element={<ResetPasswordPage />} />
+              <Route path="/forgot-password" element={<ForgotPasswordPage />} />
               <Route path="/verify-email" element={<EmailVerificationStatus />} />
               
               {/* Protected Routes */}
