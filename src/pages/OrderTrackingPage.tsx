@@ -24,6 +24,12 @@ interface TrackedOrder {
   created_at: string;
   updated_at: string;
   customer_received: boolean;
+  seller_id: string;
+  delivery_address: string;
+  seller_region?: string;
+  seller_district?: string;
+  delivery_person_name?: string;
+  delivery_person_phone?: string;
 }
 
 export const OrderTrackingPage = () => {
