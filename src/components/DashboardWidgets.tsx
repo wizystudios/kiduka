@@ -24,7 +24,14 @@ import {
   Package,
   Plus,
   Wallet,
-  ChevronRight
+  ChevronRight,
+  Activity,
+  LogIn,
+  Edit,
+  Trash2,
+  UserPlus,
+  Banknote,
+  ClipboardCheck
 } from 'lucide-react';
 
 interface LowStockProduct {
@@ -422,6 +429,114 @@ export const ProductsWidget = () => {
         </div>
         <Button className="w-full" onClick={() => { navigate('/products'); setOpen(false); }}>
           Tazama Bidhaa Zote
+          <ChevronRight className="h-4 w-4 ml-2" />
+        </Button>
+      </SheetContent>
+    </Sheet>
+  );
+};
+
+// Activity icon mapper
+const getActivityIcon = (type: string) => {
+  switch (type) {
+    case 'login': case 'logout': return LogIn;
+    case 'sale_create': case 'sale_complete': return ShoppingCart;
+    case 'product_add': case 'product_edit': return Package;
+    case 'product_delete': return Trash2;
+    case 'expense_add': return Wallet;
+    case 'loan_create': case 'loan_payment': return Banknote;
+    case 'assistant_add': case 'assistant_remove': return UserPlus;
+    case 'inventory_adjustment': return ClipboardCheck;
+    case 'settings_change': return Edit;
+    default: return Activity;
+  }
+};
+
+const getActivityColor = (type: string) => {
+  if (type.includes('sale')) return 'text-green-600 bg-green-50';
+  if (type.includes('product')) return 'text-purple-600 bg-purple-50';
+  if (type.includes('expense')) return 'text-red-600 bg-red-50';
+  if (type.includes('loan')) return 'text-lime-600 bg-lime-50';
+  if (type.includes('login') || type.includes('logout')) return 'text-blue-600 bg-blue-50';
+  if (type.includes('assistant')) return 'text-indigo-600 bg-indigo-50';
+  if (type.includes('inventory')) return 'text-yellow-600 bg-yellow-50';
+  return 'text-muted-foreground bg-muted';
+};
+
+const timeAgo = (date: string) => {
+  const seconds = Math.floor((Date.now() - new Date(date).getTime()) / 1000);
+  if (seconds < 60) return 'sasa hivi';
+  if (seconds < 3600) return `dk ${Math.floor(seconds / 60)}`;
+  if (seconds < 86400) return `saa ${Math.floor(seconds / 3600)}`;
+  return `siku ${Math.floor(seconds / 86400)}`;
+};
+
+// Recent Activities Widget
+export const RecentActivitiesWidget = () => {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const [activities, setActivities] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    const fetchActivities = async () => {
+      const { data } = await supabase
+        .from('user_activities')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(5);
+      setActivities(data || []);
+      setLoading(false);
+    };
+    fetchActivities();
+    const interval = setInterval(fetchActivities, 30000);
+    return () => clearInterval(interval);
+  }, [user?.id]);
+
+  return (
+    <Sheet>
+      <SheetTrigger asChild>
+        <Button variant="outline" className="h-auto p-2 flex flex-col items-start gap-1 col-span-2">
+          <div className="flex items-center gap-1 w-full">
+            <Activity className="h-3 w-3 text-primary" />
+            <span className="text-[10px] font-semibold">Shughuli</span>
+            <Badge variant="secondary" className="ml-auto text-[9px] h-4 px-1">{activities.length}</Badge>
+          </div>
+          {loading ? (
+            <p className="text-[10px] text-muted-foreground">Inapakia...</p>
+          ) : activities.length === 0 ? (
+            <p className="text-[10px] text-muted-foreground">Hakuna shughuli</p>
+          ) : (
+            <p className="text-[10px] text-muted-foreground truncate w-full">{activities[0]?.description}</p>
+          )}
+        </Button>
+      </SheetTrigger>
+      <SheetContent side="bottom" className="h-[70vh]">
+        <SheetHeader>
+          <SheetTitle className="text-sm">Shughuli za Hivi Karibuni</SheetTitle>
+        </SheetHeader>
+        <div className="space-y-2 mt-3 overflow-y-auto max-h-[55vh]">
+          {activities.map((a) => {
+            const Icon = getActivityIcon(a.activity_type);
+            const colors = getActivityColor(a.activity_type);
+            const [textColor, bgColor] = colors.split(' ');
+            return (
+              <div key={a.id} className="flex items-start gap-2 p-2 rounded-md border">
+                <div className={`p-1 rounded-full ${bgColor} shrink-0`}>
+                  <Icon className={`h-3 w-3 ${textColor}`} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-medium truncate">{a.description}</p>
+                  <p className="text-[10px] text-muted-foreground">{timeAgo(a.created_at)}</p>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        <Button className="w-full mt-3" variant="outline" onClick={() => navigate('/notifications')}>
+          Tazama Zote
           <ChevronRight className="h-4 w-4 ml-2" />
         </Button>
       </SheetContent>
