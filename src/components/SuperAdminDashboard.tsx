@@ -2101,6 +2101,79 @@ export const SuperAdminDashboard = () => {
         </DialogContent>
       </Dialog>
       
+      {/* Password Change Dialog */}
+      <Dialog open={!!userPasswordChange} onOpenChange={() => setUserPasswordChange(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Key className="h-5 w-5" />
+              Badilisha Nenosiri - {userPasswordChange?.userName}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <Label>Nenosiri Jipya</Label>
+              <Input
+                type="password"
+                placeholder="Angalau herufi 6"
+                value={userPasswordChange?.newPassword || ''}
+                onChange={(e) => setUserPasswordChange(prev => prev ? { ...prev, newPassword: e.target.value } : null)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setUserPasswordChange(null)}>Ghairi</Button>
+            <Button 
+              onClick={executePasswordChange}
+              disabled={!userPasswordChange?.newPassword || userPasswordChange.newPassword.length < 6}
+            >
+              Badilisha
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Ban User Dialog */}
+      <Dialog open={!!banDialog} onOpenChange={() => setBanDialog(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Ban className="h-5 w-5 text-orange-600" />
+              Zuia Mtumiaji - {banDialog?.userName}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">Mtumiaji hataweza kuingia kwa muda uliochaguliwa.</p>
+            <div>
+              <Label>Muda wa Kuzuia</Label>
+              <Select
+                value={banDialog?.duration || '7d'}
+                onValueChange={(v) => setBanDialog(prev => prev ? { ...prev, duration: v } : null)}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1h">Saa 1</SelectItem>
+                  <SelectItem value="24h">Siku 1</SelectItem>
+                  <SelectItem value="7d">Wiki 1</SelectItem>
+                  <SelectItem value="30d">Mwezi 1</SelectItem>
+                  <SelectItem value="90d">Miezi 3</SelectItem>
+                  <SelectItem value="365d">Mwaka 1</SelectItem>
+                  <SelectItem value="permanent">Kudumu (Milele)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setBanDialog(null)}>Ghairi</Button>
+            <Button variant="destructive" onClick={executeBanUser}>
+              Zuia Mtumiaji
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Admin Password Dialog */}
       <AdminPasswordDialog
         open={!!passwordDialog}
