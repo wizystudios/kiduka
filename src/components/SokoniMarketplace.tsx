@@ -51,6 +51,8 @@ interface MarketProduct {
   owner_id: string;
   owner_business_name?: string;
   owner_phone?: string;
+  owner_region?: string;
+  owner_district?: string;
   created_at?: string;
   discount_price?: number;
   discount_percent?: number;
