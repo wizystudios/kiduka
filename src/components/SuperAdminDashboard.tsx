@@ -1800,13 +1800,53 @@ export const SuperAdminDashboard = () => {
                     variant="outline" 
                     size="sm"
                     onClick={() => {
+                      const d = viewDialog.data;
                       setViewDialog(null);
-                      handleDelete('user', viewDialog.data.id, viewDialog.data.full_name || viewDialog.data.email);
+                      handleChangeUserPassword(d.id, d.full_name || d.email);
                     }}
-                    className="rounded-xl text-destructive hover:bg-destructive/10"
+                    className="rounded-xl"
+                  >
+                    <Key className="h-4 w-4 mr-2" />
+                    Nenosiri
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => {
+                      const d = viewDialog.data;
+                      setViewDialog(null);
+                      handleBanUser(d.id, d.full_name || d.email);
+                    }}
+                    className="rounded-xl text-orange-600"
+                  >
+                    <Ban className="h-4 w-4 mr-2" />
+                    Zuia
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => {
+                      const d = viewDialog.data;
+                      setViewDialog(null);
+                      handleUnbanUser(d.id, d.full_name || d.email);
+                    }}
+                    className="rounded-xl text-green-600"
+                  >
+                    <ShieldCheck className="h-4 w-4 mr-2" />
+                    Rudisha
+                  </Button>
+                  <Button 
+                    variant="destructive" 
+                    size="sm"
+                    onClick={() => {
+                      const d = viewDialog.data;
+                      setViewDialog(null);
+                      handleDeleteUserFull(d.id, d.full_name || d.email);
+                    }}
+                    className="rounded-xl col-span-2"
                   >
                     <Trash2 className="h-4 w-4 mr-2" />
-                    Futa
+                    Futa Mtumiaji Kabisa
                   </Button>
                 </div>
               </div>
