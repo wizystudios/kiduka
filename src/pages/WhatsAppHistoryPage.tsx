@@ -722,6 +722,94 @@ export const WhatsAppHistoryPage = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Batch Schedule Dialog */}
+      <Dialog open={batchScheduleOpen} onOpenChange={setBatchScheduleOpen}>
+        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5 text-primary" />
+              Panga Ujumbe kwa Wateja Wengi
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-medium text-muted-foreground">
+                  Chagua Wateja ({selectedCustomerIds.length}/{customers.length})
+                </label>
+                <Button variant="ghost" size="sm" onClick={selectAllCustomers} className="text-xs h-7">
+                  {selectedCustomerIds.length === customers.length ? 'Ondoa Wote' : 'Chagua Wote'}
+                </Button>
+              </div>
+              <ScrollArea className="h-[180px] border rounded-lg p-2">
+                {customers.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-4">Hakuna wateja wenye namba za simu</p>
+                ) : (
+                  customers.map(c => (
+                    <div 
+                      key={c.id} 
+                      className="flex items-center gap-2 p-2 hover:bg-muted/50 rounded cursor-pointer"
+                      onClick={() => toggleCustomerSelection(c.id)}
+                    >
+                      {selectedCustomerIds.includes(c.id) ? (
+                        <CheckSquare className="h-4 w-4 text-primary" />
+                      ) : (
+                        <Square className="h-4 w-4 text-muted-foreground" />
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{c.name}</p>
+                        <p className="text-xs text-muted-foreground">{c.phone}</p>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </ScrollArea>
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-muted-foreground">Aina ya Ujumbe</label>
+              <Select value={batchForm.message_type} onValueChange={v => setBatchForm(f => ({ ...f, message_type: v }))}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="general">Kawaida</SelectItem>
+                  <SelectItem value="debt_reminder">Ukumbusho Deni</SelectItem>
+                  <SelectItem value="order">Tangazo/Promo</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-muted-foreground">Tarehe na Saa ya Kutuma</label>
+              <Input
+                type="datetime-local"
+                value={batchForm.scheduled_at}
+                onChange={e => setBatchForm(f => ({ ...f, scheduled_at: e.target.value }))}
+                min={new Date().toISOString().slice(0, 16)}
+              />
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-muted-foreground">Ujumbe</label>
+              <Textarea
+                placeholder="Andika ujumbe utakaotumwa kwa wateja wote uliowachagua..."
+                value={batchForm.message}
+                onChange={e => setBatchForm(f => ({ ...f, message: e.target.value }))}
+                rows={4}
+              />
+            </div>
+
+            <Button 
+              onClick={handleBatchSchedule} 
+              disabled={batchScheduling || selectedCustomerIds.length === 0} 
+              className="w-full gap-2"
+            >
+              <CalendarClock className="h-4 w-4" />
+              {batchScheduling ? 'Inapanga...' : `Panga kwa Wateja ${selectedCustomerIds.length}`}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
