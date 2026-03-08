@@ -115,6 +115,8 @@ export const AddProductPage = () => {
 
       console.log('Product added successfully:', result);
       
+      logActivity('product_add', `Bidhaa "${formData.name}" imeongezwa`, { product_name: formData.name, price: formData.price });
+      
       setFormData({
         name: '',
         barcode: '',

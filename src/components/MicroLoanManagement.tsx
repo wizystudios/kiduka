@@ -151,6 +151,7 @@ export const MicroLoanManagement = () => {
 
       if (error) throw error;
 
+      logActivity('loan_payment', `Malipo ya TSh ${amount.toLocaleString()} kwa mkopo`, { amount, loan_id: selectedLoan.id });
       toast.success('Malipo yamerekodishwa!');
       setPaymentDialogOpen(false);
       setPaymentAmount('');

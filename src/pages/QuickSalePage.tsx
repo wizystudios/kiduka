@@ -127,6 +127,7 @@ export const QuickSalePage = () => {
         date: new Date().toLocaleDateString('sw-TZ')
       });
 
+      logActivity('sale_create', `Mauzo ya TSh ${total_amount.toLocaleString()} yamerekodishwa`, { amount: total_amount, product: formData.product_name });
       toast.success('Mauzo yamerekodishwa!');
       setShowInvoice(true);
     } catch (error) {

@@ -89,6 +89,7 @@ export default function ExpensesPage() {
 
       if (error) throw error;
 
+      logActivity('expense_add', `Matumizi ya TSh ${formData.amount} - ${formData.category}`, { amount: formData.amount, category: formData.category });
       toast.success('Matumizi yamehifadhiwa');
       setFormData({
         category: '',

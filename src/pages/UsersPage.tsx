@@ -282,6 +282,7 @@ export const UsersPage = () => {
       if (permError) throw permError;
 
       setAssistants(assistants.filter(a => a.assistant_id !== assistantId));
+      logActivity('assistant_remove', `Msaidizi "${assistantName}" amefutwa`, { assistant_id: assistantId });
       toast.success('Msaidizi amefutwa');
     } catch (error) {
       console.error('Error deleting assistant:', error);
