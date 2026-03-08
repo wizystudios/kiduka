@@ -131,6 +131,7 @@ export const WhatsAppHistoryPage = () => {
   useEffect(() => {
     fetchMessages();
     fetchScheduledMessages();
+    fetchCustomers();
   }, [user, dataOwnerId, customerId]);
 
   const fetchMessages = async () => {
