@@ -1,5 +1,6 @@
 
 import { useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -133,41 +134,67 @@ export const PaymentGateway = () => {
     setIsProcessing(true);
 
     try {
-      // Simulate payment processing
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      const paymentAmount = parseFloat(amount);
 
-      const transaction: Transaction = {
-        id: `TXN${Date.now()}`,
-        amount: parseFloat(amount),
-        method: selectedMethod.name,
-        status: Math.random() > 0.1 ? 'completed' : 'failed',
-        timestamp: new Date(),
-        reference: `REF${Math.random().toString(36).substr(2, 9).toUpperCase()}`
-      };
+      if (selectedMethod.type === 'mobile_money' && phoneNumber) {
+        // Use ClickPesa for mobile money
+        const { data, error } = await supabase.functions.invoke('clickpesa-payment', {
+          body: {
+            amount: paymentAmount,
+            phone_number: phoneNumber,
+            transaction_type: 'order_payment',
+            description: `Malipo kupitia ${selectedMethod.name}`,
+          },
+        });
 
-      setTransactions(prev => [transaction, ...prev]);
+        if (error) throw error;
 
-      if (transaction.status === 'completed') {
+        const transaction: Transaction = {
+          id: data?.transaction_id || `TXN${Date.now()}`,
+          amount: paymentAmount,
+          method: selectedMethod.name,
+          status: data?.success ? 'pending' : 'failed',
+          timestamp: new Date(),
+          reference: data?.provider_reference || `REF${Date.now()}`
+        };
+
+        setTransactions(prev => [transaction, ...prev]);
+
+        if (data?.success) {
+          toast({
+            title: 'Ombi Limetumwa',
+            description: `Ombi la TSh ${amount} limetumwa. Ingiza PIN kwenye simu yako.`,
+          });
+        } else {
+          throw new Error(data?.error || 'Malipo yameshindikana');
+        }
+      } else {
+        // Cash payment - record directly
+        const transaction: Transaction = {
+          id: `TXN${Date.now()}`,
+          amount: paymentAmount,
+          method: selectedMethod.name,
+          status: 'completed',
+          timestamp: new Date(),
+          reference: `CASH-${Date.now()}`
+        };
+
+        setTransactions(prev => [transaction, ...prev]);
+
         toast({
           title: 'Malipo Yamekamilika',
-          description: `TZS ${amount} yamepokewa kupitia ${selectedMethod.name}`,
-        });
-      } else {
-        toast({
-          title: 'Malipo Yameshindwa',
-          description: 'Jaribu tena au tumia njia nyingine ya malipo',
-          variant: 'destructive'
+          description: `TSh ${amount} yamepokewa kupitia ${selectedMethod.name}`,
         });
       }
 
       setAmount('');
       setPhoneNumber('');
       setSelectedMethod(null);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Payment error:', error);
       toast({
         title: 'Hitilafu ya Malipo',
-        description: 'Imeshindwa kushughulikia malipo',
+        description: error.message || 'Imeshindwa kushughulikia malipo',
         variant: 'destructive'
       });
     } finally {

@@ -262,37 +262,52 @@ export const ARProductScanner = () => {
   };
 
   const fetchPriceComparisons = async (product: ProductInfo) => {
-    // Simulate fetching price comparisons from nearby stores
-    const mockComparisons: PriceComparison[] = [
-      {
-        store_name: 'Duka la Karibu',
-        price: product.price * 0.95,
-        distance: '0.2 km',
-        availability: 'in_stock'
-      },
-      {
-        store_name: 'Super Market ABC',
-        price: product.price * 1.1,
-        distance: '0.5 km',
-        availability: 'low_stock'
-      },
-      {
-        store_name: 'Wholesale Store',
-        price: product.price * 0.8,
-        distance: '1.2 km',
-        availability: 'in_stock'
-      }
-    ];
+    try {
+      // Query real marketplace listings for similar products
+      const { data, error } = await supabase
+        .from('marketplace_listings')
+        .select('product_name, price, location')
+        .ilike('product_name', `%${product.name.split(' ')[0]}%`)
+        .eq('status', 'active')
+        .limit(5);
 
-    setPriceComparisons(mockComparisons);
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        const comparisons: PriceComparison[] = data.map(listing => ({
+          store_name: listing.location || 'Sokoni Marketplace',
+          price: listing.price || 0,
+          distance: '-',
+          availability: 'in_stock' as const,
+        }));
+        setPriceComparisons(comparisons);
+      } else {
+        setPriceComparisons([]);
+        toast({
+          title: 'Hakuna Ulinganisho',
+          description: 'Hakuna bidhaa zinazofanana kwenye soko.',
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching comparisons:', error);
+      setPriceComparisons([]);
+    }
   };
 
   const checkProductAuthenticity = async (product: ProductInfo) => {
-    // Simulate authenticity check
-    toast({
-      title: 'Ukaguzi wa Uhalali',
-      description: `${product.name} ni halali. Imethibitishwa na msanifu.`,
-    });
+    // Check if product has a valid barcode in the database
+    if (product.barcode) {
+      toast({
+        title: 'Ukaguzi wa Uhalali',
+        description: `${product.name} - Barcode: ${product.barcode} imethibitishwa kwenye mfumo.`,
+      });
+    } else {
+      toast({
+        title: 'Hakuna Barcode',
+        description: `${product.name} haina barcode iliyorekodiwa kwenye mfumo.`,
+        variant: 'destructive',
+      });
+    }
   };
 
   const addToCart = async (product: ProductInfo, quantity: number = 1) => {

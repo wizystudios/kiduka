@@ -13,6 +13,7 @@ import {
   Loader2
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 interface MobileMoneyPaymentProps {
   amount: number;
@@ -72,18 +73,15 @@ export const MobileMoneyPayment = ({
   const [phoneNumber, setPhoneNumber] = useState('');
   const [status, setStatus] = useState<PaymentStatus>('idle');
   const [transactionId, setTransactionId] = useState<string>('');
+  const [errorMessage, setErrorMessage] = useState('');
 
   const formatPhoneNumber = (number: string): string => {
-    // Remove all non-digit characters
     let cleaned = number.replace(/\D/g, '');
-    
-    // Handle Tanzania numbers
     if (cleaned.startsWith('0')) {
       cleaned = '255' + cleaned.substring(1);
     } else if (!cleaned.startsWith('255')) {
       cleaned = '255' + cleaned;
     }
-    
     return cleaned;
   };
 
@@ -92,50 +90,97 @@ export const MobileMoneyPayment = ({
     return formatted.length === 12 && formatted.startsWith('255');
   };
 
-  const simulatePayment = async () => {
+  const processPayment = async () => {
     if (!isValidPhone(phoneNumber)) {
       toast.error('Namba ya simu si sahihi');
       return;
     }
 
     setStatus('processing');
+    setErrorMessage('');
     const formattedPhone = formatPhoneNumber(phoneNumber);
-    
-    // Generate mock transaction ID
-    const mockTransactionId = `${selectedProvider.toUpperCase()}-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
-    setTransactionId(mockTransactionId);
 
-    // Simulate USSD push delay
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    setStatus('pending');
-    
-    toast.info(`Ombi la malipo limetumwa kwa ${formattedPhone}`, {
-      description: 'Ingiza PIN yako kwenye simu kukamilisha malipo'
-    });
-
-    // Simulate user confirming payment after some time
-    await new Promise(resolve => setTimeout(resolve, 4000));
-    
-    // 90% success rate simulation
-    const isSuccess = Math.random() > 0.1;
-    
-    if (isSuccess) {
-      setStatus('success');
-      toast.success('Malipo yamekamilika!', {
-        description: `Transaction ID: ${mockTransactionId}`
+    try {
+      const { data, error } = await supabase.functions.invoke('clickpesa-payment', {
+        body: {
+          amount,
+          phone_number: formattedPhone,
+          order_id: orderId || null,
+          transaction_type: 'order_payment',
+          description: `Malipo ya oda${orderId ? ` #${orderId.slice(0, 8)}` : ''}`,
+        },
       });
-      
-      // Wait a moment then call completion handler
-      setTimeout(() => {
-        onPaymentComplete(mockTransactionId, selectedProvider);
-      }, 1500);
-    } else {
+
+      if (error) throw error;
+
+      if (data?.success) {
+        const txnId = data.transaction_id || data.provider_reference || `TXN-${Date.now()}`;
+        setTransactionId(txnId);
+        setStatus('pending');
+
+        toast.info(`Ombi la malipo limetumwa kwa ${formattedPhone}`, {
+          description: 'Ingiza PIN yako kwenye simu kukamilisha malipo'
+        });
+
+        // Poll for payment status
+        pollPaymentStatus(txnId);
+      } else {
+        throw new Error(data?.error || 'Malipo yameshindikana');
+      }
+    } catch (error: any) {
+      console.error('Payment error:', error);
+      setErrorMessage(error.message || 'Malipo yameshindikana');
       setStatus('failed');
       toast.error('Malipo yameshindikana', {
-        description: 'Tafadhali jaribu tena au tumia njia nyingine'
+        description: error.message || 'Tafadhali jaribu tena'
       });
     }
+  };
+
+  const pollPaymentStatus = async (txnId: string) => {
+    let attempts = 0;
+    const maxAttempts = 30; // 2.5 minutes max
+    
+    const checkStatus = async () => {
+      attempts++;
+      
+      try {
+        const { data } = await supabase
+          .from('payment_transactions')
+          .select('status')
+          .or(`provider_reference.eq.${txnId},id.eq.${txnId}`)
+          .maybeSingle();
+
+        if (data?.status === 'completed' || data?.status === 'success') {
+          setStatus('success');
+          toast.success('Malipo yamekamilika!', {
+            description: `Transaction ID: ${txnId}`
+          });
+          setTimeout(() => {
+            onPaymentComplete(txnId, selectedProvider);
+          }, 1500);
+          return;
+        }
+
+        if (data?.status === 'failed' || data?.status === 'cancelled') {
+          setStatus('failed');
+          setErrorMessage('Malipo yamekataliwa au yameghairiwa');
+          return;
+        }
+      } catch (err) {
+        console.error('Poll error:', err);
+      }
+
+      if (attempts < maxAttempts) {
+        setTimeout(checkStatus, 5000);
+      } else {
+        // After max attempts, assume timeout but let user retry
+        setStatus('failed');
+        setErrorMessage('Muda umekwisha. Kama umelipa, wasiliana na msaada.');
+      }
+    };
+
+    setTimeout(checkStatus, 5000);
   };
 
   const getStatusUI = () => {
@@ -164,9 +209,11 @@ export const MobileMoneyPayment = ({
               <p className="text-sm text-muted-foreground">
                 Ingiza PIN yako kwenye simu kukamilisha malipo
               </p>
-              <Badge variant="outline" className="mt-2">
-                {transactionId}
-              </Badge>
+              {transactionId && (
+                <Badge variant="outline" className="mt-2">
+                  {transactionId}
+                </Badge>
+              )}
             </div>
           </div>
         );
@@ -182,9 +229,11 @@ export const MobileMoneyPayment = ({
               <p className="text-sm text-muted-foreground">
                 Asante kwa kununua
               </p>
-              <Badge className="mt-2 bg-green-100 text-green-700">
-                {transactionId}
-              </Badge>
+              {transactionId && (
+                <Badge className="mt-2 bg-green-100 text-green-700">
+                  {transactionId}
+                </Badge>
+              )}
             </div>
           </div>
         );
@@ -198,10 +247,10 @@ export const MobileMoneyPayment = ({
             <div>
               <h3 className="font-semibold text-lg text-red-700">Malipo Yameshindikana</h3>
               <p className="text-sm text-muted-foreground">
-                Tafadhali jaribu tena
+                {errorMessage || 'Tafadhali jaribu tena'}
               </p>
             </div>
-            <Button onClick={() => setStatus('idle')} variant="outline">
+            <Button onClick={() => { setStatus('idle'); setErrorMessage(''); }} variant="outline">
               Jaribu Tena
             </Button>
           </div>
@@ -291,7 +340,7 @@ export const MobileMoneyPayment = ({
         </div>
 
         {/* Info Box */}
-        <div className="p-3 bg-blue-50 rounded-lg text-sm text-blue-700">
+        <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg text-sm text-blue-700 dark:text-blue-300">
           <p className="font-medium mb-1">Jinsi ya Kulipa:</p>
           <ol className="list-decimal list-inside space-y-1 text-xs">
             <li>Bonyeza "Lipa Sasa"</li>
@@ -306,7 +355,7 @@ export const MobileMoneyPayment = ({
             Ghairi
           </Button>
           <Button 
-            onClick={simulatePayment} 
+            onClick={processPayment} 
             className="flex-1"
             disabled={!isValidPhone(phoneNumber)}
           >
