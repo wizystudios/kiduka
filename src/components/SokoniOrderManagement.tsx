@@ -15,6 +15,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useDataAccess } from '@/hooks/useDataAccess';
 import { useAuth } from '@/hooks/useAuth';
+import { estimateDeliveryDays } from '@/utils/deliveryEstimation';
 
 interface OrderItem {
   product_name: string;
