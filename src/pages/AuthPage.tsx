@@ -73,8 +73,8 @@ export const AuthPage = () => {
       }
       setStep('password');
     } else if (step === 'password') {
-      if (!password || password.length < 6) {
-        toast.error('Nywila lazima iwe angalau herufi 6');
+      if (!password || password.length < 8) {
+        toast.error('Nywila lazima iwe angalau herufi 8');
         return;
       }
       // For signup, enforce strong password policy
