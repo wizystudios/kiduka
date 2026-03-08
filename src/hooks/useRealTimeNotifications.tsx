@@ -6,17 +6,57 @@ import { Bell, Package, ShoppingCart, AlertTriangle } from 'lucide-react';
 
 interface Notification {
   id: string;
-  type: 'low_stock' | 'new_sale' | 'alert';
+  type: 'low_stock' | 'new_sale' | 'alert' | 'sokoni_order';
   title: string;
   message: string;
   timestamp: Date;
   read: boolean;
 }
 
+// Request browser notification permission
+const requestNotificationPermission = async () => {
+  if (!('Notification' in window)) return false;
+  if (Notification.permission === 'granted') return true;
+  if (Notification.permission === 'denied') return false;
+  const result = await Notification.requestPermission();
+  return result === 'granted';
+};
+
+// Send browser push notification
+const sendBrowserNotification = (title: string, body: string, icon?: string) => {
+  if (!('Notification' in window) || Notification.permission !== 'granted') return;
+  
+  try {
+    const notification = new Notification(title, {
+      body,
+      icon: icon || '/icon-192.png',
+      badge: '/icon-192.png',
+      tag: `kiduka-${Date.now()}`,
+      vibrate: [200, 100, 200],
+      requireInteraction: false,
+    });
+
+    notification.onclick = () => {
+      window.focus();
+      notification.close();
+    };
+
+    // Auto-close after 8 seconds
+    setTimeout(() => notification.close(), 8000);
+  } catch (e) {
+    console.error('Browser notification error:', e);
+  }
+};
+
 export const useRealTimeNotifications = () => {
   const { dataOwnerId, isReady } = useDataAccess();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
+
+  // Request permission on mount
+  useEffect(() => {
+    requestNotificationPermission();
+  }, []);
 
   useEffect(() => {
     if (!isReady || !dataOwnerId) return;
@@ -33,7 +73,6 @@ export const useRealTimeNotifications = () => {
           filter: `owner_id=eq.${dataOwnerId}`
         },
         (payload) => {
-          console.log('New sale detected:', payload);
           const newNotification: Notification = {
             id: `sale-${payload.new.id}`,
             type: 'new_sale',
@@ -86,6 +125,12 @@ export const useRealTimeNotifications = () => {
               description: newNotification.message,
               icon: <AlertTriangle className="h-4 w-4" />
             });
+
+            // Browser push for low stock
+            sendBrowserNotification(
+              '⚠️ Stock Ndogo - Kiduka',
+              `${product.name}: zimebaki ${product.stock_quantity} tu`
+            );
           } else if (product.stock_quantity === 0) {
             const newNotification: Notification = {
               id: `out-of-stock-${product.id}-${Date.now()}`,
@@ -103,7 +148,47 @@ export const useRealTimeNotifications = () => {
               description: newNotification.message,
               icon: <Package className="h-4 w-4" />
             });
+
+            // Browser push for out of stock
+            sendBrowserNotification(
+              '🚨 Stock Imeisha! - Kiduka',
+              `${product.name} imeisha kabisa! Agiza haraka.`
+            );
           }
+        }
+      )
+      .subscribe();
+
+    // Subscribe to new Sokoni orders
+    const sokoniChannel = supabase
+      .channel('realtime-sokoni-push')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'sokoni_orders',
+          filter: `seller_id=eq.${dataOwnerId}`
+        },
+        (payload) => {
+          const order = payload.new;
+          const newNotification: Notification = {
+            id: `sokoni-push-${order.id}`,
+            type: 'sokoni_order',
+            title: 'Oda Mpya ya Sokoni!',
+            message: `Mteja ameagiza bidhaa za TSh ${Number(order.total_amount).toLocaleString()}`,
+            timestamp: new Date(),
+            read: false
+          };
+
+          setNotifications(prev => [newNotification, ...prev.slice(0, 19)]);
+          setUnreadCount(prev => prev + 1);
+
+          // Browser push for new Sokoni order
+          sendBrowserNotification(
+            '🛒 Oda Mpya ya Sokoni! - Kiduka',
+            `Mteja ameagiza bidhaa za TSh ${Number(order.total_amount).toLocaleString()}`
+          );
         }
       )
       .subscribe();
@@ -141,6 +226,7 @@ export const useRealTimeNotifications = () => {
     return () => {
       supabase.removeChannel(salesChannel);
       supabase.removeChannel(productsChannel);
+      supabase.removeChannel(sokoniChannel);
     };
   }, [isReady, dataOwnerId]);
 
