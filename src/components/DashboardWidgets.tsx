@@ -691,6 +691,19 @@ export const DebtorsWidget = () => {
     setSendingTo(debtor);
   };
 
+  const logMessage = async (debtor: Debtor, message: string, messageType: string, status: string) => {
+    if (!dataOwnerId) return;
+    await supabase.from('whatsapp_messages' as any).insert({
+      owner_id: dataOwnerId,
+      customer_id: debtor.id,
+      customer_name: debtor.name,
+      phone_number: debtor.phone || '',
+      message,
+      message_type: messageType,
+      status,
+    });
+  };
+
   const sendWhatsApp = async () => {
     if (!sendingTo?.phone) {
       toast.error('Mteja hana nambari ya simu');
@@ -702,12 +715,14 @@ export const DebtorsWidget = () => {
         body: { phoneNumber: sendingTo.phone, message: whatsappMsg, messageType: 'debt_reminder' }
       });
       if (error) throw error;
+      await logMessage(sendingTo, whatsappMsg, 'debt_reminder', 'sent');
       toast.success(`Ujumbe umetumwa kwa ${sendingTo.name}`);
       setSendingTo(null);
     } catch (e) {
       const phone = sendingTo.phone.startsWith('0') ? `255${sendingTo.phone.slice(1)}` : sendingTo.phone;
       const url = `https://wa.me/${phone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(whatsappMsg)}`;
       window.open(url, '_blank');
+      await logMessage(sendingTo, whatsappMsg, 'debt_reminder', 'sent_wa_link');
       toast.success('Imefungua WhatsApp');
       setSendingTo(null);
     } finally {
@@ -746,8 +761,9 @@ export const DebtorsWidget = () => {
         await supabase.functions.invoke('send-whatsapp', {
           body: { phoneNumber: d.phone!, message: finalMsg, messageType: 'debt_reminder_batch' }
         });
+        await logMessage(d, finalMsg, 'debt_reminder_batch', 'sent');
       } catch (e) {
-        // Continue with next
+        await logMessage(d, finalMsg, 'debt_reminder_batch', 'failed');
       }
       setBatchProgress({ sent: i + 1, total: debtorsWithPhone.length });
     }
