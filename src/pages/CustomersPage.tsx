@@ -23,6 +23,7 @@ interface Customer {
 }
 
 export const CustomersPage = () => {
+  const navigate = useNavigate();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
