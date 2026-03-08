@@ -255,7 +255,78 @@ export const WhatsAppHistoryPage = () => {
     }
   };
 
-  const filtered = messages.filter(m => {
+  const fetchCustomers = async () => {
+    if (!user || !dataOwnerId) return;
+    try {
+      const { data, error } = await supabase
+        .from('customers')
+        .select('id, name, phone')
+        .eq('owner_id', dataOwnerId)
+        .not('phone', 'is', null)
+        .order('name');
+      if (!error && data) {
+        setCustomers(data.filter(c => c.phone) as { id: string; name: string; phone: string }[]);
+      }
+    } catch (e) {
+      console.error('Error fetching customers:', e);
+    }
+  };
+
+  const handleBatchSchedule = async () => {
+    if (!user || !dataOwnerId) return;
+    if (!batchForm.message || !batchForm.scheduled_at || selectedCustomerIds.length === 0) {
+      toast.error('Chagua wateja na jaza ujumbe na wakati');
+      return;
+    }
+
+    setBatchScheduling(true);
+    try {
+      const selectedCustomers = customers.filter(c => selectedCustomerIds.includes(c.id));
+      const scheduledAt = new Date(batchForm.scheduled_at).toISOString();
+      
+      const inserts = selectedCustomers.map(c => ({
+        owner_id: dataOwnerId,
+        customer_id: c.id,
+        customer_name: c.name,
+        phone_number: c.phone,
+        message: batchForm.message,
+        message_type: batchForm.message_type,
+        scheduled_at: scheduledAt,
+        status: 'pending'
+      }));
+
+      const { error } = await supabase
+        .from('scheduled_whatsapp_messages')
+        .insert(inserts as any);
+
+      if (error) throw error;
+      toast.success(`Ujumbe ${inserts.length} umepangwa!`);
+      setBatchScheduleOpen(false);
+      setBatchForm({ message: '', message_type: 'general', scheduled_at: '' });
+      setSelectedCustomerIds([]);
+      fetchScheduledMessages();
+    } catch (error) {
+      console.error('Batch schedule error:', error);
+      toast.error('Imeshindwa kupanga ujumbe wa batch');
+    } finally {
+      setBatchScheduling(false);
+    }
+  };
+
+  const toggleCustomerSelection = (id: string) => {
+    setSelectedCustomerIds(prev => 
+      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+    );
+  };
+
+  const selectAllCustomers = () => {
+    if (selectedCustomerIds.length === customers.length) {
+      setSelectedCustomerIds([]);
+    } else {
+      setSelectedCustomerIds(customers.map(c => c.id));
+    }
+  };
+
     const matchesSearch = search === '' ||
       m.customer_name.toLowerCase().includes(search.toLowerCase()) ||
       m.phone_number.includes(search) ||
