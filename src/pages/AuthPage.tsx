@@ -29,6 +29,7 @@ export const AuthPage = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
 
   if (user?.email_confirmed_at) {
     return <Navigate to="/dashboard" replace />;
