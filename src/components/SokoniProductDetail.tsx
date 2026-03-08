@@ -233,7 +233,7 @@ export const SokoniProductDetail = ({
               <Card className="rounded-3xl overflow-hidden">
                 <CardContent className="p-4">
                   <div className="flex items-center gap-3">
-                    <div className="h-12 w-12 rounded-[20%] bg-primary/10 flex items-center justify-center">
+                    <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
                       <Store className="h-6 w-6 text-primary" />
                     </div>
                     <div className="flex-1 min-w-0">
