@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { KidukaLogo } from '@/components/KidukaLogo';
 import { Lock, Eye, EyeOff, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import { logActivity } from '@/hooks/useActivityLogger';
 
 export const ResetPasswordPage = () => {
   const navigate = useNavigate();
@@ -66,6 +67,7 @@ export const ResetPasswordPage = () => {
         localStorage.setItem(`kiduka_pw_updated_${user.id}`, 'true');
       }
       
+      logActivity('password_reset', 'Nywila imebadilishwa kupitia reset link');
       setSuccess(true);
       toast.success('Nywila imebadilishwa!');
       setTimeout(() => navigate('/auth'), 2000);

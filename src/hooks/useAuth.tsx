@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode, useCallback, FC, useMemo } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import { logActivity } from '@/hooks/useActivityLogger';
 
 interface AuthContextType {
   user: User | null;
@@ -272,6 +273,9 @@ export const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
         }
       }
 
+      // Log login activity
+      logActivity('login', 'Mtumiaji ameingia', { email });
+      
       // Redirect to dashboard after successful login
       window.location.href = '/dashboard';
     } catch (error: any) {
@@ -301,6 +305,11 @@ export const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
       }
     }
     
+    // Log registration activity
+    if (data.user) {
+      logActivity('register', 'Akaunti mpya imeundwa', { email, full_name: fullName });
+    }
+
     if (data.user && !data.user.email_confirmed_at) {
       throw new Error('CONFIRMATION_REQUIRED');
     }
@@ -308,6 +317,8 @@ export const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
 
   const signOut = async () => {
     try {
+      // Log logout before clearing state
+      await logActivity('logout', 'Mtumiaji ametoka');
       cleanupAuthState();
       try {
         await supabase.auth.signOut({ scope: 'global' });
