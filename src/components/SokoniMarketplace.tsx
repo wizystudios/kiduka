@@ -164,6 +164,8 @@ export const SokoniMarketplace = () => {
   const [categories, setCategories] = useState<CategoryItem[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(searchParams.get('category'));
   const [imageSearchOpen, setImageSearchOpen] = useState(false);
+  const [userRegion, setUserRegion] = useState<string | null>(null);
+  const [userDistrict, setUserDistrict] = useState<string | null>(null);
   
   // Receipt dialog state
   const [receiptOpen, setReceiptOpen] = useState(false);
