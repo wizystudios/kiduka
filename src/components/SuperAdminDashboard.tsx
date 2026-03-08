@@ -161,6 +161,8 @@ export const SuperAdminDashboard = () => {
   const [passwordDialog, setPasswordDialog] = useState<{action: string; callback: () => void; description?: string} | null>(null);
   const [selectedBusiness, setSelectedBusiness] = useState<string | null>(null);
   const [approvalDialog, setApprovalDialog] = useState<{subId: string; duration: string} | null>(null);
+  const [userPasswordChange, setUserPasswordChange] = useState<{userId: string; userName: string; newPassword: string} | null>(null);
+  const [banDialog, setBanDialog] = useState<{userId: string; userName: string; duration: string} | null>(null);
   
   useEffect(() => {
     fetchAllData();
