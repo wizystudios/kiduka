@@ -108,6 +108,7 @@ export const MicroLoanManagement = () => {
 
       if (error) throw error;
 
+      logActivity('loan_create', `Mkopo wa TSh ${newLoan.loan_amount} kwa ${newLoan.customer_name}`, { amount: newLoan.loan_amount, customer: newLoan.customer_name });
       toast.success('Mkopo umeongezwa kwa mafanikio');
       setNewLoan({
         customer_name: '',
