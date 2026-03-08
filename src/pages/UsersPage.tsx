@@ -193,6 +193,7 @@ export const UsersPage = () => {
         toast.error('Msaidizi ameundwa lakini ruhusa hazijawekwa. Jaribu tena.');
       } else {
         console.log('RPC result:', rpcResult);
+        logActivity('assistant_add', `Msaidizi "${newUser.full_name}" ameongezwa`, { assistant_email: newUser.email });
         toast.success(`Msaidizi "${newUser.full_name}" ameongezwa! Anaweza kuingia na: ${newUser.email}`);
       }
 
