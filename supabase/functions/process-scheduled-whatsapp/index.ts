@@ -36,8 +36,14 @@ serve(async (req) => {
 
     let sent = 0
     let failed = 0
+    // Group by owner for notification summary
+    const ownerResults: Record<string, { sent: number; failed: number; failedNames: string[] }> = {}
 
     for (const msg of messages) {
+      if (!ownerResults[msg.owner_id]) {
+        ownerResults[msg.owner_id] = { sent: 0, failed: 0, failedNames: [] }
+      }
+
       try {
         // Try sending via the send-whatsapp function
         const { data, error } = await supabase.functions.invoke('send-whatsapp', {
@@ -70,6 +76,7 @@ serve(async (req) => {
           })
 
         sent++
+        ownerResults[msg.owner_id].sent++
       } catch (err) {
         // Mark as failed
         await supabase
@@ -80,7 +87,28 @@ serve(async (req) => {
           })
           .eq('id', msg.id)
         failed++
+        ownerResults[msg.owner_id].failed++
+        ownerResults[msg.owner_id].failedNames.push(msg.customer_name)
       }
+    }
+
+    // Create notifications for each owner about their scheduled messages
+    for (const [ownerId, result] of Object.entries(ownerResults)) {
+      const parts: string[] = []
+      if (result.sent > 0) parts.push(`${result.sent} ujumbe umetumwa`)
+      if (result.failed > 0) parts.push(`${result.failed} umeshindwa`)
+
+      // Insert a user_activities entry as notification
+      await supabase.from('user_activities').insert({
+        user_id: ownerId,
+        activity_type: 'scheduled_whatsapp_result',
+        description: `Ujumbe uliopangwa: ${parts.join(', ')}`,
+        metadata: {
+          sent: result.sent,
+          failed: result.failed,
+          failed_names: result.failedNames
+        }
+      })
     }
 
     return new Response(

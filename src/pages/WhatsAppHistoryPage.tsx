@@ -115,6 +115,17 @@ export const WhatsAppHistoryPage = () => {
   });
   const [scheduling, setScheduling] = useState(false);
 
+  // Batch schedule state
+  const [batchScheduleOpen, setBatchScheduleOpen] = useState(false);
+  const [batchForm, setBatchForm] = useState({
+    message: '',
+    message_type: 'general',
+    scheduled_at: ''
+  });
+  const [batchScheduling, setBatchScheduling] = useState(false);
+  const [customers, setCustomers] = useState<{ id: string; name: string; phone: string }[]>([]);
+  const [selectedCustomerIds, setSelectedCustomerIds] = useState<string[]>([]);
+
   const isSuperAdmin = userProfile?.role === 'super_admin';
 
   useEffect(() => {
