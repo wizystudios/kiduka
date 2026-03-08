@@ -8,8 +8,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { 
-  Package, Truck, CheckCircle, XCircle, Clock, Phone, MapPin, Eye, RefreshCw, User, MessageSquare, Send, Receipt
+  Package, Truck, CheckCircle, XCircle, Clock, Phone, MapPin, Eye, RefreshCw, User, MessageSquare, Send, Receipt, Megaphone, Users
 } from 'lucide-react';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useDataAccess } from '@/hooks/useDataAccess';
@@ -52,6 +53,10 @@ export const SokoniOrderManagement = () => {
   const [whatsappOpen, setWhatsappOpen] = useState(false);
   const [whatsappMsg, setWhatsappMsg] = useState('');
   const [sendingWa, setSendingWa] = useState(false);
+  const [batchOpen, setBatchOpen] = useState(false);
+  const [batchMsg, setBatchMsg] = useState('');
+  const [sendingBatch, setSendingBatch] = useState(false);
+  const [batchProgress, setBatchProgress] = useState({ sent: 0, total: 0 });
 
   useEffect(() => {
     if (dataOwnerId) {
@@ -278,6 +283,56 @@ export const SokoniOrderManagement = () => {
     toast.success('Risiti imetumwa kwa WhatsApp!');
   };
 
+  // Get unique Sokoni customer phones
+  const getUniqueCustomers = () => {
+    const seen = new Map<string, string>();
+    orders.forEach(o => {
+      const phone = formatPhone(o.customer_phone);
+      if (!seen.has(phone)) seen.set(phone, o.customer_phone);
+    });
+    return Array.from(seen.entries());
+  };
+
+  const sendBatchWhatsApp = async () => {
+    if (!batchMsg.trim() || !user) return;
+    const customers = getUniqueCustomers();
+    if (customers.length === 0) { toast.error('Hakuna wateja wa Sokoni'); return; }
+
+    setSendingBatch(true);
+    setBatchProgress({ sent: 0, total: customers.length });
+
+    let sentCount = 0;
+    for (const [phone, rawPhone] of customers) {
+      try {
+        const { error } = await supabase.functions.invoke('send-whatsapp', {
+          body: { phoneNumber: phone, message: batchMsg, messageType: 'general' }
+        });
+
+        await supabase.from('whatsapp_messages').insert({
+          owner_id: user.id,
+          customer_name: `Sokoni - ${rawPhone}`,
+          phone_number: phone,
+          message: batchMsg,
+          message_type: 'general',
+          status: error ? 'sent_wa_link' : 'sent',
+        });
+
+        if (error) {
+          window.open(`https://wa.me/${phone.replace('+', '')}?text=${encodeURIComponent(batchMsg)}`, '_blank');
+        }
+      } catch {
+        // fallback
+      }
+      sentCount++;
+      setBatchProgress({ sent: sentCount, total: customers.length });
+    }
+
+    toast.success(`Ujumbe umetumwa kwa wateja ${sentCount}!`);
+    setSendingBatch(false);
+    setBatchOpen(false);
+    setBatchMsg('');
+  };
+
   const filteredOrders = orders.filter(order => {
     if (activeTab === 'new') return order.order_status === 'new';
     if (activeTab === 'active') return ['confirmed', 'delivering'].includes(order.order_status);
@@ -312,10 +367,26 @@ export const SokoniOrderManagement = () => {
               <Package className="h-5 w-5 text-primary" />
               Oda za Sokoni
             </CardTitle>
-            <Button variant="outline" size="sm" onClick={fetchOrders} className="rounded-2xl">
-              <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-              Refresh
-            </Button>
+            <div className="flex gap-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="rounded-2xl text-green-600 border-green-300 hover:bg-green-50 dark:hover:bg-green-950"
+                onClick={() => {
+                  const customers = getUniqueCustomers();
+                  if (customers.length === 0) { toast.error('Hakuna wateja wa Sokoni bado'); return; }
+                  setBatchMsg(`🎉 HABARI NJEMA!\n\nTuna bidhaa mpya na matoleo mazuri kwenye duka letu!\n\nTembelea Sokoni yetu leo na upate bidhaa bora kwa bei nzuri.\n\nKaribuni sana! 🛍️`);
+                  setBatchOpen(true);
+                }}
+              >
+                <Megaphone className="h-4 w-4 mr-1" />
+                Tuma kwa Wote ({getUniqueCustomers().length})
+              </Button>
+              <Button variant="outline" size="sm" onClick={fetchOrders} className="rounded-2xl">
+                <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+                Refresh
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
@@ -574,6 +645,54 @@ export const SokoniOrderManagement = () => {
             >
               <Send className="h-4 w-4 mr-2" />
               {sendingWa ? 'Inatuma...' : 'Tuma WhatsApp'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Batch WhatsApp Dialog */}
+      <Dialog open={batchOpen} onOpenChange={(open) => { if (!sendingBatch) setBatchOpen(open); }}>
+        <DialogContent className="sm:max-w-md rounded-2xl">
+          <div className="space-y-4">
+            <div className="flex items-center gap-2">
+              <Megaphone className="h-5 w-5 text-green-600" />
+              <h3 className="font-bold">Tuma WhatsApp kwa Wateja Wote</h3>
+            </div>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Users className="h-4 w-4" />
+              <span>Wateja {getUniqueCustomers().length} watapata ujumbe huu</span>
+            </div>
+            <div>
+              <Label className="text-xs">Ujumbe wa Tangazo</Label>
+              <Textarea
+                value={batchMsg}
+                onChange={(e) => setBatchMsg(e.target.value)}
+                rows={8}
+                placeholder="Andika ujumbe wa tangazo kwa wateja wako wote..."
+                disabled={sendingBatch}
+              />
+            </div>
+            {sendingBatch && (
+              <div className="space-y-2">
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>Inatuma...</span>
+                  <span>{batchProgress.sent}/{batchProgress.total}</span>
+                </div>
+                <div className="w-full bg-muted rounded-full h-2">
+                  <div 
+                    className="bg-green-600 h-2 rounded-full transition-all" 
+                    style={{ width: `${batchProgress.total > 0 ? (batchProgress.sent / batchProgress.total) * 100 : 0}%` }}
+                  />
+                </div>
+              </div>
+            )}
+            <Button 
+              onClick={sendBatchWhatsApp} 
+              disabled={!batchMsg.trim() || sendingBatch} 
+              className="w-full rounded-2xl bg-green-600 hover:bg-green-700"
+            >
+              <Send className="h-4 w-4 mr-2" />
+              {sendingBatch ? `Inatuma ${batchProgress.sent}/${batchProgress.total}...` : `Tuma kwa Wateja ${getUniqueCustomers().length}`}
             </Button>
           </div>
         </DialogContent>
