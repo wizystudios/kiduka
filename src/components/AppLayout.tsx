@@ -14,6 +14,7 @@ interface AppLayoutProps {
 export function AppLayout({ children }: AppLayoutProps) {
   return (
     <SidebarProvider>
+      <AdminSessionBanner />
       <TopNavbar />
       <OfflineSyncBootstrap />
       <div className="flex min-h-screen w-full">
