@@ -902,6 +902,21 @@ export const SuperAdminDashboard = () => {
           </div>
         </CardHeader>
       </Card>
+
+      {/* Active Business Session Banner */}
+      {selectedBusiness && (
+        <div className="flex items-center justify-between bg-primary/10 border border-primary/20 rounded-2xl px-4 py-2">
+          <div className="flex items-center gap-2 text-sm">
+            <Shield className="h-4 w-4 text-primary" />
+            <span className="font-medium">
+              Unaangalia biashara: {businessOwners.find(o => o.id === selectedBusiness)?.business_name || 'Unknown'}
+            </span>
+          </div>
+          <Button variant="outline" size="sm" className="rounded-xl" onClick={handleExitBusiness}>
+            Toka Biashara
+          </Button>
+        </div>
+      )}
       
       {/* Notifications Panel */}
       <Dialog open={notificationsPanelOpen} onOpenChange={setNotificationsPanelOpen}>
