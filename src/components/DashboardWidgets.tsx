@@ -87,16 +87,16 @@ export const StockAlertWidget = () => {
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
-      <SheetTrigger asChild>
+       <SheetTrigger asChild>
         <Button
           variant="outline"
-          className="flex-1 h-10 justify-between bg-yellow-50 border-yellow-200 hover:bg-yellow-100 dark:bg-yellow-950 dark:border-yellow-800"
+          className="flex-1 h-10 justify-between bg-primary/5 border-primary/20 hover:bg-primary/10"
         >
           <div className="flex items-center gap-2">
-            <AlertTriangle className="h-4 w-4 text-yellow-600" />
+            <AlertTriangle className="h-4 w-4 text-primary" />
             <span className="text-xs font-medium">Stock Ndogo</span>
           </div>
-          <Badge variant="outline" className="text-xs bg-yellow-100 text-yellow-800 border-yellow-300">
+          <Badge variant="outline" className="text-xs bg-primary/10 text-primary border-primary/20">
             {lowStockProducts.length}
           </Badge>
         </Button>
