@@ -64,11 +64,9 @@ export const TopNavbar = () => {
     <div className="fixed top-0 left-0 right-0 bg-background/95 backdrop-blur-sm border-b border-border z-50 md:hidden">
       <div className="flex items-center justify-between px-3 py-2">
         {/* Left: Business name above logo */}
-        <div className="flex items-center gap-2">
-          <div className="flex flex-col">
-            <span className="text-[10px] font-semibold text-primary leading-none mb-0.5">{getBusinessName()}</span>
-            <KidukaLogo size="sm" showText={false} />
-          </div>
+        <div className="flex items-center gap-1.5">
+          <KidukaLogo size="sm" showText={false} />
+          <span className="text-xs font-semibold text-primary">{getBusinessName()}</span>
         </div>
         
         {/* Right: Actions */}
