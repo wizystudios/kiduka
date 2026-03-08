@@ -462,7 +462,7 @@ export const SokoniProductDetail = ({
                       <span className="w-8 text-center font-bold text-lg">{quantity}</span>
                       <Button
                         variant="outline" size="icon"
-                        className="h-10 w-10 rounded-[20%]"
+                        className="h-10 w-10"
                         onClick={() => setQuantity(Math.min(product.stock_quantity, quantity + 1))}
                         disabled={quantity >= product.stock_quantity}
                       >
