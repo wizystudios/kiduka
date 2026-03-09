@@ -386,10 +386,7 @@ export const EditProductPage = () => {
                 <Save className="h-4 w-4 mr-2" />
                 {loading ? 'Inasasisha...' : 'Sasisha Bidhaa'}
               </Button>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
+      </form>
     </div>
   );
 };
