@@ -223,13 +223,6 @@ export const EditProductPage = () => {
           onImagesChange={setProductImages}
           maxImages={5}
         />
-            {/* Product Images Upload */}
-            <MultiImageUpload
-              productId={id}
-              existingImages={productImages}
-              onImagesChange={setProductImages}
-              maxImages={5}
-            />
             
             <div>
               <Label htmlFor="name">Jina la Bidhaa *</Label>
