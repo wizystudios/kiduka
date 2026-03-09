@@ -294,8 +294,8 @@ export const InventorySnapshotPage = () => {
                 </div>
               </div>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       )}
 
       {/* Empty State */}
