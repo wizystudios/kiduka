@@ -300,15 +300,13 @@ export const InventorySnapshotPage = () => {
 
       {/* Empty State */}
       {!hasOpeningCount && (
-        <Card className="border-dashed">
-          <CardContent className="py-12 text-center">
-            <ClipboardList className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-            <h3 className="font-semibold text-lg mb-3">Anza Kuhesabu</h3>
-            <p className="text-base text-muted-foreground mb-4">
-              Bonyeza "Hesabu ya Asubuhi" kurekodi stock yako ya kuanzia siku
-            </p>
-          </CardContent>
-        </Card>
+        <div className="text-center py-12 border-2 border-dashed rounded-3xl">
+          <ClipboardList className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
+          <h3 className="font-semibold text-lg mb-2">Anza Kuhesabu</h3>
+          <p className="text-sm text-muted-foreground">
+            Bonyeza "Hesabu ya Asubuhi" kurekodi stock yako ya kuanzia siku
+          </p>
+        </div>
       )}
     </div>
   );
