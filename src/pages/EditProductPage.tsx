@@ -215,12 +215,14 @@ export const EditProductPage = () => {
         </div>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Maelezo ya Bidhaa</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Product Images Upload */}
+        <MultiImageUpload
+          productId={id}
+          existingImages={productImages}
+          onImagesChange={setProductImages}
+          maxImages={5}
+        />
             {/* Product Images Upload */}
             <MultiImageUpload
               productId={id}
