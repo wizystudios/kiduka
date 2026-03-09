@@ -179,20 +179,16 @@ export const InventorySnapshotPage = () => {
       </div>
 
       {/* Date Selector */}
-      <Card>
-        <CardContent className="p-4">
-          <div className="flex items-center gap-2">
-            <Calendar className="h-5 w-5 text-muted-foreground" />
-            <input
-              type="date"
-              value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
-              className="flex-1 px-4 py-3 border rounded-md text-base"
-              max={format(new Date(), 'yyyy-MM-dd')}
-            />
-          </div>
-        </CardContent>
-      </Card>
+      <div className="flex items-center gap-2 p-3 rounded-2xl border border-border/50">
+        <Calendar className="h-5 w-5 text-muted-foreground" />
+        <input
+          type="date"
+          value={selectedDate}
+          onChange={(e) => setSelectedDate(e.target.value)}
+          className="flex-1 px-3 py-2 border rounded-2xl text-base bg-background"
+          max={format(new Date(), 'yyyy-MM-dd')}
+        />
+      </div>
 
       {/* Action Buttons */}
       <div className="grid grid-cols-2 gap-4">
