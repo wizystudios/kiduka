@@ -68,6 +68,7 @@ import WishlistPage from '@/pages/WishlistPage';
 import CustomerPaymentPage from '@/pages/CustomerPaymentPage';
 import { ForgotPasswordPage } from '@/pages/ForgotPasswordPage';
 import StorefrontPage from '@/pages/StorefrontPage';
+import AdsManagerPage from '@/pages/AdsManagerPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
