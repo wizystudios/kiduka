@@ -18,7 +18,7 @@ import {
   Calculator as CalcIcon, Receipt, Store, Shield, Crown,
   ClipboardList, Smartphone, Zap, Banknote, LineChart, UserCheck,
   ChevronDown, Menu, HelpCircle, Plus, Wallet, MessageSquare,
-  Brain, Mic, Headphones
+  Brain, Mic, Headphones, Megaphone
 } from 'lucide-react';
 
 interface NavItem {
