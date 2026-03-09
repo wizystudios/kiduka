@@ -237,10 +237,9 @@ export const InventorySnapshotPage = () => {
           <h3 className="text-lg font-bold">Ripoti ya Mauzo</h3>
           <div className="space-y-3">
             {productReport.map(product => (
-              <div key={product.id} className="p-3 border border-border/50 rounded-2xl space-y-2">
               <div
                 key={product.id}
-                className="p-4 border rounded-lg space-y-3"
+                className="p-3 border border-border/50 rounded-2xl space-y-2"
               >
                 <div className="flex items-center justify-between">
                   <div className="font-medium text-base">{product.name}</div>
@@ -272,7 +271,7 @@ export const InventorySnapshotPage = () => {
                   {product.price !== undefined && product.sold !== undefined && (
                     <>
                       <div>Bei: <span className="font-medium text-foreground">TZS {product.price.toLocaleString()}</span></div>
-                      <div>Mapato: <span className="font-medium text-green-600">TZS {(product.revenue || 0).toLocaleString()}</span></div>
+                      <div>Mapato: <span className="font-medium text-success">TZS {(product.revenue || 0).toLocaleString()}</span></div>
                     </>
                   )}
                 </div>
