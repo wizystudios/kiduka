@@ -197,6 +197,51 @@ export type Database = {
         }
         Relationships: []
       }
+      business_ads: {
+        Row: {
+          created_at: string
+          description: string | null
+          display_location: string
+          expires_at: string | null
+          id: string
+          image_url: string | null
+          is_active: boolean | null
+          link_url: string | null
+          owner_id: string
+          starts_at: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          display_location?: string
+          expires_at?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean | null
+          link_url?: string | null
+          owner_id: string
+          starts_at?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          display_location?: string
+          expires_at?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean | null
+          link_url?: string | null
+          owner_id?: string
+          starts_at?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       business_compliance: {
         Row: {
           block_mode: string
@@ -1444,6 +1489,7 @@ export type Database = {
           id: string
           name: string | null
           phone: string
+          pin: string | null
           updated_at: string
         }
         Insert: {
@@ -1451,6 +1497,7 @@ export type Database = {
           id?: string
           name?: string | null
           phone: string
+          pin?: string | null
           updated_at?: string
         }
         Update: {
@@ -1458,6 +1505,7 @@ export type Database = {
           id?: string
           name?: string | null
           phone?: string
+          pin?: string | null
           updated_at?: string
         }
         Relationships: []
