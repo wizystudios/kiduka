@@ -233,11 +233,9 @@ export const InventorySnapshotPage = () => {
 
       {/* Sales Report */}
       {hasOpeningCount && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-xl">Ripoti ya Mauzo</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
+        <div className="space-y-3">
+          <h3 className="text-lg font-bold">Ripoti ya Mauzo</h3>
+          <div className="space-y-3">
             {productReport.map(product => (
               <div
                 key={product.id}
