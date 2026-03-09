@@ -106,6 +106,9 @@ export const Dashboard = () => {
         <LoansWidget />
         <DebtorsWidget />
       </div>
+
+      {/* Ad Banner */}
+      <AdBanner location="kiduka" />
     </div>
   );
 };

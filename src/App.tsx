@@ -441,6 +441,15 @@ export default function App() {
                 </ProtectedRoute>
               } />
               
+              {/* Ads Manager */}
+              <Route path="/ads" element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <AdsManagerPage />
+                  </AppLayout>
+                </ProtectedRoute>
+              } />
+              
               {/* Subscription */}
               <Route path="/subscription" element={
                 <ProtectedRoute>

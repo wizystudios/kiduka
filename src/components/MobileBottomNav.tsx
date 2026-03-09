@@ -113,6 +113,7 @@ const navigationGroups: NavGroup[] = [
     id: 'mipangilio', label: 'Mipangilio', icon: Settings, permission: null,
     children: [
       { id: 'settings', label: 'Mipangilio', icon: Settings, href: '/settings', permission: null },
+      { id: 'ads', label: 'Matangazo', icon: Megaphone, href: '/ads', permission: null },
       { id: 'subscription', label: 'Michango', icon: Crown, href: '/subscription', permission: null },
       { id: 'whatsapp', label: 'WhatsApp', icon: MessageSquare, href: '/whatsapp', permission: null },
       { id: 'notifications-settings', label: 'Arifa', icon: Bell, href: '/notification-settings', permission: null },
