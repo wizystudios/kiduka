@@ -777,14 +777,19 @@ export const DebtorsWidget = () => {
     <>
       <Sheet>
         <SheetTrigger asChild>
-          <Button variant="outline" className="flex-1 h-10 justify-between bg-primary/5 border-primary/20 hover:bg-primary/10">
+          <Button variant="outline" className="flex-1 h-10 justify-between bg-destructive/5 border-destructive/20 hover:bg-destructive/10">
             <div className="flex items-center gap-2">
-              <Users className="h-4 w-4 text-primary" />
-              <span className="text-xs font-medium">Wadaiwa</span>
+              <div className="relative">
+                <Users className="h-4 w-4 text-destructive" />
+                {debtors.length > 0 && (
+                  <span className="absolute -top-1 -right-1 h-2 w-2 bg-destructive rounded-full animate-ping" />
+                )}
+              </div>
+              <span className="text-xs font-medium text-destructive">Wadaiwa</span>
             </div>
-            <span className="text-xs font-bold text-primary">
-              {debtors.length > 0 ? `${debtors.length}` : '0'}
-            </span>
+            <Badge variant="destructive" className="text-xs rounded-full">
+              {debtors.length}
+            </Badge>
           </Button>
         </SheetTrigger>
         <SheetContent side="bottom" className="max-h-[70vh] overflow-y-auto">

@@ -68,6 +68,7 @@ import WishlistPage from '@/pages/WishlistPage';
 import CustomerPaymentPage from '@/pages/CustomerPaymentPage';
 import { ForgotPasswordPage } from '@/pages/ForgotPasswordPage';
 import StorefrontPage from '@/pages/StorefrontPage';
+import AdsManagerPage from '@/pages/AdsManagerPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -436,6 +437,15 @@ export default function App() {
                 <ProtectedRoute>
                   <AppLayout>
                     <HelpPage />
+                  </AppLayout>
+                </ProtectedRoute>
+              } />
+              
+              {/* Ads Manager */}
+              <Route path="/ads" element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <AdsManagerPage />
                   </AppLayout>
                 </ProtectedRoute>
               } />

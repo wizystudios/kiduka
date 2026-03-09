@@ -24,7 +24,7 @@ import {
   Shield, Home, Package, QrCode, ShoppingCart, BarChart3, Settings, Users,
   UserCheck, Percent, CreditCard, Store, Brain, TrendingUp, LogOut, Crown,
   ClipboardList, Smartphone, Zap, Banknote, Download, Calculator as CalcIcon,
-  Receipt, LineChart, ChevronDown, Headphones
+  Receipt, LineChart, ChevronDown, Headphones, Megaphone
 } from 'lucide-react';
 
 interface NavGroup {
@@ -97,6 +97,7 @@ const navigationGroups: NavGroup[] = [
     id: 'mipangilio', label: 'Mipangilio', icon: Settings, permission: null,
     children: [
       { id: 'settings', label: 'Mipangilio', icon: Settings, href: '/settings', permission: null },
+      { id: 'ads', label: 'Matangazo', icon: Megaphone, href: '/ads', permission: null },
       { id: 'subscription', label: 'Michango', icon: Crown, href: '/subscription', permission: null },
       { id: 'pwa-install', label: 'Sakinisha App', icon: Smartphone, href: '/pwa-install', permission: null },
     ]

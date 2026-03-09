@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Calendar, ClipboardList, TrendingDown, Package, Loader2, CheckCircle2, XCircle } from 'lucide-react';
@@ -180,20 +179,16 @@ export const InventorySnapshotPage = () => {
       </div>
 
       {/* Date Selector */}
-      <Card>
-        <CardContent className="p-4">
-          <div className="flex items-center gap-2">
-            <Calendar className="h-5 w-5 text-muted-foreground" />
-            <input
-              type="date"
-              value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
-              className="flex-1 px-4 py-3 border rounded-md text-base"
-              max={format(new Date(), 'yyyy-MM-dd')}
-            />
-          </div>
-        </CardContent>
-      </Card>
+      <div className="flex items-center gap-2 p-3 rounded-2xl border border-border/50">
+        <Calendar className="h-5 w-5 text-muted-foreground" />
+        <input
+          type="date"
+          value={selectedDate}
+          onChange={(e) => setSelectedDate(e.target.value)}
+          className="flex-1 px-3 py-2 border rounded-2xl text-base bg-background"
+          max={format(new Date(), 'yyyy-MM-dd')}
+        />
+      </div>
 
       {/* Action Buttons */}
       <div className="grid grid-cols-2 gap-4">
@@ -238,15 +233,13 @@ export const InventorySnapshotPage = () => {
 
       {/* Sales Report */}
       {hasOpeningCount && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-xl">Ripoti ya Mauzo</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
+        <div className="space-y-3">
+          <h3 className="text-lg font-bold">Ripoti ya Mauzo</h3>
+          <div className="space-y-3">
             {productReport.map(product => (
               <div
                 key={product.id}
-                className="p-4 border rounded-lg space-y-3"
+                className="p-3 border border-border/50 rounded-2xl space-y-2"
               >
                 <div className="flex items-center justify-between">
                   <div className="font-medium text-base">{product.name}</div>
@@ -278,7 +271,7 @@ export const InventorySnapshotPage = () => {
                   {product.price !== undefined && product.sold !== undefined && (
                     <>
                       <div>Bei: <span className="font-medium text-foreground">TZS {product.price.toLocaleString()}</span></div>
-                      <div>Mapato: <span className="font-medium text-green-600">TZS {(product.revenue || 0).toLocaleString()}</span></div>
+                      <div>Mapato: <span className="font-medium text-success">TZS {(product.revenue || 0).toLocaleString()}</span></div>
                     </>
                   )}
                 </div>
@@ -300,21 +293,19 @@ export const InventorySnapshotPage = () => {
                 </div>
               </div>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       )}
 
       {/* Empty State */}
       {!hasOpeningCount && (
-        <Card className="border-dashed">
-          <CardContent className="py-12 text-center">
-            <ClipboardList className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-            <h3 className="font-semibold text-lg mb-3">Anza Kuhesabu</h3>
-            <p className="text-base text-muted-foreground mb-4">
-              Bonyeza "Hesabu ya Asubuhi" kurekodi stock yako ya kuanzia siku
-            </p>
-          </CardContent>
-        </Card>
+        <div className="text-center py-12 border-2 border-dashed rounded-3xl">
+          <ClipboardList className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
+          <h3 className="font-semibold text-lg mb-2">Anza Kuhesabu</h3>
+          <p className="text-sm text-muted-foreground">
+            Bonyeza "Hesabu ya Asubuhi" kurekodi stock yako ya kuanzia siku
+          </p>
+        </div>
       )}
     </div>
   );

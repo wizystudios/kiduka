@@ -5,6 +5,7 @@ import { useDataAccess } from '@/hooks/useDataAccess';
 import { useNavigate } from 'react-router-dom';
 import { DollarSign, Store, AlertTriangle, TrendingDown, ShoppingCart, Package, Banknote, Users, Activity } from 'lucide-react';
 import { StockAlertWidget, ExpensesWidget, TransactionsWidget, ProductsWidget, LoansWidget, DebtorsWidget } from '@/components/DashboardWidgets';
+import { AdBanner } from '@/components/AdBanner';
 
 export const Dashboard = () => {
   const { user, userProfile, loading: authLoading } = useAuth();
@@ -105,6 +106,9 @@ export const Dashboard = () => {
         <LoansWidget />
         <DebtorsWidget />
       </div>
+
+      {/* Ad Banner */}
+      <AdBanner location="kiduka" />
     </div>
   );
 };

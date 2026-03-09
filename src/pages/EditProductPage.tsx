@@ -1,6 +1,5 @@
 
 import { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -215,19 +214,14 @@ export const EditProductPage = () => {
         </div>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Maelezo ya Bidhaa</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Product Images Upload */}
-            <MultiImageUpload
-              productId={id}
-              existingImages={productImages}
-              onImagesChange={setProductImages}
-              maxImages={5}
-            />
+      <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Product Images Upload */}
+        <MultiImageUpload
+          productId={id}
+          existingImages={productImages}
+          onImagesChange={setProductImages}
+          maxImages={5}
+        />
             
             <div>
               <Label htmlFor="name">Jina la Bidhaa *</Label>
@@ -379,22 +373,20 @@ export const EditProductPage = () => {
                 type="button"
                 variant="outline"
                 onClick={() => navigate('/products')}
-                className="flex-1"
+                className="flex-1 rounded-full"
               >
                 Ghairi
               </Button>
               <Button
                 type="submit"
                 disabled={loading}
-                className="flex-1 bg-blue-600 hover:bg-blue-700"
+                className="flex-1 rounded-full"
               >
                 <Save className="h-4 w-4 mr-2" />
                 {loading ? 'Inasasisha...' : 'Sasisha Bidhaa'}
               </Button>
             </div>
-          </form>
-        </CardContent>
-      </Card>
+      </form>
     </div>
   );
 };
