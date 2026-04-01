@@ -24,7 +24,7 @@ import {
   Shield, Home, Package, QrCode, ShoppingCart, BarChart3, Settings, Users,
   UserCheck, Percent, CreditCard, Store, Brain, TrendingUp, LogOut, Crown,
   ClipboardList, Smartphone, Zap, Banknote, Download, Calculator as CalcIcon,
-  Receipt, LineChart, ChevronDown, Headphones, Megaphone
+  Receipt, LineChart, ChevronDown, Headphones, Megaphone, Truck, BookOpen
 } from 'lucide-react';
 
 interface NavGroup {
