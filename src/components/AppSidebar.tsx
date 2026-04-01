@@ -93,6 +93,8 @@ const navigationGroups: NavGroup[] = [
     ]
   },
   { id: 'calculator', label: 'Kikokotoo', icon: CalcIcon, permission: null, children: [], href: '/calculator' },
+  { id: 'suppliers', label: 'Wasambazaji', icon: Truck, permission: null, children: [], href: '/suppliers' },
+  { id: 'bookkeeping', label: 'Uhasibu', icon: BookOpen, permission: null, children: [], href: '/bookkeeping' },
   { 
     id: 'mipangilio', label: 'Mipangilio', icon: Settings, permission: null,
     children: [
