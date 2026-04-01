@@ -24,7 +24,7 @@ import {
   Shield, Home, Package, QrCode, ShoppingCart, BarChart3, Settings, Users,
   UserCheck, Percent, CreditCard, Store, Brain, TrendingUp, LogOut, Crown,
   ClipboardList, Smartphone, Zap, Banknote, Download, Calculator as CalcIcon,
-  Receipt, LineChart, ChevronDown, Headphones, Megaphone
+  Receipt, LineChart, ChevronDown, Headphones, Megaphone, Truck, BookOpen
 } from 'lucide-react';
 
 interface NavGroup {
@@ -93,6 +93,8 @@ const navigationGroups: NavGroup[] = [
     ]
   },
   { id: 'calculator', label: 'Kikokotoo', icon: CalcIcon, permission: null, children: [], href: '/calculator' },
+  { id: 'suppliers', label: 'Wasambazaji', icon: Truck, permission: null, children: [], href: '/suppliers' },
+  { id: 'bookkeeping', label: 'Uhasibu', icon: BookOpen, permission: null, children: [], href: '/bookkeeping' },
   { 
     id: 'mipangilio', label: 'Mipangilio', icon: Settings, permission: null,
     children: [

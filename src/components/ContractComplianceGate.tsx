@@ -10,7 +10,8 @@ import { useBusinessGovernance } from '@/hooks/useBusinessGovernance';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import { KidukaLogo } from './KidukaLogo';
-import { useRef, useMemo } from 'react';
+import { useRef, useMemo, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ContractComplianceGateProps {
   children: React.ReactNode;
@@ -22,32 +23,38 @@ const CONTRACT_PAGES = [
     content: [
       { heading: '1.1 Kiduka ni Nini?', body: 'Kiduka ni mfumo wa kisasa wa usimamizi wa biashara (POS - Point of Sale) ulioundwa kwa ajili ya wajasiriamali na wamiliki wa maduka ya rejareja nchini Tanzania na Afrika Mashariki. Mfumo huu unawezesha usimamizi kamili wa bidhaa, mauzo, stock, wateja, mikopo, ripoti za biashara, na zaidi — yote katika programu moja.' },
       { heading: '1.2 Sokoni ni Nini?', body: 'Sokoni ni soko la mtandaoni (online marketplace) lililounganishwa na Kiduka ambalo linawezesha wamiliki wa biashara kuuza bidhaa zao moja kwa moja kwa wateja wapya kupitia mtandao. Wateja wanaweza kutafuta bidhaa, kuagiza, kufuatilia oda, na kulipa kupitia simu.' },
-      { heading: '1.3 Tofauti Kati ya Kiduka na Sokoni', body: 'Kiduka ni mfumo wa ndani wa biashara yako — unasimamia stock, mauzo dukani, wateja, na ripoti. Sokoni ni soko la nje — linaonyesha bidhaa zako kwa wateja wa mtandaoni ambao hawako dukani kwako. Zote zinafanya kazi pamoja kuongeza mauzo yako.' },
-      { heading: '1.4 Kwa Nini Tunavyo?', body: 'Lengo letu ni kuwawezesha wajasiriamali wadogo na wa kati (SMEs) kusimamia biashara zao kwa ufanisi, kupunguza gharama, kuongeza mauzo, na kufikia wateja zaidi kupitia teknolojia ya kisasa na rahisi kutumia.' },
+      { heading: '1.3 Kwa Nini Tunavyo?', body: 'Lengo letu ni kuwawezesha wajasiriamali wadogo na wa kati (SMEs) kusimamia biashara zao kwa ufanisi, kupunguza gharama, kuongeza mauzo, na kufikia wateja zaidi kupitia teknolojia ya kisasa na rahisi kutumia.' },
     ]
   },
   {
     title: 'Sera na Masharti',
     content: [
-      { heading: '2.1 Sera ya Biashara', body: 'Mmiliki wa biashara anakubali kutumia mfumo wa Kiduka kwa mujibu wa sheria za biashara za Tanzania. Biashara inapaswa kuwa halali na yenye leseni inayotambulika kisheria. Data yote ya biashara ni milki ya mmiliki lakini inalindwa na mfumo wetu.' },
-      { heading: '2.2 Sera ya IT na Usalama', body: 'Data yako inalindwa kwa encryption na kuhifadhiwa kwenye seva salama. Usisambaze nenosiri lako kwa mtu yeyote. Mfumo unaweza kufanya backup otomatiki ya data yako. Admin ana haki ya kuingia kwenye akaunti yako kwa madhumuni ya msaada wa kiufundi na ukaguzi tu, na utaarifiwa kila admin anapoingia.' },
-      { heading: '2.3 Masharti ya Matumizi', body: 'Ni marufuku kutumia mfumo kwa biashara haramu, udanganyifu, au ukiukaji wa sheria. Mmiliki anawajibika kuhakikisha data iliyoingizwa ni sahihi. Mfumo unaweza kusimamishwa kwa muda ikiwa masharti yamekiukwa.' },
-      { heading: '2.4 Compliance — TIN, NIDA, Leseni', body: 'Ndani ya siku 30 baada ya usajili, mmiliki anahitajika kutoa Namba ya TIN (Taxpayer Identification Number), Namba ya NIDA (Kitambulisho cha Taifa), na Leseni ya Biashara. Kushindwa kutoa taarifa hizi kunaweza kusababisha kuzuiwa kwa akaunti.' },
+      { heading: '2.1 Sera ya Biashara', body: 'Mtumiaji anakubali kutumia mfumo wa Kiduka kwa mujibu wa sheria za biashara za Tanzania. Data yote ya biashara ni milki ya mmiliki lakini inalindwa na mfumo wetu.' },
+      { heading: '2.2 Sera ya IT na Usalama', body: 'Data yako inalindwa kwa encryption na kuhifadhiwa kwenye seva salama. Usisambaze nenosiri lako kwa mtu yeyote. Mfumo unaweza kufanya backup otomatiki ya data yako.' },
+      { heading: '2.3 Masharti ya Matumizi', body: 'Ni marufuku kutumia mfumo kwa biashara haramu, udanganyifu, au ukiukaji wa sheria. Mtumiaji anawajibika kuhakikisha data iliyoingizwa ni sahihi. Mfumo unaweza kusimamishwa kwa muda ikiwa masharti yamekiukwa.' },
+      { heading: '2.4 Wajibu wa Msaidizi', body: 'Msaidizi anawajibika kutumia mfumo kwa uaminifu, kulinda siri za biashara ya mmiliki, na kufuata maelekezo ya mmiliki. Matumizi yasiyofaa yanaweza kusababisha kufutwa kwa akaunti.' },
     ]
   },
   {
-    title: 'Usajili na Sahihi',
+    title: 'Makubaliano',
     content: [
-      { heading: '3.1 Mpango wa Usajili', body: 'Mpango wa sasa: Majaribio ya BURE kwa siku 30, kisha TSh 10,000/mwezi kwa Premium. Mpango wa Premium unajumuisha: bidhaa zisizo na kikomo, mauzo yasiyo na kikomo, Sokoni marketplace, ripoti za kina, msaada wa kiufundi, na vipengele vyote.' },
-      { heading: '3.2 Muda wa Mkataba', body: 'Mkataba huu una muda wa mwaka 1 (miezi 12) kuanzia tarehe ya kusainiwa. Baada ya mwaka 1, mkataba unahitaji renewal. Mmiliki anaweza kukagua mkataba kwenye Settings wakati wowote.' },
-      { heading: '3.3 Haki za Admin', body: 'Msimamizi Mkuu (Super Admin) ana haki ya: kuingia kwenye akaunti yoyote kwa ukaguzi, kuhariri mkataba wowote, kuzuia akaunti zinazokiuka masharti, na kuomba taarifa za compliance. Mmiliki ataarifiwa kila wakati admin anapofanya mabadiliko.' },
-      { heading: '3.4 Makubaliano', body: 'Kwa kusaini mkataba huu, mmiliki anakubali masharti yote yaliyoelezwa hapo juu na anaahidi kuyafuata kwa uaminifu. Mkataba huu unaweza kubadilishwa na upande wowote kwa taarifa ya maandishi ya siku 30.' },
+      { heading: '3.1 Haki za Admin', body: 'Msimamizi Mkuu (Super Admin) ana haki ya: kuingia kwenye akaunti yoyote kwa ukaguzi, kuhariri mkataba wowote, kuzuia akaunti zinazokiuka masharti, na kuomba taarifa za compliance. Mtumiaji ataarifiwa kila wakati admin anapofanya mabadiliko.' },
+      { heading: '3.2 Makubaliano', body: 'Kwa kukubali masharti haya, mtumiaji anakubali masharti yote yaliyoelezwa hapo juu na anaahidi kuyafuata kwa uaminifu.' },
     ]
   },
 ];
 
+// Simplified T&C for assistants
+const ASSISTANT_TC = [
+  'Kutumia mfumo kwa uaminifu na kufuata maelekezo ya mmiliki wa biashara.',
+  'Kulinda siri za biashara na kutoshiriki taarifa za biashara na mtu mwingine.',
+  'Kutotumia mfumo kwa biashara haramu au udanganyifu.',
+  'Kukubali kuwa Admin ana haki ya kuingia kwenye akaunti yako kwa ukaguzi.',
+  'Kukubali kuwa akaunti yako inaweza kufutwa ikiwa masharti yamekiukwa.',
+];
+
 export const ContractComplianceGate = ({ children }: ContractComplianceGateProps) => {
-  const { userProfile } = useAuth();
+  const { user, userProfile } = useAuth();
   const { loading, status, saveContract, activeAdminSession } = useBusinessGovernance();
   const navigate = useNavigate();
   const [fullLegalName, setFullLegalName] = useState(userProfile?.full_name || '');
@@ -58,9 +65,50 @@ export const ContractComplianceGate = ({ children }: ContractComplianceGateProps
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const drawingRef = useRef(false);
 
+  // Assistant T&C state
+  const [assistantTcAccepted, setAssistantTcAccepted] = useState<boolean | null>(null);
+  const [assistantTcLoading, setAssistantTcLoading] = useState(true);
+
   const isSuperAdmin = userProfile?.role === 'super_admin';
-  const showContractBlock = !isSuperAdmin && !status.contractSigned && (!status.canReviewLater || status.contractOverdue);
-  const showComplianceBlock = !isSuperAdmin && status.complianceBlocked;
+  const isAssistant = userProfile?.role === 'assistant';
+  const isOwner = userProfile?.role === 'owner';
+
+  // Check if assistant has accepted T&C (stored in user_activities)
+  useEffect(() => {
+    const checkAssistantTc = async () => {
+      if (!isAssistant || !user?.id) {
+        setAssistantTcLoading(false);
+        return;
+      }
+      const { data } = await supabase
+        .from('user_activities')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('activity_type', 'accepted_terms_and_conditions')
+        .limit(1);
+      
+      setAssistantTcAccepted((data?.length || 0) > 0);
+      setAssistantTcLoading(false);
+    };
+    checkAssistantTc();
+  }, [isAssistant, user?.id]);
+
+  const handleAssistantAcceptTc = async () => {
+    if (!user?.id) return;
+    setSubmitting(true);
+    await supabase.from('user_activities').insert({
+      user_id: user.id,
+      activity_type: 'accepted_terms_and_conditions',
+      description: 'Msaidizi amekubali masharti ya matumizi',
+    });
+    setAssistantTcAccepted(true);
+    setSubmitting(false);
+    toast.success('Masharti yamekubaliwa. Karibu!');
+  };
+
+  // Only owners see contract/compliance blocks
+  const showContractBlock = isOwner && !status.contractSigned && (!status.canReviewLater || status.contractOverdue);
+  const showComplianceBlock = isOwner && status.complianceBlocked;
 
   const startDraw = (x: number, y: number) => {
     const canvas = canvasRef.current;
@@ -117,8 +165,51 @@ export const ContractComplianceGate = ({ children }: ContractComplianceGateProps
     );
   }, [activeAdminSession, isSuperAdmin]);
 
-  if (loading) return <>{children}</>;
+  if (loading || assistantTcLoading) return <>{children}</>;
 
+  // ASSISTANT: Show T&C acceptance if not yet accepted
+  if (isAssistant && assistantTcAccepted === false) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-background dark:via-background dark:to-background flex items-center justify-center p-4">
+        <div className="max-w-lg w-full">
+          <div className="flex flex-col items-center justify-center py-4 mb-4">
+            <KidukaLogo size="xl" animate />
+            <h1 className="text-xl font-bold mt-3">Karibu Kiduka POS</h1>
+            <p className="text-sm text-muted-foreground">Kabla ya kuendelea, soma na ukubali masharti</p>
+          </div>
+
+          <Card className="rounded-3xl">
+            <CardContent className="p-6 space-y-4">
+              <h3 className="font-bold text-lg flex items-center gap-2">
+                <FileSignature className="h-5 w-5 text-primary" />
+                Masharti ya Matumizi — Msaidizi
+              </h3>
+
+              <div className="space-y-3">
+                {ASSISTANT_TC.map((item, i) => (
+                  <div key={i} className="flex items-start gap-2 text-sm">
+                    <Check className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
+                    <span>{item}</span>
+                  </div>
+                ))}
+              </div>
+
+              <label className="flex items-start gap-2 text-sm pt-2">
+                <input checked={agree} onChange={e => setAgree(e.target.checked)} type="checkbox" className="mt-1" />
+                Nimeisoma na kuikubali masharti yote ya matumizi.
+              </label>
+
+              <Button className="w-full rounded-2xl" onClick={handleAssistantAcceptTc} disabled={!agree || submitting}>
+                {submitting ? 'Inakubali...' : 'Kubali na Endelea'}
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  // OWNER: Show compliance block (TIN/NIDA/License)
   if (showComplianceBlock) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-background dark:via-background dark:to-background flex items-center justify-center p-4">
@@ -127,7 +218,6 @@ export const ContractComplianceGate = ({ children }: ContractComplianceGateProps
             <KidukaLogo size="xl" animate />
           </div>
           <div className="flex flex-col lg:flex-row gap-6 relative">
-            {/* Center Divider */}
             <div className="hidden lg:flex absolute left-1/2 top-0 bottom-0 -translate-x-1/2 flex-col items-center z-10">
               <div className="w-px h-8 bg-gradient-to-b from-transparent to-destructive/30" />
               <ArrowUpRight className="h-4 w-4 text-destructive/50 -rotate-45" />
@@ -172,6 +262,7 @@ export const ContractComplianceGate = ({ children }: ContractComplianceGateProps
     );
   }
 
+  // OWNER: Show contract signing
   if (showContractBlock) {
     const isLastPage = currentPage === CONTRACT_PAGES.length - 1;
     const page = CONTRACT_PAGES[currentPage];
@@ -179,7 +270,6 @@ export const ContractComplianceGate = ({ children }: ContractComplianceGateProps
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-background dark:via-background dark:to-background">
         <div className="max-w-5xl mx-auto p-4 md:p-6">
-          {/* Header */}
           <div className="flex flex-col items-center justify-center py-4 mb-4">
             <KidukaLogo size="xl" animate />
             <h1 className="text-xl font-bold mt-3 flex items-center gap-2">
@@ -189,30 +279,21 @@ export const ContractComplianceGate = ({ children }: ContractComplianceGateProps
             <p className="text-sm text-muted-foreground">Kiduka POS & Sokoni Marketplace</p>
           </div>
 
-          {/* Page indicator */}
           <div className="flex items-center justify-center gap-2 mb-6">
             {CONTRACT_PAGES.map((_, i) => (
               <div key={i} className={`h-2 rounded-full transition-all ${i === currentPage ? 'w-8 bg-primary' : 'w-2 bg-muted-foreground/30'}`} />
             ))}
           </div>
 
-          {/* Split Layout */}
           <div className="flex flex-col lg:flex-row gap-6 relative">
-            {/* Center Divider */}
             <div className="hidden lg:flex absolute left-1/2 top-0 bottom-0 -translate-x-1/2 flex-col items-center z-10">
               <div className="w-px h-8 bg-gradient-to-b from-transparent to-primary/30" />
               <ArrowUpRight className="h-4 w-4 text-primary/50 -rotate-45" />
-              <div className="w-px flex-1 bg-gradient-to-b from-primary/30 via-primary to-primary/30 relative">
-                <div className="absolute top-1/3 left-0 -translate-x-full pr-2"><ArrowUpRight className="h-3 w-3 text-primary/40 rotate-180" /></div>
-                <div className="absolute top-1/3 right-0 translate-x-full pl-2"><ArrowUpRight className="h-3 w-3 text-primary/40" /></div>
-                <div className="absolute top-2/3 left-0 -translate-x-full pr-2"><ArrowUpRight className="h-3 w-3 text-primary/40 rotate-180" /></div>
-                <div className="absolute top-2/3 right-0 translate-x-full pl-2"><ArrowUpRight className="h-3 w-3 text-primary/40" /></div>
-              </div>
+              <div className="w-px flex-1 bg-gradient-to-b from-primary/30 via-primary to-primary/30" />
               <ArrowUpRight className="h-4 w-4 text-primary/50 rotate-135" />
               <div className="w-px h-8 bg-gradient-to-t from-transparent to-primary/30" />
             </div>
 
-            {/* LEFT SIDE — Contract Content */}
             <div className="flex-1 lg:pr-8">
               <Card className="h-full rounded-3xl">
                 <CardContent className="p-6">
@@ -244,7 +325,6 @@ export const ContractComplianceGate = ({ children }: ContractComplianceGateProps
               </Card>
             </div>
 
-            {/* RIGHT SIDE — Signature (only on last page) or Info */}
             <div className="flex-1 lg:pl-8">
               {isLastPage ? (
                 <Card className="h-full rounded-3xl border-primary/50 ring-2 ring-primary">
@@ -310,9 +390,9 @@ export const ContractComplianceGate = ({ children }: ContractComplianceGateProps
                   <CardContent className="p-6 space-y-4">
                     <h3 className="font-bold text-lg">Muhtasari wa Mkataba</h3>
                     <div className="space-y-3">
-                      {['Kiduka POS — Usimamizi wa biashara', 'Sokoni Marketplace — Soko la mtandaoni', 'Majaribio ya BURE siku 30', 'Premium: TSh 10,000/mwezi', 'Muda: Mwaka 1, kisha renewal', 'Compliance: TIN, NIDA, Leseni'].map((item, i) => (
+                      {['Kiduka POS — Usimamizi wa biashara', 'Sokoni Marketplace — Soko la mtandaoni', 'Majaribio ya BURE siku 30', 'Premium: TSh 10,000/mwezi', 'Muda: Mwaka 1, kisha renewal', 'Compliance: TIN, NIDA, Leseni (Mmiliki tu)'].map((item, i) => (
                         <div key={i} className="flex items-center gap-2 text-sm">
-                          <Check className="h-4 w-4 text-green-600 flex-shrink-0" />
+                          <Check className="h-4 w-4 text-primary flex-shrink-0" />
                           <span>{item}</span>
                         </div>
                       ))}

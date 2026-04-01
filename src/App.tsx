@@ -69,6 +69,8 @@ import CustomerPaymentPage from '@/pages/CustomerPaymentPage';
 import { ForgotPasswordPage } from '@/pages/ForgotPasswordPage';
 import StorefrontPage from '@/pages/StorefrontPage';
 import AdsManagerPage from '@/pages/AdsManagerPage';
+import SuppliersPage from '@/pages/SuppliersPage';
+import BookkeepingPage from '@/pages/BookkeepingPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -446,6 +448,24 @@ export default function App() {
                 <ProtectedRoute>
                   <AppLayout>
                     <AdsManagerPage />
+                  </AppLayout>
+                </ProtectedRoute>
+              } />
+              
+              {/* Suppliers */}
+              <Route path="/suppliers" element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <SuppliersPage />
+                  </AppLayout>
+                </ProtectedRoute>
+              } />
+              
+              {/* Bookkeeping */}
+              <Route path="/bookkeeping" element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <BookkeepingPage />
                   </AppLayout>
                 </ProtectedRoute>
               } />
