@@ -643,6 +643,48 @@ export type Database = {
         }
         Relationships: []
       }
+      income_records: {
+        Row: {
+          amount: number
+          category: string
+          created_at: string
+          description: string | null
+          id: string
+          income_date: string
+          owner_id: string
+          payment_method: string | null
+          reference_id: string | null
+          source: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          category?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          income_date?: string
+          owner_id: string
+          payment_method?: string | null
+          reference_id?: string | null
+          source: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          category?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          income_date?: string
+          owner_id?: string
+          payment_method?: string | null
+          reference_id?: string | null
+          source?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       inventory_movements: {
         Row: {
           created_at: string
@@ -736,6 +778,86 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      journal_entries: {
+        Row: {
+          created_at: string
+          description: string
+          entry_date: string
+          id: string
+          owner_id: string
+          reference_id: string | null
+          reference_type: string | null
+          total_credit: number
+          total_debit: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          entry_date?: string
+          id?: string
+          owner_id: string
+          reference_id?: string | null
+          reference_type?: string | null
+          total_credit?: number
+          total_debit?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          entry_date?: string
+          id?: string
+          owner_id?: string
+          reference_id?: string | null
+          reference_type?: string | null
+          total_credit?: number
+          total_debit?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      journal_lines: {
+        Row: {
+          account_name: string
+          account_type: string
+          created_at: string
+          credit_amount: number
+          debit_amount: number
+          description: string | null
+          entry_id: string
+          id: string
+        }
+        Insert: {
+          account_name: string
+          account_type: string
+          created_at?: string
+          credit_amount?: number
+          debit_amount?: number
+          description?: string | null
+          entry_id: string
+          id?: string
+        }
+        Update: {
+          account_name?: string
+          account_type?: string
+          created_at?: string
+          credit_amount?: number
+          debit_amount?: number
+          description?: string | null
+          entry_id?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "journal_lines_entry_id_fkey"
+            columns: ["entry_id"]
+            isOneToOne: false
+            referencedRelation: "journal_entries"
             referencedColumns: ["id"]
           },
         ]
@@ -1209,6 +1331,68 @@ export type Database = {
         }
         Relationships: []
       }
+      purchase_orders: {
+        Row: {
+          amount_paid: number | null
+          balance: number | null
+          created_at: string
+          expected_delivery: string | null
+          id: string
+          items: Json
+          notes: string | null
+          order_date: string
+          owner_id: string
+          payment_method: string | null
+          status: string
+          supplier_id: string | null
+          supplier_name: string
+          total_amount: number
+          updated_at: string
+        }
+        Insert: {
+          amount_paid?: number | null
+          balance?: number | null
+          created_at?: string
+          expected_delivery?: string | null
+          id?: string
+          items?: Json
+          notes?: string | null
+          order_date?: string
+          owner_id: string
+          payment_method?: string | null
+          status?: string
+          supplier_id?: string | null
+          supplier_name: string
+          total_amount?: number
+          updated_at?: string
+        }
+        Update: {
+          amount_paid?: number | null
+          balance?: number | null
+          created_at?: string
+          expected_delivery?: string | null
+          id?: string
+          items?: Json
+          notes?: string | null
+          order_date?: string
+          owner_id?: string
+          payment_method?: string | null
+          status?: string
+          supplier_id?: string | null
+          supplier_name?: string
+          total_amount?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "purchase_orders_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       return_requests: {
         Row: {
           created_at: string | null
@@ -1583,6 +1767,54 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      suppliers: {
+        Row: {
+          address: string | null
+          company_name: string | null
+          created_at: string
+          email: string | null
+          id: string
+          name: string
+          notes: string | null
+          outstanding_balance: number | null
+          owner_id: string
+          phone: string | null
+          tin_number: string | null
+          total_purchases: number | null
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          company_name?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          name: string
+          notes?: string | null
+          outstanding_balance?: number | null
+          owner_id: string
+          phone?: string | null
+          tin_number?: string | null
+          total_purchases?: number | null
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          company_name?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          name?: string
+          notes?: string | null
+          outstanding_balance?: number | null
+          owner_id?: string
+          phone?: string | null
+          tin_number?: string | null
+          total_purchases?: number | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       user_activities: {
         Row: {
