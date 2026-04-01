@@ -452,6 +452,24 @@ export default function App() {
                 </ProtectedRoute>
               } />
               
+              {/* Suppliers */}
+              <Route path="/suppliers" element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <SuppliersPage />
+                  </AppLayout>
+                </ProtectedRoute>
+              } />
+              
+              {/* Bookkeeping */}
+              <Route path="/bookkeeping" element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <BookkeepingPage />
+                  </AppLayout>
+                </ProtectedRoute>
+              } />
+              
               {/* Subscription */}
               <Route path="/subscription" element={
                 <ProtectedRoute>
