@@ -48,9 +48,18 @@ export const useBusinessGovernance = () => {
   const [activeAdminSession, setActiveAdminSession] = useState<AdminBusinessSession | null>(null);
 
   const isSuperAdmin = userProfile?.role === 'super_admin';
+  const isOwner = userProfile?.role === 'owner';
+  const isAssistant = userProfile?.role === 'assistant';
 
   const refresh = useCallback(async () => {
     if (!user?.id) {
+      setLoading(false);
+      return;
+    }
+
+    // Assistants and super_admins don't need contract/compliance checks
+    if (isAssistant || isSuperAdmin) {
+      // Only check admin sessions for owners
       setLoading(false);
       return;
     }
@@ -76,7 +85,7 @@ export const useBusinessGovernance = () => {
     } finally {
       setLoading(false);
     }
-  }, [user?.id]);
+  }, [user?.id, isAssistant, isSuperAdmin]);
 
   useEffect(() => {
     refresh();
@@ -151,6 +160,19 @@ export const useBusinessGovernance = () => {
   );
 
   const status = useMemo(() => {
+    // Assistants and super_admins never have compliance/contract requirements
+    if (isAssistant || isSuperAdmin) {
+      return {
+        contractSigned: true,
+        contractOverdue: false,
+        canReviewLater: false,
+        complianceMissing: false,
+        complianceOverdue: false,
+        complianceBlocked: false,
+        missingComplianceFields: { tin: false, nida: false, license: false },
+      };
+    }
+
     const missingComplianceFields = {
       tin: !compliance?.tin_number,
       nida: !compliance?.nida_number,
@@ -176,7 +198,7 @@ export const useBusinessGovernance = () => {
       complianceBlocked,
       missingComplianceFields,
     };
-  }, [contract, compliance]);
+  }, [contract, compliance, isAssistant, isSuperAdmin]);
 
   const enterBusinessAsAdmin = useCallback(
     async (ownerId: string) => {

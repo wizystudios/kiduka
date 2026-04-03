@@ -70,7 +70,7 @@ export const WhatsAppManager = () => {
       phone_number: formatPhoneForWhatsApp(phoneNumber),
       message,
       message_type: messageType,
-      status: 'sent',
+      status: 'opened_whatsapp',
     });
     fetchData();
   };
@@ -79,7 +79,7 @@ export const WhatsAppManager = () => {
     if (!customer.phone) return;
     openWhatsApp(customer.phone, message);
     logMessage(customer.name, customer.phone, message, type);
-    toast({ title: 'WhatsApp imefunguliwa', description: `Ujumbe kwa ${customer.name}` });
+    toast({ title: '✅ WhatsApp imefunguliwa', description: `Ujumbe kwa ${customer.name} uko tayari kutumwa kwenye WhatsApp` });
   };
 
   const handleSendDebtReminder = (customer: Customer) => {
@@ -100,7 +100,7 @@ export const WhatsAppManager = () => {
     setCustomMessage('');
     setSelectedCustomer(null);
     setCustomPhone('');
-    toast({ title: 'WhatsApp imefunguliwa' });
+    toast({ title: '✅ WhatsApp imefunguliwa', description: 'Bonyeza "Tuma" kwenye WhatsApp kukamilisha' });
   };
 
   const handleBulkSend = () => {
@@ -111,7 +111,6 @@ export const WhatsAppManager = () => {
       toast({ title: 'Hakuna wateja wenye namba', variant: 'destructive' });
       return;
     }
-    // Open first customer, log all
     openWhatsApp(withPhone[0].phone!, msg);
     withPhone.forEach(c => logMessage(c.name, c.phone!, msg, 'bulk'));
     setBulkMessage('');
@@ -127,6 +126,17 @@ export const WhatsAppManager = () => {
 
   return (
     <div className="space-y-4">
+      {/* Info banner */}
+      <div className="p-3 rounded-2xl bg-accent/50 border border-border/40 text-sm">
+        <p className="font-medium flex items-center gap-2">
+          <MessageSquare className="h-4 w-4 text-green-600" />
+          Ujumbe unatumwa moja kwa moja kupitia WhatsApp app yako
+        </p>
+        <p className="text-xs text-muted-foreground mt-1">
+          Ukibonyeza "Tuma", WhatsApp itafunguka na ujumbe uko tayari — bonyeza tu "Send" kukamilisha.
+        </p>
+      </div>
+
       {/* Stats */}
       <div className="flex items-center justify-around border-y border-border/40 py-3">
         <div className="text-center">
@@ -152,7 +162,6 @@ export const WhatsAppManager = () => {
 
         {/* Send Message Tab */}
         <TabsContent value="send" className="space-y-4 mt-4">
-          {/* Quick send to phone */}
           <div className="space-y-2">
             <p className="text-sm font-medium">Tuma kwa Namba</p>
             <div className="flex gap-2">
@@ -165,7 +174,6 @@ export const WhatsAppManager = () => {
             </div>
           </div>
 
-          {/* Or select customer */}
           <div className="space-y-2">
             <p className="text-sm font-medium">Au chagua mteja</p>
             <div className="relative">
@@ -206,7 +214,7 @@ export const WhatsAppManager = () => {
             rows={3}
           />
 
-          <Button onClick={handleSendCustomMessage} className="w-full gap-2" disabled={!(selectedCustomer?.phone || customPhone) || !customMessage.trim()}>
+          <Button onClick={handleSendCustomMessage} className="w-full gap-2 rounded-full" disabled={!(selectedCustomer?.phone || customPhone) || !customMessage.trim()}>
             <Send className="h-4 w-4" />
             Tuma kwa WhatsApp
           </Button>
@@ -223,7 +231,7 @@ export const WhatsAppManager = () => {
               onChange={e => setBulkMessage(e.target.value)}
               rows={3}
             />
-            <Button onClick={handleBulkSend} variant="outline" className="w-full gap-2" disabled={!bulkMessage.trim()}>
+            <Button onClick={handleBulkSend} variant="outline" className="w-full gap-2 rounded-full" disabled={!bulkMessage.trim()}>
               <Send className="h-4 w-4" />
               Tuma kwa Wote
             </Button>
@@ -249,7 +257,7 @@ export const WhatsAppManager = () => {
                     <Button
                       size="sm"
                       variant="outline"
-                      className="gap-1 text-xs"
+                      className="gap-1 text-xs rounded-full"
                       onClick={() => handleSendDebtReminder(c)}
                     >
                       <MessageCircle className="h-3 w-3" />
@@ -272,7 +280,12 @@ export const WhatsAppManager = () => {
                 <div key={msg.id} className="p-3 border border-border/40 rounded-lg space-y-1">
                   <div className="flex items-center justify-between">
                     <span className="font-medium text-sm">{msg.customer_name}</span>
-                    <Badge variant="outline" className="text-xs">{msg.message_type}</Badge>
+                    <div className="flex items-center gap-1">
+                      <Badge variant="outline" className="text-xs">{msg.message_type}</Badge>
+                      <Badge variant={msg.status === 'opened_whatsapp' ? 'default' : 'secondary'} className="text-xs">
+                        {msg.status === 'opened_whatsapp' ? '📱 Imefunguliwa' : msg.status}
+                      </Badge>
+                    </div>
                   </div>
                   <p className="text-xs text-muted-foreground line-clamp-2">{msg.message}</p>
                   <div className="flex items-center justify-between text-xs text-muted-foreground">

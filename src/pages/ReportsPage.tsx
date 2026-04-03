@@ -1,25 +1,27 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
-import { Download, TrendingUp, TrendingDown, Package, DollarSign, Wallet, Receipt } from 'lucide-react';
+import { Package, TrendingUp, TrendingDown, Receipt } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { usePermissions } from '@/hooks/usePermissions';
 import { toast } from 'sonner';
 
 interface SalesData {
   date: string;
   sales: number;
   revenue: number;
-  quickSales: number;
+  cogs: number;
 }
 
 interface TopProduct {
   name: string;
   total_sold: number;
   revenue: number;
+  profit: number;
 }
 
 export const ReportsPage = () => {
@@ -30,21 +32,21 @@ export const ReportsPage = () => {
   const [stats, setStats] = useState({
     totalRevenue: 0,
     totalExpenses: 0,
+    totalCOGS: 0,
     totalProfit: 0,
     totalSales: 0,
     quickSalesRevenue: 0,
-    productCosts: 0
   });
   const { user } = useAuth();
+  const { getEffectiveOwnerId } = usePermissions();
+  const ownerId = getEffectiveOwnerId();
 
   useEffect(() => {
-    if (user?.id) {
-      fetchReportsData();
-    }
-  }, [selectedPeriod, user?.id]);
+    if (ownerId) fetchReportsData();
+  }, [selectedPeriod, ownerId]);
 
   const fetchReportsData = async () => {
-    if (!user?.id) return;
+    if (!ownerId) return;
     setLoading(true);
     
     try {
@@ -53,92 +55,95 @@ export const ReportsPage = () => {
       endOfToday.setHours(23, 59, 59, 999);
       
       let startDate: Date;
-      
       if (selectedPeriod === 'week') {
         startDate = new Date(now);
         startDate.setDate(now.getDate() - 6);
         startDate.setHours(0, 0, 0, 0);
       } else if (selectedPeriod === 'month') {
         startDate = new Date(now.getFullYear(), now.getMonth(), 1);
-        startDate.setHours(0, 0, 0, 0);
       } else {
         startDate = new Date(now.getFullYear(), 0, 1);
-        startDate.setHours(0, 0, 0, 0);
       }
 
-      // Fetch regular sales
-      const { data: sales, error: salesError } = await supabase
-        .from('sales')
-        .select('created_at, total_amount')
-        .eq('owner_id', user.id)
-        .gte('created_at', startDate.toISOString())
-        .lte('created_at', endOfToday.toISOString())
-        .order('created_at', { ascending: true });
+      // Fetch sales with items and product cost_price for COGS
+      const [salesRes, quickSalesRes, expensesRes, salesItemsRes] = await Promise.all([
+        supabase
+          .from('sales')
+          .select('created_at, total_amount')
+          .eq('owner_id', ownerId)
+          .gte('created_at', startDate.toISOString())
+          .lte('created_at', endOfToday.toISOString())
+          .order('created_at', { ascending: true }),
+        supabase
+          .from('customer_transactions')
+          .select('transaction_date, total_amount')
+          .eq('owner_id', ownerId)
+          .eq('transaction_type', 'sale')
+          .gte('transaction_date', startDate.toISOString().split('T')[0])
+          .lte('transaction_date', endOfToday.toISOString().split('T')[0]),
+        supabase
+          .from('expenses')
+          .select('expense_date, amount')
+          .eq('owner_id', ownerId)
+          .gte('expense_date', startDate.toISOString().split('T')[0])
+          .lte('expense_date', endOfToday.toISOString().split('T')[0]),
+        supabase
+          .from('sales_items')
+          .select(`
+            quantity,
+            subtotal,
+            unit_price,
+            products (name, cost_price),
+            sales!inner (created_at, owner_id)
+          `)
+          .eq('sales.owner_id', ownerId)
+          .gte('sales.created_at', startDate.toISOString())
+          .lte('sales.created_at', endOfToday.toISOString()),
+      ]);
 
-      if (salesError) throw salesError;
+      const sales = salesRes.data || [];
+      const quickSales = quickSalesRes.data || [];
+      const expenses = expensesRes.data || [];
+      const salesItems = salesItemsRes.data || [];
 
-      // Fetch quick sales (mauzo ya haraka)
-      const { data: quickSales, error: quickSalesError } = await supabase
-        .from('customer_transactions')
-        .select('transaction_date, total_amount')
-        .eq('owner_id', user.id)
-        .eq('transaction_type', 'sale')
-        .gte('transaction_date', startDate.toISOString().split('T')[0])
-        .lte('transaction_date', endOfToday.toISOString().split('T')[0]);
+      // Calculate COGS from actual sales items
+      let totalCOGS = 0;
+      const productStats: Record<string, { total_sold: number; revenue: number; cogs: number }> = {};
 
-      if (quickSalesError) throw quickSalesError;
+      salesItems.forEach((item: any) => {
+        const costPrice = item.products?.cost_price || 0;
+        const itemCOGS = costPrice * Number(item.quantity);
+        totalCOGS += itemCOGS;
 
-      // Fetch expenses
-      const { data: expenses, error: expensesError } = await supabase
-        .from('expenses')
-        .select('expense_date, amount')
-        .eq('owner_id', user.id)
-        .gte('expense_date', startDate.toISOString().split('T')[0])
-        .lte('expense_date', endOfToday.toISOString().split('T')[0]);
-
-      if (expensesError) throw expensesError;
-
-      // Fetch product costs
-      const { data: products, error: productsError } = await supabase
-        .from('products')
-        .select('cost_price, stock_quantity')
-        .eq('owner_id', user.id);
-
-      if (productsError) throw productsError;
-
-      // Fetch top products
-      const { data: salesItems, error: itemsError } = await supabase
-        .from('sales_items')
-        .select(`
-          quantity,
-          subtotal,
-          products (name),
-          sales!inner (created_at, owner_id)
-        `)
-        .eq('sales.owner_id', user.id)
-        .gte('sales.created_at', startDate.toISOString())
-        .lte('sales.created_at', endOfToday.toISOString());
-
-      if (itemsError) throw itemsError;
+        const productName = item.products?.name || 'Unknown';
+        if (!productStats[productName]) {
+          productStats[productName] = { total_sold: 0, revenue: 0, cogs: 0 };
+        }
+        productStats[productName].total_sold += Number(item.quantity);
+        productStats[productName].revenue += Number(item.subtotal);
+        productStats[productName].cogs += itemCOGS;
+      });
 
       // Process daily data
-      const dailyData: { [key: string]: { sales: number; revenue: number; quickSales: number } } = {};
+      const dailyData: Record<string, { sales: number; revenue: number; cogs: number }> = {};
       
-      sales?.forEach(sale => {
+      sales.forEach(sale => {
         const date = new Date(sale.created_at).toISOString().split('T')[0];
-        if (!dailyData[date]) {
-          dailyData[date] = { sales: 0, revenue: 0, quickSales: 0 };
-        }
+        if (!dailyData[date]) dailyData[date] = { sales: 0, revenue: 0, cogs: 0 };
         dailyData[date].sales += 1;
         dailyData[date].revenue += Number(sale.total_amount);
       });
 
-      quickSales?.forEach(sale => {
+      // Add COGS per day from sales items
+      salesItems.forEach((item: any) => {
+        const date = new Date(item.sales.created_at).toISOString().split('T')[0];
+        if (!dailyData[date]) dailyData[date] = { sales: 0, revenue: 0, cogs: 0 };
+        dailyData[date].cogs += (item.products?.cost_price || 0) * Number(item.quantity);
+      });
+
+      quickSales.forEach(sale => {
         const date = sale.transaction_date;
-        if (!dailyData[date]) {
-          dailyData[date] = { sales: 0, revenue: 0, quickSales: 0 };
-        }
-        dailyData[date].quickSales += Number(sale.total_amount);
+        if (!dailyData[date]) dailyData[date] = { sales: 0, revenue: 0, cogs: 0 };
         dailyData[date].revenue += Number(sale.total_amount);
       });
 
@@ -147,51 +152,39 @@ export const ReportsPage = () => {
           date: new Date(date).toLocaleDateString('sw-TZ', { day: '2-digit', month: 'short' }),
           sales: data.sales,
           revenue: data.revenue,
-          quickSales: data.quickSales
+          cogs: data.cogs,
         }))
-        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+        .sort((a, b) => a.date.localeCompare(b.date));
 
       setSalesData(chartData);
 
-      // Calculate totals
-      const totalSalesRevenue = sales?.reduce((sum, s) => sum + Number(s.total_amount), 0) || 0;
-      const totalQuickSalesRevenue = quickSales?.reduce((sum, s) => sum + Number(s.total_amount), 0) || 0;
-      const totalExpenses = expenses?.reduce((sum, e) => sum + Number(e.amount), 0) || 0;
-      const productCosts = products?.reduce((sum, p) => sum + ((p.cost_price || 0) * (p.stock_quantity || 0)), 0) || 0;
+      const totalSalesRevenue = sales.reduce((sum, s) => sum + Number(s.total_amount), 0);
+      const totalQuickSalesRevenue = quickSales.reduce((sum, s) => sum + Number(s.total_amount), 0);
+      const totalExpenses = expenses.reduce((sum, e) => sum + Number(e.amount), 0);
       const totalRevenue = totalSalesRevenue + totalQuickSalesRevenue;
+      // Real profit = Revenue - COGS - Expenses
+      const totalProfit = totalRevenue - totalCOGS - totalExpenses;
 
       setStats({
         totalRevenue,
         totalExpenses,
-        totalProfit: totalRevenue - totalExpenses,
-        totalSales: sales?.length || 0,
+        totalCOGS,
+        totalProfit,
+        totalSales: sales.length,
         quickSalesRevenue: totalQuickSalesRevenue,
-        productCosts
-      });
-
-      // Process top products
-      const productStats: { [key: string]: { total_sold: number; revenue: number } } = {};
-      
-      salesItems?.forEach((item: any) => {
-        const productName = item.products?.name || 'Unknown';
-        if (!productStats[productName]) {
-          productStats[productName] = { total_sold: 0, revenue: 0 };
-        }
-        productStats[productName].total_sold += Number(item.quantity);
-        productStats[productName].revenue += Number(item.subtotal);
       });
 
       const topProductsData = Object.entries(productStats)
         .map(([name, stats]) => ({
           name,
           total_sold: stats.total_sold,
-          revenue: stats.revenue
+          revenue: stats.revenue,
+          profit: stats.revenue - stats.cogs,
         }))
         .sort((a, b) => b.total_sold - a.total_sold)
         .slice(0, 10);
 
       setTopProducts(topProductsData);
-
     } catch (error) {
       console.error('Error fetching reports data:', error);
       toast.error('Imeshindwa kupakia ripoti');
@@ -206,8 +199,6 @@ export const ReportsPage = () => {
     { id: 'year', label: 'Mwaka' }
   ];
 
-  const COLORS = ['#16a34a', '#2563eb', '#9333ea', '#f59e0b', '#ef4444'];
-
   if (loading) {
     return (
       <div className="p-4 space-y-4">
@@ -220,25 +211,36 @@ export const ReportsPage = () => {
 
   return (
     <div className="p-4 space-y-4 pb-24">
+      <div className="text-center mb-2">
+        <h1 className="text-2xl font-bold">Ripoti</h1>
+        <p className="text-sm text-muted-foreground">Mauzo, faida, na uchambuzi wa bidhaa</p>
+      </div>
+
       {/* Period Selection */}
-      <div className="flex gap-2 overflow-x-auto pb-2">
+      <div className="flex gap-2 justify-center pb-2">
         {periodOptions.map((period) => (
           <Button
             key={period.id}
             variant={selectedPeriod === period.id ? "default" : "outline"}
             onClick={() => setSelectedPeriod(period.id)}
             size="sm"
+            className="rounded-full"
           >
             {period.label}
           </Button>
         ))}
       </div>
 
-      {/* Stats - flat row */}
+      {/* Stats */}
       <div className="flex items-center justify-around py-3 border-y border-border/50">
         <div className="text-center space-y-0.5">
           <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Mapato</p>
-          <p className="text-sm font-bold text-success">TZS {stats.totalRevenue.toLocaleString()}</p>
+          <p className="text-sm font-bold text-primary">TZS {stats.totalRevenue.toLocaleString()}</p>
+        </div>
+        <div className="w-px h-8 bg-border/50" />
+        <div className="text-center space-y-0.5">
+          <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Gharama (COGS)</p>
+          <p className="text-sm font-bold text-orange-600">TZS {stats.totalCOGS.toLocaleString()}</p>
         </div>
         <div className="w-px h-8 bg-border/50" />
         <div className="text-center space-y-0.5">
@@ -247,96 +249,130 @@ export const ReportsPage = () => {
         </div>
         <div className="w-px h-8 bg-border/50" />
         <div className="text-center space-y-0.5">
-          <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Faida</p>
+          <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Faida Halisi</p>
           <p className={`text-sm font-bold ${stats.totalProfit >= 0 ? 'text-primary' : 'text-destructive'}`}>
             TZS {stats.totalProfit.toLocaleString()}
           </p>
         </div>
       </div>
 
-      <div className="flex items-center justify-around py-2">
-        <div className="text-center space-y-0.5">
-          <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Mauzo Haraka</p>
-          <p className="text-sm font-bold text-foreground">TZS {stats.quickSalesRevenue.toLocaleString()}</p>
-        </div>
-        <div className="w-px h-6 bg-border/50" />
-        <div className="text-center space-y-0.5">
-          <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Gharama Bidhaa</p>
-          <p className="text-sm font-bold text-foreground">TZS {stats.productCosts.toLocaleString()}</p>
-        </div>
-      </div>
+      <Tabs defaultValue="overview" className="w-full">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="overview">Muhtasari</TabsTrigger>
+          <TabsTrigger value="products">Bidhaa</TabsTrigger>
+          <TabsTrigger value="trends">Mwenendo</TabsTrigger>
+        </TabsList>
 
-      {/* Revenue Chart */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm">Mwenendo wa Mapato</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <ResponsiveContainer width="100%" height={200}>
-            <LineChart data={salesData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="date" tick={{ fontSize: 10 }} />
-              <YAxis tick={{ fontSize: 10 }} />
-              <Tooltip formatter={(value) => [`TZS ${Number(value).toLocaleString()}`, '']} />
-              <Legend />
-              <Line type="monotone" dataKey="revenue" name="Mapato" stroke="#16a34a" strokeWidth={2} />
-            </LineChart>
-          </ResponsiveContainer>
-        </CardContent>
-      </Card>
+        <TabsContent value="overview" className="mt-4 space-y-4">
+          {/* Revenue Chart */}
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm">Mwenendo wa Mapato</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={200}>
+                <LineChart data={salesData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="date" tick={{ fontSize: 10 }} />
+                  <YAxis tick={{ fontSize: 10 }} />
+                  <Tooltip formatter={(value) => [`TZS ${Number(value).toLocaleString()}`, '']} />
+                  <Legend />
+                  <Line type="monotone" dataKey="revenue" name="Mapato" stroke="hsl(var(--primary))" strokeWidth={2} />
+                  <Line type="monotone" dataKey="cogs" name="COGS" stroke="hsl(var(--destructive))" strokeWidth={1} strokeDasharray="5 5" />
+                </LineChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
 
-      {/* Sales Volume Chart */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm">Idadi ya Mauzo</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <ResponsiveContainer width="100%" height={200}>
-            <BarChart data={salesData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="date" tick={{ fontSize: 10 }} />
-              <YAxis tick={{ fontSize: 10 }} />
-              <Tooltip />
-              <Legend />
-              <Bar dataKey="sales" name="Mauzo" fill="#2563eb" />
-            </BarChart>
-          </ResponsiveContainer>
-        </CardContent>
-      </Card>
-
-      {/* Top Products */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm">Bidhaa Zinazouzwa Zaidi</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-2">
-            {topProducts.map((product, index) => (
-              <div key={product.name} className="flex items-center justify-between p-2 bg-muted/50 rounded-lg">
-                <div className="flex items-center space-x-2">
-                  <Badge variant="outline" className="w-6 h-6 rounded-full flex items-center justify-center text-xs">
-                    {index + 1}
-                  </Badge>
-                  <div>
-                    <h4 className="font-medium text-sm">{product.name}</h4>
-                    <p className="text-xs text-muted-foreground">{product.total_sold} vipande</p>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <p className="font-bold text-green-600 text-sm">TZS {product.revenue.toLocaleString()}</p>
-                </div>
+          {/* P&L Summary */}
+          <div className="p-4 border border-border/40 rounded-2xl space-y-2">
+            <h3 className="font-bold text-sm flex items-center gap-2">
+              <Receipt className="h-4 w-4" /> Taarifa ya Faida na Hasara
+            </h3>
+            <div className="space-y-1 text-sm">
+              <div className="flex justify-between"><span>Mapato Jumla</span><span className="font-bold text-primary">TZS {stats.totalRevenue.toLocaleString()}</span></div>
+              <div className="flex justify-between text-muted-foreground"><span>- Gharama za Bidhaa (COGS)</span><span>TZS {stats.totalCOGS.toLocaleString()}</span></div>
+              <div className="flex justify-between text-muted-foreground"><span>- Matumizi ya Biashara</span><span>TZS {stats.totalExpenses.toLocaleString()}</span></div>
+              <div className="border-t border-border/40 pt-1 flex justify-between font-bold">
+                <span>{stats.totalProfit >= 0 ? 'Faida Halisi' : 'Hasara'}</span>
+                <span className={stats.totalProfit >= 0 ? 'text-primary' : 'text-destructive'}>
+                  TZS {Math.abs(stats.totalProfit).toLocaleString()}
+                </span>
               </div>
-            ))}
-          </div>
-          
-          {topProducts.length === 0 && (
-            <div className="text-center py-8">
-              <Package className="h-10 w-10 text-muted-foreground mx-auto mb-2" />
-              <p className="text-muted-foreground text-sm">Hakuna data ya mauzo</p>
             </div>
-          )}
-        </CardContent>
-      </Card>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="products" className="mt-4 space-y-4">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm">Bidhaa Zinazouzwa Zaidi</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {topProducts.map((product, index) => (
+                  <div key={product.name} className="flex items-center justify-between p-2 bg-muted/50 rounded-lg">
+                    <div className="flex items-center space-x-2">
+                      <Badge variant="outline" className="w-6 h-6 rounded-full flex items-center justify-center text-xs">
+                        {index + 1}
+                      </Badge>
+                      <div>
+                        <h4 className="font-medium text-sm">{product.name}</h4>
+                        <p className="text-xs text-muted-foreground">{product.total_sold} vipande</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-bold text-primary text-sm">TZS {product.revenue.toLocaleString()}</p>
+                      <p className={`text-xs ${product.profit >= 0 ? 'text-green-600' : 'text-destructive'}`}>
+                        Faida: TZS {product.profit.toLocaleString()}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              
+              {topProducts.length === 0 && (
+                <div className="text-center py-8">
+                  <Package className="h-10 w-10 text-muted-foreground mx-auto mb-2" />
+                  <p className="text-muted-foreground text-sm">Hakuna data ya mauzo</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="trends" className="mt-4 space-y-4">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm">Idadi ya Mauzo kwa Siku</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={200}>
+                <BarChart data={salesData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="date" tick={{ fontSize: 10 }} />
+                  <YAxis tick={{ fontSize: 10 }} />
+                  <Tooltip />
+                  <Legend />
+                  <Bar dataKey="sales" name="Mauzo" fill="hsl(var(--primary))" />
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+
+          <div className="flex items-center justify-around py-3">
+            <div className="text-center space-y-0.5">
+              <p className="text-[10px] text-muted-foreground uppercase">Mauzo Haraka</p>
+              <p className="text-sm font-bold">TZS {stats.quickSalesRevenue.toLocaleString()}</p>
+            </div>
+            <div className="w-px h-6 bg-border/50" />
+            <div className="text-center space-y-0.5">
+              <p className="text-[10px] text-muted-foreground uppercase">Jumla Mauzo</p>
+              <p className="text-sm font-bold">{stats.totalSales}</p>
+            </div>
+          </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

@@ -73,37 +73,13 @@ Deno.serve(async (req) => {
           email_confirm: true,
         });
         if (error) throw error;
-        // Also update profile
         await adminClient.from("profiles").update({ email: new_email }).eq("id", user_id);
         result.message = "Email updated successfully";
         break;
       }
 
       case "ban_user": {
-        const { ban_duration } = params; // e.g., "24h", "7d", "permanent"
-        let banUntil: string | undefined;
-        
-        if (ban_duration === "permanent") {
-          // Ban for 100 years effectively = permanent
-          const d = new Date();
-          d.setFullYear(d.getFullYear() + 100);
-          banUntil = d.toISOString();
-        } else if (ban_duration) {
-          const d = new Date();
-          const match = ban_duration.match(/^(\d+)(h|d|w|m|y)$/);
-          if (match) {
-            const num = parseInt(match[1]);
-            switch (match[2]) {
-              case "h": d.setHours(d.getHours() + num); break;
-              case "d": d.setDate(d.getDate() + num); break;
-              case "w": d.setDate(d.getDate() + num * 7); break;
-              case "m": d.setMonth(d.getMonth() + num); break;
-              case "y": d.setFullYear(d.getFullYear() + num); break;
-            }
-            banUntil = d.toISOString();
-          }
-        }
-
+        const { ban_duration } = params;
         const { error } = await adminClient.auth.admin.updateUser(user_id, {
           ban_duration: ban_duration === "permanent" ? "876000h" : ban_duration,
         });
@@ -122,12 +98,85 @@ Deno.serve(async (req) => {
       }
 
       case "delete_user": {
-        // Delete related data first
-        await adminClient.from("user_roles").delete().eq("user_id", user_id);
-        await adminClient.from("assistant_permissions").delete().eq("assistant_id", user_id);
-        await adminClient.from("user_subscriptions").delete().eq("user_id", user_id);
-        await adminClient.from("profiles").delete().eq("id", user_id);
-        
+        // Delete related data first - handle errors gracefully
+        const tables = [
+          { table: "whatsapp_messages", column: "owner_id" },
+          { table: "scheduled_whatsapp_messages", column: "owner_id" },
+          { table: "sales_items", column: "sale_id", subquery: true },
+          { table: "inventory_movements", column: "owner_id" },
+          { table: "inventory_snapshots", column: "owner_id" },
+          { table: "sales_predictions", column: "owner_id" },
+          { table: "business_insights", column: "owner_id" },
+          { table: "income_records", column: "owner_id" },
+          { table: "journal_lines", column: "entry_id", subquery: true },
+          { table: "journal_entries", column: "owner_id" },
+          { table: "expenses", column: "owner_id" },
+          { table: "customer_transactions", column: "owner_id" },
+          { table: "loan_payments", column: "loan_id", subquery: true },
+          { table: "micro_loans", column: "owner_id" },
+          { table: "purchase_orders", column: "owner_id" },
+          { table: "suppliers", column: "owner_id" },
+          { table: "discounts", column: "owner_id" },
+          { table: "coupon_codes", column: "owner_id" },
+          { table: "product_images", column: "product_id", subquery: true },
+          { table: "sales", column: "owner_id" },
+          { table: "products", column: "owner_id" },
+          { table: "customers", column: "owner_id" },
+          { table: "business_ads", column: "owner_id" },
+          { table: "abandoned_carts", column: "seller_id" },
+          { table: "admin_business_sessions", column: "owner_id" },
+          { table: "business_compliance", column: "owner_id" },
+          { table: "business_contracts", column: "owner_id" },
+          { table: "user_activities", column: "user_id" },
+          { table: "ai_chat_sessions", column: "user_id" },
+          { table: "voice_commands", column: "user_id" },
+          { table: "chat_messages", column: "sender_id" },
+          { table: "assistant_permissions", column: "assistant_id" },
+          { table: "assistant_permissions", column: "owner_id" },
+          { table: "user_roles", column: "user_id" },
+          { table: "user_subscriptions", column: "user_id" },
+          { table: "profiles", column: "id" },
+        ];
+
+        // Delete sales_items for user's sales
+        const { data: userSales } = await adminClient.from("sales").select("id").eq("owner_id", user_id);
+        if (userSales && userSales.length > 0) {
+          const saleIds = userSales.map((s: any) => s.id);
+          await adminClient.from("sales_items").delete().in("sale_id", saleIds);
+        }
+
+        // Delete journal_lines for user's journal entries
+        const { data: userJournals } = await adminClient.from("journal_entries").select("id").eq("owner_id", user_id);
+        if (userJournals && userJournals.length > 0) {
+          const journalIds = userJournals.map((j: any) => j.id);
+          await adminClient.from("journal_lines").delete().in("entry_id", journalIds);
+        }
+
+        // Delete loan_payments for user's loans
+        const { data: userLoans } = await adminClient.from("micro_loans").select("id").eq("owner_id", user_id);
+        if (userLoans && userLoans.length > 0) {
+          const loanIds = userLoans.map((l: any) => l.id);
+          await adminClient.from("loan_payments").delete().in("loan_id", loanIds);
+        }
+
+        // Delete product_images for user's products
+        const { data: userProducts } = await adminClient.from("products").select("id").eq("owner_id", user_id);
+        if (userProducts && userProducts.length > 0) {
+          const productIds = userProducts.map((p: any) => p.id);
+          await adminClient.from("product_images").delete().in("product_id", productIds);
+        }
+
+        // Delete direct tables
+        for (const { table, column, subquery } of tables) {
+          if (subquery) continue; // Already handled above
+          try {
+            await adminClient.from(table).delete().eq(column, user_id);
+          } catch (e) {
+            console.log(`Warning: could not delete from ${table}: ${e}`);
+          }
+        }
+
+        // Finally delete the auth user
         const { error } = await adminClient.auth.admin.deleteUser(user_id);
         if (error) throw error;
         result.message = "User deleted completely";
@@ -160,6 +209,7 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error: any) {
+    console.error("Admin manage user error:", error);
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
