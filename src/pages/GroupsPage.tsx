@@ -142,7 +142,7 @@ export default function GroupsPage() {
                 <div className="flex gap-1">
                   {s.phone && <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => openWhatsApp(s.phone, `Habari ${s.name}`)}><MessageCircle className="h-3.5 w-3.5" /></Button>}
                   <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => { setEditing(s); setForm(s); setShowDialog('supplier'); }}><Edit className="h-3.5 w-3.5" /></Button>
-                  <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={() => handleDelete('suppliers', s.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
+                  <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={() => handleDeleteSupplier(s.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
                 </div>
               </div>
               <div className="flex gap-3 text-xs text-muted-foreground">
