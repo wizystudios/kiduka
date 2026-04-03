@@ -462,6 +462,15 @@ export default function App() {
                 </ProtectedRoute>
               } />
               
+              {/* Groups */}
+              <Route path="/groups" element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <GroupsPage />
+                  </AppLayout>
+                </ProtectedRoute>
+              } />
+              
               {/* Bookkeeping */}
               <Route path="/bookkeeping" element={
                 <ProtectedRoute>
