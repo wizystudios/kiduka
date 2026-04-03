@@ -71,6 +71,7 @@ import StorefrontPage from '@/pages/StorefrontPage';
 import AdsManagerPage from '@/pages/AdsManagerPage';
 import SuppliersPage from '@/pages/SuppliersPage';
 import BookkeepingPage from '@/pages/BookkeepingPage';
+import GroupsPage from '@/pages/GroupsPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -457,6 +458,15 @@ export default function App() {
                 <ProtectedRoute>
                   <AppLayout>
                     <SuppliersPage />
+                  </AppLayout>
+                </ProtectedRoute>
+              } />
+              
+              {/* Groups */}
+              <Route path="/groups" element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <GroupsPage />
                   </AppLayout>
                 </ProtectedRoute>
               } />
