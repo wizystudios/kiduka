@@ -69,9 +69,15 @@ export default function GroupsPage() {
     setShowDialog(null); setForm({}); setEditing(null); setSubmitting(false); fetchAll();
   };
 
-  const handleDelete = async (table: string, id: string) => {
-    await supabase.from(table).delete().eq('id', id);
+  const handleDeleteCustomer = async (id: string) => {
+    await supabase.from('customers').delete().eq('id', id);
     toast({ title: 'Imefutwa' }); fetchAll();
+  };
+
+  const handleDeleteSupplier = async (id: string) => {
+    await supabase.from('suppliers').delete().eq('id', id);
+    toast({ title: 'Imefutwa' }); fetchAll();
+  };
   };
 
   const filteredCustomers = customers.filter(c => c.name.toLowerCase().includes(search.toLowerCase()) || c.phone?.includes(search));
