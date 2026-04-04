@@ -157,7 +157,7 @@ export default function App() {
               <Route path="/sales" element={
                 <ProtectedRoute>
                   <AppLayout>
-                    <SalesPage />
+                    <UnifiedSalesPage />
                   </AppLayout>
                 </ProtectedRoute>
               } />
