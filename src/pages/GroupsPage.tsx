@@ -78,7 +78,6 @@ export default function GroupsPage() {
     await supabase.from('suppliers').delete().eq('id', id);
     toast({ title: 'Imefutwa' }); fetchAll();
   };
-  };
 
   const filteredCustomers = customers.filter(c => c.name.toLowerCase().includes(search.toLowerCase()) || c.phone?.includes(search));
   const filteredSuppliers = suppliers.filter(s => s.name.toLowerCase().includes(search.toLowerCase()) || s.phone?.includes(search));
