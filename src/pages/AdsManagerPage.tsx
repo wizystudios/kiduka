@@ -6,8 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Switch } from '@/components/ui/switch';
-import { Megaphone, Plus, Trash2, Edit2, Loader2, Eye, EyeOff, ExternalLink } from 'lucide-react';
+import { Megaphone, Plus, Trash2, Edit2, Loader2, Eye, EyeOff, ExternalLink, Upload, Image as ImageIcon } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useDataAccess } from '@/hooks/useDataAccess';
@@ -27,6 +26,13 @@ interface Ad {
   created_at: string;
 }
 
+const AD_PRICING = [
+  { days: 7, label: '1 Wiki', price: 5000 },
+  { days: 14, label: '2 Wiki', price: 8000 },
+  { days: 30, label: '1 Mwezi', price: 15000 },
+  { days: 90, label: '3 Miezi', price: 35000 },
+];
+
 export const AdsManagerPage = () => {
   const { user } = useAuth();
   const { dataOwnerId } = useDataAccess();
@@ -35,6 +41,8 @@ export const AdsManagerPage = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingAd, setEditingAd] = useState<Ad | null>(null);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState(0);
 
   const [form, setForm] = useState({
     title: '',
@@ -65,6 +73,41 @@ export const AdsManagerPage = () => {
   const resetForm = () => {
     setForm({ title: '', description: '', image_url: '', link_url: '', display_location: 'both', starts_at: format(new Date(), 'yyyy-MM-dd'), expires_at: '' });
     setEditingAd(null);
+    setSelectedPlan(0);
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !dataOwnerId) return;
+
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    if (file.size > maxSize) {
+      toast.error('Picha ni kubwa sana. Ukubwa wa juu ni 5MB');
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const ext = file.name.split('.').pop();
+      const fileName = `ads/${dataOwnerId}/${Date.now()}.${ext}`;
+      
+      const { data, error } = await supabase.storage
+        .from('product-images')
+        .upload(fileName, file, { cacheControl: '3600', upsert: false });
+
+      if (error) throw error;
+
+      const { data: urlData } = supabase.storage
+        .from('product-images')
+        .getPublicUrl(data.path);
+
+      setForm(prev => ({ ...prev, image_url: urlData.publicUrl }));
+      toast.success('Picha imepakiwa!');
+    } catch (err) {
+      toast.error('Imeshindwa kupakia picha');
+    } finally {
+      setUploading(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -73,6 +116,10 @@ export const AdsManagerPage = () => {
 
     setSaving(true);
     try {
+      const plan = AD_PRICING[selectedPlan];
+      const startDate = new Date(form.starts_at);
+      const expiresAt = editingAd ? (form.expires_at ? new Date(form.expires_at).toISOString() : null) : new Date(startDate.getTime() + plan.days * 24 * 60 * 60 * 1000).toISOString();
+
       const adData = {
         owner_id: dataOwnerId,
         title: form.title.trim(),
@@ -80,8 +127,8 @@ export const AdsManagerPage = () => {
         image_url: form.image_url.trim() || null,
         link_url: form.link_url.trim() || null,
         display_location: form.display_location,
-        starts_at: new Date(form.starts_at).toISOString(),
-        expires_at: form.expires_at ? new Date(form.expires_at).toISOString() : null,
+        starts_at: startDate.toISOString(),
+        expires_at: expiresAt,
       };
 
       if (editingAd) {
@@ -96,7 +143,7 @@ export const AdsManagerPage = () => {
           .from('business_ads' as any)
           .insert([adData]);
         if (error) throw error;
-        toast.success('Tangazo limeundwa!');
+        toast.success(`Tangazo limeundwa! Kipindi: ${plan.label} (TSh ${plan.price.toLocaleString()})`);
       }
 
       setDialogOpen(false);
@@ -146,6 +193,12 @@ export const AdsManagerPage = () => {
     setDialogOpen(true);
   };
 
+  const getDaysRemaining = (expiresAt: string | null) => {
+    if (!expiresAt) return null;
+    const days = Math.ceil((new Date(expiresAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+    return days > 0 ? days : 0;
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[40vh]">
@@ -162,7 +215,7 @@ export const AdsManagerPage = () => {
             <Megaphone className="h-5 w-5 text-primary" />
             Matangazo
           </h1>
-          <p className="text-xs text-muted-foreground">Unda matangazo ya biashara yako</p>
+          <p className="text-xs text-muted-foreground">Tangaza biashara yako kwa wateja</p>
         </div>
         <Dialog open={dialogOpen} onOpenChange={(open) => { setDialogOpen(open); if (!open) resetForm(); }}>
           <DialogTrigger asChild>
@@ -171,7 +224,7 @@ export const AdsManagerPage = () => {
               Ongeza
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-md rounded-3xl">
+          <DialogContent className="max-w-md rounded-3xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <Megaphone className="h-5 w-5 text-primary" />
@@ -179,6 +232,42 @@ export const AdsManagerPage = () => {
               </DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-3">
+              {/* Image Upload */}
+              <div>
+                <Label className="text-xs">Picha ya Tangazo</Label>
+                <div className="mt-1">
+                  {form.image_url ? (
+                    <div className="relative rounded-xl overflow-hidden border border-border/50">
+                      <img src={form.image_url} alt="" className="w-full h-32 object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => setForm(prev => ({ ...prev, image_url: '' }))}
+                        className="absolute top-1 right-1 h-6 w-6 rounded-full bg-destructive text-white flex items-center justify-center text-xs"
+                      >×</button>
+                    </div>
+                  ) : (
+                    <label className="flex flex-col items-center justify-center h-28 border-2 border-dashed border-border/50 rounded-xl cursor-pointer hover:bg-muted/30 transition-colors">
+                      {uploading ? (
+                        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                      ) : (
+                        <>
+                          <Upload className="h-6 w-6 text-muted-foreground mb-1" />
+                          <span className="text-xs text-muted-foreground">Pakia picha au logo</span>
+                          <span className="text-[10px] text-muted-foreground mt-0.5">JPG, PNG - Max 5MB</span>
+                        </>
+                      )}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handleImageUpload}
+                        disabled={uploading}
+                      />
+                    </label>
+                  )}
+                </div>
+              </div>
+
               <div>
                 <Label className="text-xs">Kichwa cha Tangazo *</Label>
                 <Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className="rounded-2xl" required maxLength={100} />
@@ -186,10 +275,6 @@ export const AdsManagerPage = () => {
               <div>
                 <Label className="text-xs">Maelezo</Label>
                 <Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="rounded-2xl" rows={2} maxLength={200} />
-              </div>
-              <div>
-                <Label className="text-xs">Picha URL</Label>
-                <Input value={form.image_url} onChange={(e) => setForm({ ...form, image_url: e.target.value })} className="rounded-2xl" placeholder="https://..." />
               </div>
               <div>
                 <Label className="text-xs">Link ya Kufungua</Label>
@@ -206,20 +291,47 @@ export const AdsManagerPage = () => {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="grid grid-cols-2 gap-2">
+
+              {/* Pricing Plans - only for new ads */}
+              {!editingAd && (
                 <div>
-                  <Label className="text-xs">Kuanzia</Label>
-                  <Input type="date" value={form.starts_at} onChange={(e) => setForm({ ...form, starts_at: e.target.value })} className="rounded-2xl" />
+                  <Label className="text-xs mb-2 block">Kipindi cha Tangazo & Bei</Label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {AD_PRICING.map((plan, i) => (
+                      <button
+                        key={i}
+                        type="button"
+                        onClick={() => setSelectedPlan(i)}
+                        className={`p-2.5 rounded-xl border text-left transition-all ${
+                          selectedPlan === i 
+                            ? 'border-primary bg-primary/5 ring-1 ring-primary/30' 
+                            : 'border-border/50 hover:bg-muted/30'
+                        }`}
+                      >
+                        <p className="text-xs font-bold text-foreground">{plan.label}</p>
+                        <p className="text-sm font-bold text-primary">TSh {plan.price.toLocaleString()}</p>
+                      </button>
+                    ))}
+                  </div>
                 </div>
+              )}
+
+              <div>
+                <Label className="text-xs">Kuanzia</Label>
+                <Input type="date" value={form.starts_at} onChange={(e) => setForm({ ...form, starts_at: e.target.value })} className="rounded-2xl" />
+              </div>
+
+              {editingAd && (
                 <div>
                   <Label className="text-xs">Kuisha</Label>
                   <Input type="date" value={form.expires_at} onChange={(e) => setForm({ ...form, expires_at: e.target.value })} className="rounded-2xl" />
                 </div>
-              </div>
+              )}
+
               <div className="flex gap-2 pt-2">
                 <Button type="button" variant="outline" onClick={() => setDialogOpen(false)} className="flex-1 rounded-full">Ghairi</Button>
                 <Button type="submit" className="flex-1 rounded-full" disabled={saving}>
-                  {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : editingAd ? 'Sasisha' : 'Unda'}
+                  {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : editingAd ? 'Sasisha' : `Unda (TSh ${AD_PRICING[selectedPlan].price.toLocaleString()})`}
                 </Button>
               </div>
             </form>
@@ -235,39 +347,54 @@ export const AdsManagerPage = () => {
         </div>
       ) : (
         <div className="space-y-2">
-          {ads.map((ad) => (
-            <div key={ad.id} className="flex items-center gap-3 p-3 rounded-2xl border border-border/50 bg-background">
-              {ad.image_url ? (
-                <img src={ad.image_url} alt="" className="h-12 w-12 rounded-xl object-cover flex-shrink-0" />
-              ) : (
-                <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
-                  <Megaphone className="h-5 w-5 text-primary" />
-                </div>
-              )}
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold truncate">{ad.title}</p>
-                <div className="flex items-center gap-2 mt-0.5">
-                  <Badge variant={ad.is_active ? 'default' : 'secondary'} className="text-[10px] rounded-full">
-                    {ad.is_active ? 'Hai' : 'Imezimwa'}
-                  </Badge>
-                  <span className="text-[10px] text-muted-foreground">
-                    {ad.display_location === 'both' ? 'Kiduka & Sokoni' : ad.display_location === 'kiduka' ? 'Kiduka' : 'Sokoni'}
-                  </span>
+          {ads.map((ad) => {
+            const daysLeft = getDaysRemaining(ad.expires_at);
+            return (
+              <div key={ad.id} className="rounded-2xl border border-border/50 bg-background overflow-hidden">
+                {/* Preview image */}
+                {ad.image_url && (
+                  <div className="relative h-20 overflow-hidden">
+                    <img src={ad.image_url} alt="" className="w-full h-full object-cover" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent" />
+                  </div>
+                )}
+                <div className="flex items-center gap-3 p-3">
+                  {!ad.image_url && (
+                    <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+                      <Megaphone className="h-4 w-4 text-primary" />
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold truncate">{ad.title}</p>
+                    <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                      <Badge variant={ad.is_active ? 'default' : 'secondary'} className="text-[10px] rounded-full">
+                        {ad.is_active ? 'Hai' : 'Imezimwa'}
+                      </Badge>
+                      <span className="text-[10px] text-muted-foreground">
+                        {ad.display_location === 'both' ? 'Kiduka & Sokoni' : ad.display_location === 'kiduka' ? 'Kiduka' : 'Sokoni'}
+                      </span>
+                      {daysLeft !== null && (
+                        <Badge variant={daysLeft > 3 ? 'outline' : 'destructive'} className="text-[10px] rounded-full">
+                          {daysLeft > 0 ? `Siku ${daysLeft}` : 'Imeisha'}
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => toggleActive(ad)}>
+                      {ad.is_active ? <Eye className="h-4 w-4 text-green-600" /> : <EyeOff className="h-4 w-4 text-muted-foreground" />}
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(ad)}>
+                      <Edit2 className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => deleteAd(ad.id)}>
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  </div>
                 </div>
               </div>
-              <div className="flex items-center gap-1">
-                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => toggleActive(ad)}>
-                  {ad.is_active ? <Eye className="h-4 w-4 text-success" /> : <EyeOff className="h-4 w-4 text-muted-foreground" />}
-                </Button>
-                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(ad)}>
-                  <Edit2 className="h-4 w-4" />
-                </Button>
-                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => deleteAd(ad.id)}>
-                  <Trash2 className="h-4 w-4 text-destructive" />
-                </Button>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

@@ -19,9 +19,9 @@ import {
 } from '@/components/ui/sidebar';
 import {
   Shield, Home, Package, ShoppingCart, BarChart3, Settings, Users,
-  UserCheck, CreditCard, Store, LogOut, Crown,
-  ClipboardList, Smartphone, Zap, BookOpen, Headphones, Megaphone,
-  MessageSquare
+  CreditCard, LogOut, Crown,
+  ClipboardList,
+  BookOpen
 } from 'lucide-react';
 
 interface NavItem {
@@ -36,18 +36,13 @@ const navigationItems: NavItem[] = [
   { id: 'dashboard', label: 'Dashboard', icon: Home, href: '/dashboard', permission: null },
   { id: 'products', label: 'Bidhaa', icon: Package, href: '/products', permission: 'can_view_products' },
   { id: 'sales', label: 'Mauzo', icon: ShoppingCart, href: '/sales', permission: 'can_view_sales' },
-  { id: 'quick-sale', label: 'Mauzo Haraka', icon: Zap, href: '/quick-sale', permission: 'can_create_sales' },
   { id: 'stock', label: 'Stock', icon: ClipboardList, href: '/inventory-snapshots', permission: 'can_view_inventory' },
-  { id: 'orders', label: 'Oda', icon: Store, href: '/sokoni-orders', permission: 'can_view_sales' },
+  { id: 'orders', label: 'Oda', icon: Crown, href: '/sokoni-orders', permission: 'can_view_sales' },
   { id: 'groups', label: 'Makundi', icon: Users, href: '/groups', permission: null },
   { id: 'mikopo', label: 'Mikopo', icon: CreditCard, href: '/credit-management', permission: null },
   { id: 'ripoti', label: 'Ripoti', icon: BarChart3, href: '/reports', permission: 'can_view_reports' },
   { id: 'bookkeeping', label: 'Uhasibu', icon: BookOpen, href: '/bookkeeping', permission: null },
-  { id: 'whatsapp', label: 'WhatsApp', icon: MessageSquare, href: '/whatsapp', permission: null },
   { id: 'settings', label: 'Mipangilio', icon: Settings, href: '/settings', permission: null },
-  { id: 'subscription', label: 'Michango', icon: Crown, href: '/subscription', permission: null },
-  { id: 'ads', label: 'Matangazo', icon: Megaphone, href: '/ads', permission: null },
-  { id: 'pwa-install', label: 'Sakinisha App', icon: Smartphone, href: '/pwa-install', permission: null },
 ];
 
 export function AppSidebar() {
@@ -129,16 +124,6 @@ export function AppSidebar() {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
-
-              {/* Help & Chat */}
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={isActive('/help')}>
-                  <NavLink to="/help" className="flex items-center gap-3 px-3 py-2 rounded-lg">
-                    <Headphones className="h-4 w-4" />
-                    {!collapsed && <span>Msaada</span>}
-                  </NavLink>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
