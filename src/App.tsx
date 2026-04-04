@@ -347,7 +347,7 @@ export default function App() {
               <Route path="/quick-sale" element={
                 <ProtectedRoute>
                   <AppLayout>
-                    <QuickSalePage />
+                    <Navigate to="/sales" replace />
                   </AppLayout>
                 </ProtectedRoute>
               } />
