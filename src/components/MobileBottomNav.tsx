@@ -48,14 +48,7 @@ const navigationGroups: NavGroup[] = [
       { id: 'scanner', label: 'Scanner', icon: QrCode, href: '/scanner', permission: 'can_view_products' },
     ]
   },
-  {
-    id: 'mauzo', label: 'Mauzo', icon: ShoppingCart, permission: 'can_view_sales',
-    children: [
-      { id: 'sales-list', label: 'Historia', icon: ShoppingCart, href: '/sales', permission: 'can_view_sales' },
-      { id: 'quick-sale', label: 'Haraka', icon: Zap, href: '/quick-sale', permission: 'can_create_sales' },
-      { id: 'discounts', label: 'Punguzo', icon: Percent, href: '/discounts', permission: null },
-    ]
-  },
+  { id: 'mauzo', label: 'Mauzo', icon: ShoppingCart, permission: 'can_view_sales', children: [], href: '/sales' },
   {
     id: 'stock', label: 'Stock', icon: ClipboardList, permission: 'can_view_inventory',
     children: [
@@ -63,20 +56,8 @@ const navigationGroups: NavGroup[] = [
       { id: 'inventory-automation', label: 'Auto-Oda', icon: Package, href: '/inventory-automation', permission: 'can_edit_inventory' },
     ]
   },
-  {
-    id: 'orders', label: 'Oda', icon: Store, permission: 'can_view_sales',
-    children: [
-      { id: 'sokoni', label: 'Sokoni', icon: Store, href: '/sokoni', permission: null },
-      { id: 'sokoni-orders', label: 'Oda za Sokoni', icon: ClipboardList, href: '/sokoni-orders', permission: 'can_view_sales' },
-    ]
-  },
-  {
-    id: 'wateja', label: 'Wateja', icon: Users, permission: 'can_view_customers',
-    children: [
-      { id: 'customers-list', label: 'Orodha', icon: Users, href: '/customers', permission: 'can_view_customers' },
-      { id: 'loyalty', label: 'Uaminifu', icon: Crown, href: '/loyalty', permission: 'can_view_customers' },
-    ]
-  },
+  { id: 'orders', label: 'Oda', icon: Store, permission: 'can_view_sales', children: [], href: '/sokoni-orders' },
+  { id: 'groups', label: 'Makundi', icon: Users, permission: null, children: [], href: '/groups' },
   {
     id: 'mikopo', label: 'Mikopo', icon: CreditCard, permission: null,
     children: [
@@ -91,35 +72,18 @@ const navigationGroups: NavGroup[] = [
       { id: 'profit-loss', label: 'Faida/Hasara', icon: TrendingUp, href: '/profit-loss', permission: 'can_view_reports' },
       { id: 'sales-analytics', label: 'Takwimu', icon: LineChart, href: '/sales-analytics', permission: 'can_view_reports' },
       { id: 'expenses', label: 'Matumizi', icon: Receipt, href: '/expenses', permission: null },
-      { id: 'forecasting', label: 'Utabiri', icon: Brain, href: '/forecasting', permission: 'can_view_reports' },
     ]
   },
   {
     id: 'ai', label: 'AI & Zana', icon: Brain, permission: null,
     children: [
       { id: 'ai-advisor', label: 'Mshauri AI', icon: Brain, href: '/ai-advisor', permission: null },
-      { id: 'business-intelligence', label: 'Takwimu AI', icon: TrendingUp, href: '/business-intelligence', permission: null },
       { id: 'voice-pos', label: 'Sauti POS', icon: Mic, href: '/voice-pos', permission: null },
       { id: 'calculator', label: 'Kikokotoo', icon: CalcIcon, href: '/calculator', permission: null },
     ]
   },
-  {
-    id: 'watumiaji', label: 'Watumiaji', icon: UserCheck, permission: null,
-    children: [
-      { id: 'users', label: 'Wasaidizi', icon: UserCheck, href: '/users', permission: null },
-    ]
-  },
-  {
-    id: 'mipangilio', label: 'Mipangilio', icon: Settings, permission: null,
-    children: [
-      { id: 'settings', label: 'Mipangilio', icon: Settings, href: '/settings', permission: null },
-      { id: 'ads', label: 'Matangazo', icon: Megaphone, href: '/ads', permission: null },
-      { id: 'subscription', label: 'Michango', icon: Crown, href: '/subscription', permission: null },
-      { id: 'whatsapp', label: 'WhatsApp', icon: MessageSquare, href: '/whatsapp', permission: null },
-      { id: 'notifications-settings', label: 'Arifa', icon: Bell, href: '/notification-settings', permission: null },
-      { id: 'pwa-install', label: 'Sakinisha App', icon: Smartphone, href: '/pwa-install', permission: null },
-    ]
-  },
+  { id: 'bookkeeping', label: 'Uhasibu', icon: Wallet, permission: null, children: [], href: '/bookkeeping' },
+  { id: 'mipangilio', label: 'Mipangilio', icon: Settings, permission: null, children: [], href: '/settings' },
 ];
 
 export const MobileBottomNav = () => {
