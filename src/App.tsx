@@ -229,7 +229,7 @@ export default function App() {
               <Route path="/settings" element={
                 <ProtectedRoute>
                   <AppLayout>
-                    <SettingsPage />
+                    <UnifiedSettingsPage />
                   </AppLayout>
                 </ProtectedRoute>
               } />
