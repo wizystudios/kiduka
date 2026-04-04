@@ -338,19 +338,6 @@ export const MobileBottomNav = () => {
                 <span className="text-[11px] font-medium">Admin</span>
               </button>
             )}
-
-            {/* Users for owners */}
-            {userProfile?.role === 'owner' && (
-              <button
-                onClick={() => handleNav('/users')}
-                className="inline-flex flex-col items-center justify-center w-[calc(25%-8px)] p-3 rounded-2xl bg-muted/30 hover:bg-muted/60"
-              >
-                <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center mb-1">
-                  <UserCheck className="h-5 w-5 text-primary" />
-                </div>
-                <span className="text-[11px] font-medium">Watumiaji</span>
-              </button>
-            )}
           </div>
 
           {/* Footer Actions */}
