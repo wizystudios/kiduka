@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
 import { Package, TrendingUp, TrendingDown, Receipt } from 'lucide-react';
+import { DataExportButton } from '@/components/DataExportButton';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -211,9 +212,28 @@ export const ReportsPage = () => {
 
   return (
     <div className="p-4 space-y-4 pb-24">
-      <div className="text-center mb-2">
-        <h1 className="text-2xl font-bold">Ripoti</h1>
-        <p className="text-sm text-muted-foreground">Mauzo, faida, na uchambuzi wa bidhaa</p>
+      <div className="flex items-center justify-between mb-2">
+        <div className="text-center flex-1">
+          <h1 className="text-2xl font-bold">Ripoti</h1>
+          <p className="text-sm text-muted-foreground">Mauzo, faida, na uchambuzi wa bidhaa</p>
+        </div>
+        <DataExportButton
+          data={[
+            { kipimo: 'Mapato', kiasi: stats.totalRevenue },
+            { kipimo: 'COGS', kiasi: stats.totalCOGS },
+            { kipimo: 'Matumizi', kiasi: stats.totalExpenses },
+            { kipimo: 'Faida', kiasi: stats.totalProfit },
+            { kipimo: 'Mauzo', kiasi: stats.totalSales },
+            ...topProducts.map(p => ({ kipimo: `Bidhaa: ${p.name}`, kiasi: p.revenue, faida: p.profit, idadi: p.total_sold })),
+          ]}
+          columns={[
+            { header: 'Kipimo', key: 'kipimo' },
+            { header: 'Kiasi (TSh)', key: 'kiasi', formatter: (v: number) => v },
+            { header: 'Faida', key: 'faida', formatter: (v: number) => v || '' },
+            { header: 'Idadi', key: 'idadi', formatter: (v: number) => v || '' },
+          ]}
+          filename="Ripoti_Biashara"
+        />
       </div>
 
       {/* Period Selection */}

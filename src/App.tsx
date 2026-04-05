@@ -74,6 +74,7 @@ import BookkeepingPage from '@/pages/BookkeepingPage';
 import GroupsPage from '@/pages/GroupsPage';
 import UnifiedSalesPage from '@/pages/UnifiedSalesPage';
 import UnifiedSettingsPage from '@/pages/UnifiedSettingsPage';
+import { BranchManager } from '@/components/BranchManager';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -470,6 +471,17 @@ export default function App() {
                   <AppLayout>
                     <GroupsPage />
                   </AppLayout>
+                </ProtectedRoute>
+              } />
+              
+              {/* Branches */}
+              <Route path="/branches" element={
+                <ProtectedRoute>
+                  <SubscriptionGuard>
+                    <AppLayout>
+                      <BranchManager />
+                    </AppLayout>
+                  </SubscriptionGuard>
                 </ProtectedRoute>
               } />
               

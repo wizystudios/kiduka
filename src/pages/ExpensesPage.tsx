@@ -10,6 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { logActivity } from '@/hooks/useActivityLogger';
+import { DataExportButton } from '@/components/DataExportButton';
 import { format } from 'date-fns';
 
 interface Expense {
@@ -131,6 +132,19 @@ export default function ExpensesPage() {
 
   return (
     <div className="page-container p-4 pb-24 md:p-6 space-y-4">
+      <div className="flex justify-end">
+        <DataExportButton
+          data={expenses}
+          columns={[
+            { header: 'Tarehe', key: 'expense_date' },
+            { header: 'Kategoria', key: 'category' },
+            { header: 'Kiasi', key: 'amount', formatter: (v: number) => v },
+            { header: 'Maelezo', key: 'description' },
+            { header: 'Malipo', key: 'payment_method' },
+          ]}
+          filename="Matumizi"
+        />
+      </div>
 
       <div className="flex items-center justify-around py-3 border-y border-border/50">
         <div className="text-center space-y-0.5">

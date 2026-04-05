@@ -201,11 +201,11 @@ export const useBusinessGovernance = () => {
   }, [contract, compliance, isAssistant, isSuperAdmin]);
 
   const enterBusinessAsAdmin = useCallback(
-    async (ownerId: string) => {
+    async (ownerId: string, reason?: string) => {
       if (!user?.id || !isSuperAdmin) return { success: false };
       const { data, error } = await supabase
         .from('admin_business_sessions' as any)
-        .insert({ owner_id: ownerId, admin_id: user.id, active: true })
+        .insert({ owner_id: ownerId, admin_id: user.id, active: true, consent_status: 'pending', reason: reason || 'Msaada wa kiufundi' })
         .select('*')
         .single();
 

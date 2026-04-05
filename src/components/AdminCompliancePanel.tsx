@@ -68,20 +68,37 @@ export const AdminCompliancePanel = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [compRes, contractRes, profilesRes] = await Promise.all([
+      const [compRes, contractRes, profilesRes, rolesRes] = await Promise.all([
         supabase.from('business_compliance').select('*').order('created_at', { ascending: false }),
         supabase.from('business_contracts').select('*').order('created_at', { ascending: false }),
         supabase.from('profiles').select('id, full_name, business_name, email'),
+        supabase.from('user_roles').select('user_id, role'),
       ]);
 
       const profiles = profilesRes.data || [];
+      const roles = rolesRes.data || [];
+      
+      // Only get owner user IDs (not assistants or super_admins)
+      const ownerIds = new Set(
+        roles.filter(r => r.role === 'owner').map(r => r.user_id)
+      );
+      
       const enrich = (ownerId: string) => {
         const p = profiles.find(pr => pr.id === ownerId);
         return { full_name: p?.full_name || '', business_name: p?.business_name || '', email: p?.email || '' };
       };
 
-      setComplianceRecords((compRes.data || []).map(c => ({ ...c, ...enrich(c.owner_id) })));
-      setContractRecords((contractRes.data || []).map(c => ({ ...c, ...enrich(c.owner_id) })));
+      // Filter to only show business owners
+      setComplianceRecords(
+        (compRes.data || [])
+          .filter(c => ownerIds.has(c.owner_id))
+          .map(c => ({ ...c, ...enrich(c.owner_id) }))
+      );
+      setContractRecords(
+        (contractRes.data || [])
+          .filter(c => ownerIds.has(c.owner_id))
+          .map(c => ({ ...c, ...enrich(c.owner_id) }))
+      );
     } finally {
       setLoading(false);
     }

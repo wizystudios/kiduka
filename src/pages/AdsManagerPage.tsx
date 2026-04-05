@@ -276,9 +276,41 @@ export const AdsManagerPage = () => {
                 <Label className="text-xs">Maelezo</Label>
                 <Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="rounded-2xl" rows={2} maxLength={200} />
               </div>
+              {/* Video upload */}
               <div>
-                <Label className="text-xs">Link ya Kufungua</Label>
-                <Input value={form.link_url} onChange={(e) => setForm({ ...form, link_url: e.target.value })} className="rounded-2xl" placeholder="https://..." />
+                <Label className="text-xs">Video ya Tangazo (Hiari)</Label>
+                <label className="flex items-center gap-2 mt-1 px-3 py-2 border border-dashed border-border/50 rounded-2xl cursor-pointer hover:bg-muted/30 transition-colors">
+                  <Upload className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-xs text-muted-foreground">Pakia video (max 10MB)</span>
+                  <input
+                    type="file"
+                    accept="video/*"
+                    className="hidden"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file || !dataOwnerId) return;
+                      if (file.size > 10 * 1024 * 1024) { toast.error('Video ni kubwa sana. Max 10MB'); return; }
+                      setUploading(true);
+                      try {
+                        const ext = file.name.split('.').pop();
+                        const fileName = `ads/${dataOwnerId}/video_${Date.now()}.${ext}`;
+                        const { data, error } = await supabase.storage.from('product-images').upload(fileName, file, { cacheControl: '3600', upsert: false });
+                        if (error) throw error;
+                        const { data: urlData } = supabase.storage.from('product-images').getPublicUrl(data.path);
+                        setForm(prev => ({ ...prev, link_url: urlData.publicUrl }));
+                        toast.success('Video imepakiwa!');
+                      } catch { toast.error('Imeshindwa kupakia video'); }
+                      finally { setUploading(false); }
+                    }}
+                    disabled={uploading}
+                  />
+                </label>
+                {form.link_url && form.link_url.includes('/ads/') && (
+                  <div className="mt-1 flex items-center gap-2">
+                    <Badge variant="outline" className="text-[10px]">Video imepakiwa</Badge>
+                    <button type="button" onClick={() => setForm(prev => ({ ...prev, link_url: '' }))} className="text-[10px] text-destructive">Ondoa</button>
+                  </div>
+                )}
               </div>
               <div>
                 <Label className="text-xs">Mahali pa Kuonyesha</Label>

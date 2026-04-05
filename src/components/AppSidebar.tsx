@@ -19,7 +19,7 @@ import {
 } from '@/components/ui/sidebar';
 import {
   Shield, Home, Package, ShoppingCart, BarChart3, Settings, Users,
-  CreditCard, LogOut, Crown,
+  CreditCard, LogOut, Crown, Store,
   ClipboardList,
   BookOpen
 } from 'lucide-react';
@@ -42,6 +42,7 @@ const navigationItems: NavItem[] = [
   { id: 'mikopo', label: 'Mikopo', icon: CreditCard, href: '/credit-management', permission: null },
   { id: 'ripoti', label: 'Ripoti', icon: BarChart3, href: '/reports', permission: 'can_view_reports' },
   { id: 'bookkeeping', label: 'Uhasibu', icon: BookOpen, href: '/bookkeeping', permission: null },
+  { id: 'branches', label: 'Matawi', icon: Store, href: '/branches', permission: null },
   { id: 'settings', label: 'Mipangilio', icon: Settings, href: '/settings', permission: null },
 ];
 
