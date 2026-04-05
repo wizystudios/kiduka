@@ -474,6 +474,17 @@ export default function App() {
                 </ProtectedRoute>
               } />
               
+              {/* Branches */}
+              <Route path="/branches" element={
+                <ProtectedRoute>
+                  <SubscriptionGuard>
+                    <AppLayout>
+                      <BranchManager />
+                    </AppLayout>
+                  </SubscriptionGuard>
+                </ProtectedRoute>
+              } />
+              
               {/* Bookkeeping */}
               <Route path="/bookkeeping" element={
                 <ProtectedRoute>
