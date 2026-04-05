@@ -17,6 +17,7 @@ export function AppLayout({ children }: AppLayoutProps) {
   return (
     <SidebarProvider>
       <AdminSessionBanner />
+      <AdminConsentRequest />
       <TopNavbar />
       <OfflineSyncBootstrap />
       <div className="flex min-h-screen w-full">
