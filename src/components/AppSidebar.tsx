@@ -19,7 +19,7 @@ import {
 } from '@/components/ui/sidebar';
 import {
   Shield, Home, Package, ShoppingCart, BarChart3, Settings, Users,
-  CreditCard, LogOut, Crown,
+  CreditCard, LogOut, Crown, Store,
   ClipboardList,
   BookOpen
 } from 'lucide-react';
