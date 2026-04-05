@@ -10,6 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { logActivity } from '@/hooks/useActivityLogger';
+import { DataExportButton } from '@/components/DataExportButton';
 import { format } from 'date-fns';
 
 interface Expense {
