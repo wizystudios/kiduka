@@ -71,7 +71,7 @@ export const BranchManager = () => {
     if (!user?.id) return;
     setLoading(true);
     const { data } = await supabase
-      .from('business_branches')
+      .from('business_branches' as any)
       .select('*')
       .eq('owner_id', user.id)
       .order('created_at', { ascending: true });
@@ -108,11 +108,11 @@ export const BranchManager = () => {
       };
 
       if (editing) {
-        const { error } = await supabase.from('business_branches').update(payload).eq('id', editing.id);
+        const { error } = await supabase.from('business_branches' as any).update(payload).eq('id', editing.id);
         if (error) throw error;
         toast.success('Tawi limesasishwa!');
       } else {
-        const { error } = await supabase.from('business_branches').insert([payload]);
+        const { error } = await supabase.from('business_branches' as any).insert([payload]);
         if (error) throw error;
         toast.success('Tawi jipya limeundwa! Malipo: TSh 20,000/mwezi');
       }
@@ -126,17 +126,17 @@ export const BranchManager = () => {
 
   const deleteBranch = async (id: string) => {
     if (!confirm('Una uhakika unataka kufuta tawi hili?')) return;
-    const { error } = await supabase.from('business_branches').delete().eq('id', id);
+    const { error } = await supabase.from('business_branches' as any).delete().eq('id', id);
     if (!error) { toast.success('Tawi limefutwa'); fetchBranches(); }
   };
 
   const toggleBranch = async (branch: Branch) => {
-    await supabase.from('business_branches').update({ is_active: !branch.is_active }).eq('id', branch.id);
+    await supabase.from('business_branches' as any).update({ is_active: !branch.is_active }).eq('id', branch.id);
     fetchBranches();
   };
 
   const updateFeatures = async (branch: Branch, features: Record<string, boolean>) => {
-    await supabase.from('business_branches').update({ features }).eq('id', branch.id);
+    await supabase.from('business_branches' as any).update({ features }).eq('id', branch.id);
     toast.success('Huduma zimesasishwa');
     setSettingsDialog(null);
     fetchBranches();
@@ -317,7 +317,7 @@ export const BranchManager = () => {
               </div>
               <Button className="w-full rounded-full" onClick={() => {
                 if (settingsDialog) {
-                  supabase.from('business_branches').update({ features: settingsDialog.features, is_active: settingsDialog.is_active }).eq('id', settingsDialog.id).then(() => {
+                  supabase.from('business_branches' as any).update({ features: settingsDialog.features, is_active: settingsDialog.is_active }).eq('id', settingsDialog.id).then(() => {
                     toast.success('Imesasishwa');
                     setSettingsDialog(null);
                     fetchBranches();

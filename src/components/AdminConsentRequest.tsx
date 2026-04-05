@@ -21,7 +21,7 @@ export const AdminConsentRequest = () => {
 
     const check = async () => {
       const { data } = await supabase
-        .from('admin_business_sessions')
+        .from('admin_business_sessions' as any)
         .select('id, admin_id, reason')
         .eq('owner_id', user.id)
         .eq('consent_status', 'pending')
@@ -60,7 +60,7 @@ export const AdminConsentRequest = () => {
   const respond = async (approve: boolean) => {
     if (!pending) return;
     const { error } = await supabase
-      .from('admin_business_sessions')
+      .from('admin_business_sessions' as any)
       .update({
         consent_status: approve ? 'approved' : 'denied',
         consent_responded_at: new Date().toISOString(),
