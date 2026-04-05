@@ -31,12 +31,13 @@ export const AdminConsentRequest = () => {
         .maybeSingle();
 
       if (data) {
+        const row = data as any;
         const { data: profile } = await supabase
           .from('profiles')
           .select('full_name')
-          .eq('id', data.admin_id)
+          .eq('id', row.admin_id)
           .maybeSingle();
-        setPending({ ...data, admin_name: profile?.full_name || 'Admin' });
+        setPending({ ...row, admin_name: profile?.full_name || 'Admin' });
       } else {
         setPending(null);
       }
