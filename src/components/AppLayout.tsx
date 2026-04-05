@@ -6,6 +6,7 @@ import { UserInfoBar } from "@/components/UserInfoBar";
 import OfflineSyncBootstrap from "@/components/OfflineSyncBootstrap";
 import { ContractComplianceGate } from "@/components/ContractComplianceGate";
 import { AdminSessionBanner } from "@/components/AdminSessionBanner";
+import { AdminConsentRequest } from "@/components/AdminConsentRequest";
 import { LocationSetupGate } from "@/components/LocationSetupGate";
 
 interface AppLayoutProps {
