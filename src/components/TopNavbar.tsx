@@ -1,44 +1,36 @@
 import { useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { useAuth } from '@/hooks/useAuth';
+import { usePermissions } from '@/hooks/usePermissions';
 import { useRealTimeNotifications, NotificationIcon } from '@/hooks/useRealTimeNotifications';
 import { useDataAccess } from '@/hooks/useDataAccess';
 import { useOfflineSync } from '@/hooks/useOfflineSync';
 import { OfflineIndicator } from '@/components/OfflineIndicator';
-import { useNavigate } from 'react-router-dom';
 import { KidukaLogo } from './KidukaLogo';
-import { LogOut, Settings, Crown, Smartphone } from 'lucide-react';
+import { LogOut } from 'lucide-react';
+import { filterNavigationItems, primaryNavigationItems, superAdminNavigationItem, utilityNavigationItems } from '@/lib/navigation';
 
 export const TopNavbar = () => {
   const { user, userProfile, signOut } = useAuth();
-  const { notifications, unreadCount, markAllAsRead } = useRealTimeNotifications();
+  const { unreadCount } = useRealTimeNotifications();
   const { dataOwnerId } = useDataAccess();
+  const { permissions } = usePermissions();
   const offlineSync = useOfflineSync(dataOwnerId);
   const navigate = useNavigate();
+  const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
 
   const getUserInitials = () => {
-    const displayName = userProfile?.full_name || 
-                       user?.user_metadata?.full_name || 
-                       user?.email?.split('@')[0] || 
-                       'User';
+    const displayName = userProfile?.full_name || user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User';
     return displayName.split(' ').map((n: string) => n.charAt(0).toUpperCase()).join('').slice(0, 2);
   };
 
-  const getDisplayName = () => {
-    return userProfile?.full_name || 
-           user?.user_metadata?.full_name || 
-           user?.email?.split('@')[0] || 
-           'User';
-  };
-
-  const getBusinessName = () => {
-    return userProfile?.business_name || 'Kiduka';
-  };
-
+  const getDisplayName = () => userProfile?.full_name || user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User';
+  const getBusinessName = () => userProfile?.business_name || 'Kiduka';
   const getUserRole = () => {
     const role = userProfile?.role || 'owner';
     switch (role) {
@@ -52,24 +44,33 @@ export const TopNavbar = () => {
   const handleSignOut = async () => {
     try {
       await signOut();
+      setMenuOpen(false);
       navigate('/auth');
     } catch (error) {
       console.error('Error signing out:', error);
     }
   };
 
+  const handleNavigate = (href: string) => {
+    navigate(href);
+    setMenuOpen(false);
+  };
+
+  const isActive = (href: string) => href === '/dashboard' ? location.pathname === '/dashboard' : location.pathname.startsWith(href);
+
+  const primaryItems = filterNavigationItems(primaryNavigationItems, userProfile?.role, permissions);
+  const utilityItems = filterNavigationItems(utilityNavigationItems, userProfile?.role, permissions);
+
   if (!user) return null;
 
   return (
-    <div className="fixed top-0 left-0 right-0 bg-background/95 backdrop-blur-sm border-b border-border z-50 md:hidden">
+    <div className="fixed top-0 left-0 right-0 z-50 border-b border-border bg-background/95 backdrop-blur-sm md:hidden">
       <div className="flex items-center justify-between px-3 py-2">
-        {/* Left: Business name above logo */}
         <div className="flex items-center gap-1.5">
           <KidukaLogo size="sm" showText={false} />
           <span className="text-xs font-semibold text-primary">{getBusinessName()}</span>
         </div>
-        
-        {/* Right: Actions */}
+
         <div className="flex items-center gap-1">
           <OfflineIndicator
             isOnline={offlineSync.isOnline}
@@ -90,9 +91,7 @@ export const TopNavbar = () => {
               <Button variant="ghost" size="sm" className="p-0 h-auto">
                 <Avatar className="h-8 w-8">
                   <AvatarImage src={userProfile?.avatar_url} />
-                  <AvatarFallback className="bg-gradient-to-br from-success to-primary text-white text-xs">
-                    {getUserInitials()}
-                  </AvatarFallback>
+                  <AvatarFallback className="bg-primary text-primary-foreground text-xs">{getUserInitials()}</AvatarFallback>
                 </Avatar>
               </Button>
             </SheetTrigger>
@@ -101,38 +100,55 @@ export const TopNavbar = () => {
                 <SheetTitle className="flex items-center gap-2">
                   <Avatar className="h-10 w-10">
                     <AvatarImage src={userProfile?.avatar_url} />
-                    <AvatarFallback className="bg-gradient-to-br from-success to-primary text-white">
-                      {getUserInitials()}
-                    </AvatarFallback>
+                    <AvatarFallback className="bg-primary text-primary-foreground">{getUserInitials()}</AvatarFallback>
                   </Avatar>
                   <div className="text-left">
                     <p className="text-sm font-semibold">{getDisplayName()}</p>
                     <p className="text-[10px] text-muted-foreground">{getBusinessName()}</p>
-                    <Badge variant="outline" className="text-xs mt-0.5">
-                      {getUserRole()}
-                    </Badge>
+                    <Badge variant="outline" className="mt-0.5 text-xs">{getUserRole()}</Badge>
                   </div>
                 </SheetTitle>
               </SheetHeader>
-              <div className="mt-6 space-y-2 pb-4">
-                <Button variant="ghost" className="w-full justify-start" onClick={() => { navigate('/settings'); setMenuOpen(false); }}>
-                  <Settings className="h-4 w-4 mr-2" />
-                  Mipangilio
-                </Button>
-                <Button variant="ghost" className="w-full justify-start" onClick={() => { navigate('/pwa-install'); setMenuOpen(false); }}>
-                  <Smartphone className="h-4 w-4 mr-2" />
-                  Sakinisha App
-                </Button>
-                <Button variant="ghost" className="w-full justify-start" onClick={() => { navigate('/subscription'); setMenuOpen(false); }}>
-                  <Crown className="h-4 w-4 mr-2" />
-                  Michango
-                </Button>
-                <Button 
-                  variant="outline" 
-                  className="w-full justify-start text-destructive hover:text-destructive hover:bg-destructive/5"
-                  onClick={handleSignOut}
-                >
-                  <LogOut className="h-4 w-4 mr-2" />
+
+              <div className="mt-6 space-y-4 pb-4">
+                <div className="space-y-1">
+                  <p className="px-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">Menyu kuu</p>
+                  {primaryItems.map((item) => {
+                    const Icon = item.icon;
+                    return (
+                      <Button key={item.id} variant={isActive(item.href) ? 'secondary' : 'ghost'} className="w-full justify-start rounded-2xl" onClick={() => handleNavigate(item.href)}>
+                        <Icon className="mr-2 h-4 w-4" />
+                        {item.label}
+                      </Button>
+                    );
+                  })}
+                </div>
+
+                {userProfile?.role === 'super_admin' && (
+                  <div className="space-y-1 border-t border-border pt-4">
+                    <p className="px-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">Usimamizi</p>
+                    <Button variant={isActive(superAdminNavigationItem.href) ? 'secondary' : 'ghost'} className="w-full justify-start rounded-2xl" onClick={() => handleNavigate(superAdminNavigationItem.href)}>
+                      <superAdminNavigationItem.icon className="mr-2 h-4 w-4" />
+                      {superAdminNavigationItem.label}
+                    </Button>
+                  </div>
+                )}
+
+                <div className="space-y-1 border-t border-border pt-4">
+                  <p className="px-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">Huduma</p>
+                  {utilityItems.map((item) => {
+                    const Icon = item.icon;
+                    return (
+                      <Button key={item.id} variant={isActive(item.href) ? 'secondary' : 'ghost'} className="w-full justify-start rounded-2xl" onClick={() => handleNavigate(item.href)}>
+                        <Icon className="mr-2 h-4 w-4" />
+                        {item.label}
+                      </Button>
+                    );
+                  })}
+                </div>
+
+                <Button variant="outline" className="w-full justify-start text-destructive hover:bg-destructive/5 hover:text-destructive" onClick={handleSignOut}>
+                  <LogOut className="mr-2 h-4 w-4" />
                   Toka
                 </Button>
               </div>

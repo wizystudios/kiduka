@@ -1,90 +1,13 @@
-import { useState, useRef, useCallback } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { useAuth } from '@/hooks/useAuth';
-import { usePermissions } from '@/hooks/usePermissions';
+import { useRef, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from '@/components/ui/sheet';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import {
-  Home, Package, QrCode, ShoppingCart, Settings, LogOut, Bell,
-  Users, CreditCard, Percent, TrendingUp, BarChart3, Download,
-  Calculator as CalcIcon, Receipt, Store, Shield, Crown,
-  ClipboardList, Smartphone, Zap, Banknote, LineChart, UserCheck,
-  ChevronDown, Menu, HelpCircle, Plus, Wallet, MessageSquare,
-  Brain, Mic, Headphones, Megaphone
-} from 'lucide-react';
-
-interface NavItem {
-  id: string;
-  label: string;
-  icon: React.ComponentType<any>;
-  href: string;
-  permission?: string | null;
-}
-
-interface NavGroup {
-  id: string;
-  label: string;
-  icon: React.ComponentType<any>;
-  permission: string | null;
-  children: NavItem[];
-  href?: string;
-}
-
-const navigationGroups: NavGroup[] = [
-  { id: 'dashboard', label: 'Dashboard', icon: Home, permission: null, children: [], href: '/dashboard' },
-  {
-    id: 'bidhaa', label: 'Bidhaa', icon: Package, permission: 'can_view_products',
-    children: [
-      { id: 'products-list', label: 'Orodha', icon: Package, href: '/products', permission: 'can_view_products' },
-      { id: 'import-products', label: 'Ingiza', icon: Download, href: '/products/import', permission: 'can_edit_products' },
-      { id: 'scanner', label: 'Scanner', icon: QrCode, href: '/scanner', permission: 'can_view_products' },
-    ]
-  },
-  { id: 'mauzo', label: 'Mauzo', icon: ShoppingCart, permission: 'can_view_sales', children: [], href: '/sales' },
-  {
-    id: 'stock', label: 'Stock', icon: ClipboardList, permission: 'can_view_inventory',
-    children: [
-      { id: 'inventory-snapshots', label: 'Hesabu', icon: ClipboardList, href: '/inventory-snapshots', permission: 'can_view_inventory' },
-      { id: 'inventory-automation', label: 'Auto-Oda', icon: Package, href: '/inventory-automation', permission: 'can_edit_inventory' },
-    ]
-  },
-  { id: 'orders', label: 'Oda', icon: Store, permission: 'can_view_sales', children: [], href: '/sokoni-orders' },
-  { id: 'groups', label: 'Makundi', icon: Users, permission: null, children: [], href: '/groups' },
-  {
-    id: 'mikopo', label: 'Mikopo', icon: CreditCard, permission: null,
-    children: [
-      { id: 'credit', label: 'Wateja', icon: CreditCard, href: '/credit-management', permission: null },
-      { id: 'micro-loans', label: 'Midogo', icon: Banknote, href: '/micro-loans', permission: null },
-    ]
-  },
-  {
-    id: 'ripoti', label: 'Ripoti', icon: BarChart3, permission: 'can_view_reports',
-    children: [
-      { id: 'reports', label: 'Kuu', icon: BarChart3, href: '/reports', permission: 'can_view_reports' },
-      { id: 'profit-loss', label: 'Faida/Hasara', icon: TrendingUp, href: '/profit-loss', permission: 'can_view_reports' },
-      { id: 'sales-analytics', label: 'Takwimu', icon: LineChart, href: '/sales-analytics', permission: 'can_view_reports' },
-      { id: 'expenses', label: 'Matumizi', icon: Receipt, href: '/expenses', permission: null },
-    ]
-  },
-  {
-    id: 'ai', label: 'AI & Zana', icon: Brain, permission: null,
-    children: [
-      { id: 'ai-advisor', label: 'Mshauri AI', icon: Brain, href: '/ai-advisor', permission: null },
-      { id: 'voice-pos', label: 'Sauti POS', icon: Mic, href: '/voice-pos', permission: null },
-      { id: 'calculator', label: 'Kikokotoo', icon: CalcIcon, href: '/calculator', permission: null },
-    ]
-  },
-  { id: 'bookkeeping', label: 'Uhasibu', icon: Wallet, permission: null, children: [], href: '/bookkeeping' },
-  { id: 'mipangilio', label: 'Mipangilio', icon: Settings, permission: null, children: [], href: '/settings' },
-];
+import { Sheet, SheetContent } from '@/components/ui/sheet';
+import { useAuth } from '@/hooks/useAuth';
+import { usePermissions } from '@/hooks/usePermissions';
+import { Bell, Home, LogOut, Menu, Plus, ShoppingCart } from 'lucide-react';
+import { filterNavigationItems, primaryNavigationItems, superAdminNavigationItem, utilityNavigationItems } from '@/lib/navigation';
 
 export const MobileBottomNav = () => {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -92,24 +15,12 @@ export const MobileBottomNav = () => {
   const location = useLocation();
   const { user, userProfile, signOut } = useAuth();
   const { permissions } = usePermissions();
-  
-  // Long press state for center button
+
   const longPressTimer = useRef<NodeJS.Timeout | null>(null);
   const [isLongPressing, setIsLongPressing] = useState(false);
   const longPressTriggered = useRef(false);
 
   if (!user) return null;
-
-  const hasPermission = (perm: string | null) => {
-    if (userProfile?.role === 'owner' || userProfile?.role === 'super_admin') return true;
-    if (!perm) return true;
-    return permissions?.[perm as keyof typeof permissions] ?? false;
-  };
-
-  const isActive = (href: string) => {
-    if (href === '/dashboard') return location.pathname === '/dashboard';
-    return location.pathname.startsWith(href);
-  };
 
   const handleNav = (href: string) => {
     navigate(href);
@@ -117,7 +28,13 @@ export const MobileBottomNav = () => {
   };
 
   const handleSignOut = async () => {
-    try { await signOut(); setMenuOpen(false); } catch (e) { console.error(e); }
+    try {
+      await signOut();
+      setMenuOpen(false);
+      navigate('/auth');
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   const getUserInitials = () => {
@@ -134,13 +51,13 @@ export const MobileBottomNav = () => {
     }
   };
 
-  // Center button handlers
+  const isActive = (href: string) => href === '/dashboard' ? location.pathname === '/dashboard' : location.pathname.startsWith(href);
+
   const handleCenterTouchStart = () => {
     longPressTriggered.current = false;
     longPressTimer.current = setTimeout(() => {
       longPressTriggered.current = true;
       setIsLongPressing(true);
-      // Vibrate if supported
       if (navigator.vibrate) navigator.vibrate(50);
       setTimeout(() => {
         setIsLongPressing(false);
@@ -154,9 +71,7 @@ export const MobileBottomNav = () => {
       clearTimeout(longPressTimer.current);
       longPressTimer.current = null;
     }
-    if (!longPressTriggered.current) {
-      navigate('/products/add');
-    }
+    if (!longPressTriggered.current) navigate('/products/add');
   };
 
   const handleCenterTouchCancel = () => {
@@ -167,40 +82,24 @@ export const MobileBottomNav = () => {
     setIsLongPressing(false);
   };
 
-  const filteredGroups = navigationGroups.filter(g => hasPermission(g.permission)).map(g => ({
-    ...g,
-    children: g.children.filter(c => hasPermission(c.permission))
-  }));
+  const menuItems = filterNavigationItems(primaryNavigationItems, userProfile?.role, permissions);
+  const utilityItems = filterNavigationItems(utilityNavigationItems, userProfile?.role, permissions);
 
   return (
     <>
-      {/* Bottom Navigation Bar */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-background border-t border-border z-50 md:hidden">
-        <div className="flex items-center justify-around h-16 px-1 relative">
-          {/* Home */}
-          <button
-            onClick={() => handleNav('/dashboard')}
-            className={`flex flex-col items-center justify-center p-2 rounded-xl transition-all flex-1 ${
-              location.pathname === '/dashboard' ? 'text-primary' : 'text-muted-foreground'
-            }`}
-          >
+      <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-background md:hidden">
+        <div className="relative flex h-16 items-center justify-around px-1">
+          <button onClick={() => handleNav('/dashboard')} className={`flex flex-1 flex-col items-center justify-center rounded-xl p-2 transition-all ${isActive('/dashboard') ? 'text-primary' : 'text-muted-foreground'}`}>
             <Home className="h-5 w-5" />
-            <span className="text-[10px] mt-0.5 font-medium">Home</span>
+            <span className="mt-0.5 text-[10px] font-medium">Home</span>
           </button>
 
-          {/* Mauzo */}
-          <button
-            onClick={() => handleNav('/sales')}
-            className={`flex flex-col items-center justify-center p-2 rounded-xl transition-all flex-1 ${
-              location.pathname.startsWith('/sales') ? 'text-primary' : 'text-muted-foreground'
-            }`}
-          >
+          <button onClick={() => handleNav('/sales')} className={`flex flex-1 flex-col items-center justify-center rounded-xl p-2 transition-all ${isActive('/sales') ? 'text-primary' : 'text-muted-foreground'}`}>
             <ShoppingCart className="h-5 w-5" />
-            <span className="text-[10px] mt-0.5 font-medium">Mauzo</span>
+            <span className="mt-0.5 text-[10px] font-medium">Mauzo</span>
           </button>
 
-          {/* Center Plus Button */}
-          <div className="flex flex-col items-center justify-center flex-1 -mt-5">
+          <div className="-mt-5 flex flex-1 flex-col items-center justify-center">
             <button
               onTouchStart={handleCenterTouchStart}
               onTouchEnd={handleCenterTouchEnd}
@@ -208,154 +107,95 @@ export const MobileBottomNav = () => {
               onMouseDown={handleCenterTouchStart}
               onMouseUp={handleCenterTouchEnd}
               onMouseLeave={handleCenterTouchCancel}
-              className={`relative h-14 w-14 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center transition-all duration-300 active:scale-95 ${
-                isLongPressing ? 'scale-110' : ''
-              }`}
+              className={`relative flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg transition-all duration-300 active:scale-95 ${isLongPressing ? 'scale-110' : ''}`}
             >
-              {/* Green ring animation on long press */}
-              {isLongPressing && (
-                <span className="absolute inset-0 rounded-full border-4 border-success animate-ping opacity-75" />
-              )}
+              {isLongPressing && <span className="absolute inset-0 rounded-full border-4 border-success animate-ping opacity-75" />}
               <Plus className={`h-7 w-7 transition-transform duration-300 ${isLongPressing ? 'rotate-45' : ''}`} />
             </button>
-            <span className="text-[9px] mt-0.5 text-muted-foreground font-medium">Ongeza</span>
+            <span className="mt-0.5 text-[9px] font-medium text-muted-foreground">Ongeza</span>
           </div>
 
-          {/* Arifa */}
-          <button
-            onClick={() => navigate('/notifications')}
-            className={`flex flex-col items-center justify-center p-2 rounded-xl transition-all flex-1 ${
-              location.pathname === '/notifications' ? 'text-primary' : 'text-muted-foreground'
-            }`}
-          >
+          <button onClick={() => handleNav('/notifications')} className={`flex flex-1 flex-col items-center justify-center rounded-xl p-2 transition-all ${isActive('/notifications') ? 'text-primary' : 'text-muted-foreground'}`}>
             <Bell className="h-5 w-5" />
-            <span className="text-[10px] mt-0.5 font-medium">Arifa</span>
+            <span className="mt-0.5 text-[10px] font-medium">Arifa</span>
           </button>
 
-          {/* Zaidi */}
-          <button
-            onClick={() => setMenuOpen(true)}
-            className="flex flex-col items-center justify-center p-2 rounded-xl transition-all flex-1 text-muted-foreground"
-          >
+          <button onClick={() => setMenuOpen(true)} className="flex flex-1 flex-col items-center justify-center rounded-xl p-2 text-muted-foreground transition-all">
             <Menu className="h-5 w-5" />
-            <span className="text-[10px] mt-0.5 font-medium">Zaidi</span>
+            <span className="mt-0.5 text-[10px] font-medium">Zaidi</span>
           </button>
         </div>
       </nav>
 
-      {/* Full Menu Sheet */}
       <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
         <SheetContent side="bottom" className="h-[85vh] overflow-y-auto rounded-t-3xl">
-          {/* User Profile Header */}
-          <div className="flex items-center gap-3 pb-4 border-b border-border mb-4">
+          <div className="mb-4 flex items-center gap-3 border-b border-border pb-4">
             <Avatar className="h-12 w-12">
               <AvatarImage src={userProfile?.avatar_url} />
-              <AvatarFallback className="bg-primary text-primary-foreground">
-                {getUserInitials()}
-              </AvatarFallback>
+              <AvatarFallback className="bg-primary text-primary-foreground">{getUserInitials()}</AvatarFallback>
             </Avatar>
-            <div className="flex-1 min-w-0">
-              <h3 className="font-semibold text-base truncate">{userProfile?.full_name || user?.email?.split('@')[0]}</h3>
+            <div className="min-w-0 flex-1">
+              <h3 className="truncate font-semibold text-base">{userProfile?.full_name || user?.email?.split('@')[0]}</h3>
               <div className="flex items-center gap-2">
                 <Badge variant="outline" className="text-xs">{getUserRole()}</Badge>
-                <span className="text-xs text-muted-foreground truncate">{userProfile?.business_name}</span>
+                <span className="truncate text-xs text-muted-foreground">{userProfile?.business_name}</span>
               </div>
             </div>
           </div>
 
-          {/* Grid of features */}
-          <div className="space-y-4">
-            {filteredGroups.map((group) => {
-              if (group.children.length === 0 && group.href) {
-                const Icon = group.icon;
-                const active = isActive(group.href);
-                return (
-                  <button
-                    key={group.id}
-                    onClick={() => handleNav(group.href!)}
-                    className={`inline-flex flex-col items-center justify-center w-[calc(25%-8px)] p-3 rounded-2xl transition-all ${
-                      active ? 'bg-primary/10 text-primary' : 'bg-muted/30 hover:bg-muted/60 text-foreground'
-                    }`}
-                  >
-                    <div className={`h-10 w-10 rounded-xl flex items-center justify-center mb-1 ${
-                      active ? 'bg-primary/20' : 'bg-muted/50'
-                    }`}>
-                      <Icon className="h-5 w-5" />
-                    </div>
-                    <span className="text-[11px] font-medium text-center leading-tight">{group.label}</span>
-                  </button>
-                );
-              }
-
-              return (
-                <Collapsible key={group.id}>
-                  <CollapsibleTrigger className="flex items-center justify-between w-full px-2 py-2 rounded-xl hover:bg-muted/30 transition-colors">
-                    <div className="flex items-center gap-2">
-                      <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                        <group.icon className="h-4 w-4 text-primary" />
+          <div className="space-y-5">
+            <div>
+              <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">Menyu kuu</p>
+              <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+                {menuItems.map((item) => {
+                  const Icon = item.icon;
+                  const active = isActive(item.href);
+                  return (
+                    <button key={item.id} onClick={() => handleNav(item.href)} className={`flex min-w-0 flex-col items-center justify-center rounded-2xl p-3 text-center transition-all ${active ? 'bg-primary/10 text-primary' : 'bg-muted/30 text-foreground hover:bg-muted/60'}`}>
+                      <div className={`mb-1 flex h-10 w-10 items-center justify-center rounded-xl ${active ? 'bg-primary/20' : 'bg-muted/50'}`}>
+                        <Icon className="h-5 w-5" />
                       </div>
-                      <span className="text-sm font-semibold">{group.label}</span>
-                    </div>
-                    <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform duration-200 group-data-[state=open]:rotate-180" />
-                  </CollapsibleTrigger>
-                  <CollapsibleContent>
-                    <div className="grid grid-cols-4 gap-2 pt-2 pl-2">
-                      {group.children.map((child) => {
-                        const ChildIcon = child.icon;
-                        const active = isActive(child.href);
-                        return (
-                          <button
-                            key={child.id}
-                            onClick={() => handleNav(child.href)}
-                            className={`flex flex-col items-center justify-center p-3 rounded-2xl transition-all ${
-                              active ? 'bg-primary/10 text-primary' : 'bg-muted/30 hover:bg-muted/60 text-foreground'
-                            }`}
-                          >
-                            <div className={`h-9 w-9 rounded-xl flex items-center justify-center mb-1 ${
-                              active ? 'bg-primary/20' : 'bg-muted/50'
-                            }`}>
-                              <ChildIcon className="h-4 w-4" />
-                            </div>
-                            <span className="text-[10px] font-medium text-center leading-tight">{child.label}</span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </CollapsibleContent>
-                </Collapsible>
-              );
-            })}
+                      <span className="text-[11px] font-medium leading-tight">{item.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
 
-            {/* Super Admin */}
             {userProfile?.role === 'super_admin' && (
-              <button
-                onClick={() => handleNav('/super-admin')}
-                className="inline-flex flex-col items-center justify-center w-[calc(25%-8px)] p-3 rounded-2xl bg-muted/30 hover:bg-muted/60"
-              >
-                <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center mb-1">
-                  <Shield className="h-5 w-5 text-primary" />
-                </div>
-                <span className="text-[11px] font-medium">Admin</span>
-              </button>
+              <div>
+                <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">Usimamizi</p>
+                <button onClick={() => handleNav(superAdminNavigationItem.href)} className="flex w-full items-center gap-3 rounded-2xl bg-muted/30 p-3 text-left hover:bg-muted/60">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
+                    <superAdminNavigationItem.icon className="h-5 w-5 text-primary" />
+                  </div>
+                  <span className="text-sm font-medium">{superAdminNavigationItem.label}</span>
+                </button>
+              </div>
             )}
+
+            <div>
+              <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">Huduma</p>
+              <div className="grid grid-cols-2 gap-2">
+                {utilityItems.map((item) => {
+                  const Icon = item.icon;
+                  const active = isActive(item.href);
+                  return (
+                    <button key={item.id} onClick={() => handleNav(item.href)} className={`flex items-center gap-3 rounded-2xl p-3 text-left transition-all ${active ? 'bg-primary/10 text-primary' : 'bg-muted/30 text-foreground hover:bg-muted/60'}`}>
+                      <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${active ? 'bg-primary/20' : 'bg-muted/50'}`}>
+                        <Icon className="h-4 w-4" />
+                      </div>
+                      <span className="min-w-0 text-sm font-medium">{item.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
           </div>
 
-          {/* Footer Actions */}
-          <div className="mt-6 pt-4 border-t border-border space-y-2">
-            <Button
-              variant="ghost"
-              className="w-full justify-start h-11 rounded-2xl"
-              onClick={() => handleNav('/help')}
-            >
-              <HelpCircle className="h-4 w-4 mr-3" />
-              Msaada
-            </Button>
-            <Button
-              variant="ghost"
-              className="w-full justify-start h-11 rounded-2xl text-destructive hover:text-destructive hover:bg-destructive/10"
-              onClick={handleSignOut}
-            >
-              <LogOut className="h-4 w-4 mr-3" />
+          <div className="mt-6 border-t border-border pt-4">
+            <Button variant="ghost" className="h-11 w-full justify-start rounded-2xl text-destructive hover:bg-destructive/10 hover:text-destructive" onClick={handleSignOut}>
+              <LogOut className="mr-3 h-4 w-4" />
               Toka Akaunti
             </Button>
           </div>

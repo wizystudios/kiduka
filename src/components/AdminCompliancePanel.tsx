@@ -77,27 +77,51 @@ export const AdminCompliancePanel = () => {
 
       const profiles = profilesRes.data || [];
       const roles = rolesRes.data || [];
-      
-      // Only get owner user IDs (not assistants or super_admins)
-      const ownerIds = new Set(
-        roles.filter(r => r.role === 'owner').map(r => r.user_id)
-      );
-      
-      const enrich = (ownerId: string) => {
-        const p = profiles.find(pr => pr.id === ownerId);
-        return { full_name: p?.full_name || '', business_name: p?.business_name || '', email: p?.email || '' };
-      };
 
-      // Filter to only show business owners
+      const ownerIds = new Set(roles.filter(r => r.role === 'owner').map(r => r.user_id));
+      const ownerProfiles = profiles.filter(profile => ownerIds.has(profile.id));
+      const complianceByOwner = new Map((compRes.data || []).map(record => [record.owner_id, record]));
+      const contractByOwner = new Map((contractRes.data || []).map(record => [record.owner_id, record]));
+
       setComplianceRecords(
-        (compRes.data || [])
-          .filter(c => ownerIds.has(c.owner_id))
-          .map(c => ({ ...c, ...enrich(c.owner_id) }))
+        ownerProfiles.map(profile => {
+          const existing = complianceByOwner.get(profile.id);
+          return {
+            id: existing?.id || profile.id,
+            owner_id: profile.id,
+            tin_number: existing?.tin_number || null,
+            nida_number: existing?.nida_number || null,
+            business_license: existing?.business_license || null,
+            block_mode: existing?.block_mode || 'none',
+            block_until: existing?.block_until || null,
+            required_after: existing?.required_after || new Date().toISOString(),
+            completed_at: existing?.completed_at || null,
+            notes: existing?.notes || null,
+            full_name: profile.full_name || '',
+            business_name: profile.business_name || '',
+            email: profile.email || '',
+          };
+        })
       );
       setContractRecords(
-        (contractRes.data || [])
-          .filter(c => ownerIds.has(c.owner_id))
-          .map(c => ({ ...c, ...enrich(c.owner_id) }))
+        ownerProfiles.map(profile => {
+          const existing = contractByOwner.get(profile.id);
+          return {
+            id: existing?.id || profile.id,
+            owner_id: profile.id,
+            status: existing?.status || 'pending',
+            agreed_terms: existing?.agreed_terms || false,
+            signed_at: existing?.signed_at || null,
+            expires_at: existing?.expires_at || null,
+            required_by: existing?.required_by || null,
+            review_later_until: existing?.review_later_until || null,
+            admin_notes: existing?.admin_notes || null,
+            full_legal_name: existing?.full_legal_name || null,
+            full_name: profile.full_name || '',
+            business_name: profile.business_name || '',
+            email: profile.email || '',
+          };
+        })
       );
     } finally {
       setLoading(false);
@@ -133,13 +157,14 @@ export const AdminCompliancePanel = () => {
     try {
       const { error } = await supabase
         .from('business_compliance')
-        .update({
+        .upsert({
+          owner_id: blockDialog.record.owner_id,
           block_mode: blockMode,
           block_until: blockMode === 'temporary' ? blockUntil : null,
           enforced_by: user.id,
           notes: blockNotes || null,
-        })
-        .eq('id', blockDialog.record.id);
+          required_after: blockDialog.record.required_after,
+        }, { onConflict: 'owner_id' });
 
       if (error) throw error;
       toast.success(blockMode === 'none' ? 'Akaunti imefunguliwa' : 'Akaunti imezuiwa');
@@ -171,13 +196,13 @@ export const AdminCompliancePanel = () => {
     try {
       const { error } = await supabase
         .from('business_contracts')
-        .update({
+        .upsert({
+          owner_id: contractDialog.record.owner_id,
           status: 'pending',
           required_by: requiredBy,
           review_later_until: null,
           admin_notes: contractNotes || null,
-        })
-        .eq('id', contractDialog.record.id);
+        }, { onConflict: 'owner_id' });
 
       if (error) throw error;
       toast.success('Mkataba umetumwa upya');

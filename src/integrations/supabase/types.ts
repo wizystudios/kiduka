@@ -60,25 +60,34 @@ export type Database = {
         Row: {
           active: boolean
           admin_id: string
+          consent_responded_at: string | null
+          consent_status: string
           ended_at: string | null
           id: string
           owner_id: string
+          reason: string | null
           started_at: string
         }
         Insert: {
           active?: boolean
           admin_id: string
+          consent_responded_at?: string | null
+          consent_status?: string
           ended_at?: string | null
           id?: string
           owner_id: string
+          reason?: string | null
           started_at?: string
         }
         Update: {
           active?: boolean
           admin_id?: string
+          consent_responded_at?: string | null
+          consent_status?: string
           ended_at?: string | null
           id?: string
           owner_id?: string
+          reason?: string | null
           started_at?: string
         }
         Relationships: []
@@ -239,6 +248,60 @@ export type Database = {
           starts_at?: string | null
           title?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      business_branches: {
+        Row: {
+          branch_name: string
+          branch_type: string
+          created_at: string
+          district: string | null
+          features: Json
+          id: string
+          is_active: boolean
+          owner_id: string
+          region: string | null
+          street: string | null
+          subscription_amount: number
+          subscription_expires_at: string | null
+          subscription_status: string
+          updated_at: string
+          ward: string | null
+        }
+        Insert: {
+          branch_name: string
+          branch_type?: string
+          created_at?: string
+          district?: string | null
+          features?: Json
+          id?: string
+          is_active?: boolean
+          owner_id: string
+          region?: string | null
+          street?: string | null
+          subscription_amount?: number
+          subscription_expires_at?: string | null
+          subscription_status?: string
+          updated_at?: string
+          ward?: string | null
+        }
+        Update: {
+          branch_name?: string
+          branch_type?: string
+          created_at?: string
+          district?: string | null
+          features?: Json
+          id?: string
+          is_active?: boolean
+          owner_id?: string
+          region?: string | null
+          street?: string | null
+          subscription_amount?: number
+          subscription_expires_at?: string | null
+          subscription_status?: string
+          updated_at?: string
+          ward?: string | null
         }
         Relationships: []
       }

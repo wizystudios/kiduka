@@ -20,7 +20,11 @@ import { KidukaLogo } from '@/components/KidukaLogo';
 import { SubscriptionCountdown } from '@/components/SubscriptionCountdown';
 import { HelpSupportWidget } from '@/components/HelpSupportWidget';
 
-export const SubscriptionPage = () => {
+interface SubscriptionPageProps {
+  embedded?: boolean;
+}
+
+export const SubscriptionPage = ({ embedded = false }: SubscriptionPageProps) => {
   const navigate = useNavigate();
   const { user, userProfile } = useAuth();
   const { subscription, loading: subLoading, requestActivation, checkSubscription } = useSubscription();
@@ -94,7 +98,7 @@ export const SubscriptionPage = () => {
 
   if (subLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className={`${embedded ? 'min-h-[40vh]' : 'min-h-screen'} flex items-center justify-center`}>
         <div className="text-center">
           <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mx-auto" />
           <p className="mt-3 text-sm text-muted-foreground">Inapakia...</p>
@@ -130,9 +134,9 @@ export const SubscriptionPage = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-background dark:via-background dark:to-background">
+    <div className={`${embedded ? 'bg-background' : 'min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-background dark:via-background dark:to-background'}`}>
       <div className="max-w-6xl mx-auto p-4 md:p-6">
-        <BackButton to="/dashboard" className="mb-4" />
+        {!embedded && <BackButton to="/dashboard" className="mb-4" />}
         
         {/* Header - Centered Kiduka Logo */}
         <div className="flex flex-col items-center justify-center py-4 mb-4">
