@@ -106,7 +106,7 @@ export const SettingsPage = () => {
         <div className="flex items-center gap-3">
           <Avatar className="h-12 w-12">
             <AvatarImage src={userProfile?.avatar_url} />
-            <AvatarFallback className="bg-gradient-to-br from-emerald-500 via-blue-500 to-purple-600 text-white text-sm">{getInitials(displayName)}</AvatarFallback>
+            <AvatarFallback className="bg-primary text-primary-foreground text-sm">{getInitials(displayName)}</AvatarFallback>
           </Avatar>
           <div>
             <h3 className="font-semibold text-foreground">{displayName}</h3>
@@ -144,7 +144,7 @@ export const SettingsPage = () => {
           <Phone className="h-4 w-4 text-muted-foreground" />
           <p className="text-sm font-medium">Namba ya Simu (Kwa Kuingia)</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-col gap-2 sm:flex-row">
           <Input type="tel" value={formData.phone} onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))} placeholder="0712 345 678" className="flex-1" />
           <Button onClick={handleSavePhone} disabled={savingPhone} variant="outline" size="sm">
             {savingPhone ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Save className="h-4 w-4 mr-1" />Hifadhi</>}
@@ -197,7 +197,7 @@ export const SettingsPage = () => {
       {/* Business Info */}
       <div className="border-t border-border pt-4 space-y-2">
         <p className="text-sm font-medium">Taarifa za Biashara</p>
-        <div className="grid grid-cols-2 gap-3 text-sm">
+        <div className="grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">
           <div>
             <p className="text-xs text-muted-foreground">Jukumu</p>
             <p className="font-medium">{getRoleLabel(userProfile?.role || 'owner')}</p>

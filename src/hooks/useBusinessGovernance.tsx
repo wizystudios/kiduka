@@ -7,6 +7,7 @@ interface BusinessContract {
   owner_id: string;
   status: 'pending' | 'signed' | 'expired' | 'revoked';
   contract_version: string;
+  admin_notes?: string | null;
   full_legal_name: string | null;
   signature_data: string | null;
   agreed_terms: boolean;
@@ -34,6 +35,8 @@ interface AdminBusinessSession {
   owner_id: string;
   admin_id: string;
   active: boolean;
+  reason?: string | null;
+  consent_status?: string;
   started_at: string;
   ended_at: string | null;
 }
