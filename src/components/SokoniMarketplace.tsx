@@ -231,7 +231,7 @@ export const SokoniMarketplace = () => {
 
       const { data: productsData, error: productsError } = await supabase
         .from('products')
-        .select('id, name, price, description, category, stock_quantity, image_url, owner_id, created_at')
+        .select('id, name, price, description, category, stock_quantity, image_url, owner_id, created_at, branch_id')
         .gt('stock_quantity', 0)
         .order('created_at', { ascending: false });
 
