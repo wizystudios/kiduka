@@ -23,7 +23,7 @@ interface Notification {
   id: string;
   title: string;
   message: string;
-  type: 'sale' | 'low_stock' | 'out_of_stock' | 'sokoni_order' | 'sync' | 'info';
+  type: 'sale' | 'low_stock' | 'out_of_stock' | 'sokoni_order' | 'sync' | 'info' | 'expense' | 'loan' | 'branch' | 'customer' | 'return_request';
   isRead: boolean;
   timestamp: Date;
   data?: any;
