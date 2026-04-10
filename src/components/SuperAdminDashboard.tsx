@@ -885,15 +885,28 @@ export const SuperAdminDashboard = () => {
     });
   };
 
+  // Compute stats based on selected business filter
+  const filteredStats = selectedBusiness ? {
+    totalUsers: users.filter(u => u.id === selectedBusiness || users.some(a => a.role === 'assistant')).length,
+    totalProducts: products.filter(p => p.owner_id === selectedBusiness).length,
+    totalSales: sales.filter(s => s.owner_id === selectedBusiness).length,
+    totalRevenue: sales.filter(s => s.owner_id === selectedBusiness).reduce((sum, s) => sum + (s.total_amount || 0), 0),
+    totalOrders: orders.filter(o => o.seller_id === selectedBusiness).length,
+    totalExpenses: expenses.filter(e => e.owner_id === selectedBusiness).reduce((sum, e) => sum + (e.amount || 0), 0),
+    totalCustomers: customers.filter(c => c.owner_id === selectedBusiness).length,
+    activeLoans: stats.activeLoans,
+    pendingSubscriptions: stats.pendingSubscriptions
+  } : stats;
+
   const statCards = [
-    { title: 'Watumiaji', value: stats.totalUsers, icon: <Users className="h-5 w-5" />, color: 'text-blue-600' },
-    { title: 'Bidhaa', value: stats.totalProducts, icon: <Package className="h-5 w-5" />, color: 'text-green-600' },
-    { title: 'Mauzo', value: stats.totalSales, icon: <ShoppingCart className="h-5 w-5" />, color: 'text-purple-600' },
-    { title: 'Mapato', value: stats.totalRevenue, icon: <Wallet className="h-5 w-5" />, color: 'text-emerald-600' },
-    { title: 'Oda Sokoni', value: stats.totalOrders, icon: <Store className="h-5 w-5" />, color: 'text-orange-600' },
-    { title: 'Matumizi', value: stats.totalExpenses, icon: <CreditCard className="h-5 w-5" />, color: 'text-red-600' },
-    { title: 'Wateja', value: stats.totalCustomers, icon: <Users className="h-5 w-5" />, color: 'text-indigo-600' },
-    { title: 'Mikopo Active', value: stats.activeLoans, icon: <TrendingUp className="h-5 w-5" />, color: 'text-yellow-600' },
+    { title: 'Watumiaji', value: filteredStats.totalUsers, icon: <Users className="h-5 w-5" />, color: 'text-blue-600' },
+    { title: 'Bidhaa', value: filteredStats.totalProducts, icon: <Package className="h-5 w-5" />, color: 'text-green-600' },
+    { title: 'Mauzo', value: filteredStats.totalSales, icon: <ShoppingCart className="h-5 w-5" />, color: 'text-purple-600' },
+    { title: 'Mapato', value: filteredStats.totalRevenue, icon: <Wallet className="h-5 w-5" />, color: 'text-emerald-600' },
+    { title: 'Oda Sokoni', value: filteredStats.totalOrders, icon: <Store className="h-5 w-5" />, color: 'text-orange-600' },
+    { title: 'Matumizi', value: filteredStats.totalExpenses, icon: <CreditCard className="h-5 w-5" />, color: 'text-red-600' },
+    { title: 'Wateja', value: filteredStats.totalCustomers, icon: <Users className="h-5 w-5" />, color: 'text-indigo-600' },
+    { title: 'Mikopo Active', value: filteredStats.activeLoans, icon: <TrendingUp className="h-5 w-5" />, color: 'text-yellow-600' },
   ];
   
   const formatCurrency = (amount: number) => `TSh ${amount.toLocaleString()}`;
