@@ -73,12 +73,7 @@ export const SubscriptionGuard = ({ children }: SubscriptionGuardProps) => {
   }
 
   if (showTour) {
-    return (
-      <>
-        {children}
-        <OnboardingTour onComplete={handleTourComplete} />
-      </>
-    );
+    return <OnboardingTour onComplete={handleTourComplete} />;
   }
 
   return <>{children}</>;
