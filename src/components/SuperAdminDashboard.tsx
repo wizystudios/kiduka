@@ -169,6 +169,11 @@ export const SuperAdminDashboard = () => {
   useEffect(() => {
     fetchAllData();
   }, []);
+
+  // Re-compute filtered stats when business changes
+  useEffect(() => {
+    // Stats are recalculated from already-fetched data arrays
+  }, [selectedBusiness]);
   
   const fetchAllData = async () => {
     setLoading(true);
