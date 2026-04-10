@@ -1343,7 +1343,7 @@ export const SuperAdminDashboard = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                {sales.slice(0, 5).map(s => (
+                {filteredSales.slice(0, 5).map(s => (
                   <div key={s.id} className="flex items-center justify-between py-2 border-b last:border-0">
                     <div>
                       <p className="font-medium text-sm">{formatCurrency(s.total_amount)}</p>
