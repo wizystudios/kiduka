@@ -300,8 +300,12 @@ export const NotificationsPage = () => {
 
   const handleNotificationClick = (notif: Notification) => {
     markAsRead(notif.id);
-    setSelectedItem({ type: 'notification', ...notif });
-    setDetailOpen(true);
+    if (notif.route) {
+      navigate(notif.route);
+    } else {
+      setSelectedItem({ type: 'notification', ...notif });
+      setDetailOpen(true);
+    }
   };
 
   const handleActivityClick = (activity: UserActivity) => {
