@@ -209,6 +209,63 @@ export const NotificationsPage = () => {
         });
       });
 
+      // Expenses
+      const { data: recentExpenses } = await supabase
+        .from('expenses')
+        .select('id, amount, category, expense_date, created_at')
+        .eq('owner_id', dataOwnerId)
+        .order('created_at', { ascending: false })
+        .limit(5);
+
+      recentExpenses?.forEach((exp) => {
+        const notifId = `expense-${exp.id}`;
+        const existing = persistedNotifications.find(n => n.id === notifId);
+        newNotifications.push({
+          id: notifId, title: 'Gharama Mpya',
+          message: `${exp.category}: TSh ${Number(exp.amount).toLocaleString()}`,
+          type: 'expense', isRead: existing?.isRead ?? true,
+          timestamp: new Date(exp.created_at), route: '/expenses'
+        });
+      });
+
+      // Loans
+      const { data: recentLoans } = await supabase
+        .from('micro_loans')
+        .select('id, customer_name, loan_amount, status, created_at')
+        .eq('owner_id', dataOwnerId)
+        .order('created_at', { ascending: false })
+        .limit(5);
+
+      recentLoans?.forEach((loan) => {
+        const notifId = `loan-${loan.id}`;
+        const existing = persistedNotifications.find(n => n.id === notifId);
+        newNotifications.push({
+          id: notifId, title: 'Mkopo',
+          message: `${loan.customer_name}: TSh ${Number(loan.loan_amount).toLocaleString()} - ${loan.status}`,
+          type: 'loan', isRead: existing?.isRead ?? true,
+          timestamp: new Date(loan.created_at), route: '/micro-loans'
+        });
+      });
+
+      // Return requests
+      const { data: recentReturns } = await supabase
+        .from('return_requests')
+        .select('id, customer_phone, reason, status, created_at')
+        .eq('seller_id', dataOwnerId)
+        .order('created_at', { ascending: false })
+        .limit(5);
+
+      recentReturns?.forEach((ret) => {
+        const notifId = `return-${ret.id}`;
+        const existing = persistedNotifications.find(n => n.id === notifId);
+        newNotifications.push({
+          id: notifId, title: 'Ombi la Kurudisha',
+          message: `${ret.customer_phone}: ${ret.reason} - ${ret.status}`,
+          type: 'return_request', isRead: existing?.isRead ?? (ret.status !== 'pending'),
+          timestamp: new Date(ret.created_at!), route: '/sokoni-orders'
+        });
+      });
+
       newNotifications.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
       setNotifications(newNotifications);
       saveNotifications(newNotifications);
