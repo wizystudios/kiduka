@@ -508,6 +508,15 @@ export const SokoniMarketplace = () => {
   const handlePaymentComplete = async (transactionId: string, method: string) => {
     if (submittingOrder) return;
 
+    // Block owner from buying their own products at checkout
+    if (currentUser) {
+      const ownProducts = cart.filter(item => item.owner_id === currentUser.id);
+      if (ownProducts.length > 0) {
+        toast.error('Huwezi kununua bidhaa zako mwenyewe. Ondoa bidhaa zako kwenye kikapu.');
+        return;
+      }
+    }
+
     const normalizedCustomerPhone = normalizeTzPhoneDigits(customerPhone);
     if (!normalizedCustomerPhone) {
       toast.error('Namba ya simu si sahihi');
