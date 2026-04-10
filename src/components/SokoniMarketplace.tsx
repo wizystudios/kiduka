@@ -292,8 +292,12 @@ export const SokoniMarketplace = () => {
           }
         }
         
+        const branch = branchesData.find(b => b.id === (product as any).branch_id);
+        
         return {
           ...product,
+          branch_id: (product as any).branch_id || null,
+          branch_name: branch?.branch_name || undefined,
           owner_business_name: seller?.business_name || 'Duka',
           owner_phone: seller?.phone || undefined,
           owner_region: seller?.region || undefined,
