@@ -415,6 +415,33 @@ export default function App() {
                   </AppLayout>
                 </ProtectedRoute>
               } />
+
+              {/* Coupons */}
+              <Route path="/coupons" element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <CouponCodeManager />
+                  </AppLayout>
+                </ProtectedRoute>
+              } />
+
+              {/* Returns */}
+              <Route path="/returns" element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <ReturnRequestManager />
+                  </AppLayout>
+                </ProtectedRoute>
+              } />
+
+              {/* Store Settings */}
+              <Route path="/store-settings" element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <StoreSettings />
+                  </AppLayout>
+                </ProtectedRoute>
+              } />
               
               {/* Super Admin */}
               <Route path="/super-admin" element={
