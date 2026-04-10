@@ -435,36 +435,23 @@ export const SokoniOrderManagement = () => {
           </div>
         </CardHeader>
         <CardContent>
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid grid-cols-3 mb-4">
-              <TabsTrigger value="new" className="relative text-xs">
-                Mpya
-                {orders.filter(o => o.order_status === 'new').length > 0 && (
-                  <Badge className="absolute -top-2 -right-2 h-5 w-5 p-0 flex items-center justify-center text-xs bg-destructive text-destructive-foreground">
-                    {orders.filter(o => o.order_status === 'new').length}
-                  </Badge>
-                )}
-              </TabsTrigger>
-              <TabsTrigger value="active" className="text-xs">Zinaendelea</TabsTrigger>
-              <TabsTrigger value="completed" className="text-xs">Zimekamilika</TabsTrigger>
-            </TabsList>
-
-            <TabsContent value={activeTab} className="space-y-3">
-              {filteredOrders.length === 0 ? (
+          <div className="space-y-3">
+              {orders.length === 0 ? (
                 <div className="text-center py-8">
                   <Package className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
                   <p className="text-muted-foreground">Hakuna oda</p>
                 </div>
               ) : (
-                filteredOrders.map(order => (
-                  <Card key={order.id} className="cursor-pointer hover:shadow-md transition-shadow border-border rounded-2xl">
-                    <CardContent className="p-4">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1 flex-wrap">
-                            <span className="font-semibold">#{order.id.slice(0, 8).toUpperCase()}</span>
-                            <Badge className={getStatusColor(order.order_status)}>{getStatusLabel(order.order_status)}</Badge>
-                            <Badge className={order.payment_status === 'paid' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}>
+                orders.map(order => (
+                  <Card key={order.id} className={`cursor-pointer hover:shadow-md transition-shadow border-border rounded-2xl ${order.order_status === 'new' ? 'ring-2 ring-primary/30' : ''}`}>
+                    <CardContent className="p-3">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1.5 mb-1 flex-wrap">
+                            <span className="font-semibold text-sm">#{order.id.slice(0, 8).toUpperCase()}</span>
+                            {order.order_status === 'new' && <Badge className="bg-primary text-primary-foreground text-[10px]">MPYA</Badge>}
+                            <Badge className={`text-[10px] ${getStatusColor(order.order_status)}`}>{getStatusLabel(order.order_status)}</Badge>
+                            <Badge className={`text-[10px] ${order.payment_status === 'paid' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
                               {order.payment_status === 'paid' ? 'Imelipwa' : 'Inasubiri'}
                             </Badge>
                           </div>
@@ -472,36 +459,36 @@ export const SokoniOrderManagement = () => {
                             <Phone className="h-3 w-3" />{order.customer_phone}
                           </p>
                           {order.tracking_code && (
-                            <p className="text-xs text-muted-foreground mt-1">
+                            <p className="text-xs text-muted-foreground mt-0.5">
                               Tracking: <span className="font-mono font-semibold">{order.tracking_code}</span>
                             </p>
                           )}
-                          <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
-                            <MapPin className="h-3 w-3" />{order.delivery_address}
+                          <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5 truncate">
+                            <MapPin className="h-3 w-3 flex-shrink-0" /><span className="truncate">{order.delivery_address}</span>
                           </p>
                           {order.delivery_person_name && (
-                            <p className="text-xs text-primary flex items-center gap-1 mt-1">
+                            <p className="text-xs text-primary flex items-center gap-1 mt-0.5">
                               <User className="h-3 w-3" />
-                              Mpelekaji: {order.delivery_person_name} • {order.delivery_person_phone}
+                              {order.delivery_person_name} • {order.delivery_person_phone}
                             </p>
                           )}
-                          <div className="mt-2">
+                          <div className="mt-1.5">
                             <p className="text-sm">
                               {order.items.length} bidhaa • <span className="font-semibold text-primary">TSh {order.total_amount.toLocaleString()}</span>
                             </p>
-                            <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
+                            <p className="text-[10px] text-muted-foreground flex items-center gap-1 mt-0.5">
                               <Clock className="h-3 w-3" />{formatTime(order.created_at)}
                             </p>
                           </div>
                         </div>
-                        <div className="flex flex-col gap-1">
-                          <Button variant="outline" size="sm" onClick={() => setSelectedOrder(order)} className="rounded-2xl">
+                        <div className="flex flex-col gap-1 flex-shrink-0">
+                          <Button variant="outline" size="sm" onClick={() => setSelectedOrder(order)} className="rounded-2xl h-8 w-8 p-0">
                             <Eye className="h-4 w-4" />
                           </Button>
                           <Button 
                             variant="ghost" 
                             size="sm" 
-                            className="rounded-2xl text-green-600 hover:text-green-700"
+                            className="rounded-2xl text-green-600 hover:text-green-700 h-8 w-8 p-0"
                             onClick={(e) => { 
                               e.stopPropagation(); 
                               setSelectedOrder(order); 
@@ -516,8 +503,7 @@ export const SokoniOrderManagement = () => {
                   </Card>
                 ))
               )}
-            </TabsContent>
-          </Tabs>
+          </div>
         </CardContent>
       </Card>
 
