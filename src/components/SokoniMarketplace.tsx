@@ -330,6 +330,11 @@ export const SokoniMarketplace = () => {
   };
 
   const addToCart = (product: MarketProduct, qty: number = 1) => {
+    // Block owner from buying their own products
+    if (currentUser && product.owner_id === currentUser.id) {
+      toast.error('Huwezi kununua bidhaa zako mwenyewe');
+      return;
+    }
     setCart(prev => {
       const existing = prev.find(item => item.id === product.id);
       if (existing) {
