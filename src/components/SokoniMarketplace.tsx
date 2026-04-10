@@ -246,29 +246,26 @@ export const SokoniMarketplace = () => {
       if (sellerIds.length > 0) {
         const branchIds = [...new Set((productsData || []).map(p => (p as any).branch_id).filter(Boolean))];
         
-        const fetchPromises: Promise<any>[] = [
+        const [profilesResult, discountsResult] = await Promise.all([
           supabase.from('profiles').select('id, business_name, phone, region, district').in('id', sellerIds),
           supabase.from('discounts').select('id, discount_type, value, applicable_products').eq('active', true)
             .or(`end_date.is.null,end_date.gte.${new Date().toISOString().split('T')[0]}`)
-        ];
-        
-        if (branchIds.length > 0) {
-          fetchPromises.push(
-            supabase.from('business_branches').select('id, branch_name').in('id', branchIds)
-          );
-        }
+        ]);
 
-        const results = await Promise.all(fetchPromises);
-        
-        if (!results[0].error && results[0].data) profilesData = results[0].data as any;
-        if (!results[1].error && results[1].data) {
-          discountsData = (results[1].data as any[]).map(d => ({
+        if (!profilesResult.error && profilesResult.data) profilesData = profilesResult.data as any;
+        if (!discountsResult.error && discountsResult.data) {
+          discountsData = (discountsResult.data as any[]).map(d => ({
             ...d,
             applicable_products: Array.isArray(d.applicable_products) ? d.applicable_products : []
           }));
         }
-        if (results[2] && !results[2].error && results[2].data) {
-          branchesData = results[2].data as any;
+        
+        if (branchIds.length > 0) {
+          const { data: bData } = await supabase
+            .from('business_branches')
+            .select('id, branch_name')
+            .in('id', branchIds);
+          branchesData = bData || [];
         }
       }
 
