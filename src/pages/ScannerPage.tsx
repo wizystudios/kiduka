@@ -360,9 +360,6 @@ export const ScannerPage = () => {
 
   return (
     <div className="page-container">
-      <div className="bg-gradient-to-r from-primary/10 to-primary/5 p-2 rounded-2xl mb-2">
-        <h2 className="text-sm font-bold text-foreground">💰 Muuzo wa Haraka</h2>
-      </div>
 
       <CameraScanner
         isOpen={showCamera}
