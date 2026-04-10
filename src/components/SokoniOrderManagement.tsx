@@ -436,13 +436,13 @@ export const SokoniOrderManagement = () => {
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-              {orders.length === 0 ? (
+              {sortedOrders.length === 0 ? (
                 <div className="text-center py-8">
                   <Package className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
                   <p className="text-muted-foreground">Hakuna oda</p>
                 </div>
               ) : (
-                orders.map(order => (
+                sortedOrders.map(order => (
                   <Card key={order.id} className={`cursor-pointer hover:shadow-md transition-shadow border-border rounded-2xl ${order.order_status === 'new' ? 'ring-2 ring-primary/30' : ''}`}>
                     <CardContent className="p-3">
                       <div className="flex items-start justify-between gap-2">
