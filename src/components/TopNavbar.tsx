@@ -139,10 +139,8 @@ export const TopNavbar = () => {
           </SheetContent>
         </Sheet>
 
-        {/* Alert banners - take remaining space */}
-        <div className="flex-1 min-w-0 overflow-hidden">
-          <TopAlertBar />
-        </div>
+        {/* Alert banners - inline with hamburger */}
+        <TopAlertBar />
 
         {/* Right side: offline + notification */}
         <div className="flex items-center gap-0.5 flex-shrink-0">
