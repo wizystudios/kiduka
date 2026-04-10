@@ -38,6 +38,10 @@ export const CustomersPage = () => {
   const [whatsappTarget, setWhatsappTarget] = useState<Customer | null>(null);
   const [whatsappMsg, setWhatsappMsg] = useState('');
   const [sendingWhatsapp, setSendingWhatsapp] = useState(false);
+  const [quickPayOpen, setQuickPayOpen] = useState(false);
+  const [quickPayCustomer, setQuickPayCustomer] = useState<Customer | null>(null);
+  const [quickPayAmount, setQuickPayAmount] = useState('');
+  const [savingPayment, setSavingPayment] = useState(false);
   const [customerData, setCustomerData] = useState({
     name: '',
     email: '',
