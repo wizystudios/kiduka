@@ -334,6 +334,12 @@ export const CustomersPage = () => {
               </div>
               
               <div className="flex gap-1 flex-shrink-0">
+                {(customer.outstanding_balance || 0) > 0 && (
+                  <Button variant="default" size="sm" className="h-7 px-2 text-xs gap-1 rounded-xl" onClick={() => { setQuickPayCustomer(customer); setQuickPayOpen(true); }}>
+                    <Wallet className="h-3 w-3" />
+                    Lipa
+                  </Button>
+                )}
                 <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setSelectedCustomer({ id: customer.id, name: customer.name }); setLedgerOpen(true); }}>
                   <FileText className="h-3.5 w-3.5" />
                 </Button>
