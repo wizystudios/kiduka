@@ -431,71 +431,66 @@ export const ScannerPage = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="space-y-4">
-          <Card className="shadow-lg border-border">
-            <CardHeader>
-              <CardTitle className="flex items-center text-lg text-foreground">
-                <Search className="h-6 w-6 mr-2" />
-                Tafuta Bidhaa
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
+          <div className="space-y-4">
+              <div className="flex items-center gap-2 mb-1">
+                <Search className="h-5 w-5 text-primary" />
+                <h3 className="font-bold text-foreground">Tafuta Bidhaa</h3>
+              </div>
               <div className="flex space-x-2">
                 <Button
                   variant={searchType === "name" ? "default" : "outline"}
                   onClick={() => setSearchType("name")}
-                  className="flex-1 h-12 text-base rounded-2xl"
+                  className="flex-1 h-10 text-sm rounded-2xl"
                 >
                   📝 Jina
                 </Button>
                 <Button
                   variant={searchType === "barcode" ? "default" : "outline"}
                   onClick={() => setSearchType("barcode")}
-                  className="flex-1 h-12 text-base rounded-2xl"
+                  className="flex-1 h-10 text-sm rounded-2xl"
                 >
                   📷 Barcode
                 </Button>
               </div>
 
-              <div className="space-y-3">
-                <Input
-                  placeholder={searchType === 'barcode' ? "Ingiza nambari ya barcode..." : "Andika jina la bidhaa..."}
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && handleSearchProduct(searchQuery)}
-                  className="h-14 text-lg"
-                  autoFocus
-                />
-                <div className="flex gap-2">
+              <Input
+                placeholder={searchType === 'barcode' ? "Ingiza nambari ya barcode..." : "Andika jina la bidhaa..."}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && handleSearchProduct(searchQuery)}
+                className="h-12 text-base"
+                autoFocus
+              />
+              <div className="flex gap-2">
+                <Button 
+                  onClick={() => handleSearchProduct(searchQuery)}
+                  className="flex-1 h-12 text-base rounded-2xl"
+                  disabled={!searchQuery || loading}
+                >
+                  <Search className="h-5 w-5 mr-2" />
+                  {loading ? 'Inatafuta...' : 'Tafuta'}
+                </Button>
+                {searchType === 'barcode' && (
                   <Button 
-                    onClick={() => handleSearchProduct(searchQuery)}
-                    className="flex-1 h-14 text-base rounded-2xl"
-                    disabled={!searchQuery || loading}
+                    onClick={() => setShowCamera(true)}
+                    variant="outline"
+                    className="h-12 px-6 rounded-2xl"
                   >
-                    <Search className="h-5 w-5 mr-2" />
-                    {loading ? 'Inatafuta...' : 'Tafuta'}
+                    <Camera className="h-6 w-6" />
                   </Button>
-                  {searchType === 'barcode' && (
-                    <Button 
-                      onClick={() => setShowCamera(true)}
-                      variant="outline"
-                      className="h-14 px-6 rounded-2xl"
-                    >
-                      <Camera className="h-6 w-6" />
-                    </Button>
-                  )}
-                </div>
+                )}
               </div>
 
               {searchResults.length > 0 && (
                 <div className="space-y-2 mt-4">
                   <h4 className="font-medium text-sm text-foreground">Matokeo ({searchResults.length})</h4>
                   {searchResults.map((product) => (
-                    <Card 
+                    <div 
                       key={product.id} 
-                      className="cursor-pointer hover:shadow-md transition-shadow border-border"
+                      className="cursor-pointer hover:bg-muted/50 transition-colors p-3 border border-border/50 rounded-xl"
                       onClick={() => selectProduct(product)}
                     >
-                      <CardContent className="p-3 flex justify-between items-center">
+                      <div className="flex justify-between items-center">
                         <div>
                           <p className="font-medium text-foreground">{product.name}</p>
                           <p className="text-sm text-muted-foreground">{product.category}</p>
@@ -506,45 +501,42 @@ export const ScannerPage = () => {
                             Stock: {product.stock_quantity}
                           </Badge>
                         </div>
-                      </CardContent>
-                    </Card>
+                      </div>
+                    </div>
                   ))}
                 </div>
               )}
 
               {scannedProduct && (
-                <Card className="border-2 border-primary bg-primary/5">
-                  <CardContent className="p-4">
-                    <div className="flex justify-between items-start mb-3">
-                      <div>
-                        <h3 className="font-bold text-lg text-foreground">{scannedProduct.name}</h3>
-                        <p className="text-sm text-muted-foreground">{scannedProduct.category}</p>
-                        {scannedProduct.barcode && (
-                          <p className="text-xs text-muted-foreground">Barcode: {scannedProduct.barcode}</p>
-                        )}
-                      </div>
-                      <div className="text-right">
-                        <p className="text-2xl font-bold text-primary">
-                          TZS {scannedProduct.price.toLocaleString()}
-                        </p>
-                        <Badge variant={scannedProduct.stock_quantity > 0 ? "default" : "destructive"}>
-                          Stock: {scannedProduct.stock_quantity}
-                        </Badge>
-                      </div>
+                <div className="border-2 border-primary bg-primary/5 rounded-xl p-4">
+                  <div className="flex justify-between items-start mb-3">
+                    <div>
+                      <h3 className="font-bold text-lg text-foreground">{scannedProduct.name}</h3>
+                      <p className="text-sm text-muted-foreground">{scannedProduct.category}</p>
+                      {scannedProduct.barcode && (
+                        <p className="text-xs text-muted-foreground">Barcode: {scannedProduct.barcode}</p>
+                      )}
                     </div>
-                    <Button 
-                      className="w-full h-12"
-                      onClick={() => addToCart(scannedProduct)}
-                      disabled={scannedProduct.stock_quantity <= 0}
-                    >
-                      <Plus className="h-5 w-5 mr-2" />
-                      Ongeza kwenye Kikapu
-                    </Button>
-                  </CardContent>
-                </Card>
+                    <div className="text-right">
+                      <p className="text-2xl font-bold text-primary">
+                        TZS {scannedProduct.price.toLocaleString()}
+                      </p>
+                      <Badge variant={scannedProduct.stock_quantity > 0 ? "default" : "destructive"}>
+                        Stock: {scannedProduct.stock_quantity}
+                      </Badge>
+                    </div>
+                  </div>
+                  <Button 
+                    className="w-full h-12"
+                    onClick={() => addToCart(scannedProduct)}
+                    disabled={scannedProduct.stock_quantity <= 0}
+                  >
+                    <Plus className="h-5 w-5 mr-2" />
+                    Ongeza kwenye Kikapu
+                  </Button>
+                </div>
               )}
-            </CardContent>
-          </Card>
+          </div>
         </div>
 
         <div>
