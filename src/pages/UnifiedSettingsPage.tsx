@@ -58,15 +58,21 @@ export const UnifiedSettingsPage = () => {
       </div>
 
       <div className="px-4">
-        <div className={isMobile ? 'grid grid-cols-2 gap-2' : 'flex flex-wrap gap-2'}>
+        <div className={isMobile ? 'grid grid-cols-4 gap-1.5' : 'flex flex-wrap gap-2'}>
           {tabs.map((tab) => {
             const Icon = tab.icon;
             const active = activeTab === tab.id;
             return (
-              <Button key={tab.id} variant={active ? 'secondary' : 'outline'} className={`justify-start rounded-2xl ${isMobile ? 'h-auto min-h-12 px-3 py-3 text-left' : ''}`} onClick={() => handleTabChange(tab.id)}>
-                <Icon className="mr-2 h-4 w-4" />
+              <button
+                key={tab.id}
+                onClick={() => handleTabChange(tab.id)}
+                className={`flex flex-col items-center gap-1 py-2 px-1 rounded-2xl text-[10px] font-medium transition-colors ${
+                  active ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-muted/50'
+                }`}
+              >
+                <Icon className="h-4 w-4" />
                 {tab.label}
-              </Button>
+              </button>
             );
           })}
         </div>

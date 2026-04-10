@@ -75,6 +75,9 @@ import GroupsPage from '@/pages/GroupsPage';
 import UnifiedSalesPage from '@/pages/UnifiedSalesPage';
 import UnifiedSettingsPage from '@/pages/UnifiedSettingsPage';
 import { BranchManager } from '@/components/BranchManager';
+import { CouponCodeManager } from '@/components/CouponCodeManager';
+import { ReturnRequestManager } from '@/components/ReturnRequestManager';
+import { StoreSettings } from '@/components/StoreSettings';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -409,6 +412,33 @@ export default function App() {
                 <ProtectedRoute>
                   <AppLayout>
                     <SokoniOrdersPage />
+                  </AppLayout>
+                </ProtectedRoute>
+              } />
+
+              {/* Coupons */}
+              <Route path="/coupons" element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <CouponCodeManager />
+                  </AppLayout>
+                </ProtectedRoute>
+              } />
+
+              {/* Returns */}
+              <Route path="/returns" element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <ReturnRequestManager />
+                  </AppLayout>
+                </ProtectedRoute>
+              } />
+
+              {/* Store Settings */}
+              <Route path="/store-settings" element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <StoreSettings />
                   </AppLayout>
                 </ProtectedRoute>
               } />
