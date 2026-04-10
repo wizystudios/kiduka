@@ -407,8 +407,11 @@ export const UsersPage = () => {
                       type="password"
                       value={newUser.password}
                       onChange={(e) => setNewUser({...newUser, password: e.target.value})}
-                      placeholder="Herufi 8+"
+                      placeholder="Herufi 8+, kubwa, nambari 3+, alama"
                     />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Herufi 8+, herufi kubwa 1+, nambari 3+, alama maalum 1+
+                    </p>
                   </div>
                   <Button 
                     onClick={handleCreateAssistant} 
