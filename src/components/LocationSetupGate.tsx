@@ -57,6 +57,7 @@ export const LocationSetupGate = ({ children }: { children: React.ReactNode }) =
   const { user, userProfile, refreshProfile } = useAuth();
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [skipped, setSkipped] = useState(false);
   const [form, setForm] = useState({
     country: 'Tanzania',
     region: '',
@@ -66,19 +67,27 @@ export const LocationSetupGate = ({ children }: { children: React.ReactNode }) =
   });
 
   useEffect(() => {
-    if (user && userProfile && !userProfile.location_set) {
+    if (user && userProfile && !userProfile.location_set && !skipped) {
+      // Check if user already skipped this session
+      const sessionSkipped = sessionStorage.getItem(`kiduka_location_skipped_${user.id}`);
+      if (sessionSkipped) {
+        setSkipped(true);
+        return;
+      }
       setOpen(true);
       if (userProfile.region) setForm(f => ({ ...f, region: userProfile.region }));
       if (userProfile.district) setForm(f => ({ ...f, district: userProfile.district }));
       if (userProfile.ward) setForm(f => ({ ...f, ward: userProfile.ward }));
       if (userProfile.street) setForm(f => ({ ...f, street: userProfile.street }));
     }
-  }, [user, userProfile]);
+  }, [user, userProfile, skipped]);
 
   const districts = form.region ? TANZANIA_REGIONS[form.region] || [] : [];
   const selectedCountry = COUNTRIES.find(c => c.value === form.country);
 
   const handleSkip = () => {
+    if (user) sessionStorage.setItem(`kiduka_location_skipped_${user.id}`, 'true');
+    setSkipped(true);
     setOpen(false);
   };
 
@@ -118,8 +127,8 @@ export const LocationSetupGate = ({ children }: { children: React.ReactNode }) =
   return (
     <>
       {open && (
-        <div className="fixed inset-0 z-[150] bg-background/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-card border border-border rounded-2xl shadow-2xl w-full max-w-sm max-h-[85vh] overflow-y-auto">
+        <div className="fixed inset-0 z-[200] bg-background/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-card border border-border rounded-2xl shadow-2xl w-full max-w-sm">
             {/* Header */}
             <div className="flex items-center justify-between p-4 pb-2">
               <div className="flex items-center gap-2">
@@ -144,7 +153,7 @@ export const LocationSetupGate = ({ children }: { children: React.ReactNode }) =
                       {selectedCountry && `${selectedCountry.flag} ${selectedCountry.label}`}
                     </SelectValue>
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="z-[250]">
                     {COUNTRIES.map(c => (
                       <SelectItem key={c.value} value={c.value}>
                         {c.flag} {c.label}
@@ -159,7 +168,7 @@ export const LocationSetupGate = ({ children }: { children: React.ReactNode }) =
                 <Label className="text-xs font-medium">Mkoa *</Label>
                 <Select value={form.region} onValueChange={v => setForm(f => ({ ...f, region: v, district: '' }))}>
                   <SelectTrigger className="h-9 rounded-xl"><SelectValue placeholder="Chagua mkoa..." /></SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="z-[250] max-h-60">
                     {REGIONS.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
                   </SelectContent>
                 </Select>
@@ -170,7 +179,7 @@ export const LocationSetupGate = ({ children }: { children: React.ReactNode }) =
                 <Label className="text-xs font-medium">Wilaya *</Label>
                 <Select value={form.district} onValueChange={v => setForm(f => ({ ...f, district: v }))} disabled={!form.region}>
                   <SelectTrigger className="h-9 rounded-xl"><SelectValue placeholder="Chagua wilaya..." /></SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="z-[250] max-h-60">
                     {districts.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
                   </SelectContent>
                 </Select>

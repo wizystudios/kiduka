@@ -6,13 +6,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useToast } from '@/hooks/use-toast';
+import { Calculator } from '@/components/Calculator';
 import {
-  BookOpen, Plus, TrendingUp, TrendingDown, ArrowUpDown,
-  DollarSign, Receipt, FileText, Calendar
+  BookOpen, Plus, TrendingUp, TrendingDown,
+  FileText, Calculator as CalcIcon
 } from 'lucide-react';
 
 interface IncomeRecord {
@@ -46,7 +46,6 @@ interface JournalEntry {
 }
 
 const INCOME_CATEGORIES = ['sales', 'services', 'interest', 'rent', 'other'];
-const EXPENSE_CATEGORIES = ['Bidhaa/Stock', 'Kodi', 'Umeme', 'Maji', 'Mishahara', 'Usafiri', 'Matengenezo', 'Simu/Internet', 'Vifaa', 'Mengineyo'];
 
 export default function BookkeepingPage() {
   const { getEffectiveOwnerId } = usePermissions();
@@ -61,6 +60,7 @@ export default function BookkeepingPage() {
   const [showJournalDialog, setShowJournalDialog] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [dateFilter, setDateFilter] = useState<'week' | 'month' | 'year'>('month');
+  const [calcOpen, setCalcOpen] = useState(false);
 
   const [incomeForm, setIncomeForm] = useState({ amount: 0, source: '', category: 'sales', income_date: new Date().toISOString().split('T')[0], description: '', payment_method: '' });
   const [journalForm, setJournalForm] = useState({ entry_date: new Date().toISOString().split('T')[0], description: '', debit_account: '', credit_account: '', amount: 0 });
@@ -106,21 +106,12 @@ export default function BookkeepingPage() {
   const handleSaveIncome = async () => {
     if (!incomeForm.source.trim() || !incomeForm.amount || !ownerId) return;
     setSubmitting(true);
-    await supabase.from('income_records').insert({
-      owner_id: ownerId,
-      ...incomeForm,
-    });
-
-    // Auto-create journal entry
+    await supabase.from('income_records').insert({ owner_id: ownerId, ...incomeForm });
     await supabase.from('journal_entries').insert({
-      owner_id: ownerId,
-      entry_date: incomeForm.income_date,
+      owner_id: ownerId, entry_date: incomeForm.income_date,
       description: `Mapato: ${incomeForm.source}`,
-      total_debit: incomeForm.amount,
-      total_credit: incomeForm.amount,
-      reference_type: 'income',
+      total_debit: incomeForm.amount, total_credit: incomeForm.amount, reference_type: 'income',
     });
-
     toast({ title: 'Mapato yameongezwa' });
     setShowIncomeDialog(false);
     setIncomeForm({ amount: 0, source: '', category: 'sales', income_date: new Date().toISOString().split('T')[0], description: '', payment_method: '' });
@@ -132,11 +123,9 @@ export default function BookkeepingPage() {
     if (!journalForm.description.trim() || !journalForm.amount || !ownerId) return;
     setSubmitting(true);
     await supabase.from('journal_entries').insert({
-      owner_id: ownerId,
-      entry_date: journalForm.entry_date,
+      owner_id: ownerId, entry_date: journalForm.entry_date,
       description: journalForm.description,
-      total_debit: journalForm.amount,
-      total_credit: journalForm.amount,
+      total_debit: journalForm.amount, total_credit: journalForm.amount,
     });
     toast({ title: 'Journal entry imeundwa' });
     setShowJournalDialog(false);
@@ -151,7 +140,7 @@ export default function BookkeepingPage() {
   };
 
   return (
-    <div className="container mx-auto p-4 max-w-3xl">
+    <div className="container mx-auto p-4 max-w-3xl pb-24">
       <div className="flex items-center justify-between mb-4">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
@@ -160,6 +149,9 @@ export default function BookkeepingPage() {
           </h1>
           <p className="text-sm text-muted-foreground">Mapato, matumizi, na journal entries</p>
         </div>
+        <Button variant="outline" size="icon" className="rounded-full" onClick={() => setCalcOpen(true)}>
+          <CalcIcon className="h-5 w-5" />
+        </Button>
       </div>
 
       {/* Financial Summary */}
@@ -196,12 +188,10 @@ export default function BookkeepingPage() {
           <TabsTrigger value="journal">Ledger</TabsTrigger>
         </TabsList>
 
-        {/* Income Tab */}
         <TabsContent value="income" className="mt-4 space-y-3">
           <Button size="sm" className="w-full gap-1" onClick={() => setShowIncomeDialog(true)}>
             <Plus className="h-4 w-4" /> Ongeza Mapato
           </Button>
-
           {filteredIncome.length === 0 ? (
             <p className="text-center text-muted-foreground py-8">Hakuna mapato katika kipindi hiki</p>
           ) : (
@@ -220,12 +210,10 @@ export default function BookkeepingPage() {
           )}
         </TabsContent>
 
-        {/* Expenses Tab */}
         <TabsContent value="expenses" className="mt-4 space-y-3">
           <Button size="sm" className="w-full gap-1" variant="outline" onClick={() => window.location.href = '/expenses'}>
-            <Receipt className="h-4 w-4" /> Fungua Matumizi
+            <FileText className="h-4 w-4" /> Fungua Matumizi
           </Button>
-
           {filteredExpenses.length === 0 ? (
             <p className="text-center text-muted-foreground py-8">Hakuna matumizi katika kipindi hiki</p>
           ) : (
@@ -244,13 +232,10 @@ export default function BookkeepingPage() {
           )}
         </TabsContent>
 
-        {/* Journal/Ledger Tab */}
         <TabsContent value="journal" className="mt-4 space-y-3">
           <Button size="sm" className="w-full gap-1" onClick={() => setShowJournalDialog(true)}>
             <Plus className="h-4 w-4" /> Journal Entry
           </Button>
-
-          {/* P&L Summary */}
           <div className="p-4 border border-border/40 rounded-lg space-y-2">
             <h3 className="font-bold text-sm flex items-center gap-2"><FileText className="h-4 w-4" /> Taarifa ya Faida na Hasara</h3>
             <div className="space-y-1 text-sm">
@@ -262,7 +247,6 @@ export default function BookkeepingPage() {
               </div>
             </div>
           </div>
-
           {journals.length === 0 ? (
             <p className="text-center text-muted-foreground py-4">Hakuna journal entries</p>
           ) : (
@@ -329,6 +313,9 @@ export default function BookkeepingPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Calculator */}
+      <Calculator isOpen={calcOpen} onClose={() => setCalcOpen(false)} />
     </div>
   );
 }
