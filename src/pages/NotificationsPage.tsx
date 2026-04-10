@@ -259,6 +259,11 @@ export const NotificationsPage = () => {
       case 'out_of_stock': return <AlertTriangle className="h-4 w-4 text-destructive" />;
       case 'sokoni_order': return <Store className="h-4 w-4 text-blue-600" />;
       case 'sync': return <Wifi className="h-4 w-4 text-green-600" />;
+      case 'expense': return <Receipt className="h-4 w-4 text-orange-600" />;
+      case 'loan': return <CreditCard className="h-4 w-4 text-purple-600" />;
+      case 'branch': return <Store className="h-4 w-4 text-teal-600" />;
+      case 'customer': return <UserPlus className="h-4 w-4 text-indigo-600" />;
+      case 'return_request': return <Package className="h-4 w-4 text-red-600" />;
       default: return <Bell className="h-4 w-4 text-muted-foreground" />;
     }
   };
