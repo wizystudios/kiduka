@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Camera, Search, Plus, Minus, ShoppingCart } from 'lucide-react';
+import { Camera, Search, Plus, Minus, ShoppingCart, Edit2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
@@ -540,46 +540,46 @@ export const ScannerPage = () => {
         </div>
 
         <div>
-          <Card className="shadow-lg border-border">
-            <CardHeader>
-              <CardTitle className="flex items-center text-foreground">
-                <ShoppingCart className="h-5 w-5 mr-2" />
-                Kikapu ({cart.length})
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
+          <div className="space-y-4">
+            <div className="flex items-center gap-2">
+              <ShoppingCart className="h-5 w-5 text-primary" />
+              <h3 className="font-bold text-foreground">Kikapu ({cart.length})</h3>
+            </div>
               {cart.length === 0 ? (
                 <p className="text-muted-foreground text-center py-8">Kikapu ni tupu</p>
               ) : (
                 <div className="space-y-3">
                   {cart.map((item) => (
-                    <div key={item.id} className="flex items-center justify-between p-3 bg-muted rounded-lg">
-                      <div className="flex-1">
-                        <p className="font-medium text-sm text-foreground">{item.name}</p>
-                        <p className="text-sm text-primary">
-                          TZS {item.price.toLocaleString()} × {item.quantity}
-                        </p>
+                    <div key={item.id} className="p-3 border border-border/50 rounded-xl">
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <p className="font-medium text-sm text-foreground">{item.name}</p>
+                          <div className="flex items-center gap-1 mt-1">
+                            <span className="text-xs text-muted-foreground">Bei:</span>
+                            <Input
+                              type="number"
+                              value={item.price}
+                              onChange={(e) => {
+                                const newPrice = parseFloat(e.target.value) || 0;
+                                setCart(cart.map(ci => ci.id === item.id ? { ...ci, price: newPrice } : ci));
+                              }}
+                              className="h-7 w-24 text-xs px-2"
+                              min="0"
+                            />
+                            <span className="text-xs text-muted-foreground">× {item.quantity}</span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => updateQuantity(item.id, -1)}>
+                            <Minus className="h-4 w-4" />
+                          </Button>
+                          <span className="w-8 text-center font-medium text-foreground">{item.quantity}</span>
+                          <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => updateQuantity(item.id, 1)}>
+                            <Plus className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Button 
-                          variant="outline" 
-                          size="icon"
-                          className="h-8 w-8"
-                          onClick={() => updateQuantity(item.id, -1)}
-                        >
-                          <Minus className="h-4 w-4" />
-                        </Button>
-                        <span className="w-8 text-center font-medium text-foreground">{item.quantity}</span>
-                        <Button 
-                          variant="outline" 
-                          size="icon"
-                          className="h-8 w-8"
-                          onClick={() => updateQuantity(item.id, 1)}
-                        >
-                          <Plus className="h-4 w-4" />
-                        </Button>
-                      </div>
-                      <p className="w-24 text-right font-bold text-foreground">
+                      <p className="text-right font-bold text-primary text-sm mt-1">
                         TZS {(item.price * item.quantity).toLocaleString()}
                       </p>
                     </div>
@@ -599,8 +599,7 @@ export const ScannerPage = () => {
                   </div>
                 </div>
               )}
-            </CardContent>
-          </Card>
+          </div>
         </div>
       </div>
     </div>
