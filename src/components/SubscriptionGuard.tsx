@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
-import { OnboardingTour } from './OnboardingTour';
+import OnboardingTour from './OnboardingTour';
 import { SubscriptionBlocker } from './SubscriptionBlocker';
 import { PasswordChangeRequired } from './PasswordChangeRequired';
 

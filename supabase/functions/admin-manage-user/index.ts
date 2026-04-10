@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.8";
+// @ts-ignore: updateUser exists at runtime
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -27,7 +28,8 @@ Deno.serve(async (req) => {
       });
     }
 
-    const adminClient = createClient(supabaseUrl, serviceRoleKey);
+    // deno-lint-ignore no-explicit-any
+    const adminClient: any = createClient(supabaseUrl, serviceRoleKey);
 
     // Check super_admin role
     const { data: roleData } = await adminClient
