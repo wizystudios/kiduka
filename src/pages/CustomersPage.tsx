@@ -186,6 +186,45 @@ export const CustomersPage = () => {
     toast({ title: 'Mafanikio', description: 'Wateja wamehamishwa kwa mafanikio' });
   };
 
+  const handleQuickPay = async () => {
+    if (!quickPayCustomer || !quickPayAmount) return;
+    const amount = parseFloat(quickPayAmount);
+    if (isNaN(amount) || amount <= 0) return;
+    setSavingPayment(true);
+    try {
+      const newBalance = Math.max(0, (quickPayCustomer.outstanding_balance || 0) - amount);
+      const { error } = await supabase
+        .from('customers')
+        .update({ outstanding_balance: newBalance })
+        .eq('id', quickPayCustomer.id);
+      if (error) throw error;
+
+      // Record as transaction
+      await supabase.from('customer_transactions').insert({
+        customer_id: quickPayCustomer.id,
+        customer_name: quickPayCustomer.name,
+        owner_id: user!.id,
+        transaction_type: 'payment',
+        total_amount: amount,
+        amount_paid: amount,
+        balance: 0,
+        payment_status: 'paid',
+        payment_method: 'cash',
+      });
+
+      toast({ title: 'Malipo yamerekodishwa', description: `TSh ${amount.toLocaleString()} kutoka ${quickPayCustomer.name}` });
+      setQuickPayOpen(false);
+      setQuickPayAmount('');
+      setQuickPayCustomer(null);
+      fetchCustomers();
+    } catch (error) {
+      console.error('Payment error:', error);
+      toast({ title: 'Hitilafu', description: 'Imeshindwa kurekodi malipo', variant: 'destructive' });
+    } finally {
+      setSavingPayment(false);
+    }
+  };
+
   const filteredCustomers = customers.filter(customer =>
     customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     customer.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
