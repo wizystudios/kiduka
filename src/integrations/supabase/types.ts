@@ -206,6 +206,53 @@ export type Database = {
         }
         Relationships: []
       }
+      branch_staff: {
+        Row: {
+          assigned_at: string
+          assigned_by: string | null
+          branch_id: string
+          created_at: string
+          id: string
+          is_active: boolean
+          notes: string | null
+          role: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          assigned_at?: string
+          assigned_by?: string | null
+          branch_id: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          notes?: string | null
+          role?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          assigned_at?: string
+          assigned_by?: string | null
+          branch_id?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          notes?: string | null
+          role?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "branch_staff_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "business_branches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       business_ads: {
         Row: {
           created_at: string
@@ -585,6 +632,7 @@ export type Database = {
       }
       customers: {
         Row: {
+          branch_id: string | null
           created_at: string
           credit_limit: number | null
           email: string | null
@@ -598,6 +646,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          branch_id?: string | null
           created_at?: string
           credit_limit?: number | null
           email?: string | null
@@ -611,6 +660,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          branch_id?: string | null
           created_at?: string
           credit_limit?: number | null
           email?: string | null
@@ -623,7 +673,15 @@ export type Database = {
           total_purchases?: number | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "customers_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "business_branches"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       discounts: {
         Row: {
@@ -670,6 +728,7 @@ export type Database = {
       expenses: {
         Row: {
           amount: number
+          branch_id: string | null
           category: string
           created_at: string
           description: string | null
@@ -682,6 +741,7 @@ export type Database = {
         }
         Insert: {
           amount: number
+          branch_id?: string | null
           category: string
           created_at?: string
           description?: string | null
@@ -694,6 +754,7 @@ export type Database = {
         }
         Update: {
           amount?: number
+          branch_id?: string | null
           category?: string
           created_at?: string
           description?: string | null
@@ -704,7 +765,15 @@ export type Database = {
           receipt_url?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "expenses_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "business_branches"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       income_records: {
         Row: {
@@ -750,6 +819,7 @@ export type Database = {
       }
       inventory_movements: {
         Row: {
+          branch_id: string | null
           created_at: string
           created_by: string | null
           id: string
@@ -765,6 +835,7 @@ export type Database = {
           reference_type: string | null
         }
         Insert: {
+          branch_id?: string | null
           created_at?: string
           created_by?: string | null
           id?: string
@@ -780,6 +851,7 @@ export type Database = {
           reference_type?: string | null
         }
         Update: {
+          branch_id?: string | null
           created_at?: string
           created_by?: string | null
           id?: string
@@ -795,6 +867,13 @@ export type Database = {
           reference_type?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "inventory_movements_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "business_branches"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "inventory_movements_product_id_fkey"
             columns: ["product_id"]
@@ -1257,6 +1336,7 @@ export type Database = {
       products: {
         Row: {
           barcode: string | null
+          branch_id: string | null
           category: string | null
           cost_price: number | null
           created_at: string
@@ -1279,6 +1359,7 @@ export type Database = {
         }
         Insert: {
           barcode?: string | null
+          branch_id?: string | null
           category?: string | null
           cost_price?: number | null
           created_at?: string
@@ -1301,6 +1382,7 @@ export type Database = {
         }
         Update: {
           barcode?: string | null
+          branch_id?: string | null
           category?: string | null
           cost_price?: number | null
           created_at?: string
@@ -1322,6 +1404,13 @@ export type Database = {
           variant_name?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "products_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "business_branches"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "products_parent_product_id_fkey"
             columns: ["parent_product_id"]
@@ -1546,6 +1635,7 @@ export type Database = {
       }
       sales: {
         Row: {
+          branch_id: string | null
           created_at: string
           customer_id: string | null
           discount_amount: number | null
@@ -1557,6 +1647,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          branch_id?: string | null
           created_at?: string
           customer_id?: string | null
           discount_amount?: number | null
@@ -1568,6 +1659,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          branch_id?: string | null
           created_at?: string
           customer_id?: string | null
           discount_amount?: number | null
@@ -1579,6 +1671,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "sales_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "business_branches"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "sales_customer_id_fkey"
             columns: ["customer_id"]
@@ -2081,6 +2180,7 @@ export type Database = {
         }
         Returns: Json
       }
+      can_access_branch: { Args: { p_branch_id: string }; Returns: boolean }
       can_access_owner_data: {
         Args: { target_owner_id: string }
         Returns: boolean
