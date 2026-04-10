@@ -1297,17 +1297,17 @@ export const SuperAdminDashboard = () => {
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="p-4 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl text-center">
-                    <p className="text-xl font-bold text-emerald-600">{formatCurrency(stats.totalRevenue)}</p>
+                    <p className="text-xl font-bold text-emerald-600">{formatCurrency(filteredStats.totalRevenue)}</p>
                     <p className="text-xs text-muted-foreground">Jumla Mapato</p>
                   </div>
                   <div className="p-4 bg-red-50 dark:bg-red-900/20 rounded-xl text-center">
-                    <p className="text-xl font-bold text-red-600">{formatCurrency(stats.totalExpenses)}</p>
+                    <p className="text-xl font-bold text-red-600">{formatCurrency(filteredStats.totalExpenses)}</p>
                     <p className="text-xs text-muted-foreground">Jumla Matumizi</p>
                   </div>
                 </div>
                 <div className="p-4 bg-gradient-to-r from-primary/10 to-primary/5 rounded-xl">
                   <p className="text-sm font-medium">Faida Jumla</p>
-                  <p className="text-2xl font-bold text-primary">{formatCurrency(stats.totalRevenue - stats.totalExpenses)}</p>
+                  <p className="text-2xl font-bold text-primary">{formatCurrency(filteredStats.totalRevenue - filteredStats.totalExpenses)}</p>
                 </div>
               </CardContent>
             </Card>
