@@ -664,7 +664,10 @@ export const SokoniMarketplace = () => {
         <h3 className="font-medium text-sm line-clamp-2 min-h-[40px]">{product.name}</h3>
         <div className="flex items-center gap-1 mt-1">
           <Store className="h-3 w-3 text-muted-foreground" />
-          <span className="text-xs text-muted-foreground truncate">{product.owner_business_name}</span>
+          <span className="text-xs text-muted-foreground truncate">
+            {product.owner_business_name}
+            {product.branch_name ? ` • ${product.branch_name}` : ''}
+          </span>
         </div>
         {product.owner_region && (
           <div className="flex items-center gap-1 mt-0.5">
