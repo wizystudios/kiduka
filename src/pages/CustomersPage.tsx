@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Plus, Search, Edit, Trash2, Users, Mail, Phone, FileText, FileSpreadsheet, MessageSquare, Send } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, Users, Mail, Phone, FileText, FileSpreadsheet, MessageSquare, Send, Wallet } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/integrations/supabase/client';
