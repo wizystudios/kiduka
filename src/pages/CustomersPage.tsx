@@ -402,6 +402,47 @@ export const CustomersPage = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Quick Pay Dialog */}
+      <Dialog open={quickPayOpen} onOpenChange={setQuickPayOpen}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Wallet className="h-5 w-5 text-primary" />
+              Lipa Deni - {quickPayCustomer?.name}
+            </DialogTitle>
+          </DialogHeader>
+          {quickPayCustomer && (
+            <div className="space-y-4">
+              <div className="bg-muted rounded-xl p-3">
+                <p className="text-xs text-muted-foreground">Deni la sasa</p>
+                <p className="text-xl font-bold text-destructive">
+                  TSh {(quickPayCustomer.outstanding_balance || 0).toLocaleString()}
+                </p>
+              </div>
+              <div>
+                <Label htmlFor="quickPay">Kiasi Anaolipa (TSh)</Label>
+                <Input
+                  id="quickPay"
+                  type="number"
+                  value={quickPayAmount}
+                  onChange={(e) => setQuickPayAmount(e.target.value)}
+                  placeholder="Weka kiasi..."
+                  max={quickPayCustomer.outstanding_balance || 0}
+                />
+              </div>
+              <div className="flex gap-2">
+                <Button variant="outline" className="flex-1" onClick={() => setQuickPayAmount(String(quickPayCustomer.outstanding_balance || 0))}>
+                  Lipa Yote
+                </Button>
+                <Button className="flex-1" onClick={handleQuickPay} disabled={savingPayment || !quickPayAmount}>
+                  {savingPayment ? 'Inahifadhi...' : 'Rekodi Malipo'}
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
