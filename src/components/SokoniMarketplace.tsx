@@ -50,6 +50,8 @@ interface MarketProduct {
   stock_quantity: number;
   image_url: string | null;
   owner_id: string;
+  branch_id?: string | null;
+  branch_name?: string;
   owner_business_name?: string;
   owner_phone?: string;
   owner_region?: string;
