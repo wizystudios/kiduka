@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { AlertTriangle, Check, ShieldAlert } from 'lucide-react';
+import { Check, ShieldAlert, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { toast } from 'sonner';
@@ -17,7 +17,7 @@ const ASSISTANT_TC = [
   'Kutumia mfumo kwa uaminifu na kufuata maelekezo ya mmiliki wa biashara.',
   'Kulinda siri za biashara na kutoshiriki taarifa za biashara na mtu mwingine.',
   'Kutotumia mfumo kwa biashara haramu au udanganyifu.',
-  'Kukubali kuwa Admin ana haki ya kuingia kwenye akaunti yako kwa ukaguzi.',
+  'Kukubali kuwa Admin ana haki ya kuingia kwenye akaunti yako kwa ukaguzi wa msaada.',
   'Kukubali kuwa akaunti yako inaweza kufutwa ikiwa masharti yamekiukwa.',
 ];
 
@@ -86,21 +86,19 @@ export const ContractComplianceGate = ({ children }: ContractComplianceGateProps
       !status.contractSigned ? 'Mkataba' : null,
     ].filter(Boolean).join(', ');
 
-    const urgent = status.complianceBlocked || status.contractOverdue;
-
     return (
-      <div className={`mb-3 rounded-2xl border p-3 text-sm ${urgent ? 'border-destructive/30 bg-destructive/10 text-destructive' : 'border-primary/20 bg-primary/10 text-foreground'}`}>
-        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <div className="min-w-0">
-            <div className="mb-1 flex items-center gap-2 font-medium">
-              <ShieldAlert className="h-4 w-4" />
-              Kamilisha usajili wa biashara
-            </div>
-            <p className="text-xs opacity-90 md:text-sm">Bado unahitaji: {missingItems || 'taarifa za sheria'}.</p>
-          </div>
-          <Button className="self-start rounded-2xl md:self-auto" onClick={() => navigate('/settings?tab=registration')}>
-            Fungua Sheria
-          </Button>
+      <div className="bg-destructive text-white overflow-hidden">
+        <div className="flex items-center gap-3 px-4 py-2 animate-marquee whitespace-nowrap">
+          <AlertTriangle className="h-4 w-4 flex-shrink-0" />
+          <span className="text-xs font-medium">
+            ⚠️ Kamilisha usajili wa biashara — Bado unahitaji: {missingItems || 'taarifa za sheria'}
+          </span>
+          <button
+            onClick={() => navigate('/settings?tab=registration')}
+            className="ml-3 bg-white/20 hover:bg-white/30 text-white text-xs font-bold px-3 py-0.5 rounded-full transition-colors flex-shrink-0"
+          >
+            Kamilisha Sasa
+          </button>
         </div>
       </div>
     );
