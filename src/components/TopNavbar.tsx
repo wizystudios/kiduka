@@ -58,8 +58,8 @@ export const TopNavbar = () => {
 
   const isActive = (href: string) => href === '/dashboard' ? location.pathname === '/dashboard' : location.pathname.startsWith(href);
 
-  const primaryItems = filterNavigationItems(primaryNavigationItems, userProfile?.role, permissions);
-  const utilityItems = filterNavigationItems(utilityNavigationItems, userProfile?.role, permissions);
+  const primaryItems = filterNavigationItems(primaryNavigationItems, userProfile?.role, permissions as Record<string, boolean> | null);
+  const utilityItems = filterNavigationItems(utilityNavigationItems, userProfile?.role, permissions as Record<string, boolean> | null);
 
   if (!user) return null;
 

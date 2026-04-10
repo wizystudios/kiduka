@@ -82,8 +82,8 @@ export const MobileBottomNav = () => {
     setIsLongPressing(false);
   };
 
-  const menuItems = filterNavigationItems(primaryNavigationItems, userProfile?.role, permissions);
-  const utilityItems = filterNavigationItems(utilityNavigationItems, userProfile?.role, permissions);
+  const menuItems = filterNavigationItems(primaryNavigationItems, userProfile?.role, permissions as Record<string, boolean> | null);
+  const utilityItems = filterNavigationItems(utilityNavigationItems, userProfile?.role, permissions as Record<string, boolean> | null);
 
   return (
     <>
