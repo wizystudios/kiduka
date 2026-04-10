@@ -5,7 +5,6 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { 
   Package, Truck, CheckCircle, XCircle, Clock, Phone, MapPin, Eye, RefreshCw, User, MessageSquare, Send, Receipt, Megaphone, Users
