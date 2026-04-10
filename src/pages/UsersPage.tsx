@@ -110,14 +110,25 @@ export const UsersPage = () => {
     }
   };
 
+  const PASSWORD_REGEX = /^(?=.*[A-Z])(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?])(?=(?:.*\d){3,}).{8,}$/;
+
+  const validatePassword = (pwd: string): string | null => {
+    if (pwd.length < 8) return 'Nywila lazima iwe na angalau herufi 8';
+    if (!/[A-Z]/.test(pwd)) return 'Nywila lazima iwe na herufi kubwa (A-Z)';
+    if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(pwd)) return 'Nywila lazima iwe na alama maalum (!@#$...)';
+    if ((pwd.match(/\d/g) || []).length < 3) return 'Nywila lazima iwe na nambari 3 au zaidi';
+    return null;
+  };
+
   const handleCreateAssistant = async () => {
     if (!newUser.email || !newUser.password || !newUser.full_name) {
       toast.error('Tafadhali jaza sehemu zote zinazohitajika');
       return;
     }
 
-    if (newUser.password.length < 8) {
-      toast.error('Nywila lazima iwe na angalau herufi 8');
+    const pwdError = validatePassword(newUser.password);
+    if (pwdError) {
+      toast.error(pwdError);
       return;
     }
 
@@ -396,8 +407,11 @@ export const UsersPage = () => {
                       type="password"
                       value={newUser.password}
                       onChange={(e) => setNewUser({...newUser, password: e.target.value})}
-                      placeholder="Herufi 8+"
+                      placeholder="Herufi 8+, kubwa, nambari 3+, alama"
                     />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Herufi 8+, herufi kubwa 1+, nambari 3+, alama maalum 1+
+                    </p>
                   </div>
                   <Button 
                     onClick={handleCreateAssistant} 

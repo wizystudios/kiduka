@@ -50,6 +50,8 @@ interface MarketProduct {
   stock_quantity: number;
   image_url: string | null;
   owner_id: string;
+  branch_id?: string | null;
+  branch_name?: string;
   owner_business_name?: string;
   owner_phone?: string;
   owner_region?: string;
@@ -229,7 +231,7 @@ export const SokoniMarketplace = () => {
 
       const { data: productsData, error: productsError } = await supabase
         .from('products')
-        .select('id, name, price, description, category, stock_quantity, image_url, owner_id, created_at')
+        .select('id, name, price, description, category, stock_quantity, image_url, owner_id, created_at, branch_id')
         .gt('stock_quantity', 0)
         .order('created_at', { ascending: false });
 
@@ -239,8 +241,11 @@ export const SokoniMarketplace = () => {
 
       let profilesData: SellerProfile[] = [];
       let discountsData: ActiveDiscount[] = [];
+      let branchesData: { id: string; branch_name: string }[] = [];
       
       if (sellerIds.length > 0) {
+        const branchIds = [...new Set((productsData || []).map(p => (p as any).branch_id).filter(Boolean))];
+        
         const [profilesResult, discountsResult] = await Promise.all([
           supabase.from('profiles').select('id, business_name, phone, region, district').in('id', sellerIds),
           supabase.from('discounts').select('id, discount_type, value, applicable_products').eq('active', true)
@@ -253,6 +258,14 @@ export const SokoniMarketplace = () => {
             ...d,
             applicable_products: Array.isArray(d.applicable_products) ? d.applicable_products : []
           }));
+        }
+        
+        if (branchIds.length > 0) {
+          const { data: bData } = await supabase
+            .from('business_branches')
+            .select('id, branch_name')
+            .in('id', branchIds);
+          branchesData = bData || [];
         }
       }
 
@@ -279,8 +292,12 @@ export const SokoniMarketplace = () => {
           }
         }
         
+        const branch = branchesData.find(b => b.id === (product as any).branch_id);
+        
         return {
           ...product,
+          branch_id: (product as any).branch_id || null,
+          branch_name: branch?.branch_name || undefined,
           owner_business_name: seller?.business_name || 'Duka',
           owner_phone: seller?.phone || undefined,
           owner_region: seller?.region || undefined,
@@ -647,7 +664,10 @@ export const SokoniMarketplace = () => {
         <h3 className="font-medium text-sm line-clamp-2 min-h-[40px]">{product.name}</h3>
         <div className="flex items-center gap-1 mt-1">
           <Store className="h-3 w-3 text-muted-foreground" />
-          <span className="text-xs text-muted-foreground truncate">{product.owner_business_name}</span>
+          <span className="text-xs text-muted-foreground truncate">
+            {product.owner_business_name}
+            {product.branch_name ? ` • ${product.branch_name}` : ''}
+          </span>
         </div>
         {product.owner_region && (
           <div className="flex items-center gap-1 mt-0.5">
