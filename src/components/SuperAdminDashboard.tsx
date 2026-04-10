@@ -169,6 +169,11 @@ export const SuperAdminDashboard = () => {
   useEffect(() => {
     fetchAllData();
   }, []);
+
+  // Re-compute filtered stats when business changes
+  useEffect(() => {
+    // Stats are recalculated from already-fetched data arrays
+  }, [selectedBusiness]);
   
   const fetchAllData = async () => {
     setLoading(true);
@@ -880,15 +885,28 @@ export const SuperAdminDashboard = () => {
     });
   };
 
+  // Compute stats based on selected business filter
+  const filteredStats = selectedBusiness ? {
+    totalUsers: users.filter(u => u.id === selectedBusiness || users.some(a => a.role === 'assistant')).length,
+    totalProducts: products.filter(p => p.owner_id === selectedBusiness).length,
+    totalSales: sales.filter(s => s.owner_id === selectedBusiness).length,
+    totalRevenue: sales.filter(s => s.owner_id === selectedBusiness).reduce((sum, s) => sum + (s.total_amount || 0), 0),
+    totalOrders: orders.filter(o => o.seller_id === selectedBusiness).length,
+    totalExpenses: expenses.filter(e => e.owner_id === selectedBusiness).reduce((sum, e) => sum + (e.amount || 0), 0),
+    totalCustomers: customers.filter(c => c.owner_id === selectedBusiness).length,
+    activeLoans: stats.activeLoans,
+    pendingSubscriptions: stats.pendingSubscriptions
+  } : stats;
+
   const statCards = [
-    { title: 'Watumiaji', value: stats.totalUsers, icon: <Users className="h-5 w-5" />, color: 'text-blue-600' },
-    { title: 'Bidhaa', value: stats.totalProducts, icon: <Package className="h-5 w-5" />, color: 'text-green-600' },
-    { title: 'Mauzo', value: stats.totalSales, icon: <ShoppingCart className="h-5 w-5" />, color: 'text-purple-600' },
-    { title: 'Mapato', value: stats.totalRevenue, icon: <Wallet className="h-5 w-5" />, color: 'text-emerald-600' },
-    { title: 'Oda Sokoni', value: stats.totalOrders, icon: <Store className="h-5 w-5" />, color: 'text-orange-600' },
-    { title: 'Matumizi', value: stats.totalExpenses, icon: <CreditCard className="h-5 w-5" />, color: 'text-red-600' },
-    { title: 'Wateja', value: stats.totalCustomers, icon: <Users className="h-5 w-5" />, color: 'text-indigo-600' },
-    { title: 'Mikopo Active', value: stats.activeLoans, icon: <TrendingUp className="h-5 w-5" />, color: 'text-yellow-600' },
+    { title: 'Watumiaji', value: filteredStats.totalUsers, icon: <Users className="h-5 w-5" />, color: 'text-blue-600' },
+    { title: 'Bidhaa', value: filteredStats.totalProducts, icon: <Package className="h-5 w-5" />, color: 'text-green-600' },
+    { title: 'Mauzo', value: filteredStats.totalSales, icon: <ShoppingCart className="h-5 w-5" />, color: 'text-purple-600' },
+    { title: 'Mapato', value: filteredStats.totalRevenue, icon: <Wallet className="h-5 w-5" />, color: 'text-emerald-600' },
+    { title: 'Oda Sokoni', value: filteredStats.totalOrders, icon: <Store className="h-5 w-5" />, color: 'text-orange-600' },
+    { title: 'Matumizi', value: filteredStats.totalExpenses, icon: <CreditCard className="h-5 w-5" />, color: 'text-red-600' },
+    { title: 'Wateja', value: filteredStats.totalCustomers, icon: <Users className="h-5 w-5" />, color: 'text-indigo-600' },
+    { title: 'Mikopo Active', value: filteredStats.activeLoans, icon: <TrendingUp className="h-5 w-5" />, color: 'text-yellow-600' },
   ];
   
   const formatCurrency = (amount: number) => `TSh ${amount.toLocaleString()}`;
@@ -1279,17 +1297,17 @@ export const SuperAdminDashboard = () => {
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="p-4 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl text-center">
-                    <p className="text-xl font-bold text-emerald-600">{formatCurrency(stats.totalRevenue)}</p>
+                    <p className="text-xl font-bold text-emerald-600">{formatCurrency(filteredStats.totalRevenue)}</p>
                     <p className="text-xs text-muted-foreground">Jumla Mapato</p>
                   </div>
                   <div className="p-4 bg-red-50 dark:bg-red-900/20 rounded-xl text-center">
-                    <p className="text-xl font-bold text-red-600">{formatCurrency(stats.totalExpenses)}</p>
+                    <p className="text-xl font-bold text-red-600">{formatCurrency(filteredStats.totalExpenses)}</p>
                     <p className="text-xs text-muted-foreground">Jumla Matumizi</p>
                   </div>
                 </div>
                 <div className="p-4 bg-gradient-to-r from-primary/10 to-primary/5 rounded-xl">
                   <p className="text-sm font-medium">Faida Jumla</p>
-                  <p className="text-2xl font-bold text-primary">{formatCurrency(stats.totalRevenue - stats.totalExpenses)}</p>
+                  <p className="text-2xl font-bold text-primary">{formatCurrency(filteredStats.totalRevenue - filteredStats.totalExpenses)}</p>
                 </div>
               </CardContent>
             </Card>
@@ -1325,7 +1343,7 @@ export const SuperAdminDashboard = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                {sales.slice(0, 5).map(s => (
+                {filteredSales.slice(0, 5).map(s => (
                   <div key={s.id} className="flex items-center justify-between py-2 border-b last:border-0">
                     <div>
                       <p className="font-medium text-sm">{formatCurrency(s.total_amount)}</p>
