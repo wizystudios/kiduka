@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Plus, Search, Edit, Trash2, Users, Mail, Phone, FileText, FileSpreadsheet, MessageSquare, Send } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, Users, Mail, Phone, FileText, FileSpreadsheet, MessageSquare, Send, Wallet } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/integrations/supabase/client';
@@ -38,6 +38,10 @@ export const CustomersPage = () => {
   const [whatsappTarget, setWhatsappTarget] = useState<Customer | null>(null);
   const [whatsappMsg, setWhatsappMsg] = useState('');
   const [sendingWhatsapp, setSendingWhatsapp] = useState(false);
+  const [quickPayOpen, setQuickPayOpen] = useState(false);
+  const [quickPayCustomer, setQuickPayCustomer] = useState<Customer | null>(null);
+  const [quickPayAmount, setQuickPayAmount] = useState('');
+  const [savingPayment, setSavingPayment] = useState(false);
   const [customerData, setCustomerData] = useState({
     name: '',
     email: '',
@@ -182,6 +186,45 @@ export const CustomersPage = () => {
     toast({ title: 'Mafanikio', description: 'Wateja wamehamishwa kwa mafanikio' });
   };
 
+  const handleQuickPay = async () => {
+    if (!quickPayCustomer || !quickPayAmount) return;
+    const amount = parseFloat(quickPayAmount);
+    if (isNaN(amount) || amount <= 0) return;
+    setSavingPayment(true);
+    try {
+      const newBalance = Math.max(0, (quickPayCustomer.outstanding_balance || 0) - amount);
+      const { error } = await supabase
+        .from('customers')
+        .update({ outstanding_balance: newBalance })
+        .eq('id', quickPayCustomer.id);
+      if (error) throw error;
+
+      // Record as transaction
+      await supabase.from('customer_transactions').insert({
+        customer_id: quickPayCustomer.id,
+        customer_name: quickPayCustomer.name,
+        owner_id: user!.id,
+        transaction_type: 'payment',
+        total_amount: amount,
+        amount_paid: amount,
+        balance: 0,
+        payment_status: 'paid',
+        payment_method: 'cash',
+      });
+
+      toast({ title: 'Malipo yamerekodishwa', description: `TSh ${amount.toLocaleString()} kutoka ${quickPayCustomer.name}` });
+      setQuickPayOpen(false);
+      setQuickPayAmount('');
+      setQuickPayCustomer(null);
+      fetchCustomers();
+    } catch (error) {
+      console.error('Payment error:', error);
+      toast({ title: 'Hitilafu', description: 'Imeshindwa kurekodi malipo', variant: 'destructive' });
+    } finally {
+      setSavingPayment(false);
+    }
+  };
+
   const filteredCustomers = customers.filter(customer =>
     customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     customer.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -291,6 +334,12 @@ export const CustomersPage = () => {
               </div>
               
               <div className="flex gap-1 flex-shrink-0">
+                {(customer.outstanding_balance || 0) > 0 && (
+                  <Button variant="default" size="sm" className="h-7 px-2 text-xs gap-1 rounded-xl" onClick={() => { setQuickPayCustomer(customer); setQuickPayOpen(true); }}>
+                    <Wallet className="h-3 w-3" />
+                    Lipa
+                  </Button>
+                )}
                 <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setSelectedCustomer({ id: customer.id, name: customer.name }); setLedgerOpen(true); }}>
                   <FileText className="h-3.5 w-3.5" />
                 </Button>
@@ -351,6 +400,47 @@ export const CustomersPage = () => {
               {sendingWhatsapp ? 'Inatuma...' : 'Tuma Ujumbe'}
             </Button>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Quick Pay Dialog */}
+      <Dialog open={quickPayOpen} onOpenChange={setQuickPayOpen}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Wallet className="h-5 w-5 text-primary" />
+              Lipa Deni - {quickPayCustomer?.name}
+            </DialogTitle>
+          </DialogHeader>
+          {quickPayCustomer && (
+            <div className="space-y-4">
+              <div className="bg-muted rounded-xl p-3">
+                <p className="text-xs text-muted-foreground">Deni la sasa</p>
+                <p className="text-xl font-bold text-destructive">
+                  TSh {(quickPayCustomer.outstanding_balance || 0).toLocaleString()}
+                </p>
+              </div>
+              <div>
+                <Label htmlFor="quickPay">Kiasi Anaolipa (TSh)</Label>
+                <Input
+                  id="quickPay"
+                  type="number"
+                  value={quickPayAmount}
+                  onChange={(e) => setQuickPayAmount(e.target.value)}
+                  placeholder="Weka kiasi..."
+                  max={quickPayCustomer.outstanding_balance || 0}
+                />
+              </div>
+              <div className="flex gap-2">
+                <Button variant="outline" className="flex-1" onClick={() => setQuickPayAmount(String(quickPayCustomer.outstanding_balance || 0))}>
+                  Lipa Yote
+                </Button>
+                <Button className="flex-1" onClick={handleQuickPay} disabled={savingPayment || !quickPayAmount}>
+                  {savingPayment ? 'Inahifadhi...' : 'Rekodi Malipo'}
+                </Button>
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>
