@@ -48,7 +48,7 @@ export const SokoniOrderManagement = () => {
   const [orders, setOrders] = useState<SokoniOrder[]>([]);
   const [selectedOrder, setSelectedOrder] = useState<SokoniOrder | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('new');
+  const [_activeTab, _setActiveTab] = useState('new');
   const [deliveryName, setDeliveryName] = useState('');
   const [deliveryPhone, setDeliveryPhone] = useState('');
   const [whatsappOpen, setWhatsappOpen] = useState(false);
