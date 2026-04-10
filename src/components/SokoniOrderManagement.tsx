@@ -378,11 +378,11 @@ export const SokoniOrderManagement = () => {
     setBatchMsg('');
   };
 
-  const filteredOrders = orders.filter(order => {
-    if (activeTab === 'new') return order.order_status === 'new';
-    if (activeTab === 'active') return ['confirmed', 'delivering'].includes(order.order_status);
-    if (activeTab === 'completed') return ['delivered', 'cancelled'].includes(order.order_status);
-    return true;
+  // Orders sorted: new first, then by date
+  const sortedOrders = [...orders].sort((a, b) => {
+    if (a.order_status === 'new' && b.order_status !== 'new') return -1;
+    if (a.order_status !== 'new' && b.order_status === 'new') return 1;
+    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
   });
 
   const formatTime = (dateString: string) => {
