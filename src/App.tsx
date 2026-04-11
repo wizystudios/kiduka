@@ -517,7 +517,7 @@ export default function App() {
                     <div className="text-center p-8">
                       <div className="text-6xl mb-4">🎉</div>
                       <h1 className="text-3xl font-bold text-green-800 mb-4">Malipo Yamekamilika!</h1>
-                      <p className="text-green-600 mb-6">Akaunti yako sasa ni hai. Karibu Kiduka POS!</p>
+                      <p className="text-green-600 mb-6">Akaunti yako sasa ni hai. Karibu Kiduka!</p>
                       <button 
                         onClick={() => window.location.href = '/dashboard'}
                         className="bg-green-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-green-700"

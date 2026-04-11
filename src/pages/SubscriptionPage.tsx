@@ -58,7 +58,7 @@ export const SubscriptionPage = ({ embedded = false }: SubscriptionPageProps) =>
           subscription_id: subscription?.id,
           transaction_type: 'subscription_payment',
           user_id: user?.id,
-          description: 'Kiduka POS Monthly Subscription'
+          description: 'Kiduka Monthly Subscription'
         }
       });
 

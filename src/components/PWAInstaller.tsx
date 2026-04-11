@@ -48,7 +48,7 @@ export const PWAInstaller = () => {
       setShowInstallBanner(false);
       toast({
         title: 'App Imesakinishwa!',
-        description: 'KidukaPOS sasa iko kwenye vifaa vyako',
+        description: 'Kiduka sasa iko kwenye vifaa vyako',
       });
     };
 
@@ -89,7 +89,7 @@ export const PWAInstaller = () => {
     if (navigator.share) {
       try {
         await navigator.share({
-          title: 'KidukaPOS - Smart Business Management',
+          title: 'Kiduka - Smart Business Management',
           text: 'Pata app bora ya kusimamia biashara yako!',
           url: window.location.origin
         });
@@ -242,7 +242,7 @@ export const PWAInstaller = () => {
           {!isInstalled && deferredPrompt && (
             <Button onClick={handleInstallClick} className="w-full">
               <Download className="h-4 w-4 mr-2" />
-              Sakinisha KidukaPOS App
+              Sakinisha Kiduka App
             </Button>
           )}
 
@@ -321,7 +321,7 @@ export const PWAInstaller = () => {
               <h4 className="font-semibold text-sm mb-2">Desktop (Chrome/Edge)</h4>
               <ol className="text-sm text-gray-600 space-y-1 ml-4">
                 <li>1. Bonyeza alama ya kusakinisha kwenye address bar</li>
-                <li>2. Au menu → "Install KidukaPOS"</li>
+                <li>2. Au menu → "Install Kiduka"</li>
                 <li>3. Kubali kusakinisha</li>
               </ol>
             </div>

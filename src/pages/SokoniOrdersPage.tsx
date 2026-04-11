@@ -3,7 +3,7 @@ import SokoniOrderManagement from "@/components/SokoniOrderManagement";
 
 export const SokoniOrdersPage = () => {
   useEffect(() => {
-    document.title = "Oda za Sokoni - Kiduka POS";
+    document.title = "Oda za Sokoni - Kiduka";
   }, []);
 
   return (

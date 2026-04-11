@@ -101,7 +101,7 @@ export const HelpCenter = () => {
       </Card>
 
       <div className="text-center space-y-1 pb-8">
-        <p className="text-xs text-muted-foreground">Kiduka POS System v1.0.0</p>
+        <p className="text-xs text-muted-foreground">Kiduka System v1.0.0</p>
         <p className="text-[10px] text-muted-foreground">Built with ❤️ for Tanzanian shopkeepers</p>
       </div>
     </div>

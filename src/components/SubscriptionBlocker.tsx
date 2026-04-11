@@ -57,7 +57,7 @@ export const SubscriptionBlocker = ({ children }: SubscriptionBlockerProps) => {
           subscription_id: subscription?.id,
           transaction_type: 'subscription_payment',
           user_id: userProfile?.id,
-          description: 'Kiduka POS Monthly Subscription'
+          description: 'Kiduka Monthly Subscription'
         }
       });
 
