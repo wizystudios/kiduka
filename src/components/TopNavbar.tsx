@@ -12,7 +12,7 @@ import { useOfflineSync } from '@/hooks/useOfflineSync';
 import { OfflineIndicator } from '@/components/OfflineIndicator';
 import { TopAlertBar } from '@/components/TopAlertBar';
 import { KidukaLogo } from './KidukaLogo';
-import { LogOut, Bell } from 'lucide-react';
+import { LogOut, Bell, Mic } from 'lucide-react';
 import { filterNavigationItems, primaryNavigationItems, superAdminNavigationItem, utilityNavigationItems } from '@/lib/navigation';
 
 export const TopNavbar = () => {
@@ -160,6 +160,9 @@ export const TopNavbar = () => {
                 {unreadCount > 99 ? '99+' : unreadCount}
               </span>
             )}
+          </Button>
+          <Button variant="ghost" size="sm" className="p-1.5 h-8 w-8" onClick={() => navigate('/voice-pos')}>
+            <Mic className="h-4 w-4" />
           </Button>
         </div>
       </div>

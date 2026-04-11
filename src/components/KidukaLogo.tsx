@@ -55,7 +55,7 @@ export const KidukaLogo = ({ size = 'md', showText = true, animate = false }: Ki
           <h1 className={`${textSizeClasses[size]} font-black bg-gradient-to-r from-success to-primary bg-clip-text text-transparent tracking-tight`}>
             Kiduka
           </h1>
-          <p className="text-[10px] text-muted-foreground font-medium">Smart Business</p>
+          <p className="text-[10px] text-muted-foreground font-medium">Biashara Smart</p>
         </div>
       )}
     </div>

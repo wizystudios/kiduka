@@ -981,8 +981,20 @@ export const SokoniMarketplace = () => {
                   <Card 
                     key={sellerId} 
                     className="overflow-hidden cursor-pointer hover:shadow-xl transition-all duration-300 rounded-3xl border-0 bg-card group"
-                    onClick={() => {
-                      if (storeSlug) navigate(`/duka/${storeSlug}`);
+                    onClick={async () => {
+                      // Check if store has a slug set in profile
+                      const { data: profile } = await supabase
+                        .from('profiles')
+                        .select('store_slug')
+                        .eq('id', sellerId)
+                        .maybeSingle();
+                      const slug = (profile as any)?.store_slug || storeSlug;
+                      if (slug) {
+                        navigate(`/duka/${slug}`);
+                      } else {
+                        // Navigate to sokoni with seller products filter
+                        toast.info('Duka hili halina profaili bado');
+                      }
                     }}
                   >
                     {/* Store banner with gradient */}
