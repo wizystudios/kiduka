@@ -2040,15 +2040,26 @@ export type Database = {
       }
       user_subscriptions: {
         Row: {
+          admin_fee_notes: string | null
           approved_at: string | null
           approved_by: string | null
+          assistant_count: number
+          assistant_fee: number
+          base_fee: number
+          branch_count: number
+          branch_fee: number
+          calculated_fee: number
           created_at: string
           current_period_end: string | null
           current_period_start: string | null
+          custom_fee: number | null
+          fee_breakdown: Json | null
+          has_sokoni: boolean
           id: string
           notes: string | null
           payment_amount: number | null
           payment_reference: string | null
+          sokoni_fee: number
           status: string
           trial_ends_at: string
           trial_started_at: string
@@ -2056,15 +2067,26 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          admin_fee_notes?: string | null
           approved_at?: string | null
           approved_by?: string | null
+          assistant_count?: number
+          assistant_fee?: number
+          base_fee?: number
+          branch_count?: number
+          branch_fee?: number
+          calculated_fee?: number
           created_at?: string
           current_period_end?: string | null
           current_period_start?: string | null
+          custom_fee?: number | null
+          fee_breakdown?: Json | null
+          has_sokoni?: boolean
           id?: string
           notes?: string | null
           payment_amount?: number | null
           payment_reference?: string | null
+          sokoni_fee?: number
           status?: string
           trial_ends_at?: string
           trial_started_at?: string
@@ -2072,15 +2094,26 @@ export type Database = {
           user_id: string
         }
         Update: {
+          admin_fee_notes?: string | null
           approved_at?: string | null
           approved_by?: string | null
+          assistant_count?: number
+          assistant_fee?: number
+          base_fee?: number
+          branch_count?: number
+          branch_fee?: number
+          calculated_fee?: number
           created_at?: string
           current_period_end?: string | null
           current_period_start?: string | null
+          custom_fee?: number | null
+          fee_breakdown?: Json | null
+          has_sokoni?: boolean
           id?: string
           notes?: string | null
           payment_amount?: number | null
           payment_reference?: string | null
+          sokoni_fee?: number
           status?: string
           trial_ends_at?: string
           trial_started_at?: string
