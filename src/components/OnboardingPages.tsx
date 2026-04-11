@@ -42,20 +42,21 @@ export const OnboardingPages = ({ onComplete }: OnboardingPagesProps) => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      {/* Image section */}
-      <div className="flex-1 relative overflow-hidden">
+    <div className="h-[100dvh] max-h-[100dvh] bg-background flex flex-col md:flex-row overflow-hidden">
+      {/* Image section - left on desktop, top on mobile */}
+      <div className="h-[45vh] md:h-full md:w-1/2 relative overflow-hidden flex-shrink-0">
         <img
           key={currentPageData.image}
           src={currentPageData.image}
           alt={currentPageData.title}
           className="w-full h-full object-cover animate-fade-in"
         />
-        <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-background to-transparent" />
+        <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-background to-transparent md:hidden" />
+        <div className="hidden md:block absolute inset-y-0 right-0 w-24 bg-gradient-to-l from-background to-transparent" />
       </div>
 
-      {/* Content section */}
-      <div className="px-6 pb-8 pt-2 space-y-4">
+      {/* Content section - right on desktop, bottom on mobile */}
+      <div className="flex-1 flex flex-col items-center justify-center px-6 py-4 md:py-8 space-y-4">
         <div className="flex justify-center">
           <KidukaLogo size="sm" />
         </div>
@@ -76,7 +77,7 @@ export const OnboardingPages = ({ onComplete }: OnboardingPagesProps) => {
           ))}
         </div>
 
-        <div className="flex gap-3">
+        <div className="flex gap-3 w-full max-w-xs">
           <Button variant="ghost" onClick={onComplete} className="flex-1 rounded-full">
             Ruka
           </Button>
