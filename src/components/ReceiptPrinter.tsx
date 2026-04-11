@@ -48,7 +48,7 @@ export const ReceiptPrinter = ({ items, total, transactionId, onPrint }: Receipt
         
         <div style="text-align: center; margin-top: 20px; padding-top: 15px; border-top: 1px solid #000;">
           <p style="margin: 0; font-size: 10px;">Thank you for your business!</p>
-          <p style="margin: 5px 0 0 0; font-size: 10px;">Powered by Kiduka POS</p>
+          <p style="margin: 5px 0 0 0; font-size: 10px;">Powered by Kiduka</p>
         </div>
       </div>
     `;

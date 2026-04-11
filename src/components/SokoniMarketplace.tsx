@@ -981,8 +981,20 @@ export const SokoniMarketplace = () => {
                   <Card 
                     key={sellerId} 
                     className="overflow-hidden cursor-pointer hover:shadow-xl transition-all duration-300 rounded-3xl border-0 bg-card group"
-                    onClick={() => {
-                      if (storeSlug) navigate(`/duka/${storeSlug}`);
+                    onClick={async () => {
+                      // Check if store has a slug set in profile
+                      const { data: profile } = await supabase
+                        .from('profiles')
+                        .select('store_slug')
+                        .eq('id', sellerId)
+                        .maybeSingle();
+                      const slug = (profile as any)?.store_slug || storeSlug;
+                      if (slug) {
+                        navigate(`/duka/${slug}`);
+                      } else {
+                        // Navigate to sokoni with seller products filter
+                        toast.info('Duka hili halina profaili bado');
+                      }
                     }}
                   >
                     {/* Store banner with gradient */}
@@ -1063,9 +1075,19 @@ export const SokoniMarketplace = () => {
                         variant="outline" 
                         size="sm" 
                         className="w-full rounded-full text-xs group-hover:bg-primary group-hover:text-primary-foreground transition-colors"
-                        onClick={(e) => {
+                        onClick={async (e) => {
                           e.stopPropagation();
-                          if (storeSlug) navigate(`/duka/${storeSlug}`);
+                          const { data: pf } = await supabase
+                            .from('profiles')
+                            .select('store_slug')
+                            .eq('id', sellerId)
+                            .maybeSingle();
+                          const resolvedSlug = (pf as any)?.store_slug || storeSlug;
+                          if (resolvedSlug) {
+                            navigate(`/duka/${resolvedSlug}`);
+                          } else {
+                            toast.info('Duka hili halina profaili bado');
+                          }
                         }}
                       >
                         Tembelea Duka

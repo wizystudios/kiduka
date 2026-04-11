@@ -80,7 +80,7 @@ export const ContractComplianceGate = ({ children }: ContractComplianceGateProps
         <div className="w-full max-w-lg">
           <div className="mb-4 flex flex-col items-center justify-center py-4">
             <KidukaLogo size="xl" animate />
-            <h1 className="mt-3 text-xl font-bold">Karibu Kiduka POS</h1>
+            <h1 className="mt-3 text-xl font-bold">Karibu Kiduka</h1>
             <p className="text-sm text-muted-foreground">Kabla ya kuendelea, soma na ukubali masharti</p>
           </div>
 

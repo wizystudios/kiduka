@@ -84,7 +84,7 @@ export const InvoiceGenerator = ({
         <div id="invoice-content" className="space-y-4 p-4 border rounded-lg">
           {/* Header */}
           <div className="text-center border-b pb-4">
-            <h1 className="text-2xl font-bold">{userProfile?.business_name || 'Kiduka POS'}</h1>
+            <h1 className="text-2xl font-bold">{userProfile?.business_name || 'Kiduka'}</h1>
             <p className="text-sm text-muted-foreground">ANKARA YA MAUZO</p>
           </div>
 
@@ -149,7 +149,7 @@ export const InvoiceGenerator = ({
           {/* Footer */}
           <div className="text-center text-sm text-muted-foreground border-t pt-4">
             <p>Asante kwa biashara yako!</p>
-            <p className="mt-2">Imetengenezwa na Kiduka POS</p>
+            <p className="mt-2">Imetengenezwa na Kiduka</p>
           </div>
         </div>
 

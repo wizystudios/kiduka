@@ -8,7 +8,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Phone, User, LogIn, Lock, ShieldCheck } from 'lucide-react';
+import { Phone, User, Lock, ShieldCheck, Eye, EyeOff, CheckCircle, XCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -20,12 +20,20 @@ interface SokoniCustomerAuthProps {
 
 const STORAGE_KEY = 'sokoni_customer_phone';
 
+const checkPasswordPolicy = (pw: string) => ({
+  minLength: pw.length >= 8,
+  hasNumbers: (pw.match(/\d/g) || []).length >= 3,
+  hasSpecial: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(pw),
+  hasUppercase: /[A-Z]/.test(pw),
+});
+
 export const SokoniCustomerAuth = ({ open, onOpenChange, onSuccess }: SokoniCustomerAuthProps) => {
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [phone, setPhone] = useState('');
   const [name, setName] = useState('');
   const [pin, setPin] = useState('');
   const [confirmPin, setConfirmPin] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const formatPhone = (value: string) => {
@@ -38,6 +46,9 @@ export const SokoniCustomerAuth = ({ open, onOpenChange, onSuccess }: SokoniCust
     return cleaned;
   };
 
+  const policy = checkPasswordPolicy(pin);
+  const allPassed = Object.values(policy).every(Boolean);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -48,21 +59,26 @@ export const SokoniCustomerAuth = ({ open, onOpenChange, onSuccess }: SokoniCust
       return;
     }
 
-    if (!pin || pin.length < 4) {
-      toast.error('PIN lazima iwe angalau tarakimu 4');
-      return;
-    }
-
-    if (mode === 'register' && pin !== confirmPin) {
-      toast.error('PIN hazifanani. Tafadhali jaribu tena.');
-      return;
+    if (mode === 'register') {
+      if (!allPassed) {
+        toast.error('Nywila haikidhi masharti yote ya usalama');
+        return;
+      }
+      if (pin !== confirmPin) {
+        toast.error('Nywila hazifanani. Tafadhali jaribu tena.');
+        return;
+      }
+    } else {
+      if (!pin || pin.length < 4) {
+        toast.error('Tafadhali ingiza nywila yako');
+        return;
+      }
     }
 
     setLoading(true);
     
     try {
       if (mode === 'register') {
-        // Check if phone already exists
         const { data: existing } = await supabase
           .from('sokoni_customers' as any)
           .select('id')
@@ -76,7 +92,6 @@ export const SokoniCustomerAuth = ({ open, onOpenChange, onSuccess }: SokoniCust
           return;
         }
 
-        // Register with PIN
         const { data, error } = await supabase
           .from('sokoni_customers' as any)
           .insert([{ phone: formattedPhone, name: name || null, pin }])
@@ -90,7 +105,6 @@ export const SokoniCustomerAuth = ({ open, onOpenChange, onSuccess }: SokoniCust
         onOpenChange(false);
         onSuccess?.();
       } else {
-        // Login - verify PIN
         const { data, error } = await supabase
           .from('sokoni_customers' as any)
           .select('*')
@@ -106,7 +120,6 @@ export const SokoniCustomerAuth = ({ open, onOpenChange, onSuccess }: SokoniCust
 
         const customer = data as any;
         
-        // If customer has no PIN yet (legacy), set it
         if (!customer.pin) {
           await supabase
             .from('sokoni_customers' as any)
@@ -114,15 +127,14 @@ export const SokoniCustomerAuth = ({ open, onOpenChange, onSuccess }: SokoniCust
             .eq('id', customer.id);
           
           localStorage.setItem(STORAGE_KEY, formattedPhone);
-          toast.success(`Karibu tena${customer.name ? ', ' + customer.name : ''}! PIN yako imewekwa.`);
+          toast.success(`Karibu tena${customer.name ? ', ' + customer.name : ''}! Nywila yako imewekwa.`);
           onOpenChange(false);
           onSuccess?.();
           return;
         }
 
-        // Verify PIN
         if (customer.pin !== pin) {
-          toast.error('PIN si sahihi. Tafadhali jaribu tena.');
+          toast.error('Nywila si sahihi. Tafadhali jaribu tena.');
           setLoading(false);
           return;
         }
@@ -139,6 +151,13 @@ export const SokoniCustomerAuth = ({ open, onOpenChange, onSuccess }: SokoniCust
     }
   };
 
+  const PolicyItem = ({ passed, label }: { passed: boolean; label: string }) => (
+    <div className="flex items-center gap-1.5 text-[11px]">
+      {passed ? <CheckCircle className="h-3 w-3 text-green-600 flex-shrink-0" /> : <XCircle className="h-3 w-3 text-muted-foreground flex-shrink-0" />}
+      <span className={passed ? 'text-green-700 dark:text-green-400' : 'text-muted-foreground'}>{label}</span>
+    </div>
+  );
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-sm rounded-3xl">
@@ -148,7 +167,7 @@ export const SokoniCustomerAuth = ({ open, onOpenChange, onSuccess }: SokoniCust
             {mode === 'login' ? 'Ingia Sokoni' : 'Jisajili Sokoni'}
           </DialogTitle>
           <p className="text-xs text-muted-foreground text-center">
-            {mode === 'login' ? 'Ingiza nambari yako na PIN kuingia' : 'Unda akaunti yako salama'}
+            {mode === 'login' ? 'Ingiza nambari yako na nywila kuingia' : 'Unda akaunti yako salama'}
           </p>
         </DialogHeader>
 
@@ -189,39 +208,55 @@ export const SokoniCustomerAuth = ({ open, onOpenChange, onSuccess }: SokoniCust
           <div className="space-y-2">
             <Label htmlFor="pin" className="flex items-center gap-1 text-xs">
               <Lock className="h-3 w-3" />
-              PIN (Nambari ya Siri)
+              Nywila
             </Label>
-            <Input
-              id="pin"
-              type="password"
-              inputMode="numeric"
-              maxLength={6}
-              placeholder="••••"
-              value={pin}
-              onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))}
-              className="rounded-2xl h-11 text-center tracking-[0.5em] text-lg"
-              required
-            />
-            <p className="text-[10px] text-muted-foreground">Angalau tarakimu 4</p>
+            <div className="relative">
+              <Input
+                id="pin"
+                type={showPassword ? 'text' : 'password'}
+                placeholder={mode === 'register' ? 'Angalau herufi 8' : 'Nywila yako'}
+                value={pin}
+                onChange={(e) => setPin(e.target.value)}
+                className="rounded-2xl h-11 pr-10"
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+              >
+                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
           </div>
+
+          {mode === 'register' && pin.length > 0 && (
+            <div className="p-2.5 bg-muted/50 rounded-2xl space-y-1">
+              <PolicyItem passed={policy.minLength} label="Angalau herufi 8" />
+              <PolicyItem passed={policy.hasNumbers} label="Angalau nambari 3" />
+              <PolicyItem passed={policy.hasSpecial} label="Herufi maalum (!@#$...)" />
+              <PolicyItem passed={policy.hasUppercase} label="Herufi kubwa (A-Z)" />
+            </div>
+          )}
 
           {mode === 'register' && (
             <div className="space-y-2">
               <Label htmlFor="confirmPin" className="flex items-center gap-1 text-xs">
                 <Lock className="h-3 w-3" />
-                Thibitisha PIN
+                Thibitisha Nywila
               </Label>
               <Input
                 id="confirmPin"
                 type="password"
-                inputMode="numeric"
-                maxLength={6}
-                placeholder="••••"
+                placeholder="Rudia nywila"
                 value={confirmPin}
-                onChange={(e) => setConfirmPin(e.target.value.replace(/\D/g, ''))}
-                className="rounded-2xl h-11 text-center tracking-[0.5em] text-lg"
+                onChange={(e) => setConfirmPin(e.target.value)}
+                className="rounded-2xl h-11"
                 required
               />
+              {confirmPin && pin !== confirmPin && (
+                <p className="text-xs text-destructive">Nywila hazifanani</p>
+              )}
             </div>
           )}
 

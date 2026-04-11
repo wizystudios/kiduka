@@ -98,7 +98,7 @@ export const NotificationCenter = () => {
           realNotifications.push({
             id: notificationId,
             title: 'Akaunti ya Kiduka',
-            message: 'Karibu kwenye Kiduka POS! Tumefurahi kuwa pamoja nawe.',
+            message: 'Karibu kwenye Kiduka! Tumefurahi kuwa pamoja nawe.',
             type: 'info',
             isRead: existingNotification ? existingNotification.isRead : true,
             timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000)

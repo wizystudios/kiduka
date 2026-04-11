@@ -104,8 +104,8 @@ class PushNotificationService {
   // Send test notification
   async sendTestNotification(): Promise<void> {
     if (Notification.permission === 'granted') {
-      new Notification('KidukaPOS Test', {
-        body: 'Arifa za KidukaPOS zinafanya kazi vizuri!',
+      new Notification('Kiduka Test', {
+        body: 'Arifa za Kiduka zinafanya kazi vizuri!',
         icon: '/placeholder.svg',
         badge: '/placeholder.svg',
         tag: 'test-notification'
