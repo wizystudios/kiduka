@@ -61,8 +61,19 @@ export const ScannerPage = () => {
   const { toast } = useToast();
   const { user, userProfile } = useAuth();
   const { dataOwnerId, ownerBusinessName, loading: dataLoading } = useDataAccess();
+  const debounceRef = useRef<NodeJS.Timeout | null>(null);
 
-  const handleSearchProduct = async (query: string) => {
+  // Auto-search with debounce
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    if (!searchQuery.trim()) { setSearchResults([]); setScannedProduct(null); return; }
+    debounceRef.current = setTimeout(() => {
+      handleSearchProduct(searchQuery);
+    }, 400);
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+  }, [searchQuery, searchType]);
+
+
     if (!query.trim()) {
       setSearchResults([]);
       return;
