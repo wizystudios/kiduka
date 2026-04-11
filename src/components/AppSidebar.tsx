@@ -61,7 +61,7 @@ export function AppSidebar() {
     }
   };
 
-  const filteredItems = navigationItems.filter(item => hasPermission(item.permission));
+  const filteredItems = filterNavigationItems(primaryNavigationItems, userProfile?.role, permissions as unknown as Record<string, boolean> | null);
 
   return (
     <Sidebar collapsible="icon" className="border-r border-border/40 bg-background [&_[data-radix-scroll-area-viewport]]:scrollbar-none">
