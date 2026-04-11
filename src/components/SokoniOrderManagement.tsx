@@ -406,10 +406,7 @@ export const SokoniOrderManagement = () => {
       <Card className="border-border rounded-3xl">
         <CardHeader className="pb-2">
           <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2 text-base">
-              <Package className="h-5 w-5 text-primary" />
-              Oda za Sokoni
-            </CardTitle>
+            <div />
             <div className="flex gap-2">
               <Button 
                 variant="outline" 

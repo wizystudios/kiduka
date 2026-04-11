@@ -847,30 +847,8 @@ export const SokoniMarketplace = () => {
 
         {/* Home/Deals Tab */}
         <TabsContent value="home" className="p-4 space-y-6">
-          {/* Featured Banner */}
-          <Card className="overflow-hidden bg-gradient-to-r from-primary to-primary/80 text-primary-foreground border-0">
-            <CardContent className="p-4 md:p-6 flex items-center justify-between">
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <Sparkles className="h-5 w-5" />
-                  <span className="font-bold">Sokoni Deals</span>
-                </div>
-                <h2 className="text-xl md:text-2xl font-bold">Punguzo Kubwa!</h2>
-                <p className="text-sm opacity-90">Bei nafuu kwa bidhaa bora</p>
-                <Button 
-                  variant="secondary" 
-                  size="sm"
-                  onClick={() => setActiveTab('browse')}
-                >
-                  Tazama Sasa
-                  <ChevronRight className="h-4 w-4 ml-1" />
-                </Button>
-              </div>
-              <div className="hidden md:block">
-                <Package className="h-24 w-24 opacity-20" />
-              </div>
-            </CardContent>
-          </Card>
+          {/* Auto-rotating Ad/Promo Carousel */}
+          <SokoniBannerCarousel onBrowse={() => setActiveTab('browse')} />
 
           {/* Top Deals */}
           <section>

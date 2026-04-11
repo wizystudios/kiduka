@@ -9,10 +9,6 @@ export const UnifiedSalesPage = () => {
 
   return (
     <div className="pb-24">
-      <div className="p-4 pb-2">
-        <h1 className="text-lg font-bold text-foreground">Mauzo</h1>
-        <p className="text-xs text-muted-foreground">Rekodi na fuatilia mauzo yako</p>
-      </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <div className="px-4">
