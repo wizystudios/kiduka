@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -55,6 +56,7 @@ const REGIONS = Object.keys(TANZANIA_REGIONS).sort();
 
 export const LocationSetupGate = ({ children }: { children: React.ReactNode }) => {
   const { user, userProfile, refreshProfile } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [skipped, setSkipped] = useState(false);
@@ -66,9 +68,19 @@ export const LocationSetupGate = ({ children }: { children: React.ReactNode }) =
     street: '',
   });
 
+  // Open dialog when focus=location param is present
+  useEffect(() => {
+    if (searchParams.get('focus') === 'location' && user && userProfile && !userProfile.location_set) {
+      setOpen(true);
+      // Remove the focus param
+      const next = new URLSearchParams(searchParams);
+      next.delete('focus');
+      setSearchParams(next, { replace: true });
+    }
+  }, [searchParams, user, userProfile]);
+
   useEffect(() => {
     if (user && userProfile && !userProfile.location_set && !skipped) {
-      // Check if user already skipped this session
       const sessionSkipped = sessionStorage.getItem(`kiduka_location_skipped_${user.id}`);
       if (sessionSkipped) {
         setSkipped(true);
