@@ -1075,9 +1075,19 @@ export const SokoniMarketplace = () => {
                         variant="outline" 
                         size="sm" 
                         className="w-full rounded-full text-xs group-hover:bg-primary group-hover:text-primary-foreground transition-colors"
-                        onClick={(e) => {
+                        onClick={async (e) => {
                           e.stopPropagation();
-                          if (storeSlug) navigate(`/duka/${storeSlug}`);
+                          const { data: pf } = await supabase
+                            .from('profiles')
+                            .select('store_slug')
+                            .eq('id', sellerId)
+                            .maybeSingle();
+                          const resolvedSlug = (pf as any)?.store_slug || storeSlug;
+                          if (resolvedSlug) {
+                            navigate(`/duka/${resolvedSlug}`);
+                          } else {
+                            toast.info('Duka hili halina profaili bado');
+                          }
                         }}
                       >
                         Tembelea Duka
