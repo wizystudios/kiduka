@@ -13,7 +13,7 @@ import { useRealTimeNotifications } from "@/hooks/useRealTimeNotifications";
 import { useNavigate } from "react-router-dom";
 import { Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { DesktopSideAds } from "@/components/DesktopSideAds";
+
 
 interface AppLayoutProps {
   children: React.ReactNode;
