@@ -1,11 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Check, ShieldAlert, AlertTriangle } from 'lucide-react';
+import { Check, ShieldAlert } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { useBusinessGovernance } from '@/hooks/useBusinessGovernance';
 import { useAuth } from '@/hooks/useAuth';
-import { useNavigate } from 'react-router-dom';
 import { KidukaLogo } from './KidukaLogo';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -23,8 +22,7 @@ const ASSISTANT_TC = [
 
 export const ContractComplianceGate = ({ children }: ContractComplianceGateProps) => {
   const { user, userProfile } = useAuth();
-  const { loading, status, activeAdminSession } = useBusinessGovernance();
-  const navigate = useNavigate();
+  const { loading, activeAdminSession } = useBusinessGovernance();
   const [agree, setAgree] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [assistantTcAccepted, setAssistantTcAccepted] = useState<boolean | null>(null);
@@ -32,7 +30,6 @@ export const ContractComplianceGate = ({ children }: ContractComplianceGateProps
 
   const isSuperAdmin = userProfile?.role === 'super_admin';
   const isAssistant = userProfile?.role === 'assistant';
-  const isOwner = userProfile?.role === 'owner';
 
   useEffect(() => {
     const checkAssistantTc = async () => {
@@ -74,35 +71,6 @@ export const ContractComplianceGate = ({ children }: ContractComplianceGateProps
       </div>
     );
   }, [activeAdminSession, isSuperAdmin]);
-
-  const registrationBanner = useMemo(() => {
-    if (!isOwner) return null;
-    if (!status.complianceMissing && status.contractSigned) return null;
-
-    const missingItems = [
-      status.missingComplianceFields.tin ? 'TIN' : null,
-      status.missingComplianceFields.nida ? 'NIDA' : null,
-      status.missingComplianceFields.license ? 'Leseni' : null,
-      !status.contractSigned ? 'Mkataba' : null,
-    ].filter(Boolean).join(', ');
-
-    return (
-      <div className="bg-destructive text-white overflow-hidden">
-        <div className="flex items-center gap-3 px-4 py-2 animate-marquee whitespace-nowrap">
-          <AlertTriangle className="h-4 w-4 flex-shrink-0" />
-          <span className="text-xs font-medium">
-            ⚠️ Kamilisha usajili wa biashara — Bado unahitaji: {missingItems || 'taarifa za sheria'}
-          </span>
-          <button
-            onClick={() => navigate('/settings?tab=registration')}
-            className="ml-3 bg-white/20 hover:bg-white/30 text-white text-xs font-bold px-3 py-0.5 rounded-full transition-colors flex-shrink-0"
-          >
-            Kamilisha Sasa
-          </button>
-        </div>
-      </div>
-    );
-  }, [isOwner, navigate, status]);
 
   if (loading || assistantTcLoading) return <>{children}</>;
 
@@ -146,7 +114,6 @@ export const ContractComplianceGate = ({ children }: ContractComplianceGateProps
   return (
     <>
       {ownerBanner}
-      {registrationBanner}
       {children}
     </>
   );

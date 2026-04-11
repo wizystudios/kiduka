@@ -1,11 +1,13 @@
 import { useAuth } from '@/hooks/useAuth';
 import { useSubscription } from '@/hooks/useSubscription';
+import { useBusinessGovernance } from '@/hooks/useBusinessGovernance';
 import { useNavigate } from 'react-router-dom';
-import { AlertTriangle, MapPin } from 'lucide-react';
+import { AlertTriangle, MapPin, ShieldAlert } from 'lucide-react';
 
 export const TopAlertBar = () => {
   const { user, userProfile } = useAuth();
   const { subscription } = useSubscription();
+  const { status } = useBusinessGovernance();
   const navigate = useNavigate();
 
   if (!user || !userProfile) return null;
@@ -13,12 +15,22 @@ export const TopAlertBar = () => {
 
   const alerts: { key: string; icon: React.ReactNode; text: string; action: () => void }[] = [];
 
+  // Registration / compliance missing
+  if (userProfile.role === 'owner' && (status.complianceMissing || !status.contractSigned)) {
+    alerts.push({
+      key: 'registration',
+      icon: <ShieldAlert className="h-3 w-3" />,
+      text: 'Kamilisha usajili',
+      action: () => navigate('/settings?tab=registration'),
+    });
+  }
+
   // Subscription ending in 3 days or less
   if (subscription && subscription.is_active && subscription.days_remaining <= 3 && subscription.days_remaining > 0) {
     alerts.push({
       key: 'sub_ending',
       icon: <AlertTriangle className="h-3 w-3" />,
-      text: `Usajili unakwisha siku ${subscription.days_remaining}`,
+      text: `Usajili siku ${subscription.days_remaining}`,
       action: () => navigate('/subscription'),
     });
   }
@@ -28,7 +40,7 @@ export const TopAlertBar = () => {
     alerts.push({
       key: 'sub_expired',
       icon: <AlertTriangle className="h-3 w-3" />,
-      text: 'Kamilisha usajili',
+      text: 'Lipia usajili',
       action: () => navigate('/subscription'),
     });
   }
@@ -39,7 +51,7 @@ export const TopAlertBar = () => {
       key: 'location',
       icon: <MapPin className="h-3 w-3" />,
       text: 'Weka eneo lako',
-      action: () => navigate('/settings'),
+      action: () => navigate('/settings?tab=profile&focus=location'),
     });
   }
 
@@ -51,7 +63,7 @@ export const TopAlertBar = () => {
         <button
           key={alert.key}
           onClick={alert.action}
-          className="flex items-center gap-1 px-2 py-0.5 text-[9px] font-semibold rounded-full bg-destructive/15 text-destructive border border-destructive/30 whitespace-nowrap flex-shrink-0 hover:bg-destructive/25 transition-colors"
+          className="flex items-center gap-1 px-2 py-0.5 text-[9px] font-semibold rounded-full bg-destructive text-destructive-foreground whitespace-nowrap flex-shrink-0 hover:opacity-80 transition-opacity"
         >
           {alert.icon}
           <span>{alert.text}</span>
