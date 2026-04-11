@@ -296,6 +296,29 @@ Powered by Kiduka POS
           </div>
         )}
 
+        {/* WhatsApp Option */}
+        {sendingMethod === ('whatsapp' as any) && (
+          <div className="space-y-3">
+            <div>
+              <Label htmlFor="wa-phone">Namba ya Simu ya Mteja</Label>
+              <Input
+                id="wa-phone"
+                type="tel"
+                placeholder="0754123456 au +255754123456"
+                value={customerPhone}
+                onChange={(e) => setCustomerPhone(e.target.value)}
+              />
+            </div>
+            <Button 
+              onClick={sendWhatsAppReceipt}
+              className="w-full bg-green-600 hover:bg-green-700"
+            >
+              <MessageSquare className="h-4 w-4 mr-2" />
+              Tuma kwa WhatsApp
+            </Button>
+          </div>
+        )}
+
         {/* QR Code Option */}
         {sendingMethod === 'qr' && (
           <div className="space-y-3">
