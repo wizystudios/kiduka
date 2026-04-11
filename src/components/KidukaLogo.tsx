@@ -1,5 +1,4 @@
 import { ShoppingBag } from 'lucide-react';
-import { useState, useEffect } from 'react';
 
 interface KidukaLogoProps {
   size?: 'sm' | 'md' | 'lg' | 'xl';
@@ -8,15 +7,6 @@ interface KidukaLogoProps {
 }
 
 export const KidukaLogo = ({ size = 'md', showText = true, animate = false }: KidukaLogoProps) => {
-  const [isBuilding, setIsBuilding] = useState(animate);
-  
-  useEffect(() => {
-    if (animate) {
-      setIsBuilding(true);
-      const timer = setTimeout(() => setIsBuilding(false), 1500);
-      return () => clearTimeout(timer);
-    }
-  }, [animate]);
 
   const iconSizes = {
     sm: 'h-5 w-5',
