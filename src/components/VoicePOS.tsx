@@ -139,12 +139,12 @@ export const VoicePOS = () => {
 
       // Save command
       try {
-        await supabase.from('voice_commands').insert({
+        await supabase.from('voice_commands').insert([{
           user_id: user.id,
           command_text: command,
           command_type: 'voice_command',
-          result: result
-        });
+          result: result as any
+        }]);
       } catch {}
 
       setLastResponse(result.message);
