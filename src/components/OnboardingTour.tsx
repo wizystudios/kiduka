@@ -82,18 +82,19 @@ const OnboardingTour = ({ onComplete }: OnboardingTourProps) => {
   };
 
   return (
-    <div className="fixed inset-0 z-[200] bg-gradient-to-br from-primary/5 via-background to-primary/10 flex flex-col">
+    <div className="fixed inset-0 z-[200] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+      <div className="relative bg-background rounded-3xl shadow-2xl w-full max-w-lg max-h-[85vh] flex flex-col overflow-hidden">
       {/* Skip button */}
       {!isLast && (
-        <div className="absolute top-4 right-4 z-10">
-          <Button variant="ghost" size="sm" onClick={onComplete} className="text-muted-foreground hover:text-foreground">
+        <div className="absolute top-3 right-3 z-10">
+          <Button variant="ghost" size="sm" onClick={onComplete} className="text-muted-foreground hover:text-foreground rounded-full">
             Ruka →
           </Button>
         </div>
       )}
 
       {/* Content area */}
-      <div className={`flex-1 flex flex-col items-center justify-center px-4 transition-opacity duration-200 ${animating ? 'opacity-0' : 'opacity-100'}`}>
+      <div className={`flex-1 flex flex-col items-center justify-center px-6 py-6 overflow-y-auto transition-opacity duration-200 ${animating ? 'opacity-0' : 'opacity-100'}`}>
         
         {/* Welcome slide */}
         {slide.type === 'welcome' && (
@@ -250,6 +251,7 @@ const OnboardingTour = ({ onComplete }: OnboardingTourProps) => {
           {isLast ? 'Anza Kutumia Kiduka' : 'Endelea'}
           {!isLast && <ArrowRight className="ml-2 h-4 w-4" />}
         </Button>
+      </div>
       </div>
     </div>
   );
