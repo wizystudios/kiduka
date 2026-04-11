@@ -65,7 +65,7 @@ export const Dashboard = () => {
   );
 
   return (
-    <div className="px-4 pt-6 pb-24 space-y-6">
+    <div className="px-4 pt-4 pb-20 space-y-4">
       {/* Hero Sales Section - centered, no box */}
       <div className="text-center pt-2">
         <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Mauzo Leo</p>
