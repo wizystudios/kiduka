@@ -53,7 +53,7 @@ export const SubscriptionPage = ({ embedded = false }: SubscriptionPageProps) =>
     try {
       const { data, error } = await supabase.functions.invoke('clickpesa-payment', {
         body: {
-          amount: 10000,
+          amount: (subscription as any)?.payment_amount || 30000,
           phone_number: phoneNumber,
           subscription_id: subscription?.id,
           transaction_type: 'subscription_payment',
@@ -234,7 +234,7 @@ export const SubscriptionPage = ({ embedded = false }: SubscriptionPageProps) =>
                   </Badge>
                 </div>
                 <div className="flex items-baseline gap-1 mt-2">
-                  <span className="text-3xl font-bold text-primary">TSh 10,000</span>
+                  <span className="text-3xl font-bold text-primary">TSh {((subscription as any)?.payment_amount || 30000).toLocaleString()}</span>
                   <span className="text-sm text-muted-foreground">/mwezi</span>
                 </div>
               </CardHeader>
