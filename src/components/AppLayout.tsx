@@ -48,7 +48,7 @@ export function AppLayout({ children }: AppLayoutProps) {
               <ContractComplianceGate>{children}</ContractComplianceGate>
             </LocationSetupGate>
           </main>
-          <DesktopSideAds />
+          
         </SidebarInset>
       </div>
       <UserInfoBar />
