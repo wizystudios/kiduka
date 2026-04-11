@@ -2,12 +2,13 @@ import { useState, useEffect, useCallback } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
-import kidukaPromo1 from '@/assets/kiduka-promo-1.jpg';
-import kidukaPromo2 from '@/assets/kiduka-promo-2.jpg';
+import kidukaPromo1 from '@/assets/kiduka-promo-1.mp4.asset.json';
+import kidukaPromo2 from '@/assets/kiduka-promo-2.mp4.asset.json';
 
 interface BannerSlide {
   id: string;
-  image_url: string;
+  media_url: string;
+  media_type: 'video' | 'image';
   title?: string;
   link_url?: string | null;
   type: 'promo' | 'ad';
@@ -29,18 +30,16 @@ export const SokoniBannerCarousel = ({ onBrowse }: SokoniBannerCarouselProps) =>
     if (slides.length <= 1) return;
     const timer = setInterval(() => {
       setCurrentIndex(prev => (prev + 1) % slides.length);
-    }, 4000);
+    }, 6000);
     return () => clearInterval(timer);
   }, [slides.length]);
 
   const fetchSlides = async () => {
-    // Default promo slides
     const defaultSlides: BannerSlide[] = [
-      { id: 'promo-1', image_url: kidukaPromo1, title: 'Kiduka - Simamia Biashara Yako', type: 'promo' },
-      { id: 'promo-2', image_url: kidukaPromo2, title: 'Sokoni Marketplace', type: 'promo' },
+      { id: 'promo-1', media_url: kidukaPromo1.url, media_type: 'video', title: 'Kiduka - Simamia Biashara Yako', type: 'promo' },
+      { id: 'promo-2', media_url: kidukaPromo2.url, media_type: 'video', title: 'Sokoni Marketplace', type: 'promo' },
     ];
 
-    // Fetch business ads
     try {
       const now = new Date().toISOString();
       const { data } = await supabase
@@ -53,15 +52,19 @@ export const SokoniBannerCarousel = ({ onBrowse }: SokoniBannerCarouselProps) =>
 
       const adSlides: BannerSlide[] = ((data as any[]) || [])
         .filter(ad => ad.image_url)
-        .map(ad => ({
-          id: ad.id,
-          image_url: ad.image_url!,
-          title: ad.title,
-          link_url: ad.link_url,
-          type: 'ad' as const
-        }));
+        .map(ad => {
+          const url = ad.image_url!;
+          const isVideo = /\.(mp4|webm|mov)$/i.test(url);
+          return {
+            id: ad.id,
+            media_url: url,
+            media_type: isVideo ? 'video' as const : 'image' as const,
+            title: ad.title,
+            link_url: ad.link_url,
+            type: 'ad' as const
+          };
+        });
 
-      // Interleave ads with promos
       const allSlides = [...adSlides, ...defaultSlides];
       setSlides(allSlides.sort(() => Math.random() - 0.5));
     } catch {
@@ -83,13 +86,25 @@ export const SokoniBannerCarousel = ({ onBrowse }: SokoniBannerCarouselProps) =>
 
   return (
     <div className="relative w-full rounded-2xl overflow-hidden aspect-[2/1] bg-muted">
-      {/* Slide image */}
-      <img
-        src={currentSlide.image_url}
-        alt={currentSlide.title || 'Promo'}
-        className="w-full h-full object-cover transition-opacity duration-500"
-        loading="lazy"
-      />
+      {/* Slide media */}
+      {currentSlide.media_type === 'video' ? (
+        <video
+          key={currentSlide.id}
+          src={currentSlide.media_url}
+          className="w-full h-full object-cover"
+          autoPlay
+          muted
+          loop
+          playsInline
+        />
+      ) : (
+        <img
+          src={currentSlide.media_url}
+          alt={currentSlide.title || 'Promo'}
+          className="w-full h-full object-cover transition-opacity duration-500"
+          loading="lazy"
+        />
+      )}
 
       {/* Overlay gradient */}
       <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
@@ -105,15 +120,15 @@ export const SokoniBannerCarousel = ({ onBrowse }: SokoniBannerCarouselProps) =>
       <div className="absolute bottom-3 left-3 right-3 flex items-end justify-between">
         <div>
           {currentSlide.title && (
-            <p className="text-white text-sm font-semibold drop-shadow-lg line-clamp-1">{currentSlide.title}</p>
+            <p className="text-white text-xs font-semibold drop-shadow-lg line-clamp-1">{currentSlide.title}</p>
           )}
         </div>
         {currentSlide.link_url ? (
-          <Button size="sm" variant="secondary" className="rounded-full text-xs h-7" asChild>
+          <Button size="sm" variant="secondary" className="rounded-full text-[10px] h-6 px-2" asChild>
             <a href={currentSlide.link_url} target="_blank" rel="noopener noreferrer">Tazama</a>
           </Button>
         ) : currentSlide.type === 'promo' && onBrowse ? (
-          <Button size="sm" variant="secondary" className="rounded-full text-xs h-7" onClick={onBrowse}>
+          <Button size="sm" variant="secondary" className="rounded-full text-[10px] h-6 px-2" onClick={onBrowse}>
             Tazama
           </Button>
         ) : null}
@@ -123,10 +138,10 @@ export const SokoniBannerCarousel = ({ onBrowse }: SokoniBannerCarouselProps) =>
       {slides.length > 1 && (
         <>
           <button onClick={goPrev} className="absolute left-1 top-1/2 -translate-y-1/2 bg-black/30 hover:bg-black/50 text-white rounded-full p-1 transition-colors">
-            <ChevronLeft className="h-4 w-4" />
+            <ChevronLeft className="h-3 w-3" />
           </button>
           <button onClick={goNext} className="absolute right-1 top-1/2 -translate-y-1/2 bg-black/30 hover:bg-black/50 text-white rounded-full p-1 transition-colors">
-            <ChevronRight className="h-4 w-4" />
+            <ChevronRight className="h-3 w-3" />
           </button>
         </>
       )}
