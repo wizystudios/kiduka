@@ -380,6 +380,42 @@ export const SuperAdminDashboard = () => {
       toast.error(`Imeshindwa: ${error.message}`);
     }
   };
+
+  const openFeeDialog = (sub: Subscription) => {
+    setFeeForm({
+      custom_fee: sub.custom_fee != null ? String(sub.custom_fee) : '',
+      assistant_count: sub.assistant_count || 0,
+      has_sokoni: sub.has_sokoni || false,
+      branch_count: sub.branch_count || 0,
+      admin_fee_notes: sub.admin_fee_notes || ''
+    });
+    setFeeDialog(sub);
+  };
+
+  const handleUpdateFee = async () => {
+    if (!feeDialog) return;
+    try {
+      const updateData: any = {
+        assistant_count: feeForm.assistant_count,
+        has_sokoni: feeForm.has_sokoni,
+        branch_count: feeForm.branch_count,
+        admin_fee_notes: feeForm.admin_fee_notes || null,
+        custom_fee: feeForm.custom_fee ? Number(feeForm.custom_fee) : null,
+        updated_at: new Date().toISOString()
+      };
+      const { error } = await supabase
+        .from('user_subscriptions')
+        .update(updateData)
+        .eq('id', feeDialog.id);
+      if (error) throw error;
+      toast.success('Ada imesasishwa!');
+      setFeeDialog(null);
+      fetchSubscriptions();
+    } catch (error: any) {
+      toast.error(`Imeshindwa: ${error.message}`);
+    }
+  };
+
   
   const handleExportUsers = () => {
     const columns = [
