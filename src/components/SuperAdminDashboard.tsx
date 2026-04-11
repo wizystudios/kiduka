@@ -174,6 +174,8 @@ export const SuperAdminDashboard = () => {
   const [approvalDialog, setApprovalDialog] = useState<{subId: string; duration: string} | null>(null);
   const [userPasswordChange, setUserPasswordChange] = useState<{userId: string; userName: string; newPassword: string} | null>(null);
   const [banDialog, setBanDialog] = useState<{userId: string; userName: string; duration: string} | null>(null);
+  const [feeDialog, setFeeDialog] = useState<Subscription | null>(null);
+  const [feeForm, setFeeForm] = useState({ custom_fee: '', assistant_count: 0, has_sokoni: false, branch_count: 0, admin_fee_notes: '' });
   
   useEffect(() => {
     fetchAllData();
