@@ -120,6 +120,14 @@ interface Subscription {
   created_at: string;
   user_email?: string;
   user_name?: string;
+  base_fee?: number;
+  assistant_count?: number;
+  has_sokoni?: boolean;
+  branch_count?: number;
+  calculated_fee?: number;
+  custom_fee?: number | null;
+  fee_breakdown?: any;
+  admin_fee_notes?: string;
 }
 
 export const SuperAdminDashboard = () => {
@@ -166,6 +174,8 @@ export const SuperAdminDashboard = () => {
   const [approvalDialog, setApprovalDialog] = useState<{subId: string; duration: string} | null>(null);
   const [userPasswordChange, setUserPasswordChange] = useState<{userId: string; userName: string; newPassword: string} | null>(null);
   const [banDialog, setBanDialog] = useState<{userId: string; userName: string; duration: string} | null>(null);
+  const [feeDialog, setFeeDialog] = useState<Subscription | null>(null);
+  const [feeForm, setFeeForm] = useState({ custom_fee: '', assistant_count: 0, has_sokoni: false, branch_count: 0, admin_fee_notes: '' });
   
   useEffect(() => {
     fetchAllData();
@@ -370,6 +380,42 @@ export const SuperAdminDashboard = () => {
       toast.error(`Imeshindwa: ${error.message}`);
     }
   };
+
+  const openFeeDialog = (sub: Subscription) => {
+    setFeeForm({
+      custom_fee: sub.custom_fee != null ? String(sub.custom_fee) : '',
+      assistant_count: sub.assistant_count || 0,
+      has_sokoni: sub.has_sokoni || false,
+      branch_count: sub.branch_count || 0,
+      admin_fee_notes: sub.admin_fee_notes || ''
+    });
+    setFeeDialog(sub);
+  };
+
+  const handleUpdateFee = async () => {
+    if (!feeDialog) return;
+    try {
+      const updateData: any = {
+        assistant_count: feeForm.assistant_count,
+        has_sokoni: feeForm.has_sokoni,
+        branch_count: feeForm.branch_count,
+        admin_fee_notes: feeForm.admin_fee_notes || null,
+        custom_fee: feeForm.custom_fee ? Number(feeForm.custom_fee) : null,
+        updated_at: new Date().toISOString()
+      };
+      const { error } = await supabase
+        .from('user_subscriptions')
+        .update(updateData)
+        .eq('id', feeDialog.id);
+      if (error) throw error;
+      toast.success('Ada imesasishwa!');
+      setFeeDialog(null);
+      fetchSubscriptions();
+    } catch (error: any) {
+      toast.error(`Imeshindwa: ${error.message}`);
+    }
+  };
+
   
   const handleExportUsers = () => {
     const columns = [
@@ -1119,30 +1165,30 @@ export const SuperAdminDashboard = () => {
       
       {/* Main Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid grid-cols-5 md:grid-cols-13 mb-4">
-          <TabsTrigger value="overview" className="text-xs">Overview</TabsTrigger>
-          <TabsTrigger value="analytics" className="text-xs">Analytics</TabsTrigger>
-          <TabsTrigger value="subscriptions" className="text-xs relative">
-            Usajili
-            {stats.pendingSubscriptions > 0 && (
-              <Badge className="absolute -top-1 -right-1 h-4 w-4 p-0 flex items-center justify-center text-[10px] bg-destructive">
-                {stats.pendingSubscriptions}
-              </Badge>
-            )}
-          </TabsTrigger>
-          <TabsTrigger value="compliance" className="text-xs">Sheria</TabsTrigger>
-          <TabsTrigger value="users" className="text-xs">Watumiaji</TabsTrigger>
-          <TabsTrigger value="activities" className="text-xs">Shughuli</TabsTrigger>
-          <TabsTrigger value="products" className="text-xs hidden md:block">Bidhaa</TabsTrigger>
-          <TabsTrigger value="sales" className="text-xs hidden md:block">Mauzo</TabsTrigger>
-          <TabsTrigger value="orders" className="text-xs hidden md:block">Oda</TabsTrigger>
-          <TabsTrigger value="marketplace" className="text-xs">
-            <Tag className="h-3 w-3 mr-1" /> Sokoni
-          </TabsTrigger>
-          <TabsTrigger value="ads" className="text-xs">Matangazo</TabsTrigger>
-          <TabsTrigger value="chat" className="text-xs">Mazungumzo</TabsTrigger>
-          <TabsTrigger value="more" className="text-xs">Zaidi</TabsTrigger>
-        </TabsList>
+        <ScrollArea className="w-full">
+          <TabsList className="inline-flex w-max gap-1 mb-4 p-1">
+            <TabsTrigger value="overview" className="text-xs px-3">Overview</TabsTrigger>
+            <TabsTrigger value="analytics" className="text-xs px-3">Analytics</TabsTrigger>
+            <TabsTrigger value="subscriptions" className="text-xs px-3 relative">
+              Usajili
+              {stats.pendingSubscriptions > 0 && (
+                <Badge className="absolute -top-1 -right-1 h-4 w-4 p-0 flex items-center justify-center text-[10px] bg-destructive">
+                  {stats.pendingSubscriptions}
+                </Badge>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="compliance" className="text-xs px-3">Sheria</TabsTrigger>
+            <TabsTrigger value="users" className="text-xs px-3">Watumiaji</TabsTrigger>
+            <TabsTrigger value="activities" className="text-xs px-3">Shughuli</TabsTrigger>
+            <TabsTrigger value="products" className="text-xs px-3">Bidhaa</TabsTrigger>
+            <TabsTrigger value="sales" className="text-xs px-3">Mauzo</TabsTrigger>
+            <TabsTrigger value="orders" className="text-xs px-3">Oda</TabsTrigger>
+            <TabsTrigger value="marketplace" className="text-xs px-3">Sokoni</TabsTrigger>
+            <TabsTrigger value="ads" className="text-xs px-3">Matangazo</TabsTrigger>
+            <TabsTrigger value="chat" className="text-xs px-3">Mazungumzo</TabsTrigger>
+            <TabsTrigger value="more" className="text-xs px-3">Zaidi</TabsTrigger>
+          </TabsList>
+        </ScrollArea>
         
         {/* Search */}
         {activeTab !== 'overview' && activeTab !== 'analytics' && activeTab !== 'subscriptions' && (
@@ -1159,45 +1205,33 @@ export const SuperAdminDashboard = () => {
         
         {/* Subscriptions Tab */}
         <TabsContent value="subscriptions" className="space-y-4">
+          {/* Pending Approvals */}
           <Card>
             <CardHeader>
               <CardTitle className="text-sm flex items-center gap-2">
                 <Clock className="h-4 w-4 text-orange-600" />
-                Maombi ya Usajili Yanasubiri Idhini ({stats.pendingSubscriptions})
+                Maombi Yanasubiri ({stats.pendingSubscriptions})
               </CardTitle>
             </CardHeader>
             <CardContent>
               {subscriptions.filter(s => s.status === 'pending_approval').length === 0 ? (
-                <p className="text-muted-foreground text-center py-8">Hakuna maombi yanasubiri</p>
+                <p className="text-muted-foreground text-center py-4 text-sm">Hakuna maombi</p>
               ) : (
                 <div className="space-y-3">
                   {subscriptions.filter(s => s.status === 'pending_approval').map(sub => (
                     <Card key={sub.id} className="border-orange-200 bg-orange-50/50 dark:bg-orange-900/10">
-                      <CardContent className="p-4">
-                        <div className="flex items-center justify-between gap-4 flex-wrap">
+                      <CardContent className="p-3">
+                        <div className="flex items-center justify-between gap-3 flex-wrap">
                           <div>
-                            <p className="font-medium">{sub.user_name || sub.user_email}</p>
-                            <p className="text-sm text-muted-foreground">{sub.user_email}</p>
-                            <p className="text-xs text-muted-foreground">
-                              Trial iliisha: {new Date(sub.trial_ends_at).toLocaleDateString('sw-TZ')}
-                            </p>
+                            <p className="font-medium text-sm">{sub.user_name || sub.user_email}</p>
+                            <p className="text-xs text-muted-foreground">{sub.user_email}</p>
                           </div>
                           <div className="flex gap-2">
-                            <Button 
-                              size="sm" 
-                              onClick={() => setApprovalDialog({ subId: sub.id, duration: '1_month' })}
-                              className="bg-green-600 hover:bg-green-700"
-                            >
-                              <CheckCircle className="h-4 w-4 mr-1" />
-                              Kubali
+                            <Button size="sm" onClick={() => setApprovalDialog({ subId: sub.id, duration: '1_month' })}>
+                              <CheckCircle className="h-3 w-3 mr-1" /> Kubali
                             </Button>
-                            <Button 
-                              size="sm" 
-                              variant="destructive"
-                              onClick={() => handleRejectSubscription(sub.id)}
-                            >
-                              <XCircle className="h-4 w-4 mr-1" />
-                              Kataa
+                            <Button size="sm" variant="destructive" onClick={() => handleRejectSubscription(sub.id)}>
+                              <XCircle className="h-3 w-3 mr-1" /> Kataa
                             </Button>
                           </div>
                         </div>
@@ -1206,6 +1240,40 @@ export const SuperAdminDashboard = () => {
                   ))}
                 </div>
               )}
+            </CardContent>
+          </Card>
+
+          {/* All Subscriptions with Fee Management */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm flex items-center gap-2">
+                <CreditCard className="h-4 w-4" />
+                Usajili Wote ({subscriptions.length})
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {subscriptions.map(sub => (
+                  <div key={sub.id} className="flex items-center justify-between gap-3 p-3 rounded-2xl border hover:bg-muted/50 flex-wrap">
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-sm truncate">{sub.user_name || sub.user_email}</p>
+                      <p className="text-xs text-muted-foreground">{sub.user_email}</p>
+                      <div className="flex items-center gap-2 mt-1 flex-wrap">
+                        <Badge variant={sub.status === 'active' ? 'default' : sub.status === 'trial' ? 'secondary' : 'destructive'} className="text-[10px]">
+                          {sub.status}
+                        </Badge>
+                        <span className="text-xs font-medium">TSh {(sub.payment_amount || 30000).toLocaleString()}/mwezi</span>
+                        {sub.assistant_count > 0 && <span className="text-[10px] text-muted-foreground">👥{sub.assistant_count}</span>}
+                        {sub.has_sokoni && <span className="text-[10px] text-muted-foreground">🏪Sokoni</span>}
+                        {sub.branch_count > 0 && <span className="text-[10px] text-muted-foreground">🏢{sub.branch_count}</span>}
+                      </div>
+                    </div>
+                    <Button size="sm" variant="outline" onClick={() => openFeeDialog(sub)}>
+                      <Pencil className="h-3 w-3 mr-1" /> Ada
+                    </Button>
+                  </div>
+                ))}
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
@@ -1217,14 +1285,11 @@ export const SuperAdminDashboard = () => {
               <DialogTitle>Chagua Muda wa Idhini</DialogTitle>
             </DialogHeader>
             <div className="space-y-3">
-              <p className="text-sm text-muted-foreground">Mtumiaji atapata uwezo wa kutumia mfumo kwa muda gani?</p>
               <Select 
                 value={approvalDialog?.duration || '1_month'} 
                 onValueChange={(v) => setApprovalDialog(prev => prev ? {...prev, duration: v} : null)}
               >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
+                <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="30_min">Dakika 30</SelectItem>
                   <SelectItem value="1_hour">Saa 1</SelectItem>
@@ -1237,9 +1302,56 @@ export const SuperAdminDashboard = () => {
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setApprovalDialog(null)}>Ghairi</Button>
-              <Button onClick={() => approvalDialog && handleApproveSubscription(approvalDialog.subId, approvalDialog.duration)}>
-                Kubali
-              </Button>
+              <Button onClick={() => approvalDialog && handleApproveSubscription(approvalDialog.subId, approvalDialog.duration)}>Kubali</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Fee Editing Dialog */}
+        <Dialog open={!!feeDialog} onOpenChange={() => setFeeDialog(null)}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Hariri Ada - {feeDialog?.user_name || feeDialog?.user_email}</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label className="text-xs">Wasaidizi</Label>
+                  <Input type="number" min={0} value={feeForm.assistant_count} onChange={e => setFeeForm(f => ({...f, assistant_count: Number(e.target.value)}))} />
+                  <p className="text-[10px] text-muted-foreground">× TSh 5,000 kila mmoja</p>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Matawi</Label>
+                  <Input type="number" min={0} value={feeForm.branch_count} onChange={e => setFeeForm(f => ({...f, branch_count: Number(e.target.value)}))} />
+                  <p className="text-[10px] text-muted-foreground">× TSh 15,000 kila tawi</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <input type="checkbox" id="hasSokoni" checked={feeForm.has_sokoni} onChange={e => setFeeForm(f => ({...f, has_sokoni: e.target.checked}))} className="rounded" />
+                <Label htmlFor="hasSokoni" className="text-sm">Sokoni Marketplace (+TSh 50,000)</Label>
+              </div>
+              <div className="p-3 bg-muted/50 rounded-2xl space-y-1 text-xs">
+                <div className="flex justify-between"><span>Ada ya msingi</span><span>TSh 30,000</span></div>
+                {feeForm.assistant_count > 0 && <div className="flex justify-between"><span>Wasaidizi ({feeForm.assistant_count})</span><span>TSh {(feeForm.assistant_count * 5000).toLocaleString()}</span></div>}
+                {feeForm.has_sokoni && <div className="flex justify-between"><span>Sokoni</span><span>TSh 50,000</span></div>}
+                {feeForm.branch_count > 0 && <div className="flex justify-between"><span>Matawi ({feeForm.branch_count})</span><span>TSh {(feeForm.branch_count * 15000).toLocaleString()}</span></div>}
+                <div className="border-t pt-1 flex justify-between font-bold">
+                  <span>Jumla (auto)</span>
+                  <span>TSh {(30000 + feeForm.assistant_count * 5000 + (feeForm.has_sokoni ? 50000 : 0) + feeForm.branch_count * 15000).toLocaleString()}</span>
+                </div>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Ada Maalum (override, weka tupu kwa auto)</Label>
+                <Input type="number" placeholder="Acha tupu kwa auto" value={feeForm.custom_fee} onChange={e => setFeeForm(f => ({...f, custom_fee: e.target.value}))} />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Maelezo ya Admin</Label>
+                <Textarea placeholder="Kwa nini ada hii?" value={feeForm.admin_fee_notes} onChange={e => setFeeForm(f => ({...f, admin_fee_notes: e.target.value}))} rows={2} />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setFeeDialog(null)}>Ghairi</Button>
+              <Button onClick={handleUpdateFee}>Hifadhi</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>

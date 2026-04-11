@@ -53,7 +53,7 @@ export const SubscriptionPage = ({ embedded = false }: SubscriptionPageProps) =>
     try {
       const { data, error } = await supabase.functions.invoke('clickpesa-payment', {
         body: {
-          amount: 10000,
+          amount: (subscription as any)?.payment_amount || 30000,
           phone_number: phoneNumber,
           subscription_id: subscription?.id,
           transaction_type: 'subscription_payment',
@@ -234,7 +234,7 @@ export const SubscriptionPage = ({ embedded = false }: SubscriptionPageProps) =>
                   </Badge>
                 </div>
                 <div className="flex items-baseline gap-1 mt-2">
-                  <span className="text-3xl font-bold text-primary">TSh 10,000</span>
+                  <span className="text-3xl font-bold text-primary">TSh {((subscription as any)?.payment_amount || 30000).toLocaleString()}</span>
                   <span className="text-sm text-muted-foreground">/mwezi</span>
                 </div>
               </CardHeader>
@@ -336,6 +336,41 @@ export const SubscriptionPage = ({ embedded = false }: SubscriptionPageProps) =>
                     </div>
                   ))}
                 </div>
+
+                {/* Fee Breakdown */}
+                {(subscription as any)?.fee_breakdown && Object.keys((subscription as any).fee_breakdown).length > 0 && (
+                  <div className="mt-3 p-3 bg-muted/50 rounded-2xl space-y-1.5">
+                    <p className="text-xs font-semibold text-foreground">Muhtasari wa Ada:</p>
+                    {(subscription as any).fee_breakdown?.base && (
+                      <div className="flex justify-between text-xs">
+                        <span className="text-muted-foreground">{(subscription as any).fee_breakdown.base.label}</span>
+                        <span>TSh {Number((subscription as any).fee_breakdown.base.amount).toLocaleString()}</span>
+                      </div>
+                    )}
+                    {(subscription as any).fee_breakdown?.assistants?.count > 0 && (
+                      <div className="flex justify-between text-xs">
+                        <span className="text-muted-foreground">{(subscription as any).fee_breakdown.assistants.label}</span>
+                        <span>TSh {Number((subscription as any).fee_breakdown.assistants.amount).toLocaleString()}</span>
+                      </div>
+                    )}
+                    {(subscription as any).fee_breakdown?.sokoni?.enabled && (
+                      <div className="flex justify-between text-xs">
+                        <span className="text-muted-foreground">{(subscription as any).fee_breakdown.sokoni.label}</span>
+                        <span>TSh {Number((subscription as any).fee_breakdown.sokoni.amount).toLocaleString()}</span>
+                      </div>
+                    )}
+                    {(subscription as any).fee_breakdown?.branches?.count > 0 && (
+                      <div className="flex justify-between text-xs">
+                        <span className="text-muted-foreground">{(subscription as any).fee_breakdown.branches.label}</span>
+                        <span>TSh {Number((subscription as any).fee_breakdown.branches.amount).toLocaleString()}</span>
+                      </div>
+                    )}
+                    <div className="border-t pt-1.5 flex justify-between text-xs font-bold">
+                      <span>Jumla</span>
+                      <span className="text-primary">TSh {Number((subscription as any).fee_breakdown.total || (subscription as any)?.payment_amount || 30000).toLocaleString()}</span>
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>
