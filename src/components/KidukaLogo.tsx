@@ -1,5 +1,4 @@
 import { ShoppingBag } from 'lucide-react';
-import { useState, useEffect } from 'react';
 
 interface KidukaLogoProps {
   size?: 'sm' | 'md' | 'lg' | 'xl';
@@ -8,15 +7,6 @@ interface KidukaLogoProps {
 }
 
 export const KidukaLogo = ({ size = 'md', showText = true, animate = false }: KidukaLogoProps) => {
-  const [isBuilding, setIsBuilding] = useState(animate);
-  
-  useEffect(() => {
-    if (animate) {
-      setIsBuilding(true);
-      const timer = setTimeout(() => setIsBuilding(false), 1500);
-      return () => clearTimeout(timer);
-    }
-  }, [animate]);
 
   const iconSizes = {
     sm: 'h-5 w-5',
@@ -62,13 +52,12 @@ export const KidukaLogo = ({ size = 'md', showText = true, animate = false }: Ki
 
   return (
     <div className="flex items-center space-x-2">
-      <div className={`relative ${isBuilding ? 'animate-bounce' : ''}`}>
+      <div className={`relative ${animate ? 'animate-bounce' : ''}`}>
         {/* Gradient rotated square background */}
         <div 
-          className={`${outerSizes[size]} rounded-2xl transform -rotate-12 shadow-lg transition-all duration-500 ${isBuilding ? 'scale-0 opacity-0' : 'scale-100 opacity-100'}`}
+          className={`${outerSizes[size]} rounded-2xl transform -rotate-12 shadow-lg`}
           style={{ 
             background: 'linear-gradient(135deg, #2dd4bf, #3b82f6, #8b5cf6)',
-            transitionDelay: isBuilding ? '0ms' : '200ms' 
           }}
         >
           {/* White inner card with icon */}
@@ -84,7 +73,7 @@ export const KidukaLogo = ({ size = 'md', showText = true, animate = false }: Ki
       </div>
       
       {showText && (
-        <div className={`transition-all duration-500 ${isBuilding ? 'opacity-0 translate-x-4' : 'opacity-100 translate-x-0'}`}>
+        <div>
           <h1 className={`${textSizeClasses[size]} font-black bg-gradient-to-r from-blue-700 via-blue-600 to-purple-600 bg-clip-text text-transparent tracking-tight`}>
             Kiduka
           </h1>
