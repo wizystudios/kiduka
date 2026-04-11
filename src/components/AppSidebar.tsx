@@ -22,10 +22,10 @@ import { primaryNavigationItems, filterNavigationItems } from '@/lib/navigation'
 
 export function AppSidebar() {
   const { signOut, userProfile, user } = useAuth();
-  const { permissions, loading: permissionsLoading } = usePermissions();
+  const { permissions } = usePermissions();
   const navigate = useNavigate();
   const location = useLocation();
-  const { state } = useSidebar();
+  const { state, toggleSidebar } = useSidebar();
   const collapsed = state === 'collapsed';
 
   if (!userProfile) return null;
@@ -65,9 +65,23 @@ export function AppSidebar() {
 
   return (
     <Sidebar collapsible="icon" className="border-r border-border/40 bg-background [&_[data-radix-scroll-area-viewport]]:scrollbar-none">
-      <SidebarHeader className="border-b border-border/40 px-3 py-3">
-        <div className="flex items-center gap-3 px-3">
+      <SidebarHeader className="border-b border-border/40 px-2 py-3">
+        <div className={`flex px-2 ${collapsed ? 'flex-col items-center gap-2' : 'items-center justify-between gap-2'}`}>
           <KidukaLogo size="sm" showText={!collapsed} />
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={toggleSidebar}
+            aria-label="Fungua au funga menyu"
+            className="h-9 w-9 rounded-xl border border-border bg-background p-0 hover:bg-accent"
+          >
+            <div className="flex flex-col gap-[3px]">
+              <span className="block h-[2px] w-4 rounded-full bg-foreground" />
+              <span className="block h-[2px] w-3 rounded-full bg-foreground" />
+              <span className="block h-[2px] w-4 rounded-full bg-foreground" />
+            </div>
+          </Button>
         </div>
       </SidebarHeader>
 
