@@ -186,7 +186,7 @@ export const AuthPage = () => {
       toast.error('Tafadhali jaza taarifa zote');
       return;
     }
-    if (password.length < 6) {
+    if (password.length < 8) {
       toast.error('Nywila lazima iwe angalau herufi 8');
       return;
     }
@@ -392,7 +392,7 @@ export const AuthPage = () => {
                 onChange={(e) => setPassword(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && handleNextStep()}
                 className={`pl-10 pr-10 h-14 bg-transparent border-0 border-b-2 border-border rounded-none text-lg focus:ring-0 focus:border-primary focus-visible:ring-0 focus-visible:ring-offset-0 ${
-                  password && password.length < 6 ? 'border-destructive' : password.length >= 6 ? 'border-primary' : ''
+                  password && password.length < 8 ? 'border-destructive' : password.length >= 8 ? 'border-primary' : ''
                 }`}
                 autoFocus
               />
@@ -404,10 +404,10 @@ export const AuthPage = () => {
                 {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
               </button>
             </div>
-            {mode === 'signin' && password && password.length < 6 && (
-              <p className="text-xs text-destructive pl-2">Nywila lazima iwe angalau herufi 6</p>
+            {mode === 'signin' && password && password.length < 8 && (
+              <p className="text-xs text-destructive pl-2">Nywila lazima iwe angalau herufi 8</p>
             )}
-            {mode === 'signin' && password && password.length >= 6 && (
+            {mode === 'signin' && password && password.length >= 8 && (
               <p className="text-xs text-primary pl-2">✓ Nywila imekubalika</p>
             )}
             {mode === 'signup' && password.length > 0 && (() => {
