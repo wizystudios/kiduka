@@ -7,16 +7,22 @@ interface SokoniLogoProps {
 }
 
 export const SokoniLogo = ({ size = 'md', showText = true, animate = true }: SokoniLogoProps) => {
-  const sizeClasses = {
-    sm: 'h-5 w-5',
-    md: 'h-6 w-6',
-    lg: 'h-10 w-10'
+  const iconSizes = {
+    sm: 'h-4 w-4',
+    md: 'h-5 w-5',
+    lg: 'h-8 w-8'
   };
 
-  const containerSizes = {
-    sm: 'p-1.5',
-    md: 'p-2',
-    lg: 'p-3'
+  const outerSizes = {
+    sm: 'w-7 h-7',
+    md: 'w-9 h-9',
+    lg: 'w-14 h-14'
+  };
+
+  const innerSizes = {
+    sm: 'w-5 h-5',
+    md: 'w-6 h-6',
+    lg: 'w-9 h-9'
   };
 
   const textSizeClasses = {
@@ -27,14 +33,17 @@ export const SokoniLogo = ({ size = 'md', showText = true, animate = true }: Sok
 
   return (
     <div className="flex items-center gap-2">
-      {/* Sokoni Logo - derived from Kiduka design */}
       <div className={`relative ${animate ? 'animate-pulse' : ''}`}>
-        <div className={`bg-gradient-to-br from-orange-500 via-red-500 to-pink-600 ${containerSizes[size]} rounded-xl shadow-lg transform -rotate-6 transition-transform hover:rotate-0 duration-300`}>
-          <div className="bg-white p-0.5 rounded-lg transform rotate-6 hover:rotate-0 transition-transform duration-300">
-            <Store className={`${sizeClasses[size]} text-orange-600`} />
+        {/* Gradient rotated square - matching Kiduka style */}
+        <div 
+          className={`${outerSizes[size]} rounded-xl transform -rotate-6 shadow-lg transition-transform hover:rotate-0 duration-300`}
+          style={{ background: 'linear-gradient(135deg, #f97316, #ef4444, #ec4899)' }}
+        >
+          <div className={`${innerSizes[size]} bg-white rounded-lg absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 rotate-6 hover:rotate-0 transition-transform duration-300 flex items-center justify-center`}>
+            <Store className={`${iconSizes[size]} text-orange-600`} />
           </div>
         </div>
-        {/* Accent elements */}
+        {/* Accent dot */}
         <div className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-yellow-400 rounded-full animate-bounce" />
       </div>
       
