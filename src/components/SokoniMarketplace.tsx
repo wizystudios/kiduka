@@ -848,8 +848,27 @@ export const SokoniMarketplace = () => {
 
         {/* Home/Deals Tab */}
         <TabsContent value="home" className="p-4 space-y-6">
-          {/* Auto-rotating Ad/Promo Carousel */}
-          <SokoniBannerCarousel onBrowse={() => setActiveTab('browse')} />
+          {/* Banner + Ad Carousel side by side */}
+          <div className="flex gap-3">
+            {/* Main promo banner - left side */}
+            <div className="flex-1 min-w-0 rounded-2xl overflow-hidden bg-gradient-to-br from-primary to-primary/80 p-4 flex flex-col justify-center">
+              <h2 className="text-primary-foreground font-bold text-lg leading-tight">Sokoni Deals</h2>
+              <p className="text-primary-foreground/80 text-sm mt-1">Punguzo Kubwa!</p>
+              <p className="text-primary-foreground/60 text-xs mt-0.5">Bei nafuu kwa bidhaa bora</p>
+              <Button 
+                size="sm" 
+                variant="secondary" 
+                className="rounded-full text-xs mt-3 w-fit"
+                onClick={() => setActiveTab('browse')}
+              >
+                Tazama Sasa
+              </Button>
+            </div>
+            {/* Ad carousel - right side */}
+            <div className="w-[45%] flex-shrink-0">
+              <SokoniBannerCarousel onBrowse={() => setActiveTab('browse')} />
+            </div>
+          </div>
 
           {/* Top Deals */}
           <section>
