@@ -264,15 +264,15 @@ export const AuthPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-secondary/10 flex flex-col items-center justify-center p-6 relative overflow-hidden">
+    <div className="h-screen bg-gradient-to-br from-primary/5 via-background to-secondary/10 flex flex-col items-center justify-center p-4 relative overflow-hidden">
       <FloatingCards />
       {/* Logo */}
-      <div className="mb-8">
+      <div className="mb-4">
         <KidukaLogo size="lg" />
       </div>
 
       {/* Progress indicator */}
-      <div className="flex justify-center gap-2 mb-6">
+      <div className="flex justify-center gap-2 mb-3">
         {['identifier', 'password', ...(mode === 'signup' ? ['name'] : [])].map((s, i) => (
           <div 
             key={s} 
@@ -284,10 +284,10 @@ export const AuthPage = () => {
       </div>
 
       {/* Title - free, no container */}
-      <h1 className="text-2xl font-bold text-foreground mb-2">
+      <h1 className="text-xl font-bold text-foreground mb-1">
         {mode === 'signin' ? 'Karibu Tena' : 'Unda Akaunti'}
       </h1>
-      <p className="text-sm text-muted-foreground mb-8">
+      <p className="text-xs text-muted-foreground mb-4">
         {step === 'identifier' && (authMethod === 'email' ? 'Barua pepe yako' : authMethod === 'phone' ? 'Namba ya simu yako' : 'Jina lako la akaunti')}
         {step === 'password' && 'Nywila yako'}
         {step === 'name' && 'Jina lako kamili'}
