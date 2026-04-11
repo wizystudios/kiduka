@@ -84,13 +84,52 @@ export const StorefrontPage = () => {
 
   const fetchStore = async () => {
     try {
-      const { data: profile, error } = await supabase
+      // Try by store_slug first
+      let { data: profile, error } = await supabase
         .from('profiles')
         .select('id, business_name, phone, region, district, store_description, store_logo_url, google_pixel_id, facebook_pixel_id')
         .eq('store_slug', slug)
         .maybeSingle();
 
-      if (error || !profile) {
+      // If not found by slug, try matching by generated slug from business_name
+      if (!profile) {
+        const { data: allProfiles } = await supabase
+          .from('profiles')
+          .select('id, business_name, phone, region, district, store_description, store_logo_url, google_pixel_id, facebook_pixel_id, store_slug')
+          .not('business_name', 'is', null);
+        
+        if (allProfiles) {
+          profile = allProfiles.find((p: any) => {
+            const generated = p.business_name?.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+            return generated === slug;
+          }) as any;
+          
+          // Auto-set the store_slug for future visits
+          if (profile) {
+            await supabase
+              .from('profiles')
+              .update({ store_slug: slug })
+              .eq('id', profile.id);
+          }
+        }
+      }
+
+      // Check if the store actually has products (not deleted)
+      if (profile) {
+        const { count } = await supabase
+          .from('products')
+          .select('*', { count: 'exact', head: true })
+          .eq('owner_id', profile.id)
+          .gt('stock_quantity', 0);
+        
+        if (!count || count === 0) {
+          setNotFound(true);
+          setLoading(false);
+          return;
+        }
+      }
+
+      if (!profile) {
         setNotFound(true);
         setLoading(false);
         return;

@@ -1831,27 +1831,36 @@ export type Database = {
       }
       sokoni_customers: {
         Row: {
+          country: string | null
           created_at: string
+          district: string | null
           id: string
           name: string | null
           phone: string
           pin: string | null
+          region: string | null
           updated_at: string
         }
         Insert: {
+          country?: string | null
           created_at?: string
+          district?: string | null
           id?: string
           name?: string | null
           phone: string
           pin?: string | null
+          region?: string | null
           updated_at?: string
         }
         Update: {
+          country?: string | null
           created_at?: string
+          district?: string | null
           id?: string
           name?: string | null
           phone?: string
           pin?: string | null
+          region?: string | null
           updated_at?: string
         }
         Relationships: []
