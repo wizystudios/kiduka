@@ -336,6 +336,41 @@ export const SubscriptionPage = ({ embedded = false }: SubscriptionPageProps) =>
                     </div>
                   ))}
                 </div>
+
+                {/* Fee Breakdown */}
+                {(subscription as any)?.fee_breakdown && Object.keys((subscription as any).fee_breakdown).length > 0 && (
+                  <div className="mt-3 p-3 bg-muted/50 rounded-2xl space-y-1.5">
+                    <p className="text-xs font-semibold text-foreground">Muhtasari wa Ada:</p>
+                    {(subscription as any).fee_breakdown?.base && (
+                      <div className="flex justify-between text-xs">
+                        <span className="text-muted-foreground">{(subscription as any).fee_breakdown.base.label}</span>
+                        <span>TSh {Number((subscription as any).fee_breakdown.base.amount).toLocaleString()}</span>
+                      </div>
+                    )}
+                    {(subscription as any).fee_breakdown?.assistants?.count > 0 && (
+                      <div className="flex justify-between text-xs">
+                        <span className="text-muted-foreground">{(subscription as any).fee_breakdown.assistants.label}</span>
+                        <span>TSh {Number((subscription as any).fee_breakdown.assistants.amount).toLocaleString()}</span>
+                      </div>
+                    )}
+                    {(subscription as any).fee_breakdown?.sokoni?.enabled && (
+                      <div className="flex justify-between text-xs">
+                        <span className="text-muted-foreground">{(subscription as any).fee_breakdown.sokoni.label}</span>
+                        <span>TSh {Number((subscription as any).fee_breakdown.sokoni.amount).toLocaleString()}</span>
+                      </div>
+                    )}
+                    {(subscription as any).fee_breakdown?.branches?.count > 0 && (
+                      <div className="flex justify-between text-xs">
+                        <span className="text-muted-foreground">{(subscription as any).fee_breakdown.branches.label}</span>
+                        <span>TSh {Number((subscription as any).fee_breakdown.branches.amount).toLocaleString()}</span>
+                      </div>
+                    )}
+                    <div className="border-t pt-1.5 flex justify-between text-xs font-bold">
+                      <span>Jumla</span>
+                      <span className="text-primary">TSh {Number((subscription as any).fee_breakdown.total || (subscription as any)?.payment_amount || 30000).toLocaleString()}</span>
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>
