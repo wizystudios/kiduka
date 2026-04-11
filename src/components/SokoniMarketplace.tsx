@@ -848,30 +848,30 @@ export const SokoniMarketplace = () => {
 
         {/* Home/Deals Tab */}
         <TabsContent value="home" className="p-4 space-y-6">
-          {/* Banner + Ad Carousel side by side */}
-          <div className="flex gap-3">
-            {/* Main promo banner - left side with embedded ad space */}
-            <div className="flex-1 min-w-0 rounded-2xl overflow-hidden bg-gradient-to-br from-primary to-primary/80 p-4 flex flex-col justify-between">
-              <div>
-                <h2 className="text-primary-foreground font-bold text-lg leading-tight">Sokoni Deals</h2>
-                <p className="text-primary-foreground/80 text-sm mt-1">Punguzo Kubwa!</p>
-                <p className="text-primary-foreground/60 text-xs mt-0.5">Bei nafuu kwa bidhaa bora</p>
+          {/* Banner row - two equal banners side by side */}
+          <div className="grid grid-cols-2 gap-2 h-32">
+            {/* Left: Promo text + image banner */}
+            <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-primary to-primary/80">
+              <div className="absolute inset-0 flex">
+                <div className="flex-1 p-3 flex flex-col justify-center z-10">
+                  <h2 className="text-primary-foreground font-bold text-sm leading-tight">Sokoni Deals</h2>
+                  <p className="text-primary-foreground/80 text-[10px] mt-0.5">Punguzo Kubwa!</p>
+                  <Button 
+                    size="sm" 
+                    variant="secondary" 
+                    className="rounded-full text-[10px] h-6 px-2 mt-2 w-fit"
+                    onClick={() => setActiveTab('browse')}
+                  >
+                    Tazama
+                  </Button>
+                </div>
+                <div className="w-[45%] flex-shrink-0">
+                  <SokoniBannerCarousel onBrowse={() => setActiveTab('browse')} />
+                </div>
               </div>
-              {/* Embedded mini ad carousel inside the banner */}
-              <div className="mt-2 rounded-xl overflow-hidden aspect-video max-h-20">
-                <SokoniBannerCarousel onBrowse={() => setActiveTab('browse')} />
-              </div>
-              <Button 
-                size="sm" 
-                variant="secondary" 
-                className="rounded-full text-xs mt-2 w-fit"
-                onClick={() => setActiveTab('browse')}
-              >
-                Tazama Sasa
-              </Button>
             </div>
-            {/* Ad carousel - right side (narrower) */}
-            <div className="w-[35%] flex-shrink-0">
+            {/* Right: Ad carousel */}
+            <div className="rounded-2xl overflow-hidden">
               <SokoniBannerCarousel onBrowse={() => setActiveTab('browse')} />
             </div>
           </div>
