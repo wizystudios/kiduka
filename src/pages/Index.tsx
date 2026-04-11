@@ -49,7 +49,7 @@ const Index = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-secondary/10 flex flex-col items-center justify-center p-6 relative overflow-hidden">
+    <div className="h-screen bg-gradient-to-br from-primary/5 via-background to-secondary/10 flex flex-col items-center justify-center p-4 relative overflow-hidden">
       <FloatingCards />
 
       <div className="flex flex-col items-center gap-6 w-full max-w-sm relative z-10">

@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { DollarSign, Store, AlertTriangle, TrendingDown, ShoppingCart, Package, Banknote, Users, Activity } from 'lucide-react';
 import { StockAlertWidget, ExpensesWidget, TransactionsWidget, ProductsWidget, LoansWidget, DebtorsWidget } from '@/components/DashboardWidgets';
 import { AdBanner } from '@/components/AdBanner';
+import { DashboardAdCarousel } from '@/components/DashboardAdCarousel';
 
 export const Dashboard = () => {
   const { user, userProfile, loading: authLoading } = useAuth();
@@ -64,7 +65,7 @@ export const Dashboard = () => {
   );
 
   return (
-    <div className="px-4 pt-6 pb-24 space-y-6">
+    <div className="px-4 pt-4 pb-20 space-y-4">
       {/* Hero Sales Section - centered, no box */}
       <div className="text-center pt-2">
         <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Mauzo Leo</p>
@@ -106,6 +107,9 @@ export const Dashboard = () => {
         <LoansWidget />
         <DebtorsWidget />
       </div>
+
+      {/* Ad Carousel */}
+      <DashboardAdCarousel />
 
       {/* Ad Banner */}
       <AdBanner location="kiduka" />
