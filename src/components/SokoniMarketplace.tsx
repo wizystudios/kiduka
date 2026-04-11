@@ -23,6 +23,7 @@ import {
   ClipboardList, Truck, Eye, Grid3X3, ArrowUpRight, MapPin
 } from 'lucide-react';
 import { SokoniLogo } from './SokoniLogo';
+import { SokoniBannerCarousel } from './SokoniBannerCarousel';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useNavigate, useSearchParams } from 'react-router-dom';
