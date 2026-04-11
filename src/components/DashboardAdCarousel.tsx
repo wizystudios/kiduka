@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import adDashboard from '@/assets/ad-dashboard.jpg';
 import adMobilePay from '@/assets/ad-mobile-pay.jpg';
 import adInventory from '@/assets/ad-inventory.jpg';
@@ -34,34 +34,43 @@ export const DashboardAdCarousel = () => {
     return () => clearInterval(timer);
   }, []);
 
-  const ad = ads[index];
+  const visibleAds = useMemo(() => [
+    ads[index % ads.length],
+    ads[(index + 1) % ads.length],
+    ads[(index + 2) % ads.length],
+  ], [index]);
 
   return (
-    <div className="w-full">
-      <div className="relative overflow-hidden rounded-2xl border border-border/30 h-[100px]">
-        <img
-          src={ad.src}
-          alt={ad.tag}
-          className={`absolute inset-0 w-full h-full object-cover transition-all duration-500 ${
-            visible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
-          }`}
-          loading="lazy"
-          width={512}
-          height={512}
-        />
-        <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/30 to-transparent" />
-        <div className="relative h-full flex items-end p-3">
-          <div>
-            <span className="text-[9px] font-bold uppercase tracking-widest text-white/60">{ad.tag}</span>
-            <p className="text-sm font-bold text-white leading-tight mt-0.5">{ad.label}</p>
+    <div className="w-full space-y-2">
+      <div className="grid grid-cols-3 gap-2">
+        {visibleAds.map((ad, i) => (
+          <div
+            key={`${index}-${i}`}
+            className={`relative overflow-hidden rounded-2xl border border-border/30 aspect-[3/4] transition-all duration-500 ease-out ${
+              visible ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-3 scale-95'
+            }`}
+          >
+            <img
+              src={ad.src}
+              alt={ad.tag}
+              className="absolute inset-0 w-full h-full object-cover"
+              loading="lazy"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+            <div className="absolute inset-x-0 bottom-0 p-2">
+              <div className="rounded-xl border border-border/30 bg-background/80 backdrop-blur-md px-2 py-1.5 shadow-sm">
+                <p className="text-[8px] font-bold uppercase tracking-[0.15em] text-muted-foreground">{ad.tag}</p>
+                <p className="text-[10px] font-semibold leading-tight text-foreground mt-0.5 line-clamp-2">{ad.label}</p>
+              </div>
+            </div>
+            <div className="absolute top-1 right-1.5">
+              <span className="text-[6px] uppercase tracking-widest text-white/40">Ad</span>
+            </div>
           </div>
-        </div>
-        <div className="absolute top-1.5 right-2">
-          <span className="text-[7px] uppercase tracking-widest text-white/40">Ad</span>
-        </div>
+        ))}
       </div>
       {/* Dots */}
-      <div className="flex justify-center gap-0.5 mt-1.5">
+      <div className="flex justify-center gap-0.5">
         {ads.map((_, i) => (
           <div
             key={i}
