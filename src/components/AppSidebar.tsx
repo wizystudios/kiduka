@@ -17,34 +17,8 @@ import {
   SidebarFooter,
   useSidebar,
 } from '@/components/ui/sidebar';
-import {
-  Shield, Home, Package, ShoppingCart, BarChart3, Settings, Users,
-  CreditCard, LogOut, Crown, Store,
-  ClipboardList,
-  BookOpen
-} from 'lucide-react';
-
-interface NavItem {
-  id: string;
-  label: string;
-  icon: any;
-  href: string;
-  permission: string | null;
-}
-
-const navigationItems: NavItem[] = [
-  { id: 'dashboard', label: 'Dashboard', icon: Home, href: '/dashboard', permission: null },
-  { id: 'products', label: 'Bidhaa', icon: Package, href: '/products', permission: 'can_view_products' },
-  { id: 'sales', label: 'Mauzo', icon: ShoppingCart, href: '/sales', permission: 'can_view_sales' },
-  { id: 'stock', label: 'Stock', icon: ClipboardList, href: '/inventory-snapshots', permission: 'can_view_inventory' },
-  { id: 'orders', label: 'Oda', icon: Crown, href: '/sokoni-orders', permission: 'can_view_sales' },
-  { id: 'groups', label: 'Makundi', icon: Users, href: '/groups', permission: null },
-  { id: 'mikopo', label: 'Mikopo', icon: CreditCard, href: '/credit-management', permission: null },
-  { id: 'ripoti', label: 'Ripoti', icon: BarChart3, href: '/reports', permission: 'can_view_reports' },
-  { id: 'bookkeeping', label: 'Uhasibu', icon: BookOpen, href: '/bookkeeping', permission: null },
-  { id: 'branches', label: 'Matawi', icon: Store, href: '/branches', permission: null },
-  { id: 'settings', label: 'Mipangilio', icon: Settings, href: '/settings', permission: null },
-];
+import { Shield, LogOut } from 'lucide-react';
+import { primaryNavigationItems, filterNavigationItems } from '@/lib/navigation';
 
 export function AppSidebar() {
   const { signOut, userProfile, user } = useAuth();
