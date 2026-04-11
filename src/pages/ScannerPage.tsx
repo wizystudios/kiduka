@@ -307,7 +307,7 @@ export const ScannerPage = () => {
       }));
 
       setCompletedSale({
-        id: sale.id.slice(0, 8),
+        id: sale.id,
         items: receiptItems,
         subtotal: getSubtotal(),
         vatAmount: 0,
