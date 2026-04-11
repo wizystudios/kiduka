@@ -4,27 +4,29 @@
  */
 export const CompanyProductsFooter = () => {
   const products = [
-    { name: 'Wetech', url: 'https://wetech.lovable.app', emoji: '🌐' },
-    { name: 'Tasklink', url: 'https://tasklink.lovable.app', emoji: '📋' },
-    { name: 'Conffo', url: 'https://conffo.lovable.app', emoji: '🎤' },
-    { name: 'Telemed', url: 'https://telemed.lovable.app', emoji: '🏥' },
-    { name: 'SmartInvite', url: 'https://smartinvite.lovable.app', emoji: '💌' },
+    { name: 'Wetech', url: 'https://wetech.lovable.app', initial: 'W', color: 'bg-blue-600' },
+    { name: 'Tasklink', url: 'https://tasklink.lovable.app', initial: 'T', color: 'bg-emerald-600' },
+    { name: 'Conffo', url: 'https://conffo.lovable.app', initial: 'C', color: 'bg-purple-600' },
+    { name: 'Telemed', url: 'https://telemed.lovable.app', initial: 'T', color: 'bg-red-600' },
+    { name: 'iCard', url: 'https://icard.lovable.app', initial: 'i', color: 'bg-amber-600' },
   ];
 
   return (
     <div className="pt-6 pb-2 border-t border-border mt-4">
       <p className="text-[10px] text-muted-foreground text-center mb-3">Bidhaa Zetu</p>
-      <div className="flex items-center justify-center gap-4 flex-wrap">
+      <div className="flex items-center justify-center gap-5 flex-wrap">
         {products.map(p => (
           <a
             key={p.name}
             href={p.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex flex-col items-center gap-1 text-muted-foreground hover:text-primary transition-colors"
+            className="flex flex-col items-center gap-1.5 text-muted-foreground hover:text-primary transition-colors"
           >
-            <span className="text-xl">{p.emoji}</span>
-            <span className="text-[9px] font-medium">{p.name}</span>
+            <div className={`w-10 h-10 rounded-full ${p.color} text-white flex items-center justify-center text-sm font-bold shadow-md`}>
+              {p.initial}
+            </div>
+            <span className="text-[10px] font-medium">{p.name}</span>
           </a>
         ))}
       </div>
