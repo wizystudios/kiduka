@@ -45,7 +45,7 @@ export function AppLayout({ children }: AppLayoutProps) {
               )}
             </Button>
           </header>
-          <main className={`w-full pt-16 lg:max-w-3xl lg:mx-auto ${isDashboardRoute ? 'pb-24' : 'pb-28'} md:pt-0 md:pb-0`}>
+          <main className={`w-full pt-16 ${isDashboardRoute ? 'pb-24' : 'pb-28'} md:pt-0 md:pb-0`}>
             <LocationSetupGate>
               <ContractComplianceGate>{children}</ContractComplianceGate>
             </LocationSetupGate>
