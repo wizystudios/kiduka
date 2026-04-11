@@ -13,6 +13,7 @@ import { useRealTimeNotifications } from "@/hooks/useRealTimeNotifications";
 import { useNavigate } from "react-router-dom";
 import { Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { DesktopSideAds } from "@/components/DesktopSideAds";
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -42,11 +43,12 @@ export function AppLayout({ children }: AppLayoutProps) {
               )}
             </Button>
           </header>
-          <main className="w-full pt-16 pb-36 md:pt-0 md:pb-0">
+          <main className="w-full pt-16 pb-36 md:pt-0 md:pb-0 lg:max-w-3xl lg:mx-auto">
             <LocationSetupGate>
               <ContractComplianceGate>{children}</ContractComplianceGate>
             </LocationSetupGate>
           </main>
+          <DesktopSideAds />
         </SidebarInset>
       </div>
       <UserInfoBar />
