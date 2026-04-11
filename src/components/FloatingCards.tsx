@@ -19,7 +19,7 @@ export const FloatingCards = () => {
   return (
     <>
       {/* Left side floating cards */}
-      <div className="fixed left-1 top-1/2 -translate-y-1/2 flex flex-col gap-2 z-0 pointer-events-none">
+      <div className="absolute left-2 top-1/2 -translate-y-1/2 flex flex-col gap-3 z-0 pointer-events-none">
         {leftCards.map((card, i) => (
           <div
             key={card.alt}
@@ -35,7 +35,7 @@ export const FloatingCards = () => {
       </div>
 
       {/* Right side floating cards */}
-      <div className="fixed right-1 top-1/2 -translate-y-1/2 flex flex-col gap-2 z-0 pointer-events-none">
+      <div className="absolute right-2 top-1/2 -translate-y-1/2 flex flex-col gap-3 z-0 pointer-events-none">
         {rightCards.map((card, i) => (
           <div
             key={card.alt}

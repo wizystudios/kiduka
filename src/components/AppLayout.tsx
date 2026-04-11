@@ -11,7 +11,7 @@ import { LocationSetupGate } from "@/components/LocationSetupGate";
 import { TopAlertBar } from "@/components/TopAlertBar";
 import { useRealTimeNotifications } from "@/hooks/useRealTimeNotifications";
 import { useNavigate } from "react-router-dom";
-import { Bell } from "lucide-react";
+import { Bell, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface AppLayoutProps {
@@ -34,11 +34,7 @@ export function AppLayout({ children }: AppLayoutProps) {
           {/* Desktop header with sidebar toggle + alerts + notification */}
           <header className="hidden md:flex h-10 items-center border-b border-border/40 px-2 gap-2">
             <SidebarTrigger className="h-8 w-8 [&>svg]:hidden border border-border rounded-lg hover:bg-accent">
-              <div className="flex flex-col gap-[3px]">
-                <span className="block w-4 h-[2px] bg-foreground rounded-full" />
-                <span className="block w-3 h-[2px] bg-foreground rounded-full" />
-                <span className="block w-4 h-[2px] bg-foreground rounded-full" />
-              </div>
+              <Menu className="h-5 w-5 text-foreground" />
             </SidebarTrigger>
             <TopAlertBar />
             <Button variant="ghost" size="sm" className="relative p-1.5 h-8 w-8 ml-auto" onClick={() => navigate('/notifications')}>
