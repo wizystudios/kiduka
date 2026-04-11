@@ -41,12 +41,12 @@ export const DashboardAdCarousel = () => {
   ], [index]);
 
   return (
-    <div className="w-full space-y-2">
-      <div className="grid grid-cols-3 gap-2">
+    <div className="w-full space-y-1.5">
+      <div className="grid grid-cols-3 gap-1.5">
         {visibleAds.map((ad, i) => (
           <div
             key={`${index}-${i}`}
-            className={`relative overflow-hidden rounded-2xl border border-border/30 aspect-[3/4] transition-all duration-500 ease-out ${
+            className={`relative overflow-hidden rounded-xl border border-border/30 aspect-[4/3] transition-all duration-500 ease-out ${
               visible ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-3 scale-95'
             }`}
           >
@@ -57,19 +57,18 @@ export const DashboardAdCarousel = () => {
               loading="lazy"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
-            <div className="absolute inset-x-0 bottom-0 p-2">
-              <div className="rounded-xl border border-border/30 bg-background/80 backdrop-blur-md px-2 py-1.5 shadow-sm">
-                <p className="text-[8px] font-bold uppercase tracking-[0.15em] text-muted-foreground">{ad.tag}</p>
-                <p className="text-[10px] font-semibold leading-tight text-foreground mt-0.5 line-clamp-2">{ad.label}</p>
+            <div className="absolute inset-x-0 bottom-0 p-1.5">
+              <div className="rounded-lg border border-border/30 bg-background/80 backdrop-blur-md px-1.5 py-1 shadow-sm">
+                <p className="text-[7px] font-bold uppercase tracking-[0.12em] text-muted-foreground">{ad.tag}</p>
+                <p className="text-[9px] font-semibold leading-tight text-foreground mt-0.5 line-clamp-2">{ad.label}</p>
               </div>
             </div>
-            <div className="absolute top-1 right-1.5">
+            <div className="absolute top-1 right-1">
               <span className="text-[6px] uppercase tracking-widest text-white/40">Ad</span>
             </div>
           </div>
         ))}
       </div>
-      {/* Dots */}
       <div className="flex justify-center gap-0.5">
         {ads.map((_, i) => (
           <div
