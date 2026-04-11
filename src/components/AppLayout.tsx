@@ -10,7 +10,7 @@ import { AdminConsentRequest } from "@/components/AdminConsentRequest";
 import { LocationSetupGate } from "@/components/LocationSetupGate";
 import { TopAlertBar } from "@/components/TopAlertBar";
 import { useRealTimeNotifications } from "@/hooks/useRealTimeNotifications";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -22,6 +22,8 @@ interface AppLayoutProps {
 export function AppLayout({ children }: AppLayoutProps) {
   const { unreadCount } = useRealTimeNotifications();
   const navigate = useNavigate();
+  const location = useLocation();
+  const isDashboardRoute = location.pathname === "/dashboard";
 
   return (
     <SidebarProvider>
@@ -29,7 +31,7 @@ export function AppLayout({ children }: AppLayoutProps) {
       <AdminConsentRequest />
       <TopNavbar />
       <OfflineSyncBootstrap />
-      <div className="flex min-h-screen w-full">
+      <div className="flex min-h-screen w-full overflow-x-hidden">
         <AppSidebar />
         <SidebarInset className="flex-1">
           <header className="hidden md:flex h-10 items-center border-b border-border/40 px-2 gap-2">
@@ -43,7 +45,7 @@ export function AppLayout({ children }: AppLayoutProps) {
               )}
             </Button>
           </header>
-          <main className="w-full pt-16 pb-36 md:pt-0 md:pb-0 lg:max-w-3xl lg:mx-auto">
+          <main className={`w-full pt-16 lg:max-w-3xl lg:mx-auto ${isDashboardRoute ? 'pb-24' : 'pb-28'} md:pt-0 md:pb-0`}>
             <LocationSetupGate>
               <ContractComplianceGate>{children}</ContractComplianceGate>
             </LocationSetupGate>

@@ -65,9 +65,9 @@ export const Dashboard = () => {
   );
 
   return (
-    <div className="px-4 pt-3 pb-16 space-y-3">
+    <div className="px-4 pt-2 pb-0 space-y-2">
       {/* Hero Sales Section - centered, no box */}
-      <div className="text-center pt-1">
+      <div className="text-center pt-0.5">
         <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Mauzo Leo</p>
         <p className="text-3xl font-black text-foreground tracking-tight">
           TZS {metrics.todaysSales.toLocaleString()}
@@ -78,7 +78,7 @@ export const Dashboard = () => {
       </div>
 
       {/* Key stats - flat, no containers, centered row */}
-      <div className="flex items-center justify-around py-2.5 border-y border-border/50">
+      <div className="flex items-center justify-around py-2 border-y border-border/50">
         <button onClick={() => navigate('/sokoni-orders')} className="text-center space-y-0.5">
           <Store className="h-4 w-4 mx-auto text-primary" />
           <p className="text-lg font-bold text-foreground">{metrics.pendingSokoniOrders}</p>
@@ -99,7 +99,7 @@ export const Dashboard = () => {
       </div>
 
       {/* Action widgets - clean grid */}
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-2 gap-1.5">
         <StockAlertWidget />
         <ExpensesWidget />
         <TransactionsWidget />
@@ -108,7 +108,7 @@ export const Dashboard = () => {
         <DebtorsWidget />
       </div>
 
-      <div className="pt-0.5">
+      <div>
         <DashboardAdCarousel />
       </div>
 

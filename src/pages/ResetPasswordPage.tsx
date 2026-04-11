@@ -80,7 +80,7 @@ export const ResetPasswordPage = () => {
 
   if (!isRecovery) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-secondary/10 flex flex-col items-center justify-center p-6">
+      <div className="flex h-[100dvh] max-h-[100dvh] flex-col items-center justify-center overflow-hidden bg-gradient-to-br from-primary/5 via-background to-secondary/10 p-4">
         <KidukaLogo size="lg" />
         <p className="mt-6 text-muted-foreground">Kiungo si sahihi au kimekwisha muda.</p>
         <Button onClick={() => navigate('/auth')} className="mt-4">Rudi Kuingia</Button>
@@ -90,7 +90,7 @@ export const ResetPasswordPage = () => {
 
   if (success) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-secondary/10 flex flex-col items-center justify-center p-6">
+      <div className="flex h-[100dvh] max-h-[100dvh] flex-col items-center justify-center overflow-hidden bg-gradient-to-br from-primary/5 via-background to-secondary/10 p-4">
         <CheckCircle className="h-16 w-16 text-primary mb-4" />
         <h1 className="text-2xl font-bold">Nywila Imebadilishwa!</h1>
         <p className="text-muted-foreground mt-2">Unaelekezwa kwenye ukurasa wa kuingia...</p>
@@ -101,12 +101,12 @@ export const ResetPasswordPage = () => {
   const policy = checkPasswordPolicy(password);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-secondary/10 flex flex-col items-center justify-center p-6">
+    <div className="flex h-[100dvh] max-h-[100dvh] flex-col items-center justify-center overflow-hidden bg-gradient-to-br from-primary/5 via-background to-secondary/10 px-6 py-4">
       <KidukaLogo size="lg" />
-      <h1 className="text-2xl font-bold mt-6 mb-2">Weka Nywila Mpya</h1>
-      <p className="text-sm text-muted-foreground mb-8">Ingiza nywila mpya ya akaunti yako</p>
+      <h1 className="mt-4 mb-1 text-2xl font-bold">Weka Nywila Mpya</h1>
+      <p className="mb-4 text-sm text-muted-foreground">Ingiza nywila mpya ya akaunti yako</p>
 
-      <div className="w-full max-w-sm space-y-4">
+      <div className="w-full max-w-sm space-y-3">
         <div className="relative">
           <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
           <Input
@@ -114,7 +114,7 @@ export const ResetPasswordPage = () => {
             placeholder="Nywila mpya"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="pl-10 pr-10 h-14 bg-transparent border-0 border-b-2 border-border rounded-none text-lg focus:ring-0 focus:border-primary focus-visible:ring-0 focus-visible:ring-offset-0"
+            className="pl-10 pr-10 h-12 bg-transparent border-0 border-b-2 border-border rounded-none text-lg focus:ring-0 focus:border-primary focus-visible:ring-0 focus-visible:ring-offset-0"
             autoFocus
           />
           <button
@@ -127,7 +127,7 @@ export const ResetPasswordPage = () => {
         </div>
 
         {password.length > 0 && (
-          <div className="p-3 bg-muted/50 rounded-2xl space-y-1">
+          <div className="space-y-1 rounded-2xl bg-muted/50 p-2.5">
             <p className={`text-xs ${policy.minLength ? 'text-primary' : 'text-muted-foreground'}`}>
               {policy.minLength ? '✓' : '○'} Angalau herufi 8
             </p>
@@ -151,7 +151,7 @@ export const ResetPasswordPage = () => {
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && handleReset()}
-            className={`pl-10 h-14 bg-transparent border-0 border-b-2 border-border rounded-none text-lg focus:ring-0 focus:border-primary focus-visible:ring-0 focus-visible:ring-offset-0 ${
+            className={`pl-10 h-12 bg-transparent border-0 border-b-2 border-border rounded-none text-lg focus:ring-0 focus:border-primary focus-visible:ring-0 focus-visible:ring-offset-0 ${
               confirmPassword && confirmPassword !== password ? 'border-destructive' : ''
             }`}
           />
@@ -163,7 +163,7 @@ export const ResetPasswordPage = () => {
         <Button
           onClick={handleReset}
           disabled={loading || !password || !confirmPassword}
-          className="w-full h-12 text-base font-medium mt-4"
+          className="mt-2 h-11 w-full text-base font-medium"
         >
           {loading ? 'Inasubiri...' : 'Badilisha Nywila'}
         </Button>

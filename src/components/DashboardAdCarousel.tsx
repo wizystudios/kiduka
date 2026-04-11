@@ -41,12 +41,12 @@ export const DashboardAdCarousel = () => {
   ], [index]);
 
   return (
-    <div className="w-full space-y-1.5">
-      <div className="grid grid-cols-3 gap-1.5">
+    <div className="w-full space-y-1">
+      <div className="grid grid-cols-3 gap-1">
         {visibleAds.map((ad, i) => (
           <div
             key={`${index}-${i}`}
-            className={`relative overflow-hidden rounded-xl border border-border/30 aspect-[4/3] transition-all duration-500 ease-out ${
+            className={`relative h-[72px] overflow-hidden rounded-xl border border-border/30 transition-all duration-500 ease-out sm:h-[80px] ${
               visible ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-3 scale-95'
             }`}
           >
@@ -57,10 +57,10 @@ export const DashboardAdCarousel = () => {
               loading="lazy"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
-            <div className="absolute inset-x-0 bottom-0 p-1.5">
-              <div className="rounded-lg border border-border/30 bg-background/80 backdrop-blur-md px-1.5 py-1 shadow-sm">
-                <p className="text-[7px] font-bold uppercase tracking-[0.12em] text-muted-foreground">{ad.tag}</p>
-                <p className="text-[9px] font-semibold leading-tight text-foreground mt-0.5 line-clamp-2">{ad.label}</p>
+            <div className="absolute inset-x-0 bottom-0 p-1">
+              <div className="rounded-md border border-border/30 bg-background/80 px-1 py-1 shadow-sm backdrop-blur-md">
+                <p className="text-[6px] font-bold uppercase tracking-[0.12em] text-muted-foreground">{ad.tag}</p>
+                <p className="mt-0.5 line-clamp-2 text-[8px] font-semibold leading-tight text-foreground">{ad.label}</p>
               </div>
             </div>
             <div className="absolute top-1 right-1">
@@ -74,7 +74,7 @@ export const DashboardAdCarousel = () => {
           <div
             key={i}
             className={`h-[2px] rounded-full transition-all duration-500 ${
-              i === index ? 'w-4 bg-primary' : 'w-1.5 bg-border/60'
+              i === index ? 'w-3.5 bg-primary' : 'w-1 bg-border/60'
             }`}
           />
         ))}

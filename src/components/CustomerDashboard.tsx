@@ -180,7 +180,7 @@ export const CustomerDashboard = ({ open, onOpenChange, onAuthOpen }: CustomerDa
   if (!isLoggedIn) {
     return (
       <Sheet open={open} onOpenChange={onOpenChange}>
-        <SheetContent side="bottom" className="rounded-t-3xl max-h-[70vh]">
+        <SheetContent side="bottom" className="h-[48dvh] overflow-hidden rounded-t-3xl">
           <SheetHeader>
             <SheetTitle className="flex items-center gap-2">
               <User className="h-5 w-5" />
@@ -202,9 +202,9 @@ export const CustomerDashboard = ({ open, onOpenChange, onAuthOpen }: CustomerDa
 
   return (
     <Sheet open={open} onOpenChange={(v) => { onOpenChange(v); if (!v) setActiveView('main'); }}>
-      <SheetContent side="bottom" className="rounded-t-3xl max-h-[85vh] overflow-y-auto">
+      <SheetContent side="bottom" className={`rounded-t-3xl ${activeView === 'main' ? 'h-[78dvh] overflow-hidden' : 'max-h-[85dvh] overflow-y-auto'}`}>
         {activeView === 'main' && (
-          <>
+          <div className="flex h-full flex-col">
             <SheetHeader>
               <SheetTitle className="flex items-center gap-2">
                 <User className="h-5 w-5" />
@@ -213,8 +213,8 @@ export const CustomerDashboard = ({ open, onOpenChange, onAuthOpen }: CustomerDa
             </SheetHeader>
 
             {/* Customer Info */}
-            <div className="py-3 flex items-center gap-3">
-              <div className="h-14 w-14 rounded-full bg-primary/10 flex items-center justify-center text-2xl">
+            <div className="flex items-center gap-2.5 py-2">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-xl">
                 {flag}
               </div>
               <div className="flex-1 min-w-0">
@@ -225,49 +225,51 @@ export const CustomerDashboard = ({ open, onOpenChange, onAuthOpen }: CustomerDa
             </div>
 
             {/* Quick Stats */}
-            <div className="grid grid-cols-2 gap-3 py-3">
-              <div className="text-center p-3 bg-muted/50 rounded-2xl">
-                <p className="text-2xl font-bold text-primary">{orderCount}</p>
+            <div className="grid grid-cols-2 gap-2 py-2">
+              <div className="rounded-2xl bg-muted/50 p-2.5 text-center">
+                <p className="text-xl font-bold text-primary">{orderCount}</p>
                 <p className="text-xs text-muted-foreground">Oda Zangu</p>
               </div>
-              <div className="text-center p-3 bg-muted/50 rounded-2xl">
-                <p className="text-2xl font-bold text-primary">{wishlistCount}</p>
+              <div className="rounded-2xl bg-muted/50 p-2.5 text-center">
+                <p className="text-xl font-bold text-primary">{wishlistCount}</p>
                 <p className="text-xs text-muted-foreground">Vipendwa</p>
               </div>
             </div>
 
             {/* Menu */}
-            <div className="space-y-1 py-2">
-              <Button variant="ghost" className="w-full justify-between h-12 rounded-2xl" onClick={() => { navigate('/track-order'); onOpenChange(false); }}>
+            <div className="space-y-0.5 py-1">
+              <Button variant="ghost" className="h-10 w-full justify-between rounded-2xl" onClick={() => { navigate('/track-order'); onOpenChange(false); }}>
                 <span className="flex items-center gap-3"><ClipboardList className="h-5 w-5" /> Oda Zangu</span>
                 <ChevronRight className="h-4 w-4 text-muted-foreground" />
               </Button>
-              <Button variant="ghost" className="w-full justify-between h-12 rounded-2xl" onClick={() => { navigate('/sokoni/favorites'); onOpenChange(false); }}>
+              <Button variant="ghost" className="h-10 w-full justify-between rounded-2xl" onClick={() => { navigate('/sokoni/favorites'); onOpenChange(false); }}>
                 <span className="flex items-center gap-3"><Heart className="h-5 w-5" /> Vipendwa</span>
                 <div className="flex items-center gap-2">
                   {wishlistCount > 0 && <Badge variant="secondary">{wishlistCount}</Badge>}
                   <ChevronRight className="h-4 w-4 text-muted-foreground" />
                 </div>
               </Button>
-              <Button variant="ghost" className="w-full justify-between h-12 rounded-2xl" onClick={() => setActiveView('profile')}>
+              <Button variant="ghost" className="h-10 w-full justify-between rounded-2xl" onClick={() => setActiveView('profile')}>
                 <span className="flex items-center gap-3"><Settings className="h-5 w-5" /> Mipangilio</span>
                 <ChevronRight className="h-4 w-4 text-muted-foreground" />
               </Button>
-              <Button variant="ghost" className="w-full justify-between h-12 rounded-2xl" onClick={() => setActiveView('upgrade')}>
+              <Button variant="ghost" className="h-10 w-full justify-between rounded-2xl" onClick={() => setActiveView('upgrade')}>
                 <span className="flex items-center gap-3"><Briefcase className="h-5 w-5" /> Kuwa Mfanyabiashara</span>
                 <ChevronRight className="h-4 w-4 text-muted-foreground" />
               </Button>
 
-              <div className="pt-2">
-                <Button variant="outline" className="w-full rounded-full h-11 text-destructive border-destructive/30" onClick={() => { logout(); onOpenChange(false); }}>
+              <div className="pt-1">
+                <Button variant="outline" className="h-10 w-full rounded-full border-destructive/30 text-destructive" onClick={() => { logout(); onOpenChange(false); }}>
                   <LogOut className="h-4 w-4 mr-2" />
                   Toka
                 </Button>
               </div>
             </div>
 
-            <CompanyProductsFooter />
-          </>
+            <div className="mt-auto">
+              <CompanyProductsFooter />
+            </div>
+          </div>
         )}
 
         {activeView === 'profile' && (

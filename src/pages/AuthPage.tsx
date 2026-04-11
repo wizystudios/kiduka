@@ -264,15 +264,15 @@ export const AuthPage = () => {
   }
 
   return (
-    <div className="h-screen bg-gradient-to-br from-primary/5 via-background to-secondary/10 flex flex-col items-center justify-center p-4 relative overflow-hidden">
+    <div className="h-[100dvh] max-h-[100dvh] bg-gradient-to-br from-primary/5 via-background to-secondary/10 flex flex-col items-center justify-center px-4 py-3 relative overflow-hidden">
       <FloatingCards />
       {/* Logo */}
-      <div className="mb-4">
+      <div className="mb-2 flex-shrink-0">
         <KidukaLogo size="lg" />
       </div>
 
       {/* Progress indicator */}
-      <div className="flex justify-center gap-2 mb-3">
+      <div className="mb-2 flex justify-center gap-2">
         {['identifier', 'password', ...(mode === 'signup' ? ['name'] : [])].map((s, i) => (
           <div 
             key={s} 
@@ -287,14 +287,14 @@ export const AuthPage = () => {
       <h1 className="text-xl font-bold text-foreground mb-1">
         {mode === 'signin' ? 'Karibu Tena' : 'Unda Akaunti'}
       </h1>
-      <p className="text-xs text-muted-foreground mb-4">
+      <p className="mb-2 text-xs text-muted-foreground">
         {step === 'identifier' && (authMethod === 'email' ? 'Barua pepe yako' : authMethod === 'phone' ? 'Namba ya simu yako' : 'Jina lako la akaunti')}
         {step === 'password' && 'Nywila yako'}
         {step === 'name' && 'Jina lako kamili'}
       </p>
 
       {/* Form Steps - free, no container */}
-      <div className="w-full max-w-sm space-y-4">
+      <div className="w-full max-w-sm space-y-3">
         {step === 'identifier' && (
           <>
             {authMethod === 'email' && (
@@ -307,7 +307,7 @@ export const AuthPage = () => {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     onKeyPress={(e) => e.key === 'Enter' && handleNextStep()}
-                    className={`pl-10 h-14 bg-transparent border-0 border-b-2 border-border rounded-none text-lg focus:ring-0 focus:border-primary focus-visible:ring-0 focus-visible:ring-offset-0 ${
+                    className={`pl-10 h-12 bg-transparent border-0 border-b-2 border-border rounded-none text-lg focus:ring-0 focus:border-primary focus-visible:ring-0 focus-visible:ring-offset-0 ${
                       email && !email.includes('@') ? 'border-destructive' : ''
                     }`}
                     autoFocus
@@ -329,7 +329,7 @@ export const AuthPage = () => {
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                     onKeyPress={(e) => e.key === 'Enter' && handleNextStep()}
-                    className={`pl-10 h-14 bg-transparent border-0 border-b-2 border-border rounded-none text-lg focus:ring-0 focus:border-primary focus-visible:ring-0 focus-visible:ring-offset-0 ${
+                    className={`pl-10 h-12 bg-transparent border-0 border-b-2 border-border rounded-none text-lg focus:ring-0 focus:border-primary focus-visible:ring-0 focus-visible:ring-offset-0 ${
                       phone && phone.length < 9 ? 'border-destructive' : ''
                     }`}
                     autoFocus
@@ -351,7 +351,7 @@ export const AuthPage = () => {
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
                     onKeyPress={(e) => e.key === 'Enter' && handleNextStep()}
-                    className="pl-10 h-14 bg-transparent border-0 border-b-2 border-border rounded-none text-lg focus:ring-0 focus:border-primary focus-visible:ring-0 focus-visible:ring-offset-0"
+                    className="pl-10 h-12 bg-transparent border-0 border-b-2 border-border rounded-none text-lg focus:ring-0 focus:border-primary focus-visible:ring-0 focus-visible:ring-offset-0"
                     autoFocus
                   />
                 </div>
@@ -393,7 +393,7 @@ export const AuthPage = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && handleNextStep()}
-                className={`pl-10 pr-10 h-14 bg-transparent border-0 border-b-2 border-border rounded-none text-lg focus:ring-0 focus:border-primary focus-visible:ring-0 focus-visible:ring-offset-0 ${
+                className={`pl-10 pr-10 h-12 bg-transparent border-0 border-b-2 border-border rounded-none text-lg focus:ring-0 focus:border-primary focus-visible:ring-0 focus-visible:ring-offset-0 ${
                   password && password.length < 8 ? 'border-destructive' : password.length >= 8 ? 'border-primary' : ''
                 }`}
                 autoFocus
@@ -415,7 +415,7 @@ export const AuthPage = () => {
             {mode === 'signup' && password.length > 0 && (() => {
               const p = checkPasswordPolicy(password);
               return (
-                <div className="p-3 bg-muted/50 rounded-2xl space-y-1 mt-2">
+                <div className="mt-1.5 space-y-1 rounded-2xl bg-muted/50 p-2.5">
                   <p className={`text-xs ${p.minLength ? 'text-primary' : 'text-muted-foreground'}`}>
                     {p.minLength ? '✓' : '○'} Angalau herufi 8
                   </p>
@@ -443,19 +443,19 @@ export const AuthPage = () => {
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && handleNextStep()}
-              className="pl-10 h-14 bg-transparent border-0 border-b-2 border-border rounded-none text-lg focus:ring-0 focus:border-primary focus-visible:ring-0 focus-visible:ring-offset-0"
+              className="pl-10 h-12 bg-transparent border-0 border-b-2 border-border rounded-none text-lg focus:ring-0 focus:border-primary focus-visible:ring-0 focus-visible:ring-offset-0"
               autoFocus
             />
           </div>
         )}
 
         {/* Navigation Buttons */}
-        <div className="flex gap-2 pt-4">
+        <div className="flex gap-2 pt-2">
           {step !== 'identifier' && (
             <Button
               type="button"
               variant="ghost"
-              className="h-12 px-4"
+              className="h-11 px-4"
               onClick={handleBack}
               disabled={loading}
             >
@@ -464,7 +464,7 @@ export const AuthPage = () => {
           )}
           <Button
             type="button"
-            className="flex-1 h-12 text-base font-medium"
+            className="h-11 flex-1 text-base font-medium"
             onClick={handleNextStep}
             disabled={loading}
           >
@@ -483,7 +483,7 @@ export const AuthPage = () => {
         <button
           type="button"
           onClick={() => navigate('/forgot-password')}
-          className="text-muted-foreground hover:text-primary text-sm mt-4 transition-colors"
+          className="mt-2 text-sm text-muted-foreground transition-colors hover:text-primary"
         >
           Umesahau nywila?
         </button>
@@ -493,7 +493,7 @@ export const AuthPage = () => {
       <button
         type="button"
         onClick={switchMode}
-        className="text-primary hover:underline text-sm mt-4"
+        className="mt-2 text-sm text-primary hover:underline"
       >
         {mode === 'signin' ? 'Unda akaunti mpya' : 'Tayari una akaunti? Ingia'}
       </button>
@@ -501,7 +501,7 @@ export const AuthPage = () => {
       {/* Sokoni Link */}
       <Link
         to="/sokoni"
-        className="flex items-center gap-2 text-muted-foreground hover:text-primary text-sm mt-4 transition-colors"
+        className="mt-2 flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-primary"
       >
         <Store className="h-4 w-4" />
         Tembelea Sokoni
