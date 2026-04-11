@@ -2,9 +2,9 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { KidukaLogo } from '@/components/KidukaLogo';
 import { ArrowRight } from 'lucide-react';
-import onboardingWelcome from '@/assets/onboarding-welcome.jpg';
-import onboardingScan from '@/assets/onboarding-scan.jpg';
-import onboardingReports from '@/assets/onboarding-reports.jpg';
+import onboardingWelcome from '@/assets/onboarding-welcome.mp4.asset.json';
+import onboardingScan from '@/assets/onboarding-scan.mp4.asset.json';
+import onboardingReports from '@/assets/onboarding-reports.mp4.asset.json';
 
 interface OnboardingPagesProps {
   onComplete: () => void;
@@ -17,17 +17,17 @@ export const OnboardingPages = ({ onComplete }: OnboardingPagesProps) => {
     {
       title: "Karibu Kiduka",
       subtitle: "Biashara Yako, Urahisi Wako",
-      image: onboardingWelcome,
+      video: onboardingWelcome.url,
     },
     {
       title: "Scan na Uuze",
       subtitle: "Scan barcode, ongeza stock, chakata mauzo moja kwa moja",
-      image: onboardingScan,
+      video: onboardingScan.url,
     },
     {
       title: "Ripoti za Kina",
       subtitle: "Fuatilia mauzo, stock na utendaji wa biashara yako",
-      image: onboardingReports,
+      video: onboardingReports.url,
     }
   ];
 
@@ -43,12 +43,16 @@ export const OnboardingPages = ({ onComplete }: OnboardingPagesProps) => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      {/* Image section - takes most of the screen */}
+      {/* Video section - takes most of the screen */}
       <div className="flex-1 relative overflow-hidden">
-        <img 
-          src={currentPageData.image} 
-          alt={currentPageData.title}
+        <video
+          key={currentPageData.video}
+          src={currentPageData.video}
           className="w-full h-full object-cover"
+          autoPlay
+          muted
+          loop
+          playsInline
         />
         {/* Gradient overlay at bottom */}
         <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-background to-transparent" />
