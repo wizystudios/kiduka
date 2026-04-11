@@ -53,7 +53,7 @@ const Index = () => {
       <FloatingCards />
 
       <div className="relative z-10 flex w-full max-w-sm flex-col items-center gap-4">
-        <KidukaLogo size="xl" animate />
+        <KidukaLogo size="xl" />
         
         <div className="text-center">
           <h1 className="text-2xl font-bold text-foreground">Karibu Kiduka</h1>

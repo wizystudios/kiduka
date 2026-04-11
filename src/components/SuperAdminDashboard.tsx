@@ -1119,30 +1119,30 @@ export const SuperAdminDashboard = () => {
       
       {/* Main Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid grid-cols-5 md:grid-cols-13 mb-4">
-          <TabsTrigger value="overview" className="text-xs">Overview</TabsTrigger>
-          <TabsTrigger value="analytics" className="text-xs">Analytics</TabsTrigger>
-          <TabsTrigger value="subscriptions" className="text-xs relative">
-            Usajili
-            {stats.pendingSubscriptions > 0 && (
-              <Badge className="absolute -top-1 -right-1 h-4 w-4 p-0 flex items-center justify-center text-[10px] bg-destructive">
-                {stats.pendingSubscriptions}
-              </Badge>
-            )}
-          </TabsTrigger>
-          <TabsTrigger value="compliance" className="text-xs">Sheria</TabsTrigger>
-          <TabsTrigger value="users" className="text-xs">Watumiaji</TabsTrigger>
-          <TabsTrigger value="activities" className="text-xs">Shughuli</TabsTrigger>
-          <TabsTrigger value="products" className="text-xs hidden md:block">Bidhaa</TabsTrigger>
-          <TabsTrigger value="sales" className="text-xs hidden md:block">Mauzo</TabsTrigger>
-          <TabsTrigger value="orders" className="text-xs hidden md:block">Oda</TabsTrigger>
-          <TabsTrigger value="marketplace" className="text-xs">
-            <Tag className="h-3 w-3 mr-1" /> Sokoni
-          </TabsTrigger>
-          <TabsTrigger value="ads" className="text-xs">Matangazo</TabsTrigger>
-          <TabsTrigger value="chat" className="text-xs">Mazungumzo</TabsTrigger>
-          <TabsTrigger value="more" className="text-xs">Zaidi</TabsTrigger>
-        </TabsList>
+        <ScrollArea className="w-full">
+          <TabsList className="inline-flex w-max gap-1 mb-4 p-1">
+            <TabsTrigger value="overview" className="text-xs px-3">Overview</TabsTrigger>
+            <TabsTrigger value="analytics" className="text-xs px-3">Analytics</TabsTrigger>
+            <TabsTrigger value="subscriptions" className="text-xs px-3 relative">
+              Usajili
+              {stats.pendingSubscriptions > 0 && (
+                <Badge className="absolute -top-1 -right-1 h-4 w-4 p-0 flex items-center justify-center text-[10px] bg-destructive">
+                  {stats.pendingSubscriptions}
+                </Badge>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="compliance" className="text-xs px-3">Sheria</TabsTrigger>
+            <TabsTrigger value="users" className="text-xs px-3">Watumiaji</TabsTrigger>
+            <TabsTrigger value="activities" className="text-xs px-3">Shughuli</TabsTrigger>
+            <TabsTrigger value="products" className="text-xs px-3">Bidhaa</TabsTrigger>
+            <TabsTrigger value="sales" className="text-xs px-3">Mauzo</TabsTrigger>
+            <TabsTrigger value="orders" className="text-xs px-3">Oda</TabsTrigger>
+            <TabsTrigger value="marketplace" className="text-xs px-3">Sokoni</TabsTrigger>
+            <TabsTrigger value="ads" className="text-xs px-3">Matangazo</TabsTrigger>
+            <TabsTrigger value="chat" className="text-xs px-3">Mazungumzo</TabsTrigger>
+            <TabsTrigger value="more" className="text-xs px-3">Zaidi</TabsTrigger>
+          </TabsList>
+        </ScrollArea>
         
         {/* Search */}
         {activeTab !== 'overview' && activeTab !== 'analytics' && activeTab !== 'subscriptions' && (
