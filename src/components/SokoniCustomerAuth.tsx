@@ -69,8 +69,8 @@ export const SokoniCustomerAuth = ({ open, onOpenChange, onSuccess }: SokoniCust
         return;
       }
     } else {
-      if (!pin || pin.length < 4) {
-        toast.error('Tafadhali ingiza nywila yako');
+      if (!pin || pin.length < 8) {
+        toast.error('Nywila lazima iwe angalau herufi 8');
         return;
       }
     }

@@ -283,7 +283,7 @@ export const AuthPage = () => {
 
       {/* Title - free, no container */}
       <h1 className="text-2xl font-bold text-foreground mb-2">
-        {mode === 'signin' ? 'Karibu Tena' : 'Jisajili'}
+        {mode === 'signin' ? 'Karibu Tena' : 'Unda Akaunti'}
       </h1>
       <p className="text-sm text-muted-foreground mb-8">
         {step === 'identifier' && (authMethod === 'email' ? 'Barua pepe yako' : authMethod === 'phone' ? 'Namba ya simu yako' : 'Jina lako la akaunti')}
