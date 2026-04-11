@@ -72,8 +72,7 @@ export const ScannerPage = () => {
     }, 400);
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
   }, [searchQuery, searchType]);
-
-
+  const handleSearchProduct = async (query: string) => {
     if (!query.trim()) {
       setSearchResults([]);
       return;
