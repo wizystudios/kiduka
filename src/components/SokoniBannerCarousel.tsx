@@ -4,6 +4,14 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import sokoniPromo1 from '@/assets/sokoni-promo-1.jpg';
 import sokoniPromo2 from '@/assets/sokoni-promo-2.jpg';
+import sokoniPromo3 from '@/assets/sokoni-promo-3.jpg';
+import sokoniPromo4 from '@/assets/sokoni-promo-4.jpg';
+import sokoniPromo5 from '@/assets/sokoni-promo-5.jpg';
+import sokoniPromo6 from '@/assets/sokoni-promo-6.jpg';
+import sokoniPromo7 from '@/assets/sokoni-promo-7.jpg';
+import sokoniPromo8 from '@/assets/sokoni-promo-8.jpg';
+import sokoniPromo9 from '@/assets/sokoni-promo-9.jpg';
+import sokoniPromo10 from '@/assets/sokoni-promo-10.jpg';
 
 interface BannerSlide {
   id: string;
@@ -37,6 +45,14 @@ export const SokoniBannerCarousel = ({ onBrowse }: SokoniBannerCarouselProps) =>
     const defaultSlides: BannerSlide[] = [
       { id: 'promo-1', media_url: sokoniPromo1, title: 'Kiduka - Simamia Biashara Yako', type: 'promo' },
       { id: 'promo-2', media_url: sokoniPromo2, title: 'Sokoni Marketplace', type: 'promo' },
+      { id: 'promo-3', media_url: sokoniPromo3, title: 'Bidhaa Bora kwa Bei Nafuu', type: 'promo' },
+      { id: 'promo-4', media_url: sokoniPromo4, title: 'Fuatilia Mauzo Yako', type: 'promo' },
+      { id: 'promo-5', media_url: sokoniPromo5, title: 'Uwasilishaji wa Haraka', type: 'promo' },
+      { id: 'promo-6', media_url: sokoniPromo6, title: 'Duka Lako Mtandaoni', type: 'promo' },
+      { id: 'promo-7', media_url: sokoniPromo7, title: 'Simamia Inventory', type: 'promo' },
+      { id: 'promo-8', media_url: sokoniPromo8, title: 'Punguzo Kubwa!', type: 'promo' },
+      { id: 'promo-9', media_url: sokoniPromo9, title: 'Tuzo za Uaminifu', type: 'promo' },
+      { id: 'promo-10', media_url: sokoniPromo10, title: 'Lipa kwa Simu', type: 'promo' },
     ];
 
     try {

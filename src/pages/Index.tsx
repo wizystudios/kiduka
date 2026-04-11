@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { OnboardingPages } from "@/components/OnboardingPages";
 import { KidukaLogo } from "@/components/KidukaLogo";
+import { FloatingCards } from "@/components/FloatingCards";
 import { Button } from "@/components/ui/button";
 import { LogIn, Store } from "lucide-react";
 
@@ -48,8 +49,10 @@ const Index = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-secondary/10 flex flex-col items-center justify-center p-6">
-      <div className="flex flex-col items-center gap-6 w-full max-w-sm">
+    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-secondary/10 flex flex-col items-center justify-center p-6 relative overflow-hidden">
+      <FloatingCards />
+
+      <div className="flex flex-col items-center gap-6 w-full max-w-sm relative z-10">
         <KidukaLogo size="xl" animate />
         
         <div className="text-center">
