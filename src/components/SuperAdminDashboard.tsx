@@ -29,6 +29,7 @@ import { AdminChatPanel } from './AdminChatPanel';
 import { AdminCompliancePanel } from './AdminCompliancePanel';
 import { AdminUserActivities } from './AdminUserActivities';
 import { AdminMarketplacePanel } from './AdminMarketplacePanel';
+import { AdminAdsPanel } from './AdminAdsPanel';
 
 interface User {
   id: string;
