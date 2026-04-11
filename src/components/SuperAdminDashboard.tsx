@@ -120,6 +120,14 @@ interface Subscription {
   created_at: string;
   user_email?: string;
   user_name?: string;
+  base_fee?: number;
+  assistant_count?: number;
+  has_sokoni?: boolean;
+  branch_count?: number;
+  calculated_fee?: number;
+  custom_fee?: number | null;
+  fee_breakdown?: any;
+  admin_fee_notes?: string;
 }
 
 export const SuperAdminDashboard = () => {
