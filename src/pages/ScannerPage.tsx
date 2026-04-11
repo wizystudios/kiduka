@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -61,8 +61,19 @@ export const ScannerPage = () => {
   const { toast } = useToast();
   const { user, userProfile } = useAuth();
   const { dataOwnerId, ownerBusinessName, loading: dataLoading } = useDataAccess();
+  const debounceRef = useRef<NodeJS.Timeout | null>(null);
 
-  const handleSearchProduct = async (query: string) => {
+  // Auto-search with debounce
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    if (!searchQuery.trim()) { setSearchResults([]); setScannedProduct(null); return; }
+    debounceRef.current = setTimeout(() => {
+      handleSearchProduct(searchQuery);
+    }, 400);
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+  }, [searchQuery, searchType]);
+
+
     if (!query.trim()) {
       setSearchResults([]);
       return;
@@ -307,7 +318,7 @@ export const ScannerPage = () => {
       }));
 
       setCompletedSale({
-        id: sale.id.slice(0, 8),
+        id: sale.id,
         items: receiptItems,
         subtotal: getSubtotal(),
         vatAmount: 0,
@@ -431,10 +442,6 @@ export const ScannerPage = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="space-y-4">
           <div className="space-y-4">
-              <div className="flex items-center gap-2 mb-1">
-                <Search className="h-5 w-5 text-primary" />
-                <h3 className="font-bold text-foreground">Tafuta Bidhaa</h3>
-              </div>
               <div className="flex space-x-2">
                 <Button
                   variant={searchType === "name" ? "default" : "outline"}
@@ -452,23 +459,17 @@ export const ScannerPage = () => {
                 </Button>
               </div>
 
-              <Input
-                placeholder={searchType === 'barcode' ? "Ingiza nambari ya barcode..." : "Andika jina la bidhaa..."}
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && handleSearchProduct(searchQuery)}
-                className="h-12 text-base"
-                autoFocus
-              />
               <div className="flex gap-2">
-                <Button 
-                  onClick={() => handleSearchProduct(searchQuery)}
-                  className="flex-1 h-12 text-base rounded-2xl"
-                  disabled={!searchQuery || loading}
-                >
-                  <Search className="h-5 w-5 mr-2" />
-                  {loading ? 'Inatafuta...' : 'Tafuta'}
-                </Button>
+                <Input
+                  placeholder={searchType === 'barcode' ? "Ingiza nambari ya barcode..." : "Andika jina la bidhaa..."}
+                  value={searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    handleSearchProduct(e.target.value);
+                  }}
+                  className="h-12 text-base flex-1"
+                  autoFocus
+                />
                 {searchType === 'barcode' && (
                   <Button 
                     onClick={() => setShowCamera(true)}

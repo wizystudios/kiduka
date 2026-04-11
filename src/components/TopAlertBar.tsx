@@ -51,7 +51,7 @@ export const TopAlertBar = () => {
       key: 'location',
       icon: <MapPin className="h-3 w-3" />,
       text: 'Weka eneo lako',
-      action: () => navigate('/dashboard?focus=location'),
+      action: () => navigate('/settings?tab=profile&focus=location'),
     });
   }
 

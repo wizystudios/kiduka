@@ -68,7 +68,7 @@ export const LocationSetupGate = ({ children }: { children: React.ReactNode }) =
     street: '',
   });
 
-  // Open dialog when focus=location param is present
+  // Open dialog when focus=location param is present (from any page)
   useEffect(() => {
     if (searchParams.get('focus') === 'location' && user && userProfile && !userProfile.location_set) {
       setOpen(true);

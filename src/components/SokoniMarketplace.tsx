@@ -971,48 +971,110 @@ export const SokoniMarketplace = () => {
               <h3 className="text-lg font-semibold mb-2 text-foreground">Hakuna maduka</h3>
             </div>
           ) : (
-            <div className="space-y-4">
-              {Object.entries(productsBySeller).map(([sellerId, { seller, products: sellerProducts }]) => (
-                <Card key={sellerId} className="overflow-hidden">
-                  <CardContent className="p-4">
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-                        <Store className="h-6 w-6 text-primary" />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {Object.entries(productsBySeller).map(([sellerId, { seller, products: sellerProducts }]) => {
+                const storeSlug = seller.business_name?.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+                const uniqueCategories = [...new Set(sellerProducts.map(p => p.category).filter(Boolean))];
+                const avgPrice = Math.round(sellerProducts.reduce((s, p) => s + p.price, 0) / sellerProducts.length);
+                
+                return (
+                  <Card 
+                    key={sellerId} 
+                    className="overflow-hidden cursor-pointer hover:shadow-xl transition-all duration-300 rounded-3xl border-0 bg-card group"
+                    onClick={() => {
+                      if (storeSlug) navigate(`/duka/${storeSlug}`);
+                    }}
+                  >
+                    {/* Store banner with gradient */}
+                    <div className="h-24 bg-gradient-to-br from-primary/80 to-primary flex items-end p-3 relative overflow-hidden">
+                      <div className="absolute inset-0 opacity-10">
+                        {sellerProducts[0]?.image_url && (
+                          <img src={sellerProducts[0].image_url} alt="" className="w-full h-full object-cover blur-sm" />
+                        )}
                       </div>
-                      <div>
-                        <h3 className="font-semibold">{seller.business_name || 'Duka'}</h3>
-                        <p className="text-xs text-muted-foreground">{sellerProducts.length} bidhaa</p>
+                      <div className="relative z-10 flex items-center gap-3 w-full">
+                        <div className="h-14 w-14 rounded-2xl bg-background flex items-center justify-center shadow-lg flex-shrink-0">
+                          <Store className="h-7 w-7 text-primary" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <h3 className="font-bold text-primary-foreground truncate text-sm">{seller.business_name || 'Duka'}</h3>
+                          {seller.region && (
+                            <p className="text-xs text-primary-foreground/80 flex items-center gap-1 truncate">
+                              <MapPin className="h-3 w-3 flex-shrink-0" />
+                              {seller.district ? `${seller.district}, ` : ''}{seller.region}
+                            </p>
+                          )}
+                        </div>
                       </div>
                     </div>
                     
-                    <div className="flex gap-2 overflow-x-auto pb-2">
-                      {sellerProducts.slice(0, 4).map(product => (
-                        <div 
-                          key={product.id} 
-                          className="flex-shrink-0 w-24 cursor-pointer"
-                          onClick={() => openProductDetail(product)}
-                        >
-                          <div className="aspect-square bg-muted rounded-md flex items-center justify-center overflow-hidden">
-                            {product.image_url ? (
-                              <img 
-                                src={product.image_url} 
-                                alt={product.name}
-                                className="w-full h-full object-cover"
-                              />
-                            ) : (
-                              <Package className="h-6 w-6 text-muted-foreground/50" />
-                            )}
-                          </div>
-                          <p className="text-xs mt-1 line-clamp-1">{product.name}</p>
-                          <p className="text-xs font-semibold text-primary">
-                            TSh {product.price.toLocaleString()}
-                          </p>
+                    <CardContent className="p-3 space-y-2">
+                      {/* Stats */}
+                      <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                        <span className="flex items-center gap-1">
+                          <Package className="h-3 w-3" />
+                          {sellerProducts.length} bidhaa
+                        </span>
+                        <span>~TSh {avgPrice.toLocaleString()}</span>
+                        {userRegion && seller.region === userRegion && (
+                          <Badge className="text-[10px] px-1.5 py-0 bg-green-100 text-green-700 border-0 ml-auto">Karibu nawe</Badge>
+                        )}
+                      </div>
+
+                      {/* Categories */}
+                      {uniqueCategories.length > 0 && (
+                        <div className="flex flex-wrap gap-1">
+                          {uniqueCategories.slice(0, 3).map(cat => (
+                            <Badge key={cat} variant="outline" className="text-[10px] rounded-full">
+                              {getCategoryIcon(cat!)} {cat}
+                            </Badge>
+                          ))}
+                          {uniqueCategories.length > 3 && (
+                            <Badge variant="outline" className="text-[10px] rounded-full">+{uniqueCategories.length - 3}</Badge>
+                          )}
                         </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                      )}
+                      
+                      {/* Product preview row */}
+                      <div className="flex gap-1.5 overflow-hidden">
+                        {sellerProducts.slice(0, 4).map(product => (
+                          <div key={product.id} className="flex-shrink-0 w-14">
+                            <div className="aspect-square bg-muted rounded-xl overflow-hidden">
+                              {product.image_url ? (
+                                <img src={product.image_url} alt={product.name} className="w-full h-full object-cover" />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center">
+                                  <Package className="h-4 w-4 text-muted-foreground/30" />
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                        {sellerProducts.length > 4 && (
+                          <div className="flex-shrink-0 w-14">
+                            <div className="aspect-square bg-muted rounded-xl flex items-center justify-center">
+                              <span className="text-xs font-medium text-muted-foreground">+{sellerProducts.length - 4}</span>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                      
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="w-full rounded-full text-xs group-hover:bg-primary group-hover:text-primary-foreground transition-colors"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (storeSlug) navigate(`/duka/${storeSlug}`);
+                        }}
+                      >
+                        Tembelea Duka
+                        <ChevronRight className="h-3 w-3 ml-1" />
+                      </Button>
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
           )}
         </TabsContent>

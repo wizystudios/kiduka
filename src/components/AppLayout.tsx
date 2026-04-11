@@ -33,7 +33,13 @@ export function AppLayout({ children }: AppLayoutProps) {
         <SidebarInset className="flex-1">
           {/* Desktop header with sidebar toggle + alerts + notification */}
           <header className="hidden md:flex h-10 items-center border-b border-border/40 px-2 gap-2">
-            <SidebarTrigger className="h-8 w-8" />
+            <SidebarTrigger className="h-8 w-8 [&>svg]:hidden">
+              <div className="flex flex-col gap-[3px]">
+                <span className="block w-4 h-[2px] bg-foreground rounded-full" />
+                <span className="block w-3 h-[2px] bg-foreground rounded-full" />
+                <span className="block w-4 h-[2px] bg-foreground rounded-full" />
+              </div>
+            </SidebarTrigger>
             <TopAlertBar />
             <Button variant="ghost" size="sm" className="relative p-1.5 h-8 w-8 ml-auto" onClick={() => navigate('/notifications')}>
               <Bell className="h-4 w-4" />
