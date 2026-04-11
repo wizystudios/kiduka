@@ -35,115 +35,61 @@ export const EmailConfirmationPage = ({ email, onBackToSignUp }: EmailConfirmati
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 flex items-center justify-center p-4">
-      <Card className="w-full max-w-lg shadow-2xl border-0 bg-white/95 backdrop-blur-sm">
-        <CardHeader className="text-center pb-2">
-          <div className="flex justify-center mb-6 relative">
-            <div className="relative">
-              <div className="absolute inset-0 bg-blue-500 rounded-full animate-ping opacity-20"></div>
-              <div className="relative bg-gradient-to-r from-blue-500 to-purple-600 p-4 rounded-full">
-                <Mail className="h-12 w-12 text-white" />
-              </div>
+    <div className="flex h-[100dvh] max-h-[100dvh] items-center justify-center overflow-hidden bg-gradient-to-br from-primary/5 via-background to-secondary/10 p-3">
+      <Card className="w-full max-w-md border border-border/40 bg-card/95 shadow-xl backdrop-blur-sm">
+        <CardHeader className="space-y-3 pb-2 text-center">
+          <div className="relative flex justify-center">
+            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
+              <Mail className="h-7 w-7 text-primary" />
             </div>
-            <div className="absolute -top-2 -right-2 bg-green-500 p-2 rounded-full">
-              <CheckCircle className="h-6 w-6 text-white" />
+            <div className="absolute right-[calc(50%-2rem)] top-0 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-primary-foreground">
+              <CheckCircle className="h-3.5 w-3.5" />
             </div>
           </div>
-          
-          <CardTitle className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-2">
-            Kagua Barua Pepe Yako!
-          </CardTitle>
-          
-          <div className="bg-blue-50 rounded-lg p-4 mb-4">
-            <p className="text-gray-700 text-lg">
-              Tumekutumia kiungo cha uthibitisho kwenye:
-            </p>
-            <p className="font-semibold text-blue-600 text-lg mt-1 break-all">
-              {email}
-            </p>
+
+          <div className="space-y-1">
+            <CardTitle className="text-2xl font-bold text-foreground">Kagua Barua Pepe Yako</CardTitle>
+            <div className="rounded-2xl bg-muted/50 p-3">
+              <p className="text-sm text-muted-foreground">Tumetuma kiungo cha uthibitisho kwenye:</p>
+              <p className="mt-1 break-all text-sm font-semibold text-foreground">{email}</p>
+            </div>
           </div>
         </CardHeader>
-        
-        <CardContent className="space-y-6">
-          {/* Steps */}
-          <div className="space-y-4">
-            <div className="flex items-start space-x-4 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg">
-              <div className="bg-blue-500 text-white rounded-full p-2 flex-shrink-0">
-                <span className="text-sm font-bold">1</span>
+
+        <CardContent className="space-y-3">
+          <div className="grid gap-2">
+            {[
+              ['1', 'Fungua inbox au spam yako'],
+              ['2', 'Bonyeza kiungo cha uthibitisho'],
+              ['3', 'Rudi uanze kutumia Kiduka'],
+            ].map(([step, text]) => (
+              <div key={step} className="flex items-center gap-3 rounded-xl bg-muted/40 p-2.5">
+                <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
+                  {step}
+                </div>
+                <p className="text-sm text-foreground">{text}</p>
               </div>
-              <div>
-                <h4 className="font-semibold text-gray-800">Fungua Barua Pepe Yako</h4>
-                <p className="text-sm text-gray-600">Angalia sanduku lako la barua pepe au spam folder</p>
-              </div>
-            </div>
-            
-            <div className="flex items-start space-x-4 p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg">
-              <div className="bg-purple-500 text-white rounded-full p-2 flex-shrink-0">
-                <span className="text-sm font-bold">2</span>
-              </div>
-              <div>
-                <h4 className="font-semibold text-gray-800">Bonyeza Kiungo</h4>
-                <p className="text-sm text-gray-600">Bonyeza kiungo cha "Thibitisha Akaunti Yako"</p>
-              </div>
-            </div>
-            
-            <div className="flex items-start space-x-4 p-4 bg-gradient-to-r from-pink-50 to-blue-50 rounded-lg">
-              <div className="bg-pink-500 text-white rounded-full p-2 flex-shrink-0">
-                <span className="text-sm font-bold">3</span>
-              </div>
-              <div>
-                <h4 className="font-semibold text-gray-800">Anza Kutumia Kiduka</h4>
-                <p className="text-sm text-gray-600">Utaelekezwa kwenye akaunti yako moja kwa moja</p>
-              </div>
-            </div>
+            ))}
           </div>
 
-          {/* Waiting indicator */}
-          <div className="flex items-center justify-center space-x-2 py-4">
-            <Clock className="h-5 w-5 text-blue-500 animate-pulse" />
-            <span className="text-gray-600">Tunasubiri uthibitisho wako...</span>
+          <div className="flex items-center justify-center gap-2 py-1 text-sm text-muted-foreground">
+            <Clock className="h-4 w-4 animate-pulse text-primary" />
+            <span>Tunasubiri uthibitisho wako...</span>
           </div>
 
-          {/* Action buttons */}
-          <div className="space-y-3">
-            <Button 
-              onClick={handleResendEmail}
-              disabled={isResending}
-              className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white py-3 rounded-lg font-semibold transition-all duration-300 transform hover:scale-105"
-            >
-              {isResending ? (
-                <div className="flex items-center space-x-2">
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                  <span>Inatuma...</span>
-                </div>
-              ) : (
-                <div className="flex items-center space-x-2">
-                  <Mail className="h-4 w-4" />
-                  <span>Tuma Tena Barua Pepe</span>
-                </div>
-              )}
+          <div className="space-y-2">
+            <Button onClick={handleResendEmail} disabled={isResending} className="h-11 w-full rounded-full font-semibold">
+              {isResending ? 'Inatuma...' : 'Tuma Tena Barua Pepe'}
             </Button>
-            
-            <Button 
-              variant="outline" 
-              onClick={onBackToSignUp}
-              className="w-full border-2 border-gray-300 hover:border-blue-500 py-3 rounded-lg font-semibold transition-all duration-300"
-            >
-              <ArrowRight className="h-4 w-4 mr-2 rotate-180" />
+
+            <Button variant="outline" onClick={onBackToSignUp} className="h-11 w-full rounded-full font-semibold">
+              <ArrowRight className="mr-2 h-4 w-4 rotate-180" />
               Rudi Nyuma
             </Button>
           </div>
 
-          {/* Help text */}
-          <div className="text-center text-sm text-gray-500 bg-gray-50 p-4 rounded-lg">
-            <p className="mb-2">
-              <strong>Je, haulioni barua pepe?</strong>
-            </p>
-            <ul className="text-xs space-y-1">
-              <li>• Angalia spam/junk folder yako</li>
-              <li>• Hakikisha umeweka barua pepe sahihi</li>
-              <li>• Subiri dakika chache kisha ujaribu tena</li>
-            </ul>
+          <div className="rounded-2xl bg-muted/40 p-3 text-center text-[11px] text-muted-foreground">
+            Angalia spam folder, hakikisha barua pepe ni sahihi, kisha jaribu tena baada ya dakika chache.
           </div>
         </CardContent>
       </Card>

@@ -35,14 +35,14 @@ export const ForgotPasswordPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-secondary/10 flex flex-col items-center justify-center p-6">
+    <div className="flex h-[100dvh] max-h-[100dvh] flex-col items-center justify-center overflow-hidden bg-gradient-to-br from-primary/5 via-background to-secondary/10 px-6 py-4">
       {/* Logo */}
-      <div className="mb-8">
+      <div className="mb-4">
         <KidukaLogo size="lg" />
       </div>
 
       {/* Icon */}
-      <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+      <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
         {sent ? (
           <CheckCircle className="h-8 w-8 text-primary" />
         ) : (
@@ -54,14 +54,14 @@ export const ForgotPasswordPage = () => {
       <h1 className="text-2xl font-bold text-foreground mb-2">
         {sent ? 'Angalia Barua Pepe' : 'Sahau Nywila?'}
       </h1>
-      <p className="text-sm text-muted-foreground mb-8 text-center max-w-xs">
+      <p className="mb-5 max-w-xs text-center text-sm text-muted-foreground">
         {sent
           ? `Kiungo cha kubadilisha nywila kimetumwa kwenye ${email}. Angalia inbox yako.`
           : 'Ingiza barua pepe yako na tutakutumia kiungo cha kubadilisha nywila'}
       </p>
 
       {/* Form */}
-      <div className="w-full max-w-sm space-y-4">
+      <div className="w-full max-w-sm space-y-3">
         {!sent ? (
           <>
             <div className="relative">
@@ -72,7 +72,7 @@ export const ForgotPasswordPage = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && handleSend()}
-                className="pl-10 h-14 bg-transparent border-0 border-b-2 border-border rounded-none text-lg focus:ring-0 focus:border-primary focus-visible:ring-0 focus-visible:ring-offset-0"
+                className="pl-10 h-12 bg-transparent border-0 border-b-2 border-border rounded-none text-lg focus:ring-0 focus:border-primary focus-visible:ring-0 focus-visible:ring-offset-0"
                 autoFocus
               />
             </div>
@@ -80,7 +80,7 @@ export const ForgotPasswordPage = () => {
             <Button
               onClick={handleSend}
               disabled={loading || !email}
-              className="w-full h-12 text-base font-medium"
+              className="h-11 w-full text-base font-medium"
             >
               {loading ? 'Inatuma...' : 'Tuma Kiungo'}
             </Button>
@@ -88,7 +88,7 @@ export const ForgotPasswordPage = () => {
         ) : (
           <Button
             onClick={() => navigate('/auth')}
-            className="w-full h-12 text-base font-medium"
+            className="h-11 w-full text-base font-medium"
           >
             Rudi Kuingia
           </Button>
@@ -100,7 +100,7 @@ export const ForgotPasswordPage = () => {
         <button
           type="button"
           onClick={() => navigate('/auth')}
-          className="flex items-center gap-2 text-muted-foreground hover:text-primary text-sm mt-6 transition-colors"
+          className="mt-4 flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-primary"
         >
           <ArrowLeft className="h-4 w-4" />
           Rudi kwenye kuingia
