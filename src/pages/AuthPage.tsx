@@ -4,6 +4,7 @@ import { Navigate, Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { KidukaLogo } from '@/components/KidukaLogo';
+import { FloatingCards } from '@/components/FloatingCards';
 import { Mail, Lock, User, Eye, EyeOff, Phone, ArrowRight, ArrowLeft, Store } from 'lucide-react';
 import { toast } from 'sonner';
 import { EmailConfirmationPage } from '@/components/EmailConfirmationPage';
@@ -263,7 +264,8 @@ export const AuthPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-secondary/10 flex flex-col items-center justify-center p-6">
+    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-secondary/10 flex flex-col items-center justify-center p-6 relative overflow-hidden">
+      <FloatingCards />
       {/* Logo */}
       <div className="mb-8">
         <KidukaLogo size="lg" />
