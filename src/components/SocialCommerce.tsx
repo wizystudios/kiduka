@@ -190,11 +190,11 @@ export const SocialCommerce = () => {
     const baseContent = `🛍️ ${product.name}\n💰 Bei: TZS ${product.price.toLocaleString()}\n\n${product.description || 'Bidhaa nzuri sana!'}\n\n`;
     
     const hashtags = {
-      instagram: '#biashara #maduka #ununuzi #Tanzania #KidukaPOS #kusibishaonline #bidhaa',
+      instagram: '#biashara #maduka #ununuzi #Tanzania #Kiduka #kusibishaonline #bidhaa',
       facebook: '#biashara #maduka #ununuzi #Tanzania',
-      tiktok: '#biashara #maduka #ununuzi #Tanzania #KidukaPOS #viral #trend',
+      tiktok: '#biashara #maduka #ununuzi #Tanzania #Kiduka #viral #trend',
       whatsapp: '',
-      twitter: '#biashara #maduka #ununuzi #Tanzania #KidukaPOS'
+      twitter: '#biashara #maduka #ununuzi #Tanzania #Kiduka'
     };
 
     return baseContent + (hashtags[platform as keyof typeof hashtags] || '');
