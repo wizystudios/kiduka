@@ -19,14 +19,14 @@ export const KidukaLogo = ({ size = 'md', showText = true, animate = false }: Ki
     sm: 'w-9 h-9',
     md: 'w-12 h-12',
     lg: 'w-16 h-16',
-    xl: 'w-22 h-22'
+    xl: 'w-20 h-20'
   };
 
   const innerSizes = {
     sm: 'w-6 h-6',
     md: 'w-8 h-8',
     lg: 'w-11 h-11',
-    xl: 'w-15 h-15'
+    xl: 'w-14 h-14'
   };
 
   const dotSizes = {
