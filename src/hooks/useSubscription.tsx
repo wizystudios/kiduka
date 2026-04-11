@@ -10,6 +10,13 @@ interface SubscriptionStatus {
   days_remaining: number;
   is_active: boolean;
   requires_payment: boolean;
+  payment_amount?: number;
+  fee_breakdown?: any;
+  calculated_fee?: number;
+  custom_fee?: number;
+  assistant_count?: number;
+  has_sokoni?: boolean;
+  branch_count?: number;
 }
 
 export const useSubscription = () => {
