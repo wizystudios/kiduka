@@ -125,11 +125,13 @@ export const VoicePOS = () => {
   }, [toast]);
 
   const rememberConversation = useCallback((command: string, reply: string) => {
-    conversationHistoryRef.current = [
+    const nextHistory: VoiceAssistantMessage[] = [
       ...conversationHistoryRef.current,
-      { role: 'user', content: command },
-      { role: 'assistant', content: reply },
+      { role: 'user' as const, content: command },
+      { role: 'assistant' as const, content: reply },
     ].slice(-12);
+
+    conversationHistoryRef.current = nextHistory;
   }, []);
 
   const askVoiceAssistant = useCallback(async (command: string): Promise<VoiceAssistantFunctionResult | null> => {
