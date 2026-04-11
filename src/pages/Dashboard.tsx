@@ -65,9 +65,9 @@ export const Dashboard = () => {
   );
 
   return (
-    <div className="px-4 pt-4 pb-20 space-y-4">
+    <div className="px-4 pt-3 pb-16 space-y-3">
       {/* Hero Sales Section - centered, no box */}
-      <div className="text-center pt-2">
+      <div className="text-center pt-1">
         <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Mauzo Leo</p>
         <p className="text-3xl font-black text-foreground tracking-tight">
           TZS {metrics.todaysSales.toLocaleString()}
@@ -78,7 +78,7 @@ export const Dashboard = () => {
       </div>
 
       {/* Key stats - flat, no containers, centered row */}
-      <div className="flex items-center justify-around py-3 border-y border-border/50">
+      <div className="flex items-center justify-around py-2.5 border-y border-border/50">
         <button onClick={() => navigate('/sokoni-orders')} className="text-center space-y-0.5">
           <Store className="h-4 w-4 mx-auto text-primary" />
           <p className="text-lg font-bold text-foreground">{metrics.pendingSokoniOrders}</p>
@@ -108,10 +108,10 @@ export const Dashboard = () => {
         <DebtorsWidget />
       </div>
 
-      {/* Ad Carousel */}
-      <DashboardAdCarousel />
+      <div className="pt-0.5">
+        <DashboardAdCarousel />
+      </div>
 
-      {/* Ad Banner */}
       <AdBanner location="kiduka" />
     </div>
   );
