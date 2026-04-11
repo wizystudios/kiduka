@@ -1654,7 +1654,11 @@ export const SuperAdminDashboard = () => {
           <AdminMarketplacePanel />
         </TabsContent>
 
-        {/* Chat Tab */}
+        {/* Ads Management Tab */}
+        <TabsContent value="ads" className="space-y-4">
+          <AdminAdsPanel />
+        </TabsContent>
+
         <TabsContent value="chat" className="space-y-4">
           <AdminChatPanel />
         </TabsContent>
