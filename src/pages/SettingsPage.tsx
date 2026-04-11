@@ -9,6 +9,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { SokoniOrderNotificationSettings } from '@/components/SokoniOrderNotificationSettings';
+import { CompanyProductsFooter } from '@/components/CompanyProductsFooter';
 
 export const SettingsPage = () => {
   const { user, userProfile, updateProfile, loading } = useAuth();
@@ -210,6 +211,8 @@ export const SettingsPage = () => {
       </div>
 
       <SokoniOrderNotificationSettings />
+
+      <CompanyProductsFooter />
     </div>
   );
 };
