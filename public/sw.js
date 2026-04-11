@@ -1,19 +1,18 @@
 
-const CACHE_NAME = 'kiduka-pos-v2';
-const STATIC_CACHE = 'kiduka-static-v2';
-const DYNAMIC_CACHE = 'kiduka-dynamic-v2';
-const IMAGES_CACHE = 'kiduka-images-v2';
+const CACHE_VERSION = 'v3';
+const CACHE_NAME = `kiduka-pos-${CACHE_VERSION}`;
+const STATIC_CACHE = `kiduka-static-${CACHE_VERSION}`;
+const DYNAMIC_CACHE = `kiduka-dynamic-${CACHE_VERSION}`;
+const IMAGES_CACHE = `kiduka-images-${CACHE_VERSION}`;
 
-// Enhanced static assets to cache
 const STATIC_ASSETS = [
   '/',
-  '/static/js/bundle.js',
-  '/static/css/main.css',
   '/manifest.json',
   '/placeholder.svg',
-  // Add offline page
   '/offline.html'
 ];
+
+const DEV_RESOURCE_PATTERNS = ['/src/', '/@vite/', '/node_modules/.vite/'];
 
 // Critical API endpoints for offline functionality
 const CRITICAL_APIS = [
@@ -103,30 +102,39 @@ self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
-  // Skip non-HTTP requests
   if (!request.url.startsWith('http')) {
     return;
   }
 
-  // Handle API requests
+  const shouldBypassCache =
+    request.method !== 'GET' ||
+    request.destination === 'script' ||
+    request.destination === 'style' ||
+    request.destination === 'worker' ||
+    DEV_RESOURCE_PATTERNS.some((pattern) => url.pathname.startsWith(pattern)) ||
+    url.searchParams.has('v') ||
+    url.searchParams.has('t');
+
+  if (shouldBypassCache) {
+    event.respondWith(fetch(request));
+    return;
+  }
+
   if (url.pathname.startsWith('/api/')) {
     event.respondWith(handleApiRequest(request));
     return;
   }
 
-  // Handle images
   if (request.destination === 'image') {
     event.respondWith(handleImageRequest(request));
     return;
   }
 
-  // Handle navigation requests
   if (request.destination === 'document' || request.mode === 'navigate') {
     event.respondWith(handleNavigationRequest(request));
     return;
   }
 
-  // Handle other resources (CSS, JS, etc.)
   event.respondWith(handleResourceRequest(request));
 });
 
