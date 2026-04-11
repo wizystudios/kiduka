@@ -431,10 +431,6 @@ export const ScannerPage = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="space-y-4">
           <div className="space-y-4">
-              <div className="flex items-center gap-2 mb-1">
-                <Search className="h-5 w-5 text-primary" />
-                <h3 className="font-bold text-foreground">Tafuta Bidhaa</h3>
-              </div>
               <div className="flex space-x-2">
                 <Button
                   variant={searchType === "name" ? "default" : "outline"}
@@ -452,23 +448,17 @@ export const ScannerPage = () => {
                 </Button>
               </div>
 
-              <Input
-                placeholder={searchType === 'barcode' ? "Ingiza nambari ya barcode..." : "Andika jina la bidhaa..."}
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && handleSearchProduct(searchQuery)}
-                className="h-12 text-base"
-                autoFocus
-              />
               <div className="flex gap-2">
-                <Button 
-                  onClick={() => handleSearchProduct(searchQuery)}
-                  className="flex-1 h-12 text-base rounded-2xl"
-                  disabled={!searchQuery || loading}
-                >
-                  <Search className="h-5 w-5 mr-2" />
-                  {loading ? 'Inatafuta...' : 'Tafuta'}
-                </Button>
+                <Input
+                  placeholder={searchType === 'barcode' ? "Ingiza nambari ya barcode..." : "Andika jina la bidhaa..."}
+                  value={searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    handleSearchProduct(e.target.value);
+                  }}
+                  className="h-12 text-base flex-1"
+                  autoFocus
+                />
                 {searchType === 'barcode' && (
                   <Button 
                     onClick={() => setShowCamera(true)}

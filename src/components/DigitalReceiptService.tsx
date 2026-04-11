@@ -146,6 +146,7 @@ Powered by Kiduka POS
   };
 
   const generateQRCode = () => {
+    // Use full sale ID for the receipt URL
     const receiptUrl = `${window.location.origin}/receipt/${receiptData.transactionId}`;
     setQrCodeData(receiptUrl);
     
@@ -174,6 +175,28 @@ Powered by Kiduka POS
     }
   };
 
+  const sendWhatsAppReceipt = () => {
+    const phoneToValidate = customerPhone.trim();
+    if (!phoneToValidate) {
+      toast({
+        title: 'Namba ya Simu Inahitajika',
+        description: 'Tafadhali ingiza namba ya simu ya mteja',
+        variant: 'destructive'
+      });
+      return;
+    }
+    
+    const receiptText = generateReceiptSummary();
+    const encodedMsg = encodeURIComponent(receiptText);
+    // Normalize phone for wa.me
+    let waPhone = phoneToValidate.replace(/[^\d]/g, '');
+    if (waPhone.startsWith('0') && waPhone.length === 10) waPhone = '255' + waPhone.slice(1);
+    if (waPhone.length === 9) waPhone = '255' + waPhone;
+    
+    window.open(`https://wa.me/${waPhone}?text=${encodedMsg}`, '_blank');
+    toast({ title: 'WhatsApp imefunguliwa', description: 'Tuma risiti kupitia WhatsApp' });
+  };
+
   const downloadReceipt = () => {
     const receiptContent = generateReceiptSummary();
     const blob = new Blob([receiptContent], { type: 'text/plain' });
@@ -195,21 +218,29 @@ Powered by Kiduka POS
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Method Selection */}
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-3 gap-2">
           <Button
             variant={sendingMethod === 'sms' ? 'default' : 'outline'}
             onClick={() => setSendingMethod('sms')}
-            className="flex items-center"
+            className="flex items-center text-xs"
           >
-            <Phone className="h-4 w-4 mr-2" />
+            <Phone className="h-4 w-4 mr-1" />
             SMS
+          </Button>
+          <Button
+            variant={sendingMethod === 'whatsapp' as any ? 'default' : 'outline'}
+            onClick={() => setSendingMethod('whatsapp' as any)}
+            className="flex items-center text-xs"
+          >
+            <MessageSquare className="h-4 w-4 mr-1" />
+            WhatsApp
           </Button>
           <Button
             variant={sendingMethod === 'qr' ? 'default' : 'outline'}
             onClick={() => setSendingMethod('qr')}
-            className="flex items-center"
+            className="flex items-center text-xs"
           >
-            <QrCode className="h-4 w-4 mr-2" />
+            <QrCode className="h-4 w-4 mr-1" />
             QR Code
           </Button>
         </div>
