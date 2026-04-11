@@ -187,7 +187,7 @@ export const AuthPage = () => {
       return;
     }
     if (password.length < 6) {
-      toast.error('Nywila lazima iwe angalau herufi 6');
+      toast.error('Nywila lazima iwe angalau herufi 8');
       return;
     }
 
@@ -286,9 +286,9 @@ export const AuthPage = () => {
         {mode === 'signin' ? 'Karibu Tena' : 'Jisajili'}
       </h1>
       <p className="text-sm text-muted-foreground mb-8">
-        {step === 'identifier' && (authMethod === 'email' ? 'Ingiza barua pepe yako' : authMethod === 'phone' ? 'Ingiza namba ya simu yako' : 'Ingiza jina lako la akaunti')}
-        {step === 'password' && 'Ingiza nywila yako'}
-        {step === 'name' && 'Ingiza jina lako'}
+        {step === 'identifier' && (authMethod === 'email' ? 'Barua pepe yako' : authMethod === 'phone' ? 'Namba ya simu yako' : 'Jina lako la akaunti')}
+        {step === 'password' && 'Nywila yako'}
+        {step === 'name' && 'Jina lako kamili'}
       </p>
 
       {/* Form Steps - free, no container */}
