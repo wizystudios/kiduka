@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -62,11 +63,29 @@ export const ScannerPage = () => {
   const { user, userProfile } = useAuth();
   const { dataOwnerId, ownerBusinessName, loading: dataLoading } = useDataAccess();
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
+  const location = useLocation();
+  const skipNextSearchRef = useRef(false);
+
+  // Handle product passed from ProductsPage "Uza" button
+  useEffect(() => {
+    const incoming = (location.state as any)?.selectedProduct;
+    if (incoming) {
+      setScannedProduct(incoming);
+      setSearchResults([]);
+      setSearchQuery('');
+      // clear router state so refresh doesn't re-trigger
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state]);
 
   // Auto-search with debounce
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
-    if (!searchQuery.trim()) { setSearchResults([]); setScannedProduct(null); return; }
+    if (skipNextSearchRef.current) {
+      skipNextSearchRef.current = false;
+      return;
+    }
+    if (!searchQuery.trim()) { setSearchResults([]); return; }
     debounceRef.current = setTimeout(() => {
       handleSearchProduct(searchQuery);
     }, 400);
@@ -170,6 +189,7 @@ export const ScannerPage = () => {
   };
 
   const selectProduct = (product: Product) => {
+    skipNextSearchRef.current = true;
     setScannedProduct(product);
     setSearchResults([]);
     setSearchQuery('');
