@@ -251,34 +251,39 @@ export const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
 
   const signIn = async (email: string, password: string) => {
     try {
-      cleanupAuthState();
-      try {
-        await supabase.auth.signOut({ scope: 'global' });
-      } catch (err) {
-        // ignore
-      }
-
+      // Attempt sign-in directly. Don't pre-clear or pre-signout (causes "Failed to fetch" race).
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
-      
+
       if (error) {
-        if (error.message.includes('Invalid login credentials')) {
+        const msg = error.message || '';
+        if (msg.includes('Invalid login credentials') || msg.toLowerCase().includes('invalid')) {
           throw new Error('Barua pepe au nywila si sahihi. Tafadhali jaribu tena.');
-        } else if (error.message.includes('Email not confirmed')) {
+        } else if (msg.includes('Email not confirmed')) {
           throw new Error('Barua pepe yako haijathibitishwa bado.');
+        } else if (msg.toLowerCase().includes('failed to fetch') || msg.toLowerCase().includes('network')) {
+          throw new Error('Mtandao umeshindikana. Angalia internet na ujaribu tena.');
         } else {
-          throw new Error(error.message);
+          throw new Error(msg || 'Imeshindwa kuingia');
         }
+      }
+
+      if (!data?.session) {
+        throw new Error('Imeshindwa kuingia. Jaribu tena.');
       }
 
       // Log login activity
       logActivity('login', 'Mtumiaji ameingia', { email });
-      
+
       // Redirect to dashboard after successful login
       window.location.href = '/dashboard';
     } catch (error: any) {
+      // Normalize TypeError network errors
+      if (error?.name === 'TypeError' && /fetch/i.test(error?.message || '')) {
+        throw new Error('Mtandao umeshindikana. Angalia internet na ujaribu tena.');
+      }
       throw error;
     }
   };

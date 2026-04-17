@@ -264,7 +264,7 @@ export const AuthPage = () => {
   }
 
   return (
-    <div className="h-[100dvh] max-h-[100dvh] bg-gradient-to-br from-primary/5 via-background to-secondary/10 flex flex-col items-center justify-center px-4 py-3 relative overflow-hidden">
+    <div className="h-[100dvh] max-h-[100dvh] w-full bg-gradient-to-br from-primary/5 via-background to-secondary/10 flex flex-col items-center justify-center px-4 py-2 relative overflow-hidden">
       <FloatingCards />
       {/* Back to landing */}
       <button
@@ -492,7 +492,7 @@ export const AuthPage = () => {
         <button
           type="button"
           onClick={() => navigate('/forgot-password')}
-          className="mt-2 text-sm text-muted-foreground transition-colors hover:text-primary"
+          className="mt-1.5 text-xs text-muted-foreground transition-colors hover:text-primary"
         >
           Umesahau nywila?
         </button>
@@ -502,7 +502,7 @@ export const AuthPage = () => {
       <button
         type="button"
         onClick={switchMode}
-        className="mt-2 text-sm text-primary hover:underline"
+        className="mt-1 text-xs text-primary hover:underline"
       >
         {mode === 'signin' ? 'Unda akaunti mpya' : 'Tayari una akaunti? Ingia'}
       </button>
@@ -510,9 +510,9 @@ export const AuthPage = () => {
       {/* Sokoni Link */}
       <Link
         to="/sokoni"
-        className="mt-2 flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-primary"
+        className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground transition-colors hover:text-primary"
       >
-        <Store className="h-4 w-4" />
+        <Store className="h-3.5 w-3.5" />
         Tembelea Sokoni
       </Link>
     </div>
