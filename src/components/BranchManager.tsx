@@ -260,7 +260,9 @@ export const BranchManager = () => {
           return;
         }
 
-        // Use edge function or admin API to create user
+        // Save current owner session BEFORE signUp (signUp auto-logs-in the new user)
+        const { data: { session: ownerSession } } = await supabase.auth.getSession();
+
         const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
           email: staffForm.email.trim().toLowerCase(),
           password: staffForm.password,
@@ -278,6 +280,14 @@ export const BranchManager = () => {
         if (!signUpData.user) throw new Error('Imeshindwa kuunda akaunti');
 
         const newUserId = signUpData.user.id;
+
+        // CRITICAL: Restore owner session immediately so subsequent inserts run as owner
+        if (ownerSession) {
+          await supabase.auth.setSession({
+            access_token: ownerSession.access_token,
+            refresh_token: ownerSession.refresh_token,
+          });
+        }
 
         // Wait briefly for profile trigger
         await new Promise(r => setTimeout(r, 1500));
@@ -298,13 +308,14 @@ export const BranchManager = () => {
         });
 
         // Add to branch staff
-        await supabase.from('branch_staff').insert({
+        const { error: staffErr } = await supabase.from('branch_staff').insert({
           branch_id: selectedBranch.id,
           user_id: newUserId,
           role: staffForm.role,
           assigned_by: user.id,
           notes: staffForm.notes || null,
         });
+        if (staffErr) throw staffErr;
 
         toast.success(`${staffForm.full_name} ameundwa na kuongezwa kwenye tawi!`);
       } else {

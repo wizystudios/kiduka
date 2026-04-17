@@ -84,8 +84,23 @@ export const FloatingCards = () => {
   }), [activeIndex]);
 
   return (
-    <div className="absolute inset-0 z-0 pointer-events-none">
-      <div className="mx-auto flex h-full max-w-3xl items-center justify-between px-1 sm:px-4 md:px-6">
+    <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
+      {/* MOBILE: one card top-left (curved), one card bottom-right (curved) — out of center content area */}
+      <div className="md:hidden absolute inset-0">
+        <div className="absolute -top-6 -left-6 rotate-[-12deg] opacity-70">
+          <div className="h-28 w-20 overflow-hidden rounded-[2rem] border border-border/40 bg-card shadow-xl">
+            <img src={visibleCards.left.src} alt="" className={`h-full w-full object-cover transition-opacity duration-500 ${visible ? 'opacity-100' : 'opacity-0'}`} loading="lazy" />
+          </div>
+        </div>
+        <div className="absolute -bottom-6 -right-6 rotate-[12deg] opacity-70">
+          <div className="h-28 w-20 overflow-hidden rounded-[2rem] border border-border/40 bg-card shadow-xl">
+            <img src={visibleCards.right.src} alt="" className={`h-full w-full object-cover transition-opacity duration-500 ${visible ? 'opacity-100' : 'opacity-0'}`} loading="lazy" />
+          </div>
+        </div>
+      </div>
+
+      {/* DESKTOP: original split layout */}
+      <div className="hidden md:flex mx-auto h-full max-w-3xl items-center justify-between px-4 md:px-6">
         <FloatingCardItem
           card={visibleCards.left}
           shadowCard={visibleCards.leftShadow}

@@ -266,8 +266,17 @@ export const AuthPage = () => {
   return (
     <div className="h-[100dvh] max-h-[100dvh] bg-gradient-to-br from-primary/5 via-background to-secondary/10 flex flex-col items-center justify-center px-4 py-3 relative overflow-hidden">
       <FloatingCards />
+      {/* Back to landing */}
+      <button
+        type="button"
+        onClick={() => navigate('/')}
+        className="absolute top-3 left-3 z-20 flex items-center gap-1 rounded-full bg-background/70 backdrop-blur px-3 py-1.5 text-xs font-medium text-foreground border border-border/40 hover:bg-background"
+      >
+        <ArrowLeft className="h-3.5 w-3.5" />
+        Rudi
+      </button>
       {/* Logo */}
-      <div className="mb-2 flex-shrink-0">
+      <div className="mb-2 flex-shrink-0 relative z-10">
         <KidukaLogo size="lg" />
       </div>
 
