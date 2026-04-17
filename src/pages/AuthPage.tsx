@@ -264,7 +264,7 @@ export const AuthPage = () => {
   }
 
   return (
-    <div className="h-[100dvh] max-h-[100dvh] bg-gradient-to-br from-primary/5 via-background to-secondary/10 flex flex-col items-center justify-center px-4 py-3 relative overflow-hidden">
+    <div className="h-[100dvh] max-h-[100dvh] w-full bg-gradient-to-br from-primary/5 via-background to-secondary/10 flex flex-col items-center justify-center px-4 py-2 relative overflow-hidden">
       <FloatingCards />
       {/* Back to landing */}
       <button
