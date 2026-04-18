@@ -1128,28 +1128,31 @@ export const SuperAdminDashboard = () => {
         </DialogContent>
       </Dialog>
       
-      {/* Stats Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
+      {/* Stats - horizontal scroll on mobile, clickable chips */}
+      <div className="flex gap-2 overflow-x-auto -mx-1 px-1 pb-1 [&::-webkit-scrollbar]:hidden snap-x snap-mandatory" style={{ scrollbarWidth: 'none' }}>
         {statCards.map((stat, idx) => (
-          <Card key={idx}>
-            <CardContent className="p-3 md:p-4">
-              <div className="flex items-center justify-between gap-2">
-                <div className={stat.color}>{stat.icon}</div>
-                <span className="text-lg md:text-xl font-bold text-right">
-                  {stat.title === 'Mapato' || stat.title === 'Matumizi' 
-                    ? `${(stat.value / 1000000).toFixed(1)}M`
-                    : stat.value}
-                </span>
-              </div>
-              <p className="text-xs text-muted-foreground mt-1">{stat.title}</p>
-            </CardContent>
-          </Card>
+          <button
+            key={idx}
+            type="button"
+            onClick={() => stat.tab && setActiveTab(stat.tab)}
+            className="flex-shrink-0 snap-start min-w-[92px] md:min-w-[110px] rounded-2xl border bg-card hover:bg-accent transition-colors p-2.5 md:p-3 text-left active:scale-95"
+          >
+            <div className="flex items-center justify-between gap-1.5 mb-1">
+              <div className={`${stat.color} flex-shrink-0`}>{stat.icon}</div>
+            </div>
+            <p className="text-base md:text-lg font-bold leading-none truncate">
+              {stat.title === 'Mapato' || stat.title === 'Matumizi'
+                ? `${(stat.value / 1000000).toFixed(1)}M`
+                : stat.value}
+            </p>
+            <p className="text-[10px] md:text-xs text-muted-foreground mt-1 truncate">{stat.title}</p>
+          </button>
         ))}
       </div>
-      
+
       {/* Main Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <ScrollArea className="w-full">
+        <div className="w-full overflow-x-auto -mx-1 px-1 [&::-webkit-scrollbar]:hidden" style={{ scrollbarWidth: 'none' }}>
           <TabsList className="inline-flex w-max gap-1 mb-4 p-1">
             <TabsTrigger value="overview" className="text-xs px-3">Overview</TabsTrigger>
             <TabsTrigger value="analytics" className="text-xs px-3">Analytics</TabsTrigger>
@@ -1172,8 +1175,8 @@ export const SuperAdminDashboard = () => {
             <TabsTrigger value="chat" className="text-xs px-3">Mazungumzo</TabsTrigger>
             <TabsTrigger value="more" className="text-xs px-3">Zaidi</TabsTrigger>
           </TabsList>
-        </ScrollArea>
-        
+        </div>
+
         {/* Search */}
         {activeTab !== 'overview' && activeTab !== 'analytics' && activeTab !== 'subscriptions' && (
           <div className="relative mb-4">
