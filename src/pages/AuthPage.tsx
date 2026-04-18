@@ -30,7 +30,18 @@ export const AuthPage = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
-  
+
+  // Lock scroll on auth page
+  useEffect(() => {
+    const prev = document.body.style.overflow;
+    const prevHtml = document.documentElement.style.overflow;
+    document.body.style.overflow = 'hidden';
+    document.documentElement.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = prev;
+      document.documentElement.style.overflow = prevHtml;
+    };
+  }, []);
 
   if (user?.email_confirmed_at) {
     return <Navigate to="/dashboard" replace />;

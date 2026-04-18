@@ -12,6 +12,18 @@ const Index = () => {
   const { user, loading } = useAuth();
   const [showOnboarding, setShowOnboarding] = useState(false);
 
+  // Lock scroll while on landing/onboarding
+  useEffect(() => {
+    const prev = document.body.style.overflow;
+    const prevHtml = document.documentElement.style.overflow;
+    document.body.style.overflow = 'hidden';
+    document.documentElement.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = prev;
+      document.documentElement.style.overflow = prevHtml;
+    };
+  }, []);
+
   useEffect(() => {
     if (loading) return;
     if (user?.email_confirmed_at) {
