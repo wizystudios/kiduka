@@ -945,15 +945,15 @@ export const SuperAdminDashboard = () => {
     pendingSubscriptions: stats.pendingSubscriptions
   } : stats;
 
-  const statCards = [
-    { title: 'Watumiaji', value: filteredStats.totalUsers, icon: <Users className="h-5 w-5" />, color: 'text-blue-600' },
-    { title: 'Bidhaa', value: filteredStats.totalProducts, icon: <Package className="h-5 w-5" />, color: 'text-green-600' },
-    { title: 'Mauzo', value: filteredStats.totalSales, icon: <ShoppingCart className="h-5 w-5" />, color: 'text-purple-600' },
-    { title: 'Mapato', value: filteredStats.totalRevenue, icon: <Wallet className="h-5 w-5" />, color: 'text-emerald-600' },
-    { title: 'Oda Sokoni', value: filteredStats.totalOrders, icon: <Store className="h-5 w-5" />, color: 'text-orange-600' },
-    { title: 'Matumizi', value: filteredStats.totalExpenses, icon: <CreditCard className="h-5 w-5" />, color: 'text-red-600' },
-    { title: 'Wateja', value: filteredStats.totalCustomers, icon: <Users className="h-5 w-5" />, color: 'text-indigo-600' },
-    { title: 'Mikopo Active', value: filteredStats.activeLoans, icon: <TrendingUp className="h-5 w-5" />, color: 'text-yellow-600' },
+  const statCards: { title: string; value: number; icon: JSX.Element; color: string; tab?: string }[] = [
+    { title: 'Watumiaji', value: filteredStats.totalUsers, icon: <Users className="h-5 w-5" />, color: 'text-blue-600', tab: 'users' },
+    { title: 'Bidhaa', value: filteredStats.totalProducts, icon: <Package className="h-5 w-5" />, color: 'text-green-600', tab: 'products' },
+    { title: 'Mauzo', value: filteredStats.totalSales, icon: <ShoppingCart className="h-5 w-5" />, color: 'text-purple-600', tab: 'sales' },
+    { title: 'Mapato', value: filteredStats.totalRevenue, icon: <Wallet className="h-5 w-5" />, color: 'text-emerald-600', tab: 'analytics' },
+    { title: 'Oda Sokoni', value: filteredStats.totalOrders, icon: <Store className="h-5 w-5" />, color: 'text-orange-600', tab: 'orders' },
+    { title: 'Matumizi', value: filteredStats.totalExpenses, icon: <CreditCard className="h-5 w-5" />, color: 'text-red-600', tab: 'more' },
+    { title: 'Wateja', value: filteredStats.totalCustomers, icon: <Users className="h-5 w-5" />, color: 'text-indigo-600', tab: 'more' },
+    { title: 'Mikopo Active', value: filteredStats.activeLoans, icon: <TrendingUp className="h-5 w-5" />, color: 'text-yellow-600', tab: 'overview' },
   ];
   
   const formatCurrency = (amount: number) => `TSh ${amount.toLocaleString()}`;
