@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import adDashboard from '@/assets/ad-dashboard.jpg';
 import adMobilePay from '@/assets/ad-mobile-pay.jpg';
 import adInventory from '@/assets/ad-inventory.jpg';
@@ -8,7 +9,7 @@ import adReports from '@/assets/ad-reports.jpg';
 import adLoyalty from '@/assets/ad-loyalty.jpg';
 import adWhatsapp from '@/assets/ad-whatsapp.jpg';
 
-const ads = [
+const fallbackAds = [
   { src: adDashboard, label: 'Angalia mauzo yako kwa urahisi', tag: 'Ripoti' },
   { src: adMobilePay, label: 'Pokea malipo ya simu haraka', tag: 'Malipo' },
   { src: adInventory, label: 'Panga bidhaa zako vizuri', tag: 'Stock' },
@@ -20,8 +21,37 @@ const ads = [
 ];
 
 export const DashboardAdCarousel = () => {
+  const [ads, setAds] = useState(fallbackAds);
   const [index, setIndex] = useState(0);
   const [visible, setVisible] = useState(true);
+
+  useEffect(() => {
+    const fetchManagedAds = async () => {
+      const now = new Date();
+      const { data } = await supabase
+        .from('business_ads' as any)
+        .select('title, image_url, starts_at, expires_at')
+        .eq('is_active', true)
+        .or('display_location.eq.kiduka,display_location.eq.both');
+
+      const managedAds = ((data as any[]) || [])
+        .filter((ad) => ad.image_url)
+        .filter((ad) => {
+          const started = !ad.starts_at || new Date(ad.starts_at) <= now;
+          const notExpired = !ad.expires_at || new Date(ad.expires_at) > now;
+          return started && notExpired;
+        })
+        .map((ad, idx) => ({
+          src: ad.image_url,
+          label: ad.title || `Tangazo ${idx + 1}`,
+          tag: 'Tangazo',
+        }));
+
+      setAds(managedAds.length > 0 ? managedAds : fallbackAds);
+    };
+
+    void fetchManagedAds();
+  }, []);
 
   useEffect(() => {
     const timer = setInterval(() => {
