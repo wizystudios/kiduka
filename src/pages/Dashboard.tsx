@@ -65,7 +65,7 @@ export const Dashboard = () => {
   );
 
   return (
-    <div className="px-4 pt-2 pb-0 space-y-2">
+    <div className="h-[calc(100dvh-8rem)] overflow-y-auto px-4 pt-2 pb-32 space-y-2 md:h-auto md:overflow-visible md:pb-0">
       {/* Hero Sales Section - centered, no box */}
       <div className="text-center pt-0.5">
         <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Mauzo Leo</p>

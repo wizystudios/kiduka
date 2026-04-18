@@ -738,7 +738,7 @@ export const SokoniMarketplace = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-24">
+    <div className="h-[100dvh] overflow-y-auto bg-background pb-24 md:min-h-screen md:h-auto">
       {/* Header with Sokoni Logo */}
       <div className="bg-primary text-primary-foreground sticky top-0 z-50">
         <div className="flex items-center gap-2 p-3">
