@@ -738,7 +738,7 @@ export const SokoniMarketplace = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-24">
+    <div className="h-[100dvh] overflow-y-auto bg-background pb-24 md:min-h-screen md:h-auto">
       {/* Header with Sokoni Logo */}
       <div className="bg-primary text-primary-foreground sticky top-0 z-50">
         <div className="flex items-center gap-2 p-3">
@@ -1079,16 +1079,16 @@ export const SokoniMarketplace = () => {
                         variant="outline" 
                         size="sm" 
                         className="w-full rounded-full text-xs group-hover:bg-primary group-hover:text-primary-foreground transition-colors"
-                        onClick={async (e) => {
+                      onClick={async (e) => {
                           e.stopPropagation();
                           const { data: pf } = await supabase
                             .from('profiles')
-                            .select('store_slug')
+                          .select('id, store_slug')
                             .eq('id', sellerId)
                             .maybeSingle();
-                          const resolvedSlug = (pf as any)?.store_slug || storeSlug;
-                          if (resolvedSlug) {
-                            navigate(`/duka/${resolvedSlug}`);
+                        const resolvedSlug = (pf as any)?.store_slug || storeSlug || (pf as any)?.id;
+                        if (resolvedSlug) {
+                          navigate(`/duka/${resolvedSlug}`);
                           } else {
                             toast.info('Duka hili halina profaili bado');
                           }

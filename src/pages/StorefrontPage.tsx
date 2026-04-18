@@ -91,6 +91,17 @@ export const StorefrontPage = () => {
         .eq('store_slug', slug)
         .maybeSingle();
 
+      // Fallback: direct profile id from Sokoni cards
+      if (!profile && slug) {
+        const fallbackById = await supabase
+          .from('profiles')
+          .select('id, business_name, phone, region, district, store_description, store_logo_url, google_pixel_id, facebook_pixel_id')
+          .eq('id', slug)
+          .maybeSingle();
+        profile = fallbackById.data;
+        error = fallbackById.error;
+      }
+
       // If not found by slug, try matching by generated slug from business_name
       if (!profile) {
         const { data: allProfiles } = await supabase
@@ -225,7 +236,7 @@ export const StorefrontPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-secondary/10">
+    <div className="h-[100dvh] overflow-y-auto bg-gradient-to-br from-primary/5 via-background to-secondary/10 md:min-h-screen md:h-auto">
       {/* Store Header */}
       <div className="bg-primary text-primary-foreground">
         <div className="max-w-6xl mx-auto p-4 md:p-6">

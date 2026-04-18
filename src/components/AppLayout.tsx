@@ -13,6 +13,7 @@ import { useRealTimeNotifications } from "@/hooks/useRealTimeNotifications";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useEffect } from "react";
 
 
 interface AppLayoutProps {
@@ -24,6 +25,28 @@ export function AppLayout({ children }: AppLayoutProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const isDashboardRoute = location.pathname === "/dashboard";
+
+  useEffect(() => {
+    const mobileLockedRoutes = new Set([
+      '/dashboard',
+      '/super-admin',
+      '/sokoni',
+      '/duka',
+    ]);
+
+    const shouldLockScroll = window.innerWidth < 768 && Array.from(mobileLockedRoutes).some((route) => location.pathname === route || location.pathname.startsWith(`${route}/`));
+    if (!shouldLockScroll) return;
+
+    const prevBodyOverflow = document.body.style.overflow;
+    const prevHtmlOverflow = document.documentElement.style.overflow;
+    document.body.style.overflow = 'hidden';
+    document.documentElement.style.overflow = 'hidden';
+
+    return () => {
+      document.body.style.overflow = prevBodyOverflow;
+      document.documentElement.style.overflow = prevHtmlOverflow;
+    };
+  }, [location.pathname]);
 
   return (
     <SidebarProvider>
@@ -45,7 +68,7 @@ export function AppLayout({ children }: AppLayoutProps) {
               )}
             </Button>
           </header>
-          <main className={`w-full pt-16 ${isDashboardRoute ? 'pb-24' : 'pb-28'} md:pt-0 md:pb-0`}>
+          <main className={`w-full pt-16 ${isDashboardRoute ? 'pb-24' : 'pb-28'} md:pt-0 md:pb-0 md:min-h-screen`}>
             <LocationSetupGate>
               <ContractComplianceGate>{children}</ContractComplianceGate>
             </LocationSetupGate>

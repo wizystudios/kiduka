@@ -1008,7 +1008,7 @@ export const SuperAdminDashboard = () => {
   const businessOwners = users.filter(u => u.role === 'owner');
   
   return (
-    <div className="w-full max-w-7xl mx-auto p-3 md:p-6 lg:p-8 space-y-4 pb-20">
+    <div className="h-[calc(100dvh-8rem)] overflow-y-auto w-full max-w-7xl mx-auto p-3 md:h-auto md:overflow-visible md:p-6 lg:p-8 space-y-4 pb-32 md:pb-20">
       {/* Header - compact, horizontally scrollable actions on mobile */}
       <div className="rounded-2xl border bg-card p-3 md:p-4">
         <div className="flex items-center gap-2 mb-2">

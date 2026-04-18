@@ -33,17 +33,20 @@ export const AdBanner = ({ location = 'both' }: AdBannerProps) => {
   }, [ads.length, currentIndex]);
 
   const fetchAds = async () => {
-    const now = new Date().toISOString();
+    const now = new Date();
     const { data } = await supabase
       .from('business_ads' as any)
       .select('id, title, description, image_url, link_url, owner_id')
       .eq('is_active', true)
-      .or(`display_location.eq.${location},display_location.eq.both`)
-      .lte('starts_at', now)
-      .or(`expires_at.is.null,expires_at.gt.${now}`);
+      .or(`display_location.eq.${location},display_location.eq.both`);
 
     if (data && data.length > 0) {
-      const shuffled = [...(data as unknown as Ad[])].sort(() => Math.random() - 0.5);
+      const activeAds = (data as unknown as Ad[]).filter((ad) => {
+        const started = !ad['starts_at' as keyof Ad] || new Date((ad as any).starts_at) <= now;
+        const notExpired = !(ad as any).expires_at || new Date((ad as any).expires_at) > now;
+        return started && notExpired;
+      });
+      const shuffled = [...activeAds].sort(() => Math.random() - 0.5);
       setAds(shuffled);
     }
   };

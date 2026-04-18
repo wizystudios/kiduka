@@ -56,17 +56,20 @@ export const SokoniBannerCarousel = ({ onBrowse }: SokoniBannerCarouselProps) =>
     ];
 
     try {
-      const now = new Date().toISOString();
+      const now = new Date();
       const { data } = await supabase
         .from('business_ads')
         .select('id, title, image_url, link_url')
         .eq('is_active', true)
-        .or(`display_location.eq.sokoni,display_location.eq.both`)
-        .lte('starts_at', now)
-        .or(`expires_at.is.null,expires_at.gt.${now}`);
+        .or(`display_location.eq.sokoni,display_location.eq.both`);
 
       const adSlides: BannerSlide[] = ((data as any[]) || [])
         .filter(ad => ad.image_url)
+        .filter(ad => {
+          const started = !ad.starts_at || new Date(ad.starts_at) <= now;
+          const notExpired = !ad.expires_at || new Date(ad.expires_at) > now;
+          return started && notExpired;
+        })
         .map(ad => ({
           id: ad.id,
           media_url: ad.image_url!,

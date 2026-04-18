@@ -6,7 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Megaphone, Plus, Trash2, Edit2, Loader2, Eye, EyeOff, ExternalLink, Upload, Image as ImageIcon } from 'lucide-react';
+import { Megaphone, Plus, Trash2, Edit2, Loader2, Eye, EyeOff, Upload, Video } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useDataAccess } from '@/hooks/useDataAccess';
@@ -32,6 +32,8 @@ const AD_PRICING = [
   { days: 30, label: '1 Mwezi', price: 15000 },
   { days: 90, label: '3 Miezi', price: 35000 },
 ];
+
+const isUploadedMediaUrl = (value: string | null) => !!value && value.includes('/storage/v1/object/public/');
 
 export const AdsManagerPage = () => {
   const { user } = useAuth();
@@ -101,7 +103,7 @@ export const AdsManagerPage = () => {
         .from('product-images')
         .getPublicUrl(data.path);
 
-      setForm(prev => ({ ...prev, image_url: urlData.publicUrl }));
+      setForm(prev => ({ ...prev, image_url: urlData.publicUrl, link_url: isUploadedMediaUrl(prev.link_url) ? '' : prev.link_url }));
       toast.success('Picha imepakiwa!');
     } catch (err) {
       toast.error('Imeshindwa kupakia picha');
@@ -280,7 +282,7 @@ export const AdsManagerPage = () => {
               <div>
                 <Label className="text-xs">Video ya Tangazo (Hiari)</Label>
                 <label className="flex items-center gap-2 mt-1 px-3 py-2 border border-dashed border-border/50 rounded-2xl cursor-pointer hover:bg-muted/30 transition-colors">
-                  <Upload className="h-4 w-4 text-muted-foreground" />
+                  <Video className="h-4 w-4 text-muted-foreground" />
                   <span className="text-xs text-muted-foreground">Pakia video (max 10MB)</span>
                   <input
                     type="file"
@@ -305,7 +307,7 @@ export const AdsManagerPage = () => {
                     disabled={uploading}
                   />
                 </label>
-                {form.link_url && form.link_url.includes('/ads/') && (
+                {form.link_url && isUploadedMediaUrl(form.link_url) && (
                   <div className="mt-1 flex items-center gap-2">
                     <Badge variant="outline" className="text-[10px]">Video imepakiwa</Badge>
                     <button type="button" onClick={() => setForm(prev => ({ ...prev, link_url: '' }))} className="text-[10px] text-destructive">Ondoa</button>
@@ -375,7 +377,7 @@ export const AdsManagerPage = () => {
         <div className="text-center py-16">
           <Megaphone className="h-12 w-12 text-muted-foreground mx-auto mb-3 opacity-40" />
           <p className="text-sm text-muted-foreground">Bado huna matangazo</p>
-          <p className="text-xs text-muted-foreground mt-1">Unda tangazo la biashara yako litaonyeshwa kwenye Kiduka na Sokoni</p>
+          <p className="text-xs text-muted-foreground mt-1">Pakia picha au video; tangazo litaonyeshwa kwenye Kiduka na Sokoni</p>
         </div>
       ) : (
         <div className="space-y-2">
@@ -384,14 +386,18 @@ export const AdsManagerPage = () => {
             return (
               <div key={ad.id} className="rounded-2xl border border-border/50 bg-background overflow-hidden">
                 {/* Preview image */}
-                {ad.image_url && (
+                {(ad.image_url || isUploadedMediaUrl(ad.link_url)) && (
                   <div className="relative h-20 overflow-hidden">
-                    <img src={ad.image_url} alt="" className="w-full h-full object-cover" />
+                    {isUploadedMediaUrl(ad.link_url) ? (
+                      <video src={ad.link_url || ''} className="w-full h-full object-cover" muted playsInline preload="metadata" />
+                    ) : (
+                      <img src={ad.image_url || ''} alt="" className="w-full h-full object-cover" />
+                    )}
                     <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent" />
                   </div>
                 )}
                 <div className="flex items-center gap-3 p-3">
-                  {!ad.image_url && (
+                  {!ad.image_url && !isUploadedMediaUrl(ad.link_url) && (
                     <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
                       <Megaphone className="h-4 w-4 text-primary" />
                     </div>
