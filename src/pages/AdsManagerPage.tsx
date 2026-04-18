@@ -6,7 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Megaphone, Plus, Trash2, Edit2, Loader2, Eye, EyeOff, ExternalLink, Upload, Image as ImageIcon } from 'lucide-react';
+import { Megaphone, Plus, Trash2, Edit2, Loader2, Eye, EyeOff, Upload, Video } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useDataAccess } from '@/hooks/useDataAccess';
@@ -32,6 +32,8 @@ const AD_PRICING = [
   { days: 30, label: '1 Mwezi', price: 15000 },
   { days: 90, label: '3 Miezi', price: 35000 },
 ];
+
+const isUploadedMediaUrl = (value: string | null) => !!value && value.includes('/storage/v1/object/public/');
 
 export const AdsManagerPage = () => {
   const { user } = useAuth();
