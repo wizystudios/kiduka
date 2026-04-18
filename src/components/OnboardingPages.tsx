@@ -33,6 +33,18 @@ const AUTO_INTERVAL = 3200;
 export const OnboardingPages = ({ onComplete }: OnboardingPagesProps) => {
   const [index, setIndex] = useState(0);
 
+  // Lock scroll
+  useEffect(() => {
+    const prev = document.body.style.overflow;
+    const prevHtml = document.documentElement.style.overflow;
+    document.body.style.overflow = 'hidden';
+    document.documentElement.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = prev;
+      document.documentElement.style.overflow = prevHtml;
+    };
+  }, []);
+
   // Auto-advance through slides (loops continuously)
   useEffect(() => {
     const t = setInterval(() => {

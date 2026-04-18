@@ -945,15 +945,15 @@ export const SuperAdminDashboard = () => {
     pendingSubscriptions: stats.pendingSubscriptions
   } : stats;
 
-  const statCards = [
-    { title: 'Watumiaji', value: filteredStats.totalUsers, icon: <Users className="h-5 w-5" />, color: 'text-blue-600' },
-    { title: 'Bidhaa', value: filteredStats.totalProducts, icon: <Package className="h-5 w-5" />, color: 'text-green-600' },
-    { title: 'Mauzo', value: filteredStats.totalSales, icon: <ShoppingCart className="h-5 w-5" />, color: 'text-purple-600' },
-    { title: 'Mapato', value: filteredStats.totalRevenue, icon: <Wallet className="h-5 w-5" />, color: 'text-emerald-600' },
-    { title: 'Oda Sokoni', value: filteredStats.totalOrders, icon: <Store className="h-5 w-5" />, color: 'text-orange-600' },
-    { title: 'Matumizi', value: filteredStats.totalExpenses, icon: <CreditCard className="h-5 w-5" />, color: 'text-red-600' },
-    { title: 'Wateja', value: filteredStats.totalCustomers, icon: <Users className="h-5 w-5" />, color: 'text-indigo-600' },
-    { title: 'Mikopo Active', value: filteredStats.activeLoans, icon: <TrendingUp className="h-5 w-5" />, color: 'text-yellow-600' },
+  const statCards: { title: string; value: number; icon: JSX.Element; color: string; tab?: string }[] = [
+    { title: 'Watumiaji', value: filteredStats.totalUsers, icon: <Users className="h-5 w-5" />, color: 'text-blue-600', tab: 'users' },
+    { title: 'Bidhaa', value: filteredStats.totalProducts, icon: <Package className="h-5 w-5" />, color: 'text-green-600', tab: 'products' },
+    { title: 'Mauzo', value: filteredStats.totalSales, icon: <ShoppingCart className="h-5 w-5" />, color: 'text-purple-600', tab: 'sales' },
+    { title: 'Mapato', value: filteredStats.totalRevenue, icon: <Wallet className="h-5 w-5" />, color: 'text-emerald-600', tab: 'analytics' },
+    { title: 'Oda Sokoni', value: filteredStats.totalOrders, icon: <Store className="h-5 w-5" />, color: 'text-orange-600', tab: 'orders' },
+    { title: 'Matumizi', value: filteredStats.totalExpenses, icon: <CreditCard className="h-5 w-5" />, color: 'text-red-600', tab: 'more' },
+    { title: 'Wateja', value: filteredStats.totalCustomers, icon: <Users className="h-5 w-5" />, color: 'text-indigo-600', tab: 'more' },
+    { title: 'Mikopo Active', value: filteredStats.activeLoans, icon: <TrendingUp className="h-5 w-5" />, color: 'text-yellow-600', tab: 'overview' },
   ];
   
   const formatCurrency = (amount: number) => `TSh ${amount.toLocaleString()}`;
@@ -1008,66 +1008,50 @@ export const SuperAdminDashboard = () => {
   const businessOwners = users.filter(u => u.role === 'owner');
   
   return (
-    <div className="w-full max-w-7xl mx-auto p-4 md:p-6 lg:p-8 space-y-6 pb-20">
-      {/* Header */}
-      <Card>
-        <CardHeader className="pb-3">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <Shield className="h-8 w-8 text-destructive" />
-              <div>
-                <CardTitle className="text-xl">Super Admin Dashboard</CardTitle>
-                <CardDescription>Dhibiti kila kitu katika Kiduka POS</CardDescription>
-              </div>
-            </div>
-            <div className="flex items-center gap-2 flex-wrap">
-              {/* Business Filter */}
-              <Select value={selectedBusiness || 'all'} onValueChange={(v) => setSelectedBusiness(v === 'all' ? null : v)}>
-                <SelectTrigger className="w-[180px] h-9">
-                  <Building2 className="h-4 w-4 mr-2" />
-                  <SelectValue placeholder="Biashara Zote" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Biashara Zote</SelectItem>
-                  {businessOwners.map(u => (
-                    <SelectItem key={u.id} value={u.id}>
-                      {u.business_name || u.full_name || u.email}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              
-              {/* Notifications */}
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="relative"
-                onClick={() => setNotificationsPanelOpen(true)}
-              >
-                <Bell className="h-4 w-4" />
-                {unreadCount > 0 && (
-                  <Badge className="absolute -top-2 -right-2 h-5 w-5 p-0 flex items-center justify-center text-xs bg-destructive">
-                    {unreadCount > 9 ? '9+' : unreadCount}
-                  </Badge>
-                )}
-              </Button>
-              
-              <Button variant="outline" size="sm" onClick={() => handleExportPDF('summary')}>
-                <FileText className="h-4 w-4 mr-1" />
-                PDF
-              </Button>
-              <Button variant="outline" size="sm" onClick={handleExportSales}>
-                <FileSpreadsheet className="h-4 w-4 mr-1" />
-                Excel
-              </Button>
-              <Button onClick={fetchAllData} variant="outline" size="sm">
-                <RefreshCw className="h-4 w-4 mr-2" />
-                Refresh
-              </Button>
-            </div>
+    <div className="w-full max-w-7xl mx-auto p-3 md:p-6 lg:p-8 space-y-4 pb-20">
+      {/* Header - compact, horizontally scrollable actions on mobile */}
+      <div className="rounded-2xl border bg-card p-3 md:p-4">
+        <div className="flex items-center gap-2 mb-2">
+          <Shield className="h-5 w-5 md:h-6 md:w-6 text-destructive flex-shrink-0" />
+          <div className="min-w-0 flex-1">
+            <h2 className="text-sm md:text-lg font-bold truncate">Super Admin Dashboard</h2>
+            <p className="text-[10px] md:text-xs text-muted-foreground truncate">Dhibiti kila kitu Kiduka</p>
           </div>
-        </CardHeader>
-      </Card>
+        </div>
+        <div className="flex items-center gap-2 overflow-x-auto -mx-1 px-1 pb-1 [&::-webkit-scrollbar]:hidden" style={{ scrollbarWidth: 'none' }}>
+          <Select value={selectedBusiness || 'all'} onValueChange={(v) => setSelectedBusiness(v === 'all' ? null : v)}>
+            <SelectTrigger className="w-[150px] h-8 flex-shrink-0 text-xs">
+              <Building2 className="h-3.5 w-3.5 mr-1" />
+              <SelectValue placeholder="Biashara Zote" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Biashara Zote</SelectItem>
+              {businessOwners.map(u => (
+                <SelectItem key={u.id} value={u.id}>
+                  {u.business_name || u.full_name || u.email}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Button variant="outline" size="sm" className="relative h-8 px-2 flex-shrink-0" onClick={() => setNotificationsPanelOpen(true)}>
+            <Bell className="h-3.5 w-3.5" />
+            {unreadCount > 0 && (
+              <Badge className="absolute -top-1.5 -right-1.5 h-4 w-4 p-0 flex items-center justify-center text-[10px] bg-destructive">
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </Badge>
+            )}
+          </Button>
+          <Button variant="outline" size="sm" className="h-8 px-2 flex-shrink-0 text-xs" onClick={() => handleExportPDF('summary')}>
+            <FileText className="h-3.5 w-3.5 mr-1" />PDF
+          </Button>
+          <Button variant="outline" size="sm" className="h-8 px-2 flex-shrink-0 text-xs" onClick={handleExportSales}>
+            <FileSpreadsheet className="h-3.5 w-3.5 mr-1" />Excel
+          </Button>
+          <Button onClick={fetchAllData} variant="outline" size="sm" className="h-8 px-2 flex-shrink-0 text-xs">
+            <RefreshCw className="h-3.5 w-3.5 mr-1" />Refresh
+          </Button>
+        </div>
+      </div>
 
       {/* Active Business Session Banner */}
       {selectedBusiness && (
@@ -1144,28 +1128,31 @@ export const SuperAdminDashboard = () => {
         </DialogContent>
       </Dialog>
       
-      {/* Stats Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
+      {/* Stats - horizontal scroll on mobile, clickable chips */}
+      <div className="flex gap-2 overflow-x-auto -mx-1 px-1 pb-1 [&::-webkit-scrollbar]:hidden snap-x snap-mandatory" style={{ scrollbarWidth: 'none' }}>
         {statCards.map((stat, idx) => (
-          <Card key={idx}>
-            <CardContent className="p-3 md:p-4">
-              <div className="flex items-center justify-between gap-2">
-                <div className={stat.color}>{stat.icon}</div>
-                <span className="text-lg md:text-xl font-bold text-right">
-                  {stat.title === 'Mapato' || stat.title === 'Matumizi' 
-                    ? `${(stat.value / 1000000).toFixed(1)}M`
-                    : stat.value}
-                </span>
-              </div>
-              <p className="text-xs text-muted-foreground mt-1">{stat.title}</p>
-            </CardContent>
-          </Card>
+          <button
+            key={idx}
+            type="button"
+            onClick={() => stat.tab && setActiveTab(stat.tab)}
+            className="flex-shrink-0 snap-start min-w-[92px] md:min-w-[110px] rounded-2xl border bg-card hover:bg-accent transition-colors p-2.5 md:p-3 text-left active:scale-95"
+          >
+            <div className="flex items-center justify-between gap-1.5 mb-1">
+              <div className={`${stat.color} flex-shrink-0`}>{stat.icon}</div>
+            </div>
+            <p className="text-base md:text-lg font-bold leading-none truncate">
+              {stat.title === 'Mapato' || stat.title === 'Matumizi'
+                ? `${(stat.value / 1000000).toFixed(1)}M`
+                : stat.value}
+            </p>
+            <p className="text-[10px] md:text-xs text-muted-foreground mt-1 truncate">{stat.title}</p>
+          </button>
         ))}
       </div>
-      
+
       {/* Main Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <ScrollArea className="w-full">
+        <div className="w-full overflow-x-auto -mx-1 px-1 [&::-webkit-scrollbar]:hidden" style={{ scrollbarWidth: 'none' }}>
           <TabsList className="inline-flex w-max gap-1 mb-4 p-1">
             <TabsTrigger value="overview" className="text-xs px-3">Overview</TabsTrigger>
             <TabsTrigger value="analytics" className="text-xs px-3">Analytics</TabsTrigger>
@@ -1188,8 +1175,8 @@ export const SuperAdminDashboard = () => {
             <TabsTrigger value="chat" className="text-xs px-3">Mazungumzo</TabsTrigger>
             <TabsTrigger value="more" className="text-xs px-3">Zaidi</TabsTrigger>
           </TabsList>
-        </ScrollArea>
-        
+        </div>
+
         {/* Search */}
         {activeTab !== 'overview' && activeTab !== 'analytics' && activeTab !== 'subscriptions' && (
           <div className="relative mb-4">
