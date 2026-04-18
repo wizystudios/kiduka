@@ -146,7 +146,8 @@ export const VoicePOS = () => {
     });
 
     if (error) {
-      throw error;
+      console.error('Voice assistant invoke error:', error);
+      return null;
     }
 
     return data as VoiceAssistantFunctionResult;
@@ -466,14 +467,7 @@ export const VoicePOS = () => {
   useEffect(() => {
     if (!user) return;
 
-    const timer = window.setTimeout(() => {
-      if (!isListening && !processingRef.current) {
-        startContinuousListening();
-      }
-    }, 500);
-
     return () => {
-      window.clearTimeout(timer);
       shouldRestartRef.current = false;
       if (recognitionRef.current) {
         try { recognitionRef.current.abort(); } catch {}
@@ -481,7 +475,7 @@ export const VoicePOS = () => {
       window.clearTimeout(restartTimeoutRef.current ?? undefined);
       window.speechSynthesis.cancel();
     };
-  }, [isListening, startContinuousListening, user]);
+  }, [user]);
 
   const getTotalAmount = () => currentSale.reduce((sum, item) => sum + item.total_price, 0);
 
@@ -508,7 +502,7 @@ export const VoicePOS = () => {
         
         <div className="text-center">
           <p className="text-sm font-medium text-foreground">
-            {processing ? 'Ninakuchambulia ombi lako...' : isListening ? 'Ongea kawaida, nitakuelewa.' : 'Naandaa maikrofoni...'}
+              {processing ? 'Ninakuchambulia ombi lako...' : isListening ? 'Ongea kawaida, nitakuelewa.' : 'Bonyeza maikrofoni kuanza.'}
           </p>
           {currentTranscript && (
             <p className="text-xs text-muted-foreground mt-1 italic">"{currentTranscript}"</p>
