@@ -1008,66 +1008,50 @@ export const SuperAdminDashboard = () => {
   const businessOwners = users.filter(u => u.role === 'owner');
   
   return (
-    <div className="w-full max-w-7xl mx-auto p-4 md:p-6 lg:p-8 space-y-6 pb-20">
-      {/* Header */}
-      <Card>
-        <CardHeader className="pb-3">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <Shield className="h-8 w-8 text-destructive" />
-              <div>
-                <CardTitle className="text-xl">Super Admin Dashboard</CardTitle>
-                <CardDescription>Dhibiti kila kitu katika Kiduka POS</CardDescription>
-              </div>
-            </div>
-            <div className="flex items-center gap-2 flex-wrap">
-              {/* Business Filter */}
-              <Select value={selectedBusiness || 'all'} onValueChange={(v) => setSelectedBusiness(v === 'all' ? null : v)}>
-                <SelectTrigger className="w-[180px] h-9">
-                  <Building2 className="h-4 w-4 mr-2" />
-                  <SelectValue placeholder="Biashara Zote" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Biashara Zote</SelectItem>
-                  {businessOwners.map(u => (
-                    <SelectItem key={u.id} value={u.id}>
-                      {u.business_name || u.full_name || u.email}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              
-              {/* Notifications */}
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="relative"
-                onClick={() => setNotificationsPanelOpen(true)}
-              >
-                <Bell className="h-4 w-4" />
-                {unreadCount > 0 && (
-                  <Badge className="absolute -top-2 -right-2 h-5 w-5 p-0 flex items-center justify-center text-xs bg-destructive">
-                    {unreadCount > 9 ? '9+' : unreadCount}
-                  </Badge>
-                )}
-              </Button>
-              
-              <Button variant="outline" size="sm" onClick={() => handleExportPDF('summary')}>
-                <FileText className="h-4 w-4 mr-1" />
-                PDF
-              </Button>
-              <Button variant="outline" size="sm" onClick={handleExportSales}>
-                <FileSpreadsheet className="h-4 w-4 mr-1" />
-                Excel
-              </Button>
-              <Button onClick={fetchAllData} variant="outline" size="sm">
-                <RefreshCw className="h-4 w-4 mr-2" />
-                Refresh
-              </Button>
-            </div>
+    <div className="w-full max-w-7xl mx-auto p-3 md:p-6 lg:p-8 space-y-4 pb-20">
+      {/* Header - compact, horizontally scrollable actions on mobile */}
+      <div className="rounded-2xl border bg-card p-3 md:p-4">
+        <div className="flex items-center gap-2 mb-2">
+          <Shield className="h-5 w-5 md:h-6 md:w-6 text-destructive flex-shrink-0" />
+          <div className="min-w-0 flex-1">
+            <h2 className="text-sm md:text-lg font-bold truncate">Super Admin Dashboard</h2>
+            <p className="text-[10px] md:text-xs text-muted-foreground truncate">Dhibiti kila kitu Kiduka</p>
           </div>
-        </CardHeader>
-      </Card>
+        </div>
+        <div className="flex items-center gap-2 overflow-x-auto -mx-1 px-1 pb-1 [&::-webkit-scrollbar]:hidden" style={{ scrollbarWidth: 'none' }}>
+          <Select value={selectedBusiness || 'all'} onValueChange={(v) => setSelectedBusiness(v === 'all' ? null : v)}>
+            <SelectTrigger className="w-[150px] h-8 flex-shrink-0 text-xs">
+              <Building2 className="h-3.5 w-3.5 mr-1" />
+              <SelectValue placeholder="Biashara Zote" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Biashara Zote</SelectItem>
+              {businessOwners.map(u => (
+                <SelectItem key={u.id} value={u.id}>
+                  {u.business_name || u.full_name || u.email}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Button variant="outline" size="sm" className="relative h-8 px-2 flex-shrink-0" onClick={() => setNotificationsPanelOpen(true)}>
+            <Bell className="h-3.5 w-3.5" />
+            {unreadCount > 0 && (
+              <Badge className="absolute -top-1.5 -right-1.5 h-4 w-4 p-0 flex items-center justify-center text-[10px] bg-destructive">
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </Badge>
+            )}
+          </Button>
+          <Button variant="outline" size="sm" className="h-8 px-2 flex-shrink-0 text-xs" onClick={() => handleExportPDF('summary')}>
+            <FileText className="h-3.5 w-3.5 mr-1" />PDF
+          </Button>
+          <Button variant="outline" size="sm" className="h-8 px-2 flex-shrink-0 text-xs" onClick={handleExportSales}>
+            <FileSpreadsheet className="h-3.5 w-3.5 mr-1" />Excel
+          </Button>
+          <Button onClick={fetchAllData} variant="outline" size="sm" className="h-8 px-2 flex-shrink-0 text-xs">
+            <RefreshCw className="h-3.5 w-3.5 mr-1" />Refresh
+          </Button>
+        </div>
+      </div>
 
       {/* Active Business Session Banner */}
       {selectedBusiness && (
