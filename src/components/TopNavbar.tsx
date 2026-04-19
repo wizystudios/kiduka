@@ -65,7 +65,7 @@ export const TopNavbar = () => {
   if (!user) return null;
 
   return (
-    <div className="fixed top-0 left-0 right-0 z-50 border-b border-border bg-background/95 backdrop-blur-sm md:hidden">
+    <div className="fixed top-0 left-0 right-0 z-50 border-b border-border/50 bg-transparent md:hidden">
       {/* Main row: hamburger + logo + alerts + notification */}
       <div className="flex items-center gap-1.5 px-2 py-1.5">
         {/* Hamburger menu */}

@@ -583,7 +583,7 @@ export const VoicePOS = () => {
       {/* Listening Status */}
       <div className="flex flex-col items-center space-y-4">
         <button
-          onClick={isListening ? stopListening : startContinuousListening}
+          onClick={isListening ? stopListening : () => startContinuousListening({ persist: true })}
           className={`relative w-24 h-24 rounded-full flex items-center justify-center transition-all duration-300 ${
             isListening 
               ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/40' 
