@@ -29,7 +29,6 @@ export function AppLayout({ children }: AppLayoutProps) {
   useEffect(() => {
     const mobileLockedRoutes = new Set([
       '/dashboard',
-      '/super-admin',
       '/sokoni',
       '/duka',
     ]);

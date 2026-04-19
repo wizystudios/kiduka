@@ -553,13 +553,16 @@ export const VoicePOS = () => {
     if (!user || autoStartAttemptedRef.current) return;
     autoStartAttemptedRef.current = true;
 
+    // Auto-start Nurath in passive (sleeping) mode by default — she only wakes on her name.
+    // Users can disable by clicking the mic button.
+    let optedOut = false;
     try {
-      const shouldAutoStart = window.localStorage.getItem(NURATH_AUTO_LISTEN_KEY) === 'true';
-      if (shouldAutoStart) {
-        startContinuousListening({ persist: false });
-      }
+      optedOut = window.localStorage.getItem(NURATH_AUTO_LISTEN_KEY) === 'false';
     } catch {
-      // ignore storage read failures
+      // ignore
+    }
+    if (!optedOut) {
+      startContinuousListening({ persist: false });
     }
   }, [startContinuousListening, user]);
 
