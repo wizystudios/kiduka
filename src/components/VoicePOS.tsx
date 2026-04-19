@@ -15,6 +15,7 @@ interface Product {
   price: number;
   stock_quantity: number;
   barcode?: string;
+  low_stock_threshold?: number;
 }
 
 interface SaleItem {
@@ -45,10 +46,32 @@ declare global {
   }
 }
 
+const NURATH_AUTO_LISTEN_KEY = 'kiduka_nurath_handsfree_enabled';
+const WAKE_WORD_PATTERNS = [/\bnurath\b/i, /\bnurat\b/i, /\bnura\b/i];
+const SLEEP_PATTERNS = [/\bzima\b/i, /\blala\b/i, /\bnyamaza\b/i, /\bturn ?off\b/i, /\bstop listening\b/i];
+
+const normalizeVoiceText = (value: string) =>
+  value
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+const stripWakeWord = (value: string) =>
+  value
+    .replace(/\bnurath\b/gi, '')
+    .replace(/\bnurat\b/gi, '')
+    .replace(/\bnura\b/gi, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+
 export const VoicePOS = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [isListening, setIsListening] = useState(false);
+  const [assistantMode, setAssistantMode] = useState<'disabled' | 'sleeping' | 'awake'>('disabled');
   const [currentTranscript, setCurrentTranscript] = useState('');
   const [lastResponse, setLastResponse] = useState('');
   const [currentSale, setCurrentSale] = useState<SaleItem[]>([]);
@@ -62,6 +85,7 @@ export const VoicePOS = () => {
   const currentSaleRef = useRef<SaleItem[]>([]);
   const conversationHistoryRef = useRef<VoiceAssistantMessage[]>([]);
   const restartTimeoutRef = useRef<number | null>(null);
+  const autoStartAttemptedRef = useRef(false);
 
   // Keep ref in sync
   useEffect(() => {
@@ -77,7 +101,10 @@ export const VoicePOS = () => {
   const fetchProducts = useCallback(async () => {
     if (!user) return;
     try {
-      const { data } = await supabase.from('products').select('*').eq('owner_id', user.id);
+      const { data } = await supabase
+        .from('products')
+        .select('id, name, price, stock_quantity, barcode, low_stock_threshold')
+        .eq('owner_id', user.id);
       setProducts(data || []);
     } catch (error) {
       console.error('Error fetching products:', error);
@@ -88,11 +115,19 @@ export const VoicePOS = () => {
     fetchProducts();
   }, [fetchProducts]);
 
+  const persistHandsfreePreference = useCallback((enabled: boolean) => {
+    try {
+      window.localStorage.setItem(NURATH_AUTO_LISTEN_KEY, enabled ? 'true' : 'false');
+    } catch {
+      // ignore storage write failures
+    }
+  }, []);
+
   const speakResponse = useCallback((text: string): Promise<void> => {
     return new Promise((resolve) => {
       isSpeakingRef.current = true;
 
-      speakAssistantText(text)
+      speakAssistantText(text, { preferredVoiceGender: 'female' })
         .catch(() => undefined)
         .finally(() => {
         isSpeakingRef.current = false;
@@ -285,6 +320,18 @@ export const VoicePOS = () => {
   const processVoiceCommand = useCallback(async (command: string) => {
     if (!user || !commandProcessorRef.current) return;
 
+    const normalizedCommand = normalizeVoiceText(command);
+    const cleanedCommand = stripWakeWord(command) || command;
+
+    if (SLEEP_PATTERNS.some((pattern) => pattern.test(normalizedCommand))) {
+      const sleepReply = 'Sawa, nimelala. Ukiita Nurath nitarudi.';
+      setAssistantMode('sleeping');
+      setLastResponse(sleepReply);
+      rememberConversation(command, sleepReply);
+      await speakResponse(sleepReply);
+      return;
+    }
+
     processingRef.current = true;
     setProcessing(true);
 
@@ -293,10 +340,10 @@ export const VoicePOS = () => {
     }
 
     try {
-      let result = await commandProcessorRef.current.processCommand(command, user.id);
+      let result = await commandProcessorRef.current.processCommand(cleanedCommand, user.id);
 
       if (!result.success) {
-        const aiResult = await askVoiceAssistant(command);
+        const aiResult = await askVoiceAssistant(cleanedCommand);
 
         if (aiResult?.success) {
           const matchedProduct = aiResult.productId ? products.find((product) => product.id === aiResult.productId) : undefined;
@@ -319,14 +366,14 @@ export const VoicePOS = () => {
       try {
         await supabase.from('voice_commands').insert([{
           user_id: user.id,
-          command_text: command,
+          command_text: cleanedCommand,
           command_type: 'voice_command',
           result: { ...result, finalMessage } as any
         }]);
       } catch {}
 
       setLastResponse(finalMessage);
-      rememberConversation(command, finalMessage);
+      rememberConversation(cleanedCommand, finalMessage);
       await speakResponse(finalMessage);
     } catch (error) {
       const errMsg = 'Samahani, kuna hitilafu. Jaribu tena.';
@@ -347,7 +394,7 @@ export const VoicePOS = () => {
     }
   }, [applyAssistantAction, askVoiceAssistant, products, rememberConversation, speakResponse, user]);
 
-  const startContinuousListening = useCallback(() => {
+  const startContinuousListening = useCallback((options?: { persist?: boolean }) => {
     const initializeRecognition = async () => {
       if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
         toast({ title: 'Hakuna Msaada wa Sauti', description: 'Kivinjari hiki hakitumii utambuzi wa sauti', variant: 'destructive' });
@@ -367,10 +414,11 @@ export const VoicePOS = () => {
       recognition.continuous = true;
       recognition.interimResults = true;
       recognition.lang = 'sw-TZ';
-      recognition.maxAlternatives = 3;
+      recognition.maxAlternatives = 1;
 
       recognition.onstart = () => {
         setIsListening(true);
+        setAssistantMode((current) => (current === 'awake' ? 'awake' : 'sleeping'));
       };
 
       recognition.onresult = (event: any) => {
@@ -389,12 +437,44 @@ export const VoicePOS = () => {
         }
 
         if (interimTranscript) {
-          setCurrentTranscript(interimTranscript);
+          setCurrentTranscript(interimTranscript.trim());
         }
 
         if (finalTranscript.trim()) {
-          setCurrentTranscript(finalTranscript.trim());
-          void processVoiceCommand(finalTranscript.trim());
+          const spokenText = finalTranscript.trim();
+          const normalizedFinal = normalizeVoiceText(spokenText);
+
+          if (assistantMode !== 'awake') {
+            if (WAKE_WORD_PATTERNS.some((pattern) => pattern.test(normalizedFinal))) {
+              const wakeMessage = 'Naam, mimi ni Nurath. Niko tayari.';
+              const followUpCommand = stripWakeWord(spokenText);
+              setAssistantMode('awake');
+
+              if (followUpCommand) {
+                setCurrentTranscript(followUpCommand);
+                void processVoiceCommand(followUpCommand);
+              } else {
+                setCurrentTranscript(spokenText);
+                setLastResponse(wakeMessage);
+                void speakResponse('Naam?');
+              }
+            }
+            return;
+          }
+
+          if (SLEEP_PATTERNS.some((pattern) => pattern.test(normalizedFinal))) {
+            const sleepReply = 'Sawa, nimelala. Ukiita Nurath nitarudi.';
+            setAssistantMode('sleeping');
+            setCurrentTranscript(spokenText);
+            setLastResponse(sleepReply);
+            rememberConversation(spokenText, sleepReply);
+            void speakResponse(sleepReply);
+            return;
+          }
+
+          const cleanedText = stripWakeWord(spokenText) || spokenText;
+          setCurrentTranscript(cleanedText);
+          void processVoiceCommand(cleanedText);
         }
       };
 
@@ -440,6 +520,9 @@ export const VoicePOS = () => {
 
       recognitionRef.current = recognition;
       shouldRestartRef.current = true;
+      if (options?.persist !== false) {
+        persistHandsfreePreference(true);
+      }
 
       try {
         recognition.start();
@@ -451,18 +534,34 @@ export const VoicePOS = () => {
     };
 
     void initializeRecognition();
-  }, [ensureMicrophonePermission, processVoiceCommand, toast]);
+  }, [assistantMode, ensureMicrophonePermission, persistHandsfreePreference, processVoiceCommand, rememberConversation, speakResponse, toast]);
 
   const stopListening = useCallback(() => {
     shouldRestartRef.current = false;
+    persistHandsfreePreference(false);
     if (recognitionRef.current) {
       try { recognitionRef.current.stop(); } catch {}
     }
     window.clearTimeout(restartTimeoutRef.current ?? undefined);
     setIsListening(false);
+    setAssistantMode('disabled');
     setCurrentTranscript('');
     window.speechSynthesis.cancel();
-  }, []);
+  }, [persistHandsfreePreference]);
+
+  useEffect(() => {
+    if (!user || autoStartAttemptedRef.current) return;
+    autoStartAttemptedRef.current = true;
+
+    try {
+      const shouldAutoStart = window.localStorage.getItem(NURATH_AUTO_LISTEN_KEY) === 'true';
+      if (shouldAutoStart) {
+        startContinuousListening({ persist: false });
+      }
+    } catch {
+      // ignore storage read failures
+    }
+  }, [startContinuousListening, user]);
 
   useEffect(() => {
     if (!user) return;
@@ -484,7 +583,7 @@ export const VoicePOS = () => {
       {/* Listening Status */}
       <div className="flex flex-col items-center space-y-4">
         <button
-          onClick={isListening ? stopListening : startContinuousListening}
+          onClick={isListening ? stopListening : () => startContinuousListening({ persist: true })}
           className={`relative w-24 h-24 rounded-full flex items-center justify-center transition-all duration-300 ${
             isListening 
               ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/40' 
@@ -502,7 +601,13 @@ export const VoicePOS = () => {
         
         <div className="text-center">
           <p className="text-sm font-medium text-foreground">
-              {processing ? 'Ninakuchambulia ombi lako...' : isListening ? 'Ongea kawaida, nitakuelewa.' : 'Bonyeza maikrofoni kuanza.'}
+              {processing
+                ? 'Nurath anajibu sasa...'
+                : isListening
+                  ? assistantMode === 'awake'
+                    ? 'Nurath yuko hewani. Ongea sasa.'
+                    : 'Nurath anasikiliza kwa jina lake tu.'
+                  : 'Bonyeza kuwasha Nurath.'}
           </p>
           {currentTranscript && (
             <p className="text-xs text-muted-foreground mt-1 italic">"{currentTranscript}"</p>
@@ -555,7 +660,7 @@ export const VoicePOS = () => {
       )}
 
       <div className="text-center space-y-1">
-        <p className="text-xs text-muted-foreground">Ongea kawaida tu: “niambie bidhaa zilizokwisha”, “ongeza mkate mbili”, au “nipatie ripoti ya leo”.</p>
+        <p className="text-xs text-muted-foreground">Sema “Nurath” kumwamsha, kisha sema oda yako. Ukisema “turn off” au “zima”, atalala mwenyewe.</p>
       </div>
     </div>
   );

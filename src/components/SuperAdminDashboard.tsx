@@ -946,14 +946,14 @@ export const SuperAdminDashboard = () => {
   } : stats;
 
   const statCards: { title: string; value: number; icon: JSX.Element; color: string; tab?: string }[] = [
-    { title: 'Watumiaji', value: filteredStats.totalUsers, icon: <Users className="h-5 w-5" />, color: 'text-blue-600', tab: 'users' },
-    { title: 'Bidhaa', value: filteredStats.totalProducts, icon: <Package className="h-5 w-5" />, color: 'text-green-600', tab: 'products' },
-    { title: 'Mauzo', value: filteredStats.totalSales, icon: <ShoppingCart className="h-5 w-5" />, color: 'text-purple-600', tab: 'sales' },
-    { title: 'Mapato', value: filteredStats.totalRevenue, icon: <Wallet className="h-5 w-5" />, color: 'text-emerald-600', tab: 'analytics' },
-    { title: 'Oda Sokoni', value: filteredStats.totalOrders, icon: <Store className="h-5 w-5" />, color: 'text-orange-600', tab: 'orders' },
-    { title: 'Matumizi', value: filteredStats.totalExpenses, icon: <CreditCard className="h-5 w-5" />, color: 'text-red-600', tab: 'more' },
-    { title: 'Wateja', value: filteredStats.totalCustomers, icon: <Users className="h-5 w-5" />, color: 'text-indigo-600', tab: 'more' },
-    { title: 'Mikopo Active', value: filteredStats.activeLoans, icon: <TrendingUp className="h-5 w-5" />, color: 'text-yellow-600', tab: 'overview' },
+    { title: 'Watumiaji', value: filteredStats.totalUsers, icon: <Users className="h-5 w-5" />, color: 'text-primary', tab: 'users' },
+    { title: 'Bidhaa', value: filteredStats.totalProducts, icon: <Package className="h-5 w-5" />, color: 'text-success', tab: 'products' },
+    { title: 'Mauzo', value: filteredStats.totalSales, icon: <ShoppingCart className="h-5 w-5" />, color: 'text-primary', tab: 'sales' },
+    { title: 'Mapato', value: filteredStats.totalRevenue, icon: <Wallet className="h-5 w-5" />, color: 'text-success', tab: 'analytics' },
+    { title: 'Oda Sokoni', value: filteredStats.totalOrders, icon: <Store className="h-5 w-5" />, color: 'text-warning', tab: 'orders' },
+    { title: 'Matumizi', value: filteredStats.totalExpenses, icon: <CreditCard className="h-5 w-5" />, color: 'text-destructive', tab: 'more' },
+    { title: 'Wateja', value: filteredStats.totalCustomers, icon: <Users className="h-5 w-5" />, color: 'text-foreground', tab: 'more' },
+    { title: 'Mikopo', value: filteredStats.activeLoans, icon: <TrendingUp className="h-5 w-5" />, color: 'text-warning', tab: 'overview' },
   ];
   
   const formatCurrency = (amount: number) => `TSh ${amount.toLocaleString()}`;
@@ -1129,15 +1129,15 @@ export const SuperAdminDashboard = () => {
       </Dialog>
       
       {/* Stats - horizontal scroll on mobile, clickable chips */}
-      <div className="flex gap-2 overflow-x-auto -mx-1 px-1 pb-1 [&::-webkit-scrollbar]:hidden snap-x snap-mandatory" style={{ scrollbarWidth: 'none' }}>
+      <div className="grid grid-cols-4 gap-x-2 gap-y-3 px-1 pb-1 md:flex md:gap-2">
         {statCards.map((stat, idx) => (
           <button
             key={idx}
             type="button"
             onClick={() => stat.tab && setActiveTab(stat.tab)}
-            className="flex-shrink-0 snap-start min-w-[92px] md:min-w-[110px] rounded-2xl border bg-card hover:bg-accent transition-colors p-2.5 md:p-3 text-left active:scale-95"
+            className="min-w-0 rounded-none border-0 bg-transparent p-0 text-left shadow-none transition-opacity hover:opacity-80 active:scale-95 md:min-w-[110px]"
           >
-            <div className="flex items-center justify-between gap-1.5 mb-1">
+            <div className="flex items-center justify-start gap-1.5 mb-1">
               <div className={`${stat.color} flex-shrink-0`}>{stat.icon}</div>
             </div>
             <p className="text-base md:text-lg font-bold leading-none truncate">
@@ -1152,11 +1152,11 @@ export const SuperAdminDashboard = () => {
 
       {/* Main Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <div className="w-full overflow-x-auto -mx-1 px-1 [&::-webkit-scrollbar]:hidden" style={{ scrollbarWidth: 'none' }}>
-          <TabsList className="inline-flex w-max gap-1 mb-4 p-1">
-            <TabsTrigger value="overview" className="text-xs px-3">Overview</TabsTrigger>
-            <TabsTrigger value="analytics" className="text-xs px-3">Analytics</TabsTrigger>
-            <TabsTrigger value="subscriptions" className="text-xs px-3 relative">
+        <div className="w-full px-1">
+          <TabsList className="mb-4 flex h-auto w-full flex-wrap justify-start gap-1 bg-transparent p-0">
+            <TabsTrigger value="overview" className="h-8 rounded-full border border-border bg-transparent px-3 text-[11px]">Overview</TabsTrigger>
+            <TabsTrigger value="analytics" className="h-8 rounded-full border border-border bg-transparent px-3 text-[11px]">Analytics</TabsTrigger>
+            <TabsTrigger value="subscriptions" className="relative h-8 rounded-full border border-border bg-transparent px-3 text-[11px]">
               Usajili
               {stats.pendingSubscriptions > 0 && (
                 <Badge className="absolute -top-1 -right-1 h-4 w-4 p-0 flex items-center justify-center text-[10px] bg-destructive">
@@ -1164,16 +1164,16 @@ export const SuperAdminDashboard = () => {
                 </Badge>
               )}
             </TabsTrigger>
-            <TabsTrigger value="compliance" className="text-xs px-3">Sheria</TabsTrigger>
-            <TabsTrigger value="users" className="text-xs px-3">Watumiaji</TabsTrigger>
-            <TabsTrigger value="activities" className="text-xs px-3">Shughuli</TabsTrigger>
-            <TabsTrigger value="products" className="text-xs px-3">Bidhaa</TabsTrigger>
-            <TabsTrigger value="sales" className="text-xs px-3">Mauzo</TabsTrigger>
-            <TabsTrigger value="orders" className="text-xs px-3">Oda</TabsTrigger>
-            <TabsTrigger value="marketplace" className="text-xs px-3">Sokoni</TabsTrigger>
-            <TabsTrigger value="ads" className="text-xs px-3">Matangazo</TabsTrigger>
-            <TabsTrigger value="chat" className="text-xs px-3">Mazungumzo</TabsTrigger>
-            <TabsTrigger value="more" className="text-xs px-3">Zaidi</TabsTrigger>
+            <TabsTrigger value="compliance" className="h-8 rounded-full border border-border bg-transparent px-3 text-[11px]">Sheria</TabsTrigger>
+            <TabsTrigger value="users" className="h-8 rounded-full border border-border bg-transparent px-3 text-[11px]">Watumiaji</TabsTrigger>
+            <TabsTrigger value="activities" className="h-8 rounded-full border border-border bg-transparent px-3 text-[11px]">Shughuli</TabsTrigger>
+            <TabsTrigger value="products" className="h-8 rounded-full border border-border bg-transparent px-3 text-[11px]">Bidhaa</TabsTrigger>
+            <TabsTrigger value="sales" className="h-8 rounded-full border border-border bg-transparent px-3 text-[11px]">Mauzo</TabsTrigger>
+            <TabsTrigger value="orders" className="h-8 rounded-full border border-border bg-transparent px-3 text-[11px]">Oda</TabsTrigger>
+            <TabsTrigger value="marketplace" className="h-8 rounded-full border border-border bg-transparent px-3 text-[11px]">Sokoni</TabsTrigger>
+            <TabsTrigger value="ads" className="h-8 rounded-full border border-border bg-transparent px-3 text-[11px]">Matangazo</TabsTrigger>
+            <TabsTrigger value="chat" className="h-8 rounded-full border border-border bg-transparent px-3 text-[11px]">Mazungumzo</TabsTrigger>
+            <TabsTrigger value="more" className="h-8 rounded-full border border-border bg-transparent px-3 text-[11px]">Zaidi</TabsTrigger>
           </TabsList>
         </div>
 

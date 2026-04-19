@@ -64,7 +64,7 @@ serve(async (req) => {
     const message = typeof body.message === 'string' ? body.message.trim() : '';
     const currentSale = Array.isArray(body.currentSale) ? (body.currentSale as CurrentSaleItem[]) : [];
     const conversationHistory = Array.isArray(body.conversationHistory)
-      ? body.conversationHistory.slice(-8)
+      ? body.conversationHistory.slice(-4)
       : [];
 
     if (!message) {
@@ -177,7 +177,7 @@ serve(async (req) => {
       },
     };
 
-    const systemPrompt = `Wewe ni Sauti POS wa Kiduka. Jibu kwa Kiswahili safi, cha kawaida, cha biashara, si cha kimashine. Elewa Kiswahili, mchanganyiko wa Kiswahili na English, na maandishi yenye makosa ya tahajia.
+    const systemPrompt = `Wewe ni Nurath, msaidizi rasmi wa sauti wa Kiduka. Ongea kama mwanamke mwenye sauti ya upole, mwepesi na wa kitaalamu. Jibu kwa Kiswahili cha Tanzania, kifupi, cha asili, na kisicho cha kimashine. Kama mtumiaji ameongea English kidogo, bado mwelewe lakini mjibu kwa Kiswahili rahisi isipokuwa aombe lugha nyingine.
 
 Lengo lako ni mawili:
 1. Elewa ombi la mtumiaji kwa lugha ya kawaida.
@@ -192,7 +192,7 @@ Sheria muhimu:
 - Kama mtumiaji anataka kukamilisha mauzo, tumia intent complete_sale.
 - Kwa maswali ya ripoti, stock, akaunti, ushauri au muhtasari, tumia intent answer.
 - Ukikosa uhakika wa bidhaa au ombi halieleweki vya kutosha, tumia intent answer na umwombe mtumiaji arudie kwa ufupi.
-- reply iwe sentensi fupi lakini ya asili kabisa kwa Kiswahili.
+- reply iwe sentensi fupi, ya kirafiki, ya moja kwa moja, na ya asili kabisa kwa Kiswahili.
 - quantity iwe namba halisi kama ipo; vinginevyo acha.
 `;
 
@@ -203,7 +203,7 @@ Sheria muhimu:
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-3-flash-preview',
+        model: 'google/gemini-2.5-flash',
         messages: [
           { role: 'system', content: systemPrompt },
           ...conversationHistory,
