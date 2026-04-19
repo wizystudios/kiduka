@@ -1,5 +1,6 @@
 const SWAHILI_VOICE_PATTERNS = [/\bsw\b/i, /kiswahili/i, /swahili/i];
 const EAST_AFRICA_ENGLISH_PATTERNS = [/en-ke/i, /en-tz/i, /kenya/i, /tanzania/i];
+const FEMALE_VOICE_PATTERNS = [/female/i, /woman/i, /zira/i, /sarah/i, /aria/i, /samantha/i, /zira desktop/i];
 
 const splitIntoSpeechChunks = (text: string, maxLength = 180) => {
   const cleanText = text
@@ -80,11 +81,17 @@ const loadVoices = async () => {
   });
 };
 
-const selectBestVoice = (voices: SpeechSynthesisVoice[]) => {
+const selectBestVoice = (voices: SpeechSynthesisVoice[], preferredVoiceGender: 'female' | 'male' = 'female') => {
+  const genderFiltered = preferredVoiceGender === 'female'
+    ? voices.filter((voice) => FEMALE_VOICE_PATTERNS.some((pattern) => pattern.test(voice.name)))
+    : voices;
+
+  const preferredPool = genderFiltered.length > 0 ? genderFiltered : voices;
+
   return (
-    voices.find((voice) => SWAHILI_VOICE_PATTERNS.some((pattern) => pattern.test(voice.lang) || pattern.test(voice.name))) ||
-    voices.find((voice) => EAST_AFRICA_ENGLISH_PATTERNS.some((pattern) => pattern.test(voice.lang) || pattern.test(voice.name))) ||
-    voices.find((voice) => voice.lang.toLowerCase().startsWith('en')) ||
+    preferredPool.find((voice) => SWAHILI_VOICE_PATTERNS.some((pattern) => pattern.test(voice.lang) || pattern.test(voice.name))) ||
+    preferredPool.find((voice) => EAST_AFRICA_ENGLISH_PATTERNS.some((pattern) => pattern.test(voice.lang) || pattern.test(voice.name))) ||
+    preferredPool.find((voice) => voice.lang.toLowerCase().startsWith('en')) ||
     null
   );
 };
@@ -106,13 +113,16 @@ const speakChunk = (chunk: string, voice: SpeechSynthesisVoice | null) =>
     window.speechSynthesis.speak(utterance);
   });
 
-export const speakAssistantText = async (text: string) => {
+export const speakAssistantText = async (
+  text: string,
+  options?: { preferredVoiceGender?: 'female' | 'male' },
+) => {
   if (!('speechSynthesis' in window) || !text.trim()) return;
 
   window.speechSynthesis.cancel();
 
   const voices = await loadVoices();
-  const voice = selectBestVoice(voices);
+  const voice = selectBestVoice(voices, options?.preferredVoiceGender ?? 'female');
   const chunks = splitIntoSpeechChunks(text);
 
   for (const chunk of chunks) {
