@@ -45,10 +45,32 @@ declare global {
   }
 }
 
+const NURATH_AUTO_LISTEN_KEY = 'kiduka_nurath_handsfree_enabled';
+const WAKE_WORD_PATTERNS = [/\bnurath\b/i, /\bnurat\b/i, /\bnura\b/i];
+const SLEEP_PATTERNS = [/\bzima\b/i, /\blala\b/i, /\bnyamaza\b/i, /\bturn ?off\b/i, /\bstop listening\b/i];
+
+const normalizeVoiceText = (value: string) =>
+  value
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+const stripWakeWord = (value: string) =>
+  value
+    .replace(/\bnurath\b/gi, '')
+    .replace(/\bnurat\b/gi, '')
+    .replace(/\bnura\b/gi, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+
 export const VoicePOS = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [isListening, setIsListening] = useState(false);
+  const [assistantMode, setAssistantMode] = useState<'disabled' | 'sleeping' | 'awake'>('disabled');
   const [currentTranscript, setCurrentTranscript] = useState('');
   const [lastResponse, setLastResponse] = useState('');
   const [currentSale, setCurrentSale] = useState<SaleItem[]>([]);
@@ -62,6 +84,7 @@ export const VoicePOS = () => {
   const currentSaleRef = useRef<SaleItem[]>([]);
   const conversationHistoryRef = useRef<VoiceAssistantMessage[]>([]);
   const restartTimeoutRef = useRef<number | null>(null);
+  const autoStartAttemptedRef = useRef(false);
 
   // Keep ref in sync
   useEffect(() => {
