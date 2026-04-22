@@ -614,6 +614,40 @@ export const VoicePOS = () => {
   }, [startContinuousListening, user]);
 
   useEffect(() => {
+    if (!navigator.permissions?.query) return;
+
+    let isMounted = true;
+    let permissionStatus: PermissionStatus | null = null;
+
+    const syncPermission = async () => {
+      try {
+        permissionStatus = await navigator.permissions.query({ name: 'microphone' as PermissionName });
+        if (!isMounted) return;
+
+        if (permissionStatus.state === 'granted') setMicPermissionState('granted');
+        else if (permissionStatus.state === 'denied') setMicPermissionState('denied');
+        else setMicPermissionState('needs-gesture');
+
+        permissionStatus.onchange = () => {
+          if (!isMounted) return;
+          if (permissionStatus?.state === 'granted') setMicPermissionState('granted');
+          else if (permissionStatus?.state === 'denied') setMicPermissionState('denied');
+          else setMicPermissionState('needs-gesture');
+        };
+      } catch {
+        // ignore permission query failures
+      }
+    };
+
+    void syncPermission();
+
+    return () => {
+      isMounted = false;
+      if (permissionStatus) permissionStatus.onchange = null;
+    };
+  }, []);
+
+  useEffect(() => {
     if (!user) return;
 
     return () => {
@@ -657,6 +691,8 @@ export const VoicePOS = () => {
                   ? assistantMode === 'awake'
                     ? 'Nurath yuko hewani. Ongea sasa.'
                     : 'Nurath anasikiliza kwa jina lake tu.'
+                  : micPermissionState === 'denied'
+                    ? 'Ruhusu maikrofoni kwanza, kisha Nurath atasikia kwa jina lake.'
                   : micPermissionState === 'needs-gesture'
                     ? 'Gusa maikrofoni mara moja, kisha sema “Nurath”.'
                     : 'Bonyeza kuwasha Nurath.'}
@@ -712,7 +748,11 @@ export const VoicePOS = () => {
       )}
 
       <div className="text-center space-y-1">
-        <p className="text-xs text-muted-foreground">Sema “Nurath” kumwamsha, kisha sema oda yako. Ukisema “turn off” au “zima”, atalala mwenyewe.</p>
+        <p className="text-xs text-muted-foreground">
+          {micPermissionState === 'denied'
+            ? 'Kivinjari kimezuia maikrofoni. Iruhusu kwanza; baada ya hapo utasema “Nurath” bila kubonyeza kila mara.'
+            : 'Sema “Nurath” kumwamsha, kisha sema oda yako. Ukisema “turn off” au “zima”, atalala mwenyewe.'}
+        </p>
       </div>
     </div>
   );
