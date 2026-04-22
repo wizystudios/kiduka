@@ -72,6 +72,7 @@ export const VoicePOS = () => {
   const { toast } = useToast();
   const [isListening, setIsListening] = useState(false);
   const [assistantMode, setAssistantMode] = useState<'disabled' | 'sleeping' | 'awake'>('disabled');
+  const [micPermissionState, setMicPermissionState] = useState<'unknown' | 'granted' | 'needs-gesture' | 'denied' | 'unsupported'>('unknown');
   const [currentTranscript, setCurrentTranscript] = useState('');
   const [lastResponse, setLastResponse] = useState('');
   const [currentSale, setCurrentSale] = useState<SaleItem[]>([]);
@@ -79,6 +80,7 @@ export const VoicePOS = () => {
   const [processing, setProcessing] = useState(false);
   const recognitionRef = useRef<any>(null);
   const commandProcessorRef = useRef<VoiceCommandProcessor | null>(null);
+  const assistantModeRef = useRef<'disabled' | 'sleeping' | 'awake'>('disabled');
   const shouldRestartRef = useRef(false);
   const isSpeakingRef = useRef(false);
   const processingRef = useRef(false);
@@ -86,6 +88,11 @@ export const VoicePOS = () => {
   const conversationHistoryRef = useRef<VoiceAssistantMessage[]>([]);
   const restartTimeoutRef = useRef<number | null>(null);
   const autoStartAttemptedRef = useRef(false);
+
+  const updateAssistantMode = useCallback((mode: 'disabled' | 'sleeping' | 'awake') => {
+    assistantModeRef.current = mode;
+    setAssistantMode(mode);
+  }, []);
 
   // Keep ref in sync
   useEffect(() => {
@@ -136,10 +143,34 @@ export const VoicePOS = () => {
     });
   }, []);
 
-  const ensureMicrophonePermission = useCallback(async () => {
-    if (!navigator.mediaDevices?.getUserMedia) return true;
+  const ensureMicrophonePermission = useCallback(async (mode: 'auto' | 'gesture' = 'gesture') => {
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setMicPermissionState('unsupported');
+      return false;
+    }
 
     try {
+      if (navigator.permissions?.query) {
+        const status = await navigator.permissions.query({ name: 'microphone' as PermissionName });
+
+        if (status.state === 'granted') {
+          setMicPermissionState('granted');
+          return true;
+        }
+
+        if (status.state === 'denied') {
+          setMicPermissionState('denied');
+          setLastResponse('Maikrofoni imezuiwa kwenye kivinjari. Iruhusu kisha urudi tena.');
+          return false;
+        }
+
+        if (mode === 'auto') {
+          setMicPermissionState('needs-gesture');
+          setLastResponse('Gusa maikrofoni mara moja kumpa Nurath ruhusa; baada ya hapo atawaka kwa jina lake tu.');
+          return false;
+        }
+      }
+
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
           echoCancellation: true,
@@ -147,12 +178,17 @@ export const VoicePOS = () => {
           autoGainControl: true,
         },
       });
+
       stream.getTracks().forEach((track) => track.stop());
+      setMicPermissionState('granted');
       return true;
     } catch (error) {
+      setMicPermissionState(mode === 'auto' ? 'needs-gesture' : 'denied');
       toast({
         title: 'Ruhusa ya Maikrofoni',
-        description: 'Ruhusu maikrofoni ili Voice POS ikusikie moja kwa moja.',
+        description: mode === 'auto'
+          ? 'Gusa maikrofoni mara moja kumpa Nurath ruhusa ya kusikiliza.'
+          : 'Ruhusu maikrofoni ili Voice POS ikusikie moja kwa moja.',
         variant: 'destructive',
       });
       return false;
@@ -325,7 +361,7 @@ export const VoicePOS = () => {
 
     if (SLEEP_PATTERNS.some((pattern) => pattern.test(normalizedCommand))) {
       const sleepReply = 'Sawa, nimelala. Ukiita Nurath nitarudi.';
-      setAssistantMode('sleeping');
+      updateAssistantMode('sleeping');
       setLastResponse(sleepReply);
       rememberConversation(command, sleepReply);
       await speakResponse(sleepReply);
@@ -392,7 +428,7 @@ export const VoicePOS = () => {
         }, 500);
       }
     }
-  }, [applyAssistantAction, askVoiceAssistant, products, rememberConversation, speakResponse, user]);
+  }, [applyAssistantAction, askVoiceAssistant, products, rememberConversation, speakResponse, updateAssistantMode, user]);
 
   const startContinuousListening = useCallback((options?: { persist?: boolean }) => {
     const initializeRecognition = async () => {
