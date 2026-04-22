@@ -100,9 +100,7 @@ export const VoicePOS = () => {
   }, [currentSale]);
 
   useEffect(() => {
-    if (products.length > 0) {
-      commandProcessorRef.current = new VoiceCommandProcessor(products, currentSaleRef.current);
-    }
+    commandProcessorRef.current = new VoiceCommandProcessor(products, currentSaleRef.current);
   }, [products, currentSale]);
 
   const fetchProducts = useCallback(async () => {
@@ -354,10 +352,12 @@ export const VoicePOS = () => {
   }, [completeSale]);
 
   const processVoiceCommand = useCallback(async (command: string) => {
-    if (!user || !commandProcessorRef.current) return;
+    if (!user) return;
 
     const normalizedCommand = normalizeVoiceText(command);
     const cleanedCommand = stripWakeWord(command) || command;
+    const processor = commandProcessorRef.current ?? new VoiceCommandProcessor(products, currentSaleRef.current);
+    commandProcessorRef.current = processor;
 
     if (SLEEP_PATTERNS.some((pattern) => pattern.test(normalizedCommand))) {
       const sleepReply = 'Sawa, nimelala. Ukiita Nurath nitarudi.';
@@ -376,7 +376,7 @@ export const VoicePOS = () => {
     }
 
     try {
-      let result = await commandProcessorRef.current.processCommand(cleanedCommand, user.id);
+        let result = await processor.processCommand(cleanedCommand, user.id);
 
       if (!result.success) {
         const aiResult = await askVoiceAssistant(cleanedCommand);
