@@ -633,7 +633,7 @@ export const VoicePOS = () => {
       {/* Listening Status */}
       <div className="flex flex-col items-center space-y-4">
         <button
-          onClick={isListening ? stopListening : () => startContinuousListening({ persist: true })}
+          onClick={isListening ? stopListening : () => startContinuousListening({ persist: true, requireGesture: true })}
           className={`relative w-24 h-24 rounded-full flex items-center justify-center transition-all duration-300 ${
             isListening 
               ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/40' 
@@ -657,7 +657,9 @@ export const VoicePOS = () => {
                   ? assistantMode === 'awake'
                     ? 'Nurath yuko hewani. Ongea sasa.'
                     : 'Nurath anasikiliza kwa jina lake tu.'
-                  : 'Bonyeza kuwasha Nurath.'}
+                  : micPermissionState === 'needs-gesture'
+                    ? 'Gusa maikrofoni mara moja, kisha sema “Nurath”.'
+                    : 'Bonyeza kuwasha Nurath.'}
           </p>
           {currentTranscript && (
             <p className="text-xs text-muted-foreground mt-1 italic">"{currentTranscript}"</p>
