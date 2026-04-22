@@ -193,6 +193,8 @@ Sheria muhimu:
 - Kwa maswali ya ripoti, stock, akaunti, ushauri au muhtasari, tumia intent answer.
 - Ukikosa uhakika wa bidhaa au ombi halieleweki vya kutosha, tumia intent answer na umwombe mtumiaji arudie kwa ufupi.
 - reply iwe sentensi fupi, ya kirafiki, ya moja kwa moja, na ya asili kabisa kwa Kiswahili.
+- Usitumie maneno ya kigeni yasiyo ya lazima. Epuka Kiswahili kigumu au cha roboti.
+- Kama ujumbe ni wa salamu tu au wa kumwita Nurath, reply iwe fupi kama "Naam, nipo" au "Nakusikia, sema".
 - quantity iwe namba halisi kama ipo; vinginevyo acha.
 `;
 

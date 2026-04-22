@@ -72,6 +72,7 @@ export const VoicePOS = () => {
   const { toast } = useToast();
   const [isListening, setIsListening] = useState(false);
   const [assistantMode, setAssistantMode] = useState<'disabled' | 'sleeping' | 'awake'>('disabled');
+  const [micPermissionState, setMicPermissionState] = useState<'unknown' | 'granted' | 'needs-gesture' | 'denied' | 'unsupported'>('unknown');
   const [currentTranscript, setCurrentTranscript] = useState('');
   const [lastResponse, setLastResponse] = useState('');
   const [currentSale, setCurrentSale] = useState<SaleItem[]>([]);
@@ -79,6 +80,7 @@ export const VoicePOS = () => {
   const [processing, setProcessing] = useState(false);
   const recognitionRef = useRef<any>(null);
   const commandProcessorRef = useRef<VoiceCommandProcessor | null>(null);
+  const assistantModeRef = useRef<'disabled' | 'sleeping' | 'awake'>('disabled');
   const shouldRestartRef = useRef(false);
   const isSpeakingRef = useRef(false);
   const processingRef = useRef(false);
@@ -87,15 +89,18 @@ export const VoicePOS = () => {
   const restartTimeoutRef = useRef<number | null>(null);
   const autoStartAttemptedRef = useRef(false);
 
+  const updateAssistantMode = useCallback((mode: 'disabled' | 'sleeping' | 'awake') => {
+    assistantModeRef.current = mode;
+    setAssistantMode(mode);
+  }, []);
+
   // Keep ref in sync
   useEffect(() => {
     currentSaleRef.current = currentSale;
   }, [currentSale]);
 
   useEffect(() => {
-    if (products.length > 0) {
-      commandProcessorRef.current = new VoiceCommandProcessor(products, currentSaleRef.current);
-    }
+    commandProcessorRef.current = new VoiceCommandProcessor(products, currentSaleRef.current);
   }, [products, currentSale]);
 
   const fetchProducts = useCallback(async () => {
@@ -136,10 +141,34 @@ export const VoicePOS = () => {
     });
   }, []);
 
-  const ensureMicrophonePermission = useCallback(async () => {
-    if (!navigator.mediaDevices?.getUserMedia) return true;
+  const ensureMicrophonePermission = useCallback(async (mode: 'auto' | 'gesture' = 'gesture') => {
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setMicPermissionState('unsupported');
+      return false;
+    }
 
     try {
+      if (navigator.permissions?.query) {
+        const status = await navigator.permissions.query({ name: 'microphone' as PermissionName });
+
+        if (status.state === 'granted') {
+          setMicPermissionState('granted');
+          return true;
+        }
+
+        if (status.state === 'denied') {
+          setMicPermissionState('denied');
+          setLastResponse('Maikrofoni imezuiwa kwenye kivinjari. Iruhusu kisha urudi tena.');
+          return false;
+        }
+
+        if (mode === 'auto') {
+          setMicPermissionState('needs-gesture');
+          setLastResponse('Gusa maikrofoni mara moja kumpa Nurath ruhusa; baada ya hapo atawaka kwa jina lake tu.');
+          return false;
+        }
+      }
+
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
           echoCancellation: true,
@@ -147,12 +176,17 @@ export const VoicePOS = () => {
           autoGainControl: true,
         },
       });
+
       stream.getTracks().forEach((track) => track.stop());
+      setMicPermissionState('granted');
       return true;
     } catch (error) {
+      setMicPermissionState(mode === 'auto' ? 'needs-gesture' : 'denied');
       toast({
         title: 'Ruhusa ya Maikrofoni',
-        description: 'Ruhusu maikrofoni ili Voice POS ikusikie moja kwa moja.',
+        description: mode === 'auto'
+          ? 'Gusa maikrofoni mara moja kumpa Nurath ruhusa ya kusikiliza.'
+          : 'Ruhusu maikrofoni ili Voice POS ikusikie moja kwa moja.',
         variant: 'destructive',
       });
       return false;
@@ -318,14 +352,16 @@ export const VoicePOS = () => {
   }, [completeSale]);
 
   const processVoiceCommand = useCallback(async (command: string) => {
-    if (!user || !commandProcessorRef.current) return;
+    if (!user) return;
 
     const normalizedCommand = normalizeVoiceText(command);
     const cleanedCommand = stripWakeWord(command) || command;
+    const processor = commandProcessorRef.current ?? new VoiceCommandProcessor(products, currentSaleRef.current);
+    commandProcessorRef.current = processor;
 
     if (SLEEP_PATTERNS.some((pattern) => pattern.test(normalizedCommand))) {
       const sleepReply = 'Sawa, nimelala. Ukiita Nurath nitarudi.';
-      setAssistantMode('sleeping');
+      updateAssistantMode('sleeping');
       setLastResponse(sleepReply);
       rememberConversation(command, sleepReply);
       await speakResponse(sleepReply);
@@ -340,7 +376,7 @@ export const VoicePOS = () => {
     }
 
     try {
-      let result = await commandProcessorRef.current.processCommand(cleanedCommand, user.id);
+        let result = await processor.processCommand(cleanedCommand, user.id);
 
       if (!result.success) {
         const aiResult = await askVoiceAssistant(cleanedCommand);
@@ -392,16 +428,17 @@ export const VoicePOS = () => {
         }, 500);
       }
     }
-  }, [applyAssistantAction, askVoiceAssistant, products, rememberConversation, speakResponse, user]);
+  }, [applyAssistantAction, askVoiceAssistant, products, rememberConversation, speakResponse, updateAssistantMode, user]);
 
-  const startContinuousListening = useCallback((options?: { persist?: boolean }) => {
+  const startContinuousListening = useCallback((options?: { persist?: boolean; requireGesture?: boolean }) => {
     const initializeRecognition = async () => {
       if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+        setMicPermissionState('unsupported');
         toast({ title: 'Hakuna Msaada wa Sauti', description: 'Kivinjari hiki hakitumii utambuzi wa sauti', variant: 'destructive' });
         return;
       }
 
-      const granted = await ensureMicrophonePermission();
+      const granted = await ensureMicrophonePermission(options?.requireGesture ? 'gesture' : 'auto');
       if (!granted) return;
 
       if (recognitionRef.current) {
@@ -417,8 +454,10 @@ export const VoicePOS = () => {
       recognition.maxAlternatives = 1;
 
       recognition.onstart = () => {
+        setMicPermissionState('granted');
         setIsListening(true);
-        setAssistantMode((current) => (current === 'awake' ? 'awake' : 'sleeping'));
+        updateAssistantMode(assistantModeRef.current === 'awake' ? 'awake' : 'sleeping');
+        setLastResponse((current) => current || 'Nurath anasikiliza. Sema “Nurath” kumwamsha.');
       };
 
       recognition.onresult = (event: any) => {
@@ -444,14 +483,15 @@ export const VoicePOS = () => {
           const spokenText = finalTranscript.trim();
           const normalizedFinal = normalizeVoiceText(spokenText);
 
-          if (assistantMode !== 'awake') {
+          if (assistantModeRef.current !== 'awake') {
             if (WAKE_WORD_PATTERNS.some((pattern) => pattern.test(normalizedFinal))) {
               const wakeMessage = 'Naam, mimi ni Nurath. Niko tayari.';
               const followUpCommand = stripWakeWord(spokenText);
-              setAssistantMode('awake');
+               updateAssistantMode('awake');
 
               if (followUpCommand) {
                 setCurrentTranscript(followUpCommand);
+                setLastResponse(`Nimekusikia: ${followUpCommand}`);
                 void processVoiceCommand(followUpCommand);
               } else {
                 setCurrentTranscript(spokenText);
@@ -464,7 +504,7 @@ export const VoicePOS = () => {
 
           if (SLEEP_PATTERNS.some((pattern) => pattern.test(normalizedFinal))) {
             const sleepReply = 'Sawa, nimelala. Ukiita Nurath nitarudi.';
-            setAssistantMode('sleeping');
+            updateAssistantMode('sleeping');
             setCurrentTranscript(spokenText);
             setLastResponse(sleepReply);
             rememberConversation(spokenText, sleepReply);
@@ -474,6 +514,7 @@ export const VoicePOS = () => {
 
           const cleanedText = stripWakeWord(spokenText) || spokenText;
           setCurrentTranscript(cleanedText);
+          setLastResponse(`Nimekusikia: ${cleanedText}`);
           void processVoiceCommand(cleanedText);
         }
       };
@@ -482,9 +523,11 @@ export const VoicePOS = () => {
         console.error('Speech error:', event.error);
 
         if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+          setMicPermissionState('denied');
           toast({ title: 'Ruhusa ya Maikrofoni', description: 'Ruhusu maikrofoni kwenye kivinjari ili uongee moja kwa moja.', variant: 'destructive' });
           shouldRestartRef.current = false;
           setIsListening(false);
+          updateAssistantMode('disabled');
           return;
         }
 
@@ -505,6 +548,9 @@ export const VoicePOS = () => {
       recognition.onend = () => {
         if (!shouldRestartRef.current) {
           setIsListening(false);
+          if (assistantModeRef.current !== 'disabled') {
+            updateAssistantMode('disabled');
+          }
           return;
         }
 
@@ -534,7 +580,7 @@ export const VoicePOS = () => {
     };
 
     void initializeRecognition();
-  }, [assistantMode, ensureMicrophonePermission, persistHandsfreePreference, processVoiceCommand, rememberConversation, speakResponse, toast]);
+  }, [ensureMicrophonePermission, persistHandsfreePreference, processVoiceCommand, rememberConversation, speakResponse, toast, updateAssistantMode]);
 
   const stopListening = useCallback(() => {
     shouldRestartRef.current = false;
@@ -544,10 +590,11 @@ export const VoicePOS = () => {
     }
     window.clearTimeout(restartTimeoutRef.current ?? undefined);
     setIsListening(false);
-    setAssistantMode('disabled');
+    updateAssistantMode('disabled');
     setCurrentTranscript('');
+    setLastResponse('Nurath amelala. Ukihitaji tena, gusa maikrofoni au uruhusu kuendelea kusikiliza.');
     window.speechSynthesis.cancel();
-  }, [persistHandsfreePreference]);
+  }, [persistHandsfreePreference, updateAssistantMode]);
 
   useEffect(() => {
     if (!user || autoStartAttemptedRef.current) return;
@@ -562,9 +609,43 @@ export const VoicePOS = () => {
       // ignore
     }
     if (!optedOut) {
-      startContinuousListening({ persist: false });
+      startContinuousListening({ persist: false, requireGesture: false });
     }
   }, [startContinuousListening, user]);
+
+  useEffect(() => {
+    if (!navigator.permissions?.query) return;
+
+    let isMounted = true;
+    let permissionStatus: PermissionStatus | null = null;
+
+    const syncPermission = async () => {
+      try {
+        permissionStatus = await navigator.permissions.query({ name: 'microphone' as PermissionName });
+        if (!isMounted) return;
+
+        if (permissionStatus.state === 'granted') setMicPermissionState('granted');
+        else if (permissionStatus.state === 'denied') setMicPermissionState('denied');
+        else setMicPermissionState('needs-gesture');
+
+        permissionStatus.onchange = () => {
+          if (!isMounted) return;
+          if (permissionStatus?.state === 'granted') setMicPermissionState('granted');
+          else if (permissionStatus?.state === 'denied') setMicPermissionState('denied');
+          else setMicPermissionState('needs-gesture');
+        };
+      } catch {
+        // ignore permission query failures
+      }
+    };
+
+    void syncPermission();
+
+    return () => {
+      isMounted = false;
+      if (permissionStatus) permissionStatus.onchange = null;
+    };
+  }, []);
 
   useEffect(() => {
     if (!user) return;
@@ -586,7 +667,7 @@ export const VoicePOS = () => {
       {/* Listening Status */}
       <div className="flex flex-col items-center space-y-4">
         <button
-          onClick={isListening ? stopListening : () => startContinuousListening({ persist: true })}
+          onClick={isListening ? stopListening : () => startContinuousListening({ persist: true, requireGesture: true })}
           className={`relative w-24 h-24 rounded-full flex items-center justify-center transition-all duration-300 ${
             isListening 
               ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/40' 
@@ -610,7 +691,11 @@ export const VoicePOS = () => {
                   ? assistantMode === 'awake'
                     ? 'Nurath yuko hewani. Ongea sasa.'
                     : 'Nurath anasikiliza kwa jina lake tu.'
-                  : 'Bonyeza kuwasha Nurath.'}
+                  : micPermissionState === 'denied'
+                    ? 'Ruhusu maikrofoni kwanza, kisha Nurath atasikia kwa jina lake.'
+                  : micPermissionState === 'needs-gesture'
+                    ? 'Gusa maikrofoni mara moja, kisha sema “Nurath”.'
+                    : 'Bonyeza kuwasha Nurath.'}
           </p>
           {currentTranscript && (
             <p className="text-xs text-muted-foreground mt-1 italic">"{currentTranscript}"</p>
@@ -663,7 +748,11 @@ export const VoicePOS = () => {
       )}
 
       <div className="text-center space-y-1">
-        <p className="text-xs text-muted-foreground">Sema “Nurath” kumwamsha, kisha sema oda yako. Ukisema “turn off” au “zima”, atalala mwenyewe.</p>
+        <p className="text-xs text-muted-foreground">
+          {micPermissionState === 'denied'
+            ? 'Kivinjari kimezuia maikrofoni. Iruhusu kwanza; baada ya hapo utasema “Nurath” bila kubonyeza kila mara.'
+            : 'Sema “Nurath” kumwamsha, kisha sema oda yako. Ukisema “turn off” au “zima”, atalala mwenyewe.'}
+        </p>
       </div>
     </div>
   );
