@@ -430,14 +430,15 @@ export const VoicePOS = () => {
     }
   }, [applyAssistantAction, askVoiceAssistant, products, rememberConversation, speakResponse, updateAssistantMode, user]);
 
-  const startContinuousListening = useCallback((options?: { persist?: boolean }) => {
+  const startContinuousListening = useCallback((options?: { persist?: boolean; requireGesture?: boolean }) => {
     const initializeRecognition = async () => {
       if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+        setMicPermissionState('unsupported');
         toast({ title: 'Hakuna Msaada wa Sauti', description: 'Kivinjari hiki hakitumii utambuzi wa sauti', variant: 'destructive' });
         return;
       }
 
-      const granted = await ensureMicrophonePermission();
+      const granted = await ensureMicrophonePermission(options?.requireGesture ? 'gesture' : 'auto');
       if (!granted) return;
 
       if (recognitionRef.current) {
@@ -453,8 +454,10 @@ export const VoicePOS = () => {
       recognition.maxAlternatives = 1;
 
       recognition.onstart = () => {
+        setMicPermissionState('granted');
         setIsListening(true);
-        setAssistantMode((current) => (current === 'awake' ? 'awake' : 'sleeping'));
+        updateAssistantMode(assistantModeRef.current === 'awake' ? 'awake' : 'sleeping');
+        setLastResponse((current) => current || 'Nurath anasikiliza. Sema “Nurath” kumwamsha.');
       };
 
       recognition.onresult = (event: any) => {
@@ -480,14 +483,15 @@ export const VoicePOS = () => {
           const spokenText = finalTranscript.trim();
           const normalizedFinal = normalizeVoiceText(spokenText);
 
-          if (assistantMode !== 'awake') {
+          if (assistantModeRef.current !== 'awake') {
             if (WAKE_WORD_PATTERNS.some((pattern) => pattern.test(normalizedFinal))) {
               const wakeMessage = 'Naam, mimi ni Nurath. Niko tayari.';
               const followUpCommand = stripWakeWord(spokenText);
-              setAssistantMode('awake');
+               updateAssistantMode('awake');
 
               if (followUpCommand) {
                 setCurrentTranscript(followUpCommand);
+                setLastResponse(`Nimekusikia: ${followUpCommand}`);
                 void processVoiceCommand(followUpCommand);
               } else {
                 setCurrentTranscript(spokenText);
@@ -500,7 +504,7 @@ export const VoicePOS = () => {
 
           if (SLEEP_PATTERNS.some((pattern) => pattern.test(normalizedFinal))) {
             const sleepReply = 'Sawa, nimelala. Ukiita Nurath nitarudi.';
-            setAssistantMode('sleeping');
+            updateAssistantMode('sleeping');
             setCurrentTranscript(spokenText);
             setLastResponse(sleepReply);
             rememberConversation(spokenText, sleepReply);
@@ -510,6 +514,7 @@ export const VoicePOS = () => {
 
           const cleanedText = stripWakeWord(spokenText) || spokenText;
           setCurrentTranscript(cleanedText);
+          setLastResponse(`Nimekusikia: ${cleanedText}`);
           void processVoiceCommand(cleanedText);
         }
       };
@@ -518,9 +523,11 @@ export const VoicePOS = () => {
         console.error('Speech error:', event.error);
 
         if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+          setMicPermissionState('denied');
           toast({ title: 'Ruhusa ya Maikrofoni', description: 'Ruhusu maikrofoni kwenye kivinjari ili uongee moja kwa moja.', variant: 'destructive' });
           shouldRestartRef.current = false;
           setIsListening(false);
+          updateAssistantMode('disabled');
           return;
         }
 
@@ -541,6 +548,9 @@ export const VoicePOS = () => {
       recognition.onend = () => {
         if (!shouldRestartRef.current) {
           setIsListening(false);
+          if (assistantModeRef.current !== 'disabled') {
+            updateAssistantMode('disabled');
+          }
           return;
         }
 
@@ -570,7 +580,7 @@ export const VoicePOS = () => {
     };
 
     void initializeRecognition();
-  }, [assistantMode, ensureMicrophonePermission, persistHandsfreePreference, processVoiceCommand, rememberConversation, speakResponse, toast]);
+  }, [ensureMicrophonePermission, persistHandsfreePreference, processVoiceCommand, rememberConversation, speakResponse, toast, updateAssistantMode]);
 
   const stopListening = useCallback(() => {
     shouldRestartRef.current = false;
@@ -580,10 +590,11 @@ export const VoicePOS = () => {
     }
     window.clearTimeout(restartTimeoutRef.current ?? undefined);
     setIsListening(false);
-    setAssistantMode('disabled');
+    updateAssistantMode('disabled');
     setCurrentTranscript('');
+    setLastResponse('Nurath amelala. Ukihitaji tena, gusa maikrofoni au uruhusu kuendelea kusikiliza.');
     window.speechSynthesis.cancel();
-  }, [persistHandsfreePreference]);
+  }, [persistHandsfreePreference, updateAssistantMode]);
 
   useEffect(() => {
     if (!user || autoStartAttemptedRef.current) return;
@@ -598,7 +609,7 @@ export const VoicePOS = () => {
       // ignore
     }
     if (!optedOut) {
-      startContinuousListening({ persist: false });
+      startContinuousListening({ persist: false, requireGesture: false });
     }
   }, [startContinuousListening, user]);
 
