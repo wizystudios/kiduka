@@ -1865,6 +1865,10 @@ export const SuperAdminDashboard = () => {
                   ))}
               </div>
             </TabsContent>
+
+            <TabsContent value="nurath" className="mt-4">
+              <NurathDiagnosticsPanel />
+            </TabsContent>
           </Tabs>
         </TabsContent>
       </Tabs>
