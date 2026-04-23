@@ -433,11 +433,12 @@ export const VoicePOS = () => {
   }, [appendLog, handleMicAccessError, startAudioMonitoring]);
 
   const rememberConversation = useCallback((command: string, reply: string) => {
-    conversationHistoryRef.current = [
+    const next: VoiceAssistantMessage[] = [
       ...conversationHistoryRef.current,
       { role: 'user', content: command },
       { role: 'assistant', content: reply },
-    ].slice(-12);
+    ];
+    conversationHistoryRef.current = next.slice(-12);
   }, []);
 
   const askVoiceAssistant = useCallback(async (command: string) => {
