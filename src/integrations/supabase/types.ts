@@ -1185,6 +1185,48 @@ export type Database = {
           },
         ]
       }
+      nurath_logs: {
+        Row: {
+          api_latency_ms: number | null
+          command: string | null
+          created_at: string
+          id: string
+          kind: string
+          note: string | null
+          response: string | null
+          source: string
+          transcript: string | null
+          user_id: string
+          wake_triggered: boolean | null
+        }
+        Insert: {
+          api_latency_ms?: number | null
+          command?: string | null
+          created_at?: string
+          id?: string
+          kind: string
+          note?: string | null
+          response?: string | null
+          source: string
+          transcript?: string | null
+          user_id: string
+          wake_triggered?: boolean | null
+        }
+        Update: {
+          api_latency_ms?: number | null
+          command?: string | null
+          created_at?: string
+          id?: string
+          kind?: string
+          note?: string | null
+          response?: string | null
+          source?: string
+          transcript?: string | null
+          user_id?: string
+          wake_triggered?: boolean | null
+        }
+        Relationships: []
+      }
       payment_transactions: {
         Row: {
           amount: number

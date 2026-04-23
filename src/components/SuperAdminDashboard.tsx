@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { NurathDiagnosticsPanel } from '@/components/NurathDiagnosticsPanel';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
@@ -1766,9 +1767,10 @@ export const SuperAdminDashboard = () => {
         {/* More Tab */}
         <TabsContent value="more" className="space-y-4">
           <Tabs defaultValue="customers">
-            <TabsList className="w-full grid grid-cols-2">
+            <TabsList className="w-full grid grid-cols-3">
               <TabsTrigger value="customers">Wateja</TabsTrigger>
               <TabsTrigger value="expenses">Matumizi</TabsTrigger>
+              <TabsTrigger value="nurath">Nurath</TabsTrigger>
             </TabsList>
             
             <TabsContent value="customers" className="space-y-3 mt-4">
@@ -1863,6 +1865,10 @@ export const SuperAdminDashboard = () => {
                     </Card>
                   ))}
               </div>
+            </TabsContent>
+
+            <TabsContent value="nurath" className="mt-4">
+              <NurathDiagnosticsPanel />
             </TabsContent>
           </Tabs>
         </TabsContent>

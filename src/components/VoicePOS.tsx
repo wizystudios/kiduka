@@ -9,7 +9,6 @@ import { useToast } from '@/hooks/use-toast';
 import { VoiceCommandProcessor } from '@/utils/voiceCommandProcessor';
 import { speakAssistantText } from '@/utils/voiceAssistantSpeech';
 import {
-  Activity,
   CheckCircle,
   Ear,
   Loader2,
@@ -18,10 +17,8 @@ import {
   MicOff,
   Radio,
   ShieldAlert,
-  ShieldCheck,
   ShoppingCart,
   Trash2,
-  Wrench,
 } from 'lucide-react';
 
 interface Product {
@@ -207,7 +204,22 @@ export const VoicePOS = () => {
       },
       ...prev,
     ].slice(0, 8));
-  }, []);
+
+    // Silently persist for admin diagnostics panel
+    const userId = user?.id;
+    if (!userId) return;
+    void supabase.from('nurath_logs').insert({
+      user_id: userId,
+      kind: entry.kind,
+      source: entry.source,
+      transcript: entry.transcript ?? null,
+      command: entry.command ?? null,
+      response: entry.response ?? null,
+      api_latency_ms: entry.apiLatencyMs ?? null,
+      wake_triggered: typeof entry.wakeTriggered === 'boolean' ? entry.wakeTriggered : null,
+      note: entry.note ?? null,
+    }).then(() => undefined, () => undefined);
+  }, [user?.id]);
 
   const updateAssistantMode = useCallback((mode: AssistantMode) => {
     assistantModeRef.current = mode;
@@ -433,11 +445,12 @@ export const VoicePOS = () => {
   }, [appendLog, handleMicAccessError, startAudioMonitoring]);
 
   const rememberConversation = useCallback((command: string, reply: string) => {
-    conversationHistoryRef.current = [
+    const next: VoiceAssistantMessage[] = [
       ...conversationHistoryRef.current,
       { role: 'user', content: command },
       { role: 'assistant', content: reply },
-    ].slice(-12);
+    ];
+    conversationHistoryRef.current = next.slice(-12);
   }, []);
 
   const askVoiceAssistant = useCallback(async (command: string) => {
@@ -1115,67 +1128,29 @@ export const VoicePOS = () => {
   }, [assistantMode, micError, voiceStatus]);
 
   const StatusIcon = statusMeta.icon;
-  const latestLog = nurathLogs[0] ?? null;
 
   return (
     <TooltipProvider>
-      <div className="mx-auto flex max-w-2xl flex-col gap-4 p-4">
+      <div className="mx-auto flex max-w-xl flex-col gap-4 p-4">
         <Card className="rounded-2xl border-border/70 bg-card/95 shadow-sm">
-          <CardHeader className="space-y-3 pb-4">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <CardTitle className="text-xl">Nurath Voice POS</CardTitle>
-                <CardDescription>
-                  Sasa unaweza kuona kila hatua ya kusikia, wake phrase, majibu, na latency ya backend bila kubahatisha.
-                </CardDescription>
-              </div>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="rounded-full"
-                onClick={() => setShowTestMode((prev) => !prev)}
-              >
-                <Wrench className="h-4 w-4" />
-                {showTestMode ? 'Funga test mode' : 'Test mode'}
-              </Button>
-            </div>
-
-            <div className="grid gap-2 sm:grid-cols-3">
-              <div className="rounded-2xl border border-border/70 bg-background/80 p-3">
-                <p className="text-xs text-muted-foreground">Last command</p>
-                <p className="mt-1 text-sm font-medium text-foreground">{lastCommand || 'Bado hakuna'}</p>
-                <p className="mt-1 text-xs text-muted-foreground">{formatLogTime(lastCommandAt)}</p>
-              </div>
-              <div className="rounded-2xl border border-border/70 bg-background/80 p-3">
-                <p className="text-xs text-muted-foreground">API latency</p>
-                <p className="mt-1 text-sm font-medium text-foreground">
-                  {lastApiLatency !== null ? `${lastApiLatency} ms` : 'Local / no API'}
-                </p>
-                <p className="mt-1 text-xs text-muted-foreground">{latestLog ? formatLogTime(latestLog.timestamp) : '—'}</p>
-              </div>
-              <div className="rounded-2xl border border-border/70 bg-background/80 p-3">
-                <p className="text-xs text-muted-foreground">Mic signal</p>
-                <div className="mt-2 h-2 overflow-hidden rounded-full bg-muted">
-                  <div className="h-full rounded-full bg-primary transition-all duration-150" style={{ width: `${Math.max(audioLevel * 100, isReceivingAudio ? 8 : 0)}%` }} />
-                </div>
-                <p className="mt-2 text-xs text-muted-foreground">
-                  {isReceivingAudio ? 'Nurath anapokea sauti kutoka kwenye maikrofoni.' : 'Bado hakuna signal ya sauti.'}
-                </p>
-              </div>
-            </div>
+          <CardHeader className="pb-3 text-center">
+            <CardTitle className="text-xl">Nurath</CardTitle>
+            <CardDescription>
+              Msaidizi wako wa sauti. Mwite tu kwa jina lake na atakusaidia.
+            </CardDescription>
           </CardHeader>
 
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-5">
             <div className="flex flex-col items-center gap-4 text-center">
               <button
                 type="button"
                 onClick={isListening ? stopListening : enableHandsfreeMode}
-                className={`relative flex h-24 w-24 items-center justify-center rounded-full transition-all duration-300 ${
+                className={`relative flex h-28 w-28 items-center justify-center rounded-full transition-all duration-300 ${
                   isListening
                     ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/30'
                     : 'bg-muted text-muted-foreground'
                 }`}
+                aria-label={isListening ? 'Simamisha Nurath' : 'Anzisha Nurath'}
               >
                 {isListening && (
                   <>
@@ -1183,178 +1158,53 @@ export const VoicePOS = () => {
                     <span className="absolute inset-[-8px] rounded-full border-2 border-primary/20 animate-pulse" />
                   </>
                 )}
-                {isListening ? <Mic className="relative z-10 h-10 w-10" /> : <MicOff className="h-10 w-10" />}
+                {isListening ? <Mic className="relative z-10 h-12 w-12" /> : <MicOff className="h-12 w-12" />}
               </button>
 
-              <div className="space-y-2">
-                <div className="flex flex-wrap items-center justify-center gap-2">
-                  <Badge variant="secondary" className="rounded-full px-3 py-1">
-                    <StatusIcon className={`mr-1 h-3.5 w-3.5 ${voiceStatus === 'processing' ? 'animate-spin' : ''}`} />
-                    {statusMeta.label}
-                  </Badge>
-                  <Badge variant="outline" className="rounded-full px-3 py-1">
-                    {assistantMode === 'awake' ? 'Nurath awake' : assistantMode === 'sleeping' ? 'Wake word only' : 'Handsfree off'}
-                  </Badge>
-                  <Badge variant="outline" className="rounded-full px-3 py-1">
-                    {micPermissionState === 'granted'
-                      ? 'Mic ready'
-                      : micPermissionState === 'needs-gesture'
-                        ? 'Need one tap'
-                        : micPermissionState === 'denied'
-                          ? 'Mic blocked'
-                          : micPermissionState === 'unsupported'
-                            ? 'Unsupported'
-                            : 'Checking mic'}
-                  </Badge>
-                </div>
-                <p className="text-sm font-medium text-foreground">{statusMeta.detail}</p>
-                {currentTranscript && (
-                  <p className="text-xs italic text-muted-foreground">"{currentTranscript}"</p>
-                )}
-              </div>
-            </div>
-
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div className="rounded-2xl border border-border/70 bg-background/80 p-3">
-                <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-                  <Activity className="h-4 w-4 text-primary" />
-                  Live status
-                </div>
-                <p className="mt-2 text-sm text-muted-foreground">{lastResponse || 'Nurath atasema au kuandika jibu lake hapa mara tu anapolipata.'}</p>
-                {micError && <p className="mt-2 text-xs text-destructive">{micError}</p>}
+              <div className="space-y-1">
+                <Badge variant="secondary" className="rounded-full px-3 py-1">
+                  <StatusIcon className={`mr-1 h-3.5 w-3.5 ${voiceStatus === 'processing' ? 'animate-spin' : ''}`} />
+                  {statusMeta.label}
+                </Badge>
+                <p className="text-sm text-muted-foreground">{statusMeta.detail}</p>
               </div>
 
-              <div className="rounded-2xl border border-border/70 bg-background/80 p-3">
-                <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-                  {isReceivingAudio ? <ShieldCheck className="h-4 w-4 text-primary" /> : <ShieldAlert className="h-4 w-4 text-muted-foreground" />}
-                  Mic readiness
-                </div>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  {isReceivingAudio
-                    ? 'Sasa unaweza kuliita jina la Nurath na atasikia bila kubonyeza tena.'
-                    : 'Kama bado hujatoa ruhusa ya maikrofoni, tumia kitufe cha ruhusa hapa chini mara moja.'}
+              {lastResponse && (
+                <p className="rounded-2xl bg-muted/60 px-4 py-3 text-sm text-foreground max-w-md">
+                  {lastResponse}
                 </p>
-              </div>
+              )}
+
+              {micError && micPermissionState !== 'granted' && (
+                <p className="text-xs text-destructive">{micError}</p>
+              )}
             </div>
 
             <div className="flex flex-wrap items-center justify-center gap-2">
-              <Button type="button" className="rounded-full" onClick={enableHandsfreeMode}>
-                <Mic className="h-4 w-4" />
-                Ruhusu na anza handsfree
-              </Button>
+              {!isListening ? (
+                <Button type="button" className="rounded-full" onClick={enableHandsfreeMode}>
+                  <Mic className="h-4 w-4" />
+                  Anzisha Nurath
+                </Button>
+              ) : (
+                <Button type="button" variant="ghost" className="rounded-full" onClick={stopListening}>
+                  <MicOff className="h-4 w-4" />
+                  Simamisha
+                </Button>
+              )}
 
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button type="button" variant="outline" className="rounded-full" onClick={startPushToTalkFallback}>
                     <Radio className="h-4 w-4" />
-                    Push-to-talk fallback
+                    Bonyeza-uongee
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
-                  Tumia hii kama auto-listen imegoma; bonyeza mara moja, ongea amri moja kwa moja, Nurath atajibu.
+                  Bonyeza mara moja kisha sema amri yako bila kuita jina la Nurath.
                 </TooltipContent>
               </Tooltip>
-
-              {isListening && (
-                <Button type="button" variant="ghost" className="rounded-full" onClick={stopListening}>
-                  <MicOff className="h-4 w-4" />
-                  Simamisha kusikiliza
-                </Button>
-              )}
             </div>
-          </CardContent>
-        </Card>
-
-        {(micPermissionState === 'needs-gesture' || micPermissionState === 'denied' || micPermissionState === 'unsupported') && (
-          <Card className="rounded-2xl border-border/70 bg-card/95 shadow-sm">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base">One-tap mic permission wizard</CardTitle>
-              <CardDescription>
-                Gusa mara moja tu, ruhusu maikrofoni, kisha Nurath atasubiri jina lake peke yake bila kubonyeza tena.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3 text-sm text-muted-foreground">
-              <ol className="space-y-2 pl-5">
-                <li>Bonyeza <span className="font-medium text-foreground">Ruhusu na anza handsfree</span>.</li>
-                <li>Chagua <span className="font-medium text-foreground">Allow</span> kwenye popup ya kivinjari.</li>
-                <li>Ukiona signal ya mic na status ya listening, sema tu <span className="font-medium text-foreground">“Nurath”</span>.</li>
-              </ol>
-              {micPermissionState === 'denied' && (
-                <p className="text-xs text-destructive">
-                  Maikrofoni ime-blockiwa. Fungua browser settings, iruhusu, halafu bonyeza kitufe tena.
-                </p>
-              )}
-              {micPermissionState === 'unsupported' && (
-                <p className="text-xs text-destructive">
-                  Browser hii haina msaada wa kutosha kwa voice wake-up. Tumia browser yenye speech recognition.
-                </p>
-              )}
-            </CardContent>
-          </Card>
-        )}
-
-        {showTestMode && (
-          <Card className="rounded-2xl border-border/70 bg-card/95 shadow-sm">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base">Nurath test mode</CardTitle>
-              <CardDescription>
-                Hapa utaona kile ambacho Nurath alisikia kama wake phrase, kilichonormalize, na kama kime-trigger au la.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="grid gap-3 sm:grid-cols-2">
-              <div className="rounded-2xl border border-border/70 bg-background/80 p-3">
-                <p className="text-xs text-muted-foreground">Detected phrase</p>
-                <p className="mt-1 text-sm font-medium text-foreground">{wakeDebug.heardText || 'Bado hakuna phrase'}</p>
-                <p className="mt-2 text-xs text-muted-foreground">{formatLogTime(wakeDebug.timestamp)}</p>
-              </div>
-              <div className="rounded-2xl border border-border/70 bg-background/80 p-3">
-                <p className="text-xs text-muted-foreground">Wake trigger result</p>
-                <p className="mt-1 text-sm font-medium text-foreground">
-                  {wakeDebug.triggered ? `Triggered (${wakeDebug.matchedAlias})` : 'Haijatrigger'}
-                </p>
-                <p className="mt-2 text-xs text-muted-foreground break-words">{wakeDebug.normalizedText || '—'}</p>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        <Card className="rounded-2xl border-border/70 bg-card/95 shadow-sm">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">Nurath logs</CardTitle>
-            <CardDescription>
-              Panel ndogo ya kuona last command, timestamp, transcription result, na API latency ya kila hatua.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {nurathLogs.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-border/70 bg-background/70 p-4 text-sm text-muted-foreground">
-                Bado hakuna log. Anzisha handsfree au push-to-talk, kisha sema kitu uone flow nzima.
-              </div>
-            ) : (
-              nurathLogs.map((log) => (
-                <div key={log.id} className="rounded-2xl border border-border/70 bg-background/80 p-3">
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <div className="flex items-center gap-2">
-                      <Badge variant="outline" className="rounded-full px-2.5 py-0.5">{log.kind}</Badge>
-                      <Badge variant="secondary" className="rounded-full px-2.5 py-0.5">{log.source}</Badge>
-                    </div>
-                    <span className="text-xs text-muted-foreground">{formatLogTime(log.timestamp)}</span>
-                  </div>
-                  {log.command && <p className="mt-2 text-sm font-medium text-foreground">Command: {log.command}</p>}
-                  {log.transcript && <p className="mt-1 text-xs text-muted-foreground">Transcript: {log.transcript}</p>}
-                  {typeof log.wakeTriggered === 'boolean' && (
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      Wake: {log.wakeTriggered ? 'triggered' : 'not triggered'}
-                    </p>
-                  )}
-                  {log.response && <p className="mt-1 text-sm text-foreground">Reply: {log.response}</p>}
-                  {log.apiLatencyMs !== undefined && log.apiLatencyMs !== null && (
-                    <p className="mt-1 text-xs text-muted-foreground">API latency: {log.apiLatencyMs} ms</p>
-                  )}
-                  {log.note && <p className="mt-1 text-xs text-muted-foreground">{log.note}</p>}
-                </div>
-              ))
-            )}
           </CardContent>
         </Card>
 
@@ -1408,11 +1258,8 @@ export const VoicePOS = () => {
             </CardContent>
           </Card>
         )}
-
-        <div className="text-center text-xs text-muted-foreground">
-          Ukiona transcript inaandikwa lakini hakuna jibu, angalia test mode na logs panel hapo juu kujua kama wake phrase haikushika au backend haikurudisha jibu.
-        </div>
       </div>
     </TooltipProvider>
   );
 };
+
