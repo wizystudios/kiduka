@@ -9,7 +9,6 @@ import { useToast } from '@/hooks/use-toast';
 import { VoiceCommandProcessor } from '@/utils/voiceCommandProcessor';
 import { speakAssistantText } from '@/utils/voiceAssistantSpeech';
 import {
-  Activity,
   CheckCircle,
   Ear,
   Loader2,
@@ -18,10 +17,8 @@ import {
   MicOff,
   Radio,
   ShieldAlert,
-  ShieldCheck,
   ShoppingCart,
   Trash2,
-  Wrench,
 } from 'lucide-react';
 
 interface Product {
