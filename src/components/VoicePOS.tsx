@@ -207,7 +207,22 @@ export const VoicePOS = () => {
       },
       ...prev,
     ].slice(0, 8));
-  }, []);
+
+    // Silently persist for admin diagnostics panel
+    const userId = user?.id;
+    if (!userId) return;
+    void supabase.from('nurath_logs').insert({
+      user_id: userId,
+      kind: entry.kind,
+      source: entry.source,
+      transcript: entry.transcript ?? null,
+      command: entry.command ?? null,
+      response: entry.response ?? null,
+      api_latency_ms: entry.apiLatencyMs ?? null,
+      wake_triggered: typeof entry.wakeTriggered === 'boolean' ? entry.wakeTriggered : null,
+      note: entry.note ?? null,
+    }).then(() => undefined, () => undefined);
+  }, [user?.id]);
 
   const updateAssistantMode = useCallback((mode: AssistantMode) => {
     assistantModeRef.current = mode;
