@@ -192,6 +192,10 @@ export const VoicePOS = () => {
   const analyserRef = useRef<AnalyserNode | null>(null);
   const audioFrameRef = useRef<number | null>(null);
   const isListeningRef = useRef(false);
+  const lastRecognitionActivityRef = useRef(Date.now());
+  const lastAudioSignalAtRef = useRef(0);
+  const staleResetCountRef = useRef(0);
+  const recoveryInFlightRef = useRef(false);
 
   const speechRecognitionSupported = typeof window !== 'undefined' && ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window);
 
@@ -293,6 +297,10 @@ export const VoicePOS = () => {
         const rms = Math.sqrt(sumSquares / dataArray.length);
         const level = Math.min(1, rms * 4.8);
         const activeTracks = mediaStreamRef.current.getAudioTracks().some((track) => track.readyState === 'live' && track.enabled);
+
+        if (level > 0.012) {
+          lastAudioSignalAtRef.current = Date.now();
+        }
 
         setAudioLevel(level);
         setIsReceivingAudio(Boolean(mediaStreamRef.current.active && activeTracks && (level > 0.01 || isListeningRef.current)));
@@ -443,6 +451,55 @@ export const VoicePOS = () => {
       return false;
     }
   }, [appendLog, handleMicAccessError, startAudioMonitoring]);
+
+  const recoverHandsfreeListening = useCallback(async (reason: string) => {
+    if (recoveryInFlightRef.current || !shouldRestartRef.current || recognitionModeRef.current !== 'handsfree') {
+      return;
+    }
+
+    recoveryInFlightRef.current = true;
+    staleResetCountRef.current += 1;
+    appendLog({ kind: 'status', source: 'system', note: `Auto-reset: ${reason}` });
+    setVoiceStatus('processing');
+    setMicError(null);
+
+    try {
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.abort();
+        } catch {
+          // ignore
+        }
+      }
+
+      stopAudioMonitoring();
+
+      const granted = await ensureMicrophonePermission('auto', 'system');
+      if (!granted || !recognitionRef.current || !shouldRestartRef.current) {
+        return;
+      }
+
+      window.clearTimeout(restartTimeoutRef.current ?? undefined);
+      restartTimeoutRef.current = window.setTimeout(() => {
+        try {
+          recognitionRef.current?.start();
+          setVoiceStatus('listening');
+          setLastResponse('Nurath amerudi kusikiliza tena.');
+        } catch {
+          setVoiceStatus('error');
+          setMicError('Nurath hakuweza kurudi kusikiliza. Bonyeza mic mara moja tu kuendelea.');
+        } finally {
+          recoveryInFlightRef.current = false;
+        }
+      }, 300);
+      return;
+    } catch {
+      setVoiceStatus('error');
+      setMicError('Nurath amepata hitilafu ya kujirekebisha. Jaribu tena.');
+    }
+
+    recoveryInFlightRef.current = false;
+  }, [appendLog, ensureMicrophonePermission, stopAudioMonitoring]);
 
   const rememberConversation = useCallback((command: string, reply: string) => {
     const next: VoiceAssistantMessage[] = [
@@ -770,6 +827,8 @@ export const VoicePOS = () => {
     recognitionRef.current = recognition;
 
     recognition.onstart = () => {
+      lastRecognitionActivityRef.current = Date.now();
+      staleResetCountRef.current = 0;
       setIsListening(true);
       setVoiceStatus('listening');
       setMicPermissionState('granted');
