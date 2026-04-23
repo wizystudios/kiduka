@@ -1766,9 +1766,10 @@ export const SuperAdminDashboard = () => {
         {/* More Tab */}
         <TabsContent value="more" className="space-y-4">
           <Tabs defaultValue="customers">
-            <TabsList className="w-full grid grid-cols-2">
+            <TabsList className="w-full grid grid-cols-3">
               <TabsTrigger value="customers">Wateja</TabsTrigger>
               <TabsTrigger value="expenses">Matumizi</TabsTrigger>
+              <TabsTrigger value="nurath">Nurath</TabsTrigger>
             </TabsList>
             
             <TabsContent value="customers" className="space-y-3 mt-4">
