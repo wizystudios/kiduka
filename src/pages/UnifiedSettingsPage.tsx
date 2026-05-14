@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Headphones, Megaphone, MessageSquare, Settings, ShieldAlert, Smartphone, Crown } from 'lucide-react';
+import { Headphones, Megaphone, MessageSquare, Settings, ShieldAlert, Smartphone, Crown, ClipboardCheck } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { SettingsPage } from '@/pages/SettingsPage';
 import { HelpPage } from '@/pages/HelpPage';
 import { SubscriptionPage } from '@/pages/SubscriptionPage';
