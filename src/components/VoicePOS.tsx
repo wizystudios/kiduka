@@ -89,6 +89,15 @@ declare global {
 
 const NURATH_AUTO_LISTEN_KEY = 'kiduka_nurath_handsfree_enabled';
 const WAKE_WORD_ALIASES = ['nurath', 'nurat', 'nurathi', 'norath', 'nura'];
+
+// Configurable auto-reset thresholds (ms / counts)
+const NURATH_THRESHOLDS = {
+  noAudioMs: 12000,            // restart if no audio signal for this long while listening
+  recognitionStaleMs: 20000,   // restart if no recognition event for this long
+  wakeFailuresBeforeReset: 5,  // consecutive wake fails before forced reset
+  permissionRecheckMs: 30000,  // recheck mic permission this often
+  watchdogTickMs: 4000,        // watchdog poll interval
+} as const;
 const SLEEP_PATTERNS = [
   /\bzima\b/i,
   /\blala\b/i,
