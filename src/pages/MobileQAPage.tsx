@@ -3,20 +3,26 @@ import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { ArrowLeft, Smartphone, ExternalLink, CheckCircle2, AlertTriangle, Clock, Tablet, Monitor } from 'lucide-react';
+import {
+  ArrowLeft, Smartphone, ExternalLink, CheckCircle2, AlertTriangle, Clock,
+  Tablet, Monitor, Bug, ListChecks, X, Upload, Wifi, WifiOff,
+} from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
+import { toast } from 'sonner';
 
 type Severity = 'fixed' | 'open' | 'todo';
 type Page = {
   group: 'owner' | 'admin' | 'sokoni' | 'auth';
   label: string;
   path: string;
-  notes?: string;
   fixes: { sev: Severity; text: string }[];
 };
 
 const PAGES: Page[] = [
-  // Auth
   { group: 'auth', label: 'Karibu (Landing)', path: '/', fixes: [
     { sev: 'fixed', text: 'Kadi imewekwa katikati, w-3xl, animation imezimwa kwa simu.' },
   ] },
@@ -26,104 +32,95 @@ const PAGES: Page[] = [
   { group: 'auth', label: 'Sahau Nenosiri', path: '/forgot-password', fixes: [
     { sev: 'fixed', text: 'Layout ndogo iliyokusanyika.' },
   ] },
-
-  // Owner
   { group: 'owner', label: 'Dashboard', path: '/dashboard', fixes: [
     { sev: 'fixed', text: 'Metrics zimewekwa katikati, grid 2-col kwa simu.' },
-    { sev: 'fixed', text: 'TopAlertBar inateleza horizontally bila kuvunja.' },
   ] },
   { group: 'owner', label: 'Bidhaa', path: '/products', fixes: [
     { sev: 'fixed', text: 'Kadi za bidhaa zinapanga grid-cols-2 kwa simu.' },
   ] },
-  { group: 'owner', label: 'Ongeza Bidhaa', path: '/products/add', fixes: [
-    { sev: 'fixed', text: 'Fomu ya wima na inputs zinajaza upana.' },
-    { sev: 'fixed', text: 'MultiImageUpload grid-cols-3 ya thumbnails.' },
-  ] },
   { group: 'owner', label: 'Mauzo', path: '/sales', fixes: [
     { sev: 'fixed', text: 'Cart na bidhaa zinatumia layout ya wima kwa simu.' },
-    { sev: 'fixed', text: 'Checkout buttons rounded-full, full-width.' },
   ] },
   { group: 'owner', label: 'Skana', path: '/scanner', fixes: [
-    { sev: 'fixed', text: 'Camera viewport inajaza skrini, bila headers za ziada.' },
-  ] },
-  { group: 'owner', label: 'Wateja', path: '/customers', fixes: [
-    { sev: 'fixed', text: 'List ya wateja inatumia kadi za wima.' },
-  ] },
-  { group: 'owner', label: 'Discounts', path: '/discounts', fixes: [
-    { sev: 'fixed', text: 'Fomu na list zinajipanga vizuri kwa simu.' },
-  ] },
-  { group: 'owner', label: 'Ripoti', path: '/reports', fixes: [
-    { sev: 'fixed', text: 'Charts zinaitikia upana wa container.' },
-  ] },
-  { group: 'owner', label: 'P&L', path: '/profit-loss', fixes: [
-    { sev: 'fixed', text: 'Print HTML table iko nje ya DOM, hairukii responsive ya UI.' },
-  ] },
-  { group: 'owner', label: 'Matumizi', path: '/expenses', fixes: [
-    { sev: 'fixed', text: 'Fomu ya kuingiza matumizi inajaza upana.' },
+    { sev: 'fixed', text: 'Camera viewport inajaza skrini.' },
   ] },
   { group: 'owner', label: 'Mipangilio', path: '/settings', fixes: [
-    { sev: 'fixed', text: 'Tabs zinazotelezeshwa horizontally, kadi zinajipanga wima.' },
+    { sev: 'fixed', text: 'Tabs zinazotelezeshwa horizontally.' },
   ] },
-  { group: 'owner', label: 'Watumiaji', path: '/users', fixes: [
-    { sev: 'fixed', text: 'Watumiaji wanaonyeshwa kwa kadi 2-col kwa simu.' },
+  { group: 'owner', label: 'Kituo cha Arifa', path: '/compliance-notifications', fixes: [
+    { sev: 'fixed', text: 'Bottom sheet kwa simu.' },
   ] },
-  { group: 'owner', label: 'Notifications', path: '/notifications', fixes: [
-    { sev: 'fixed', text: 'List ya unified notifications inajipanga vizuri.' },
-  ] },
-  { group: 'owner', label: 'Kituo cha Arifa (TIN/Mikataba)', path: '/compliance-notifications', fixes: [
-    { sev: 'fixed', text: 'Bottom sheet kwa simu, dialog katikati kwa tablet/desktop.' },
-  ] },
-  { group: 'owner', label: 'Usajili', path: '/subscription', fixes: [
-    { sev: 'fixed', text: 'Fee breakdown na malipo zinajaza upana.' },
-  ] },
-  { group: 'owner', label: 'Mikopo', path: '/loans', fixes: [
-    { sev: 'fixed', text: 'Loans grid-cols-3 kwa stats ndogo.' },
-  ] },
-  { group: 'owner', label: 'Calculator', path: '/calculator', fixes: [
-    { sev: 'fixed', text: 'Keypad grid-cols-4 — ya kawaida ya kalkuleta.' },
-  ] },
-  { group: 'owner', label: 'Invoice', path: '/invoice', fixes: [
-    { sev: 'fixed', text: 'Table imewekwa ndani ya overflow-x-auto + min-w-[480px] (rekebisho la sasa).' },
-  ] },
-
-  // Sokoni
   { group: 'sokoni', label: 'Sokoni Marketplace', path: '/sokoni', fixes: [
-    { sev: 'fixed', text: 'Tabs grid-cols-4, kadi za bidhaa 2-col kwa simu.' },
-    { sev: 'fixed', text: 'Bottom nav grid-cols-4 fixed.' },
+    { sev: 'fixed', text: 'Tabs grid-cols-4, bidhaa 2-col kwa simu.' },
   ] },
-  { group: 'sokoni', label: 'Duka (storefront)', path: '/duka/:slug', fixes: [
+  { group: 'sokoni', label: 'Duka', path: '/duka/:slug', fixes: [
     { sev: 'fixed', text: 'Banner inajaza upana, bidhaa grid-cols-2.' },
   ] },
-  { group: 'sokoni', label: 'Tracking', path: '/track', fixes: [
-    { sev: 'fixed', text: 'Map na timeline zinajaza upana wa container.' },
-  ] },
-
-  // Admin
-  { group: 'admin', label: 'Super Admin Dashboard', path: '/super-admin', fixes: [
+  { group: 'admin', label: 'Super Admin', path: '/super-admin', fixes: [
     { sev: 'fixed', text: 'Top tabs flex-wrap + overflow-x-auto.' },
-    { sev: 'fixed', text: 'Filter row inateleza horizontally bila kuvunja.' },
   ] },
-  { group: 'admin', label: 'Admin → Barua (Brand/Pima/Logs)', path: '/super-admin?tab=emails', fixes: [
-    { sev: 'fixed', text: 'LivePreview header sasa flex-col kwa simu, select inajaza upana.' },
-    { sev: 'fixed', text: 'Stats cards 2x2 kwa simu, icons shrink-0 + truncate.' },
-    { sev: 'fixed', text: 'Filter row: 1col → 2col → lg 5col, vitufe vya CSV/Refresh full-width kwa simu.' },
-    { sev: 'fixed', text: 'CSV export inafanya kazi.' },
+  { group: 'admin', label: 'Admin → Barua', path: '/super-admin?tab=emails', fixes: [
+    { sev: 'fixed', text: 'LivePreview header flex-col, CSV export inafanya kazi.' },
   ] },
   { group: 'admin', label: 'Admin → Sheria & TIN', path: '/super-admin?tab=compliance', fixes: [
-    { sev: 'fixed', text: 'Vitufe vya Kumbusha + Jaribu Sasa (jipya) flex-wrap.' },
+    { sev: 'fixed', text: 'Vitufe vya Kumbusha + Jaribu Sasa flex-wrap.' },
   ] },
-  { group: 'admin', label: 'Admin → Watumiaji', path: '/super-admin?tab=users', fixes: [
-    { sev: 'fixed', text: 'Grid md:cols-2 lg:cols-3 inakuwa 1-col kwa simu.' },
-  ] },
-  { group: 'admin', label: 'Admin → Bidhaa/Mauzo/Oda', path: '/super-admin', fixes: [
-    { sev: 'fixed', text: 'Tabs zote zinatumia pattern moja ya responsive.' },
-  ] },
-  { group: 'admin', label: 'Admin → Mazungumzo (Chat)', path: '/super-admin?tab=chat', fixes: [
-    { sev: 'fixed', text: 'Bubbles max-w-[80%], scroll inafanya kazi.' },
-  ] },
-  { group: 'admin', label: 'Admin → Shughuli (Activity)', path: '/super-admin?tab=activities', fixes: [
-    { sev: 'fixed', text: 'Filters flex-wrap min-w-[200px] kwa search.' },
-  ] },
+];
+
+type StepStatus = 'untested' | 'pass' | 'fail';
+interface ChecklistStep { id: string; text: string; }
+interface ChecklistGroup { id: string; title: string; icon: any; description: string; steps: ChecklistStep[]; }
+
+const CHECKLISTS: ChecklistGroup[] = [
+  {
+    id: 'sales-flow',
+    title: 'Mtiririko wa Mauzo (End-to-End)',
+    icon: ListChecks,
+    description: 'Kuanzia kuongeza bidhaa hadi malipo na kupungua kwa hesabu.',
+    steps: [
+      { id: 's1', text: 'Fungua /products → Bofya "Ongeza Bidhaa", jaza jina, bei, hesabu, hifadhi.' },
+      { id: 's2', text: 'Hakiki bidhaa mpya inaonekana kwenye /products.' },
+      { id: 's3', text: 'Fungua /scanner → Skana barcode (au ingiza code mwenyewe).' },
+      { id: 's4', text: 'Bidhaa inapatikana na inaongezwa kwenye cart automatically.' },
+      { id: 's5', text: 'Fungua /sales → Bidhaa iko kwenye cart, badilisha quantity.' },
+      { id: 's6', text: 'Bofya "Lipa", chagua njia (Pesa/M-Pesa/ClickPesa), kamilisha.' },
+      { id: 's7', text: 'Risiti ya digital inaonyeshwa, QR code inaonekana.' },
+      { id: 's8', text: 'Rudi /products → stock_quantity ya bidhaa imepungua kwa kiasi sahihi.' },
+      { id: 's9', text: 'Fungua /reports → mauzo mapya yameingia kwenye totals za leo.' },
+    ],
+  },
+  {
+    id: 'offline-sync',
+    title: 'Offline-First (Mauzo bila internet)',
+    icon: WifiOff,
+    description: 'Zima internet, fanya kazi, washa tena, hakiki sync.',
+    steps: [
+      { id: 'o1', text: 'Hakikisha umeingia kwenye akaunti, kisha zima Wi-Fi/data ya simu.' },
+      { id: 'o2', text: 'Header inaonyesha icon nyekundu ya WifiOff + badge ya pending count.' },
+      { id: 'o3', text: 'Fungua /sales → ongeza bidhaa kwenye cart, kamilisha muamala (Pesa).' },
+      { id: 'o4', text: 'Toast inathibitisha: muamala umehifadhiwa offline, utasawazishwa baadaye.' },
+      { id: 'o5', text: 'Fungua /products → badilisha hesabu (stock adjustment) bila internet.' },
+      { id: 'o6', text: 'Mabadiliko yanaonekana kwenye UI mara moja (IndexedDB).' },
+      { id: 'o7', text: 'Washa internet tena → header icon inakuwa kijani (Wifi).' },
+      { id: 'o8', text: 'Sync inaanza moja kwa moja ndani ya sekunde 5; pending count inashuka hadi 0.' },
+      { id: 'o9', text: 'Fungua database (SuperAdmin → Mauzo): muamala wa offline umeingia kwa timestamp sahihi.' },
+      { id: 'o10', text: 'Hakuna duplicate; hesabu kwenye products ime-update kwa usahihi.' },
+    ],
+  },
+  {
+    id: 'admin-flows',
+    title: 'Admin Flows',
+    icon: ListChecks,
+    description: 'Vichujio, taarifa, na zana zote za super admin.',
+    steps: [
+      { id: 'a1', text: '/super-admin → Tabs zote zinafunguka bila scroll-jank.' },
+      { id: 'a2', text: 'Tab Sheria → Bofya "Jaribu Sasa" → email inaonekana kwenye Barua → Logs.' },
+      { id: 'a3', text: 'Tab Barua → CSV export inashusha file yenye safu zote.' },
+      { id: 'a4', text: 'Tab Watumiaji → Tafuta, Edit, Delete inafanya kazi.' },
+      { id: 'a5', text: 'Tab Sokoni → Approve/Reject bidhaa hubadilisha hali.' },
+      { id: 'a6', text: 'Tab Mazungumzo → Bubbles na real-time replies.' },
+    ],
+  },
 ];
 
 const sevBadge = (s: Severity) => {
@@ -144,9 +141,25 @@ const VIEWPORTS = [
 
 export default function MobileQAPage() {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const [topTab, setTopTab] = useState<'audit' | 'checklist' | 'bug'>('audit');
   const [group, setGroup] = useState<'owner' | 'admin' | 'sokoni' | 'auth'>('owner');
   const [vp, setVp] = useState<typeof VIEWPORTS[number]>(VIEWPORTS[0]);
   const [previewPath, setPreviewPath] = useState<string | null>(null);
+
+  // Checklist state (in-memory)
+  const [checkState, setCheckState] = useState<Record<string, StepStatus>>({});
+  const setStep = (id: string, s: StepStatus) =>
+    setCheckState((prev) => ({ ...prev, [id]: prev[id] === s ? 'untested' : s }));
+
+  // Bug report state
+  const [bugPage, setBugPage] = useState('');
+  const [bugTitle, setBugTitle] = useState('');
+  const [bugDesc, setBugDesc] = useState('');
+  const [bugSev, setBugSev] = useState<'low' | 'medium' | 'high' | 'critical'>('medium');
+  const [files, setFiles] = useState<File[]>([]);
+  const [submitting, setSubmitting] = useState(false);
+  const [recentBugs, setRecentBugs] = useState<any[]>([]);
 
   const filtered = useMemo(() => PAGES.filter((p) => p.group === group), [group]);
   const stats = useMemo(() => {
@@ -159,12 +172,57 @@ export default function MobileQAPage() {
     };
   }, []);
 
-  // Lock body scroll when preview open
   useEffect(() => {
     if (previewPath) document.body.style.overflow = 'hidden';
     else document.body.style.overflow = '';
     return () => { document.body.style.overflow = ''; };
   }, [previewPath]);
+
+  useEffect(() => {
+    if (topTab !== 'bug' || !user?.id) return;
+    supabase.from('qa_bug_reports')
+      .select('*')
+      .eq('reporter_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(10)
+      .then(({ data }) => setRecentBugs(data ?? []));
+  }, [topTab, user?.id]);
+
+  const submitBug = async () => {
+    if (!user?.id) { toast.error('Lazima uingie kwanza'); return; }
+    if (!bugTitle.trim() || !bugPage.trim()) { toast.error('Jaza ukurasa na kichwa'); return; }
+    setSubmitting(true);
+    try {
+      const urls: string[] = [];
+      for (const f of files.slice(0, 4)) {
+        const path = `${user.id}/${Date.now()}-${f.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
+        const { error } = await supabase.storage.from('qa-screenshots').upload(path, f, { upsert: false });
+        if (error) { toast.error(`Upload imeshindwa: ${error.message}`); continue; }
+        const { data } = supabase.storage.from('qa-screenshots').getPublicUrl(path);
+        urls.push(data.publicUrl);
+      }
+      const { error } = await supabase.from('qa_bug_reports').insert({
+        reporter_id: user.id,
+        page_path: bugPage.trim(),
+        title: bugTitle.trim(),
+        description: bugDesc.trim() || null,
+        severity: bugSev,
+        screenshot_urls: urls,
+        user_agent: navigator.userAgent,
+        viewport: `${window.innerWidth}x${window.innerHeight}`,
+      });
+      if (error) throw error;
+      toast.success('Ripoti imewasilishwa');
+      setBugTitle(''); setBugDesc(''); setFiles([]); setBugPage('');
+      const { data } = await supabase.from('qa_bug_reports')
+        .select('*').eq('reporter_id', user.id).order('created_at', { ascending: false }).limit(10);
+      setRecentBugs(data ?? []);
+    } catch (e: any) {
+      toast.error(e.message || 'Imeshindwa kuwasilisha');
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   return (
     <div className="min-h-[100dvh] bg-background pb-20">
@@ -175,57 +233,212 @@ export default function MobileQAPage() {
           </Button>
           <div className="min-w-0 flex-1">
             <h1 className="text-sm sm:text-base font-bold truncate">Mobile QA</h1>
-            <p className="text-[10px] sm:text-xs text-muted-foreground truncate">Checklist ya kurasa zote + preview ya breakpoints</p>
+            <p className="text-[10px] sm:text-xs text-muted-foreground truncate">
+              Audit · Checklist · Ripoti Bug
+            </p>
           </div>
+        </div>
+        <div className="px-3 pb-2">
+          <Tabs value={topTab} onValueChange={(v) => setTopTab(v as any)}>
+            <TabsList className="w-full grid grid-cols-3 h-8">
+              <TabsTrigger value="audit" className="text-[10px] sm:text-xs">Audit</TabsTrigger>
+              <TabsTrigger value="checklist" className="text-[10px] sm:text-xs gap-1">
+                <ListChecks className="h-3 w-3" /> Checklist
+              </TabsTrigger>
+              <TabsTrigger value="bug" className="text-[10px] sm:text-xs gap-1">
+                <Bug className="h-3 w-3" /> Bug
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
         </div>
       </div>
 
       <div className="p-3 space-y-3">
-        {/* Stats */}
-        <div className="grid grid-cols-4 gap-2">
-          <Card><CardContent className="p-2 text-center"><p className="text-[10px] text-muted-foreground">Jumla</p><p className="text-base font-bold">{stats.total}</p></CardContent></Card>
-          <Card><CardContent className="p-2 text-center"><p className="text-[10px] text-muted-foreground">Imekamilika</p><p className="text-base font-bold text-green-700">{stats.fixed}</p></CardContent></Card>
-          <Card><CardContent className="p-2 text-center"><p className="text-[10px] text-muted-foreground">Inaangaliwa</p><p className="text-base font-bold text-yellow-700">{stats.open}</p></CardContent></Card>
-          <Card><CardContent className="p-2 text-center"><p className="text-[10px] text-muted-foreground">Bado</p><p className="text-base font-bold text-red-700">{stats.todo}</p></CardContent></Card>
-        </div>
+        {topTab === 'audit' && (
+          <>
+            <div className="grid grid-cols-4 gap-2">
+              <Card><CardContent className="p-2 text-center"><p className="text-[10px] text-muted-foreground">Jumla</p><p className="text-base font-bold">{stats.total}</p></CardContent></Card>
+              <Card><CardContent className="p-2 text-center"><p className="text-[10px] text-muted-foreground">Imekamilika</p><p className="text-base font-bold text-green-700">{stats.fixed}</p></CardContent></Card>
+              <Card><CardContent className="p-2 text-center"><p className="text-[10px] text-muted-foreground">Inaangaliwa</p><p className="text-base font-bold text-yellow-700">{stats.open}</p></CardContent></Card>
+              <Card><CardContent className="p-2 text-center"><p className="text-[10px] text-muted-foreground">Bado</p><p className="text-base font-bold text-red-700">{stats.todo}</p></CardContent></Card>
+            </div>
 
-        <Tabs value={group} onValueChange={(v) => setGroup(v as any)}>
-          <TabsList className="w-full grid grid-cols-4 h-8">
-            <TabsTrigger value="owner" className="text-[10px] sm:text-xs">Mmiliki</TabsTrigger>
-            <TabsTrigger value="admin" className="text-[10px] sm:text-xs">Admin</TabsTrigger>
-            <TabsTrigger value="sokoni" className="text-[10px] sm:text-xs">Sokoni</TabsTrigger>
-            <TabsTrigger value="auth" className="text-[10px] sm:text-xs">Auth</TabsTrigger>
-          </TabsList>
+            <Tabs value={group} onValueChange={(v) => setGroup(v as any)}>
+              <TabsList className="w-full grid grid-cols-4 h-8">
+                <TabsTrigger value="owner" className="text-[10px] sm:text-xs">Mmiliki</TabsTrigger>
+                <TabsTrigger value="admin" className="text-[10px] sm:text-xs">Admin</TabsTrigger>
+                <TabsTrigger value="sokoni" className="text-[10px] sm:text-xs">Sokoni</TabsTrigger>
+                <TabsTrigger value="auth" className="text-[10px] sm:text-xs">Auth</TabsTrigger>
+              </TabsList>
+              <TabsContent value={group} className="mt-3 space-y-2">
+                {filtered.map((p) => (
+                  <Card key={p.path}>
+                    <CardHeader className="pb-2">
+                      <div className="flex items-start justify-between gap-2 flex-wrap">
+                        <div className="min-w-0 flex-1">
+                          <CardTitle className="text-sm">{p.label}</CardTitle>
+                          <p className="text-[10px] text-muted-foreground font-mono truncate">{p.path}</p>
+                        </div>
+                        <Button variant="outline" size="sm" className="h-7 text-[10px] rounded-full" onClick={() => setPreviewPath(p.path)}>
+                          <ExternalLink className="h-3 w-3 mr-1" /> Kagua
+                        </Button>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="pt-0 space-y-1.5">
+                      {p.fixes.map((f, i) => (
+                        <div key={i} className="flex items-start gap-2 text-xs">
+                          {sevBadge(f.sev)}
+                          <span className="flex-1 text-muted-foreground">{f.text}</span>
+                        </div>
+                      ))}
+                    </CardContent>
+                  </Card>
+                ))}
+              </TabsContent>
+            </Tabs>
+          </>
+        )}
 
-          <TabsContent value={group} className="mt-3 space-y-2">
-            {filtered.map((p) => (
-              <Card key={p.path}>
-                <CardHeader className="pb-2">
-                  <div className="flex items-start justify-between gap-2 flex-wrap">
-                    <div className="min-w-0 flex-1">
-                      <CardTitle className="text-sm">{p.label}</CardTitle>
-                      <p className="text-[10px] text-muted-foreground font-mono truncate">{p.path}</p>
+        {topTab === 'checklist' && (
+          <div className="space-y-3">
+            {CHECKLISTS.map((cl) => {
+              const Icon = cl.icon;
+              const passed = cl.steps.filter((s) => checkState[s.id] === 'pass').length;
+              const failed = cl.steps.filter((s) => checkState[s.id] === 'fail').length;
+              return (
+                <Card key={cl.id}>
+                  <CardHeader className="pb-2">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <Icon className="h-4 w-4 text-primary shrink-0" />
+                      <CardTitle className="text-sm flex-1 min-w-0">{cl.title}</CardTitle>
+                      <Badge className="bg-green-100 text-green-800 text-[10px]">{passed}/{cl.steps.length} ✓</Badge>
+                      {failed > 0 && <Badge className="bg-red-100 text-red-800 text-[10px]">{failed} ✗</Badge>}
                     </div>
-                    <Button variant="outline" size="sm" className="h-7 text-[10px] rounded-full" onClick={() => setPreviewPath(p.path)}>
-                      <ExternalLink className="h-3 w-3 mr-1" /> Kagua
-                    </Button>
+                    <p className="text-[11px] text-muted-foreground">{cl.description}</p>
+                  </CardHeader>
+                  <CardContent className="pt-0 space-y-1.5">
+                    {cl.steps.map((s, i) => {
+                      const st = checkState[s.id] || 'untested';
+                      return (
+                        <div key={s.id} className={`flex items-start gap-2 p-2 rounded-2xl border text-xs ${
+                          st === 'pass' ? 'bg-green-50 border-green-200' :
+                          st === 'fail' ? 'bg-red-50 border-red-200' :
+                          'bg-muted/30 border-border'
+                        }`}>
+                          <span className="text-[10px] font-mono text-muted-foreground shrink-0 mt-0.5">{i + 1}.</span>
+                          <span className="flex-1">{s.text}</span>
+                          <div className="flex gap-1 shrink-0">
+                            <Button size="icon" variant={st === 'pass' ? 'default' : 'outline'}
+                              className="h-6 w-6 rounded-full" onClick={() => setStep(s.id, 'pass')}>
+                              <CheckCircle2 className="h-3 w-3" />
+                            </Button>
+                            <Button size="icon" variant={st === 'fail' ? 'destructive' : 'outline'}
+                              className="h-6 w-6 rounded-full" onClick={() => setStep(s.id, 'fail')}>
+                              <X className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        )}
+
+        {topTab === 'bug' && (
+          <div className="space-y-3">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <Bug className="h-4 w-4 text-red-600" /> Ripoti Bug Mpya
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2.5">
+                <div>
+                  <label className="text-[11px] text-muted-foreground">Ukurasa (path)</label>
+                  <Input value={bugPage} onChange={(e) => setBugPage(e.target.value)}
+                    placeholder="/dashboard, /sales..." className="rounded-2xl h-9 text-xs" />
+                </div>
+                <div>
+                  <label className="text-[11px] text-muted-foreground">Kichwa</label>
+                  <Input value={bugTitle} onChange={(e) => setBugTitle(e.target.value)}
+                    placeholder="Mfano: Cart haiongezi bidhaa" className="rounded-2xl h-9 text-xs" />
+                </div>
+                <div>
+                  <label className="text-[11px] text-muted-foreground">Maelezo</label>
+                  <Textarea value={bugDesc} onChange={(e) => setBugDesc(e.target.value)}
+                    placeholder="Hatua za kurudia, matarajio, na kile kilichotokea..."
+                    rows={4} className="rounded-2xl text-xs" />
+                </div>
+                <div>
+                  <label className="text-[11px] text-muted-foreground">Kiwango</label>
+                  <div className="flex gap-1 flex-wrap">
+                    {(['low', 'medium', 'high', 'critical'] as const).map((s) => (
+                      <Button key={s} type="button" size="sm"
+                        variant={bugSev === s ? 'default' : 'outline'}
+                        className="h-7 text-[10px] rounded-full"
+                        onClick={() => setBugSev(s)}>{s}</Button>
+                    ))}
                   </div>
+                </div>
+                <div>
+                  <label className="text-[11px] text-muted-foreground">Screenshots (max 4)</label>
+                  <label className="flex items-center justify-center gap-2 p-3 border-2 border-dashed rounded-2xl cursor-pointer hover:bg-muted/50">
+                    <Upload className="h-4 w-4" />
+                    <span className="text-xs">{files.length > 0 ? `${files.length} faili zimechaguliwa` : 'Chagua picha'}</span>
+                    <input type="file" accept="image/*" multiple className="hidden"
+                      onChange={(e) => setFiles(Array.from(e.target.files || []).slice(0, 4))} />
+                  </label>
+                  {files.length > 0 && (
+                    <div className="grid grid-cols-4 gap-1 mt-2">
+                      {files.map((f, i) => (
+                        <div key={i} className="aspect-square rounded-xl bg-muted overflow-hidden border">
+                          <img src={URL.createObjectURL(f)} alt="" className="w-full h-full object-cover" />
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <Button onClick={submitBug} disabled={submitting} className="w-full rounded-full">
+                  {submitting ? 'Inawasilisha...' : 'Wasilisha Ripoti'}
+                </Button>
+              </CardContent>
+            </Card>
+
+            {recentBugs.length > 0 && (
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm">Ripoti Zako za Karibuni</CardTitle>
                 </CardHeader>
-                <CardContent className="pt-0 space-y-1.5">
-                  {p.fixes.map((f, i) => (
-                    <div key={i} className="flex items-start gap-2 text-xs">
-                      {sevBadge(f.sev)}
-                      <span className="flex-1 text-muted-foreground">{f.text}</span>
+                <CardContent className="space-y-2">
+                  {recentBugs.map((b) => (
+                    <div key={b.id} className="p-2 border rounded-2xl text-xs space-y-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Badge variant={b.status === 'open' ? 'destructive' : 'secondary'} className="text-[10px]">
+                          {b.status}
+                        </Badge>
+                        <Badge variant="outline" className="text-[10px]">{b.severity}</Badge>
+                        <span className="font-mono text-[10px] text-muted-foreground truncate">{b.page_path}</span>
+                      </div>
+                      <p className="font-medium">{b.title}</p>
+                      {b.screenshot_urls?.length > 0 && (
+                        <div className="flex gap-1">
+                          {b.screenshot_urls.slice(0, 3).map((u: string, i: number) => (
+                            <img key={i} src={u} alt="" className="w-12 h-12 object-cover rounded-lg border" />
+                          ))}
+                        </div>
+                      )}
                     </div>
                   ))}
                 </CardContent>
               </Card>
-            ))}
-          </TabsContent>
-        </Tabs>
+            )}
+          </div>
+        )}
       </div>
 
-      {/* Preview overlay */}
       {previewPath && (
         <div className="fixed inset-0 z-50 bg-black/70 flex flex-col" onClick={() => setPreviewPath(null)}>
           <div className="bg-background border-b p-2 flex items-center gap-2 flex-wrap" onClick={(e) => e.stopPropagation()}>
