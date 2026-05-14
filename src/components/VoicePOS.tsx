@@ -1340,6 +1340,19 @@ export const VoicePOS = () => {
           </CardHeader>
 
           <CardContent className="space-y-5">
+            {userBanner && (
+              <div
+                className={`rounded-2xl border px-4 py-3 text-sm ${
+                  userBanner.tone === 'destructive'
+                    ? 'border-destructive/40 bg-destructive/10 text-destructive'
+                    : 'border-amber-400/40 bg-amber-50 text-amber-900 dark:bg-amber-950/40 dark:text-amber-200'
+                }`}
+                role="status"
+              >
+                <p className="font-medium">{userBanner.sw}</p>
+                <p className="mt-0.5 text-xs opacity-80">{userBanner.en}</p>
+              </div>
+            )}
             <div className="flex flex-col items-center gap-4 text-center">
               <button
                 type="button"
