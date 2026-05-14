@@ -255,7 +255,18 @@ export default function App() {
                   </AppLayout>
                 </ProtectedRoute>
               } />
-              
+
+              <Route path="/compliance-notifications" element={
+                <ProtectedRoute>
+                  <ComplianceNotificationsPage />
+                </ProtectedRoute>
+              } />
+
+              <Route path="/mobile-qa" element={
+                <ProtectedRoute>
+                  <MobileQAPage />
+                </ProtectedRoute>
+              } />
               <Route path="/notification-settings" element={
                 <ProtectedRoute>
                   <AppLayout>
