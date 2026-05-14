@@ -259,7 +259,7 @@ Sheria muhimu:
             type: 'function',
             function: {
               name: 'voice_pos_response',
-              description: 'Rudisha hatua au jibu la msaidizi wa Voice POS.',
+              description: 'Rudisha hatua au jibu la msaidizi wa sauti wa Kiduka.',
               parameters: {
                 type: 'object',
                 additionalProperties: false,
