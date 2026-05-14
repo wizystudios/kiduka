@@ -156,6 +156,9 @@ export const SokoniMarketplace = () => {
   const [paymentOpen, setPaymentOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('home');
   const [customerPhone, setCustomerPhone] = useState('');
+  const [customerEmail, setCustomerEmail] = useState('');
+  const [customerName, setCustomerName] = useState('');
+  const [emailConsent, setEmailConsent] = useState(true);
   const [deliveryAddress, setDeliveryAddress] = useState('');
   const [paymentTiming, setPaymentTiming] = useState<'now' | 'on_delivery'>('now');
   const [submittingOrder, setSubmittingOrder] = useState(false);
@@ -557,11 +560,17 @@ export const SokoniMarketplace = () => {
 
         const paymentStatus = method === 'cash_on_delivery' ? 'pending' : 'paid';
 
-        const { error: orderError } = await supabase
+        const trimmedEmail = customerEmail.trim().toLowerCase();
+        const validEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail) ? trimmedEmail : null;
+
+        const { data: insertedOrder, error: orderError } = await supabase
           .from('sokoni_orders')
           .insert({
             seller_id: sellerId,
             customer_phone: normalizedCustomerPhone,
+            customer_email: validEmail,
+            customer_name: customerName.trim() || null,
+            email_consent: !!validEmail && emailConsent,
             delivery_address: deliveryAddress,
             items: orderItems,
             total_amount: orderTotal,
@@ -570,9 +579,31 @@ export const SokoniMarketplace = () => {
             order_status: 'new',
             transaction_id: transactionId,
             tracking_code: trackingCode,
-          });
+          })
+          .select('id')
+          .single();
 
         if (orderError) throw orderError;
+
+        // Customer order confirmation email (consent required)
+        if (validEmail && emailConsent && insertedOrder?.id) {
+          supabase.functions.invoke('send-transactional-email', {
+            body: {
+              templateName: 'customer-order-confirmation',
+              recipientEmail: validEmail,
+              idempotencyKey: `sokoni-confirm-${insertedOrder.id}`,
+              templateData: {
+                customerName: customerName.trim() || undefined,
+                trackingCode,
+                totalAmount: orderTotal,
+                items: orderItems.map(i => ({
+                  name: i.product_name, quantity: i.quantity, price: i.unit_price,
+                })),
+                paymentMethod: method,
+              },
+            },
+          }).catch(err => console.warn('order-confirmation email failed', err));
+        }
       }
 
       saveGuestOrder({
@@ -603,6 +634,8 @@ export const SokoniMarketplace = () => {
 
       setCart([]);
       setCustomerPhone('');
+      setCustomerEmail('');
+      setCustomerName('');
       setDeliveryAddress('');
       setCouponCode('');
       setCouponDiscount(0);
@@ -1287,6 +1320,38 @@ export const SokoniMarketplace = () => {
                         value={deliveryAddress}
                         onChange={(e) => setDeliveryAddress(e.target.value)}
                       />
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium text-muted-foreground">Jina lako (hiari)</label>
+                      <Input
+                        placeholder="Jina kamili"
+                        className="mt-1 rounded-2xl"
+                        value={customerName}
+                        onChange={(e) => setCustomerName(e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium text-muted-foreground">Email (hiari — kwa risiti na taarifa za oda)</label>
+                      <Input
+                        type="email"
+                        placeholder="jina@mfano.com"
+                        className="mt-1 rounded-2xl"
+                        value={customerEmail}
+                        onChange={(e) => setCustomerEmail(e.target.value)}
+                      />
+                      {customerEmail.trim() && (
+                        <label className="mt-2 flex items-start gap-2 text-xs text-muted-foreground cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={emailConsent}
+                            onChange={(e) => setEmailConsent(e.target.checked)}
+                            className="mt-0.5 h-4 w-4 rounded border-border accent-primary"
+                          />
+                          <span>
+                            Ninakubali kupokea barua pepe kuhusu oda yangu (uthibitisho, risiti, na hali ya oda).
+                          </span>
+                        </label>
+                      )}
                     </div>
 
                     {/* Delivery Estimation */}
