@@ -30,6 +30,8 @@ import { SubscriptionPage } from '@/pages/SubscriptionPage';
 import { SubscriptionGuard } from '@/components/SubscriptionGuard';
 import { InventorySnapshotPage } from '@/pages/InventorySnapshotPage';
 import { PWAInstallerPage } from '@/pages/PWAInstallerPage';
+import ComplianceNotificationsPage from '@/pages/ComplianceNotificationsPage';
+import MobileQAPage from '@/pages/MobileQAPage';
 
 // AI and Business Intelligence Pages
 import { BusinessIntelligencePage } from '@/pages/BusinessIntelligencePage';
