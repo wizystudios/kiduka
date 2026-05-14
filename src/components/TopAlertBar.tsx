@@ -15,13 +15,13 @@ export const TopAlertBar = () => {
 
   const alerts: { key: string; icon: React.ReactNode; text: string; action: () => void }[] = [];
 
-  // Registration / compliance missing
+  // Registration / compliance missing — taps open the compliance notification center
   if (userProfile.role === 'owner' && (status.complianceMissing || !status.contractSigned)) {
     alerts.push({
       key: 'registration',
       icon: <ShieldAlert className="h-3 w-3" />,
       text: 'Kamilisha usajili',
-      action: () => navigate('/settings?tab=registration'),
+      action: () => navigate('/compliance-notifications?category=compliance'),
     });
   }
 
