@@ -385,6 +385,33 @@ export default function MobileQAPage() {
     }
   };
 
+  // Access gate: assistants and unauthenticated users blocked.
+  if (!user) {
+    return (
+      <div className="min-h-[100dvh] flex items-center justify-center p-6">
+        <Card className="max-w-md w-full"><CardContent className="p-6 text-center space-y-2">
+          <Lock className="h-8 w-8 mx-auto text-muted-foreground" />
+          <p className="text-sm">Lazima uingie kwanza ili kufungua Mobile QA.</p>
+          <Button onClick={() => navigate('/auth')} className="rounded-full mt-2">Ingia</Button>
+        </CardContent></Card>
+      </div>
+    );
+  }
+  if (!allowed) {
+    return (
+      <div className="min-h-[100dvh] flex items-center justify-center p-6">
+        <Card className="max-w-md w-full"><CardContent className="p-6 text-center space-y-2">
+          <ShieldCheck className="h-8 w-8 mx-auto text-red-600" />
+          <p className="text-sm font-medium">Mobile QA ni kwa wamiliki na admin pekee.</p>
+          <p className="text-[11px] text-muted-foreground">
+            Wasaidizi hawawezi kufikia kurasa hii ili kulinda data ya mauzo na sync ya biashara nyingine.
+          </p>
+          <Button variant="outline" onClick={() => navigate('/dashboard')} className="rounded-full mt-2">Rudi Dashboard</Button>
+        </CardContent></Card>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-[100dvh] bg-background pb-20">
       <div className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b">
