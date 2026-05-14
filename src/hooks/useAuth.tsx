@@ -277,6 +277,21 @@ export const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
       // Log login activity
       logActivity('login', 'Mtumiaji ameingia', { email });
 
+      // Send login alert email (best-effort, respects consent server-side)
+      try {
+        const ua = typeof navigator !== 'undefined' ? navigator.userAgent : 'unknown';
+        await supabase.functions.invoke('send-transactional-email', {
+          body: {
+            templateName: 'owner-login-alert',
+            recipientEmail: email,
+            idempotencyKey: `login-${data.user?.id}-${Date.now()}`,
+            templateData: { email, userAgent: ua, loggedInAt: new Date().toISOString() },
+          },
+        });
+      } catch (e) {
+        console.warn('login alert email failed', e);
+      }
+
       // Redirect to dashboard after successful login
       window.location.href = '/dashboard';
     } catch (error: any) {
