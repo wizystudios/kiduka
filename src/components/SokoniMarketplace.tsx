@@ -156,6 +156,9 @@ export const SokoniMarketplace = () => {
   const [paymentOpen, setPaymentOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('home');
   const [customerPhone, setCustomerPhone] = useState('');
+  const [customerEmail, setCustomerEmail] = useState('');
+  const [customerName, setCustomerName] = useState('');
+  const [emailConsent, setEmailConsent] = useState(true);
   const [deliveryAddress, setDeliveryAddress] = useState('');
   const [paymentTiming, setPaymentTiming] = useState<'now' | 'on_delivery'>('now');
   const [submittingOrder, setSubmittingOrder] = useState(false);
@@ -557,11 +560,17 @@ export const SokoniMarketplace = () => {
 
         const paymentStatus = method === 'cash_on_delivery' ? 'pending' : 'paid';
 
-        const { error: orderError } = await supabase
+        const trimmedEmail = customerEmail.trim().toLowerCase();
+        const validEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail) ? trimmedEmail : null;
+
+        const { data: insertedOrder, error: orderError } = await supabase
           .from('sokoni_orders')
           .insert({
             seller_id: sellerId,
             customer_phone: normalizedCustomerPhone,
+            customer_email: validEmail,
+            customer_name: customerName.trim() || null,
+            email_consent: !!validEmail && emailConsent,
             delivery_address: deliveryAddress,
             items: orderItems,
             total_amount: orderTotal,
@@ -570,9 +579,31 @@ export const SokoniMarketplace = () => {
             order_status: 'new',
             transaction_id: transactionId,
             tracking_code: trackingCode,
-          });
+          })
+          .select('id')
+          .single();
 
         if (orderError) throw orderError;
+
+        // Customer order confirmation email (consent required)
+        if (validEmail && emailConsent && insertedOrder?.id) {
+          supabase.functions.invoke('send-transactional-email', {
+            body: {
+              templateName: 'customer-order-confirmation',
+              recipientEmail: validEmail,
+              idempotencyKey: `sokoni-confirm-${insertedOrder.id}`,
+              templateData: {
+                customerName: customerName.trim() || undefined,
+                trackingCode,
+                totalAmount: orderTotal,
+                items: orderItems.map(i => ({
+                  name: i.product_name, quantity: i.quantity, price: i.unit_price,
+                })),
+                paymentMethod: method,
+              },
+            },
+          }).catch(err => console.warn('order-confirmation email failed', err));
+        }
       }
 
       saveGuestOrder({
