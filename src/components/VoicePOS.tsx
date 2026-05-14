@@ -150,20 +150,16 @@ const editDistanceWithinOne = (value: string, target: string) => {
   return edits + (value.length - i) + (target.length - j) <= 1;
 };
 
-const stripWakeWord = (value: string) =>
-  WAKE_WORD_PHRASES.reduce((text, phrase) => text.replace(new RegExp(`\\b${phrase.replace(/\s+/g, '\\s+')}\\b`, 'gi'), ''), value)
-    .replace(/\bnurath\b/gi, '')
-    .replace(/\bnurat\b/gi, '')
-    .replace(/\bnurathi\b/gi, '')
-    .replace(/\bnurati\b/gi, '')
-    .replace(/\bnurad\b/gi, '')
-    .replace(/\bnorath\b/gi, '')
-    .replace(/\bnorat\b/gi, '')
-    .replace(/\bnura\b/gi, '')
-    .replace(/\bnuru\b/gi, '')
-    .replace(/\bnora\b/gi, '')
-    .replace(/\s+/g, ' ')
-    .trim();
+const stripWakeWord = (value: string) => {
+  let out = value;
+  for (const phrase of WAKE_WORD_PHRASES) {
+    out = out.replace(new RegExp(`\\b${phrase.replace(/\s+/g, '\\s+')}\\b`, 'gi'), '');
+  }
+  for (const alias of WAKE_WORD_ALIASES) {
+    out = out.replace(new RegExp(`\\b${alias}\\b`, 'gi'), '');
+  }
+  return out.replace(/\s+/g, ' ').trim();
+};
 
 const detectWakePhrase = (spokenText: string): WakeDebugState => {
   const normalizedText = normalizeVoiceText(spokenText);
