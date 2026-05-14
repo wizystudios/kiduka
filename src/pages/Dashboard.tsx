@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useDataAccess } from '@/hooks/useDataAccess';
 import { useNavigate } from 'react-router-dom';
-import { DollarSign, Store, AlertTriangle, TrendingDown, ShoppingCart, Package, Banknote, Users, Activity } from 'lucide-react';
+import { DollarSign, Store, AlertTriangle, TrendingDown, ShoppingCart, Package, Banknote, Users, Activity, ShieldCheck, ChevronRight } from 'lucide-react';
 import { StockAlertWidget, ExpensesWidget, TransactionsWidget, ProductsWidget, LoansWidget, DebtorsWidget } from '@/components/DashboardWidgets';
 import { AdBanner } from '@/components/AdBanner';
 import { DashboardAdCarousel } from '@/components/DashboardAdCarousel';
@@ -107,6 +107,22 @@ export const Dashboard = () => {
         <LoansWidget />
         <DebtorsWidget />
       </div>
+
+      {userProfile?.role === 'super_admin' && (
+        <button
+          onClick={() => navigate('/super-admin')}
+          className="mt-2 flex w-full items-center gap-3 rounded-3xl border border-border/60 bg-white px-4 py-3 text-left shadow-sm transition-all hover:shadow-md active:scale-[0.99]"
+        >
+          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+            <ShieldCheck className="h-5 w-5" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-foreground">Msimamizi Mkuu</p>
+            <p className="text-[11px] text-muted-foreground">Dashibodi ya usimamizi wa mfumo</p>
+          </div>
+          <ChevronRight className="h-4 w-4 text-muted-foreground" />
+        </button>
+      )}
 
       <div>
         <DashboardAdCarousel />
