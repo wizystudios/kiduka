@@ -10,6 +10,8 @@ import { useToast } from '@/hooks/use-toast';
 import { VoiceCommandProcessor } from '@/utils/voiceCommandProcessor';
 import { speakAssistantText } from '@/utils/voiceAssistantSpeech';
 import { NurathAvatar, type NurathState } from '@/components/NurathAvatar';
+import { voiceUndoStack, isUndoCommand, isConfirmCommand, isCancelCommand } from '@/utils/voiceConfirmStack';
+import { Undo2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import {
   CheckCircle,
