@@ -686,6 +686,111 @@ export default function MobileQAPage() {
                 ))}
               </CardContent>
             </Card>
+
+            {/* Idempotency audit trail (per-sale) */}
+            <Card>
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <GitMerge className="h-4 w-4 text-primary" /> Idempotency — Audit kwa kila Mauzo
+                  </CardTitle>
+                  <Button variant="outline" size="sm" className="h-7 text-[10px] rounded-full" onClick={refreshLogs}>
+                    <RefreshCw className="h-3 w-3 mr-1" /> Onyesha
+                  </Button>
+                </div>
+                <p className="text-[10px] text-muted-foreground">
+                  Inaonyesha lini sale tayari ipo kwa server (insert imerukwa) na lini stock decrement imezuiwa.
+                  Inalinganishwa na queue ID na timestamps.
+                </p>
+              </CardHeader>
+              <CardContent className="space-y-1.5">
+                {idempoTrail.length === 0 ? (
+                  <p className="text-xs text-muted-foreground text-center py-3">Hakuna events za idempotency bado.</p>
+                ) : idempoTrail.map((l) => {
+                  const isSkip = l.step?.includes('already_present');
+                  const isConflict = l.scope === 'conflict';
+                  return (
+                    <div key={l.id} className={`p-2 rounded-2xl border text-[11px] space-y-0.5 ${
+                      isSkip ? 'bg-blue-50 border-blue-200' :
+                      isConflict ? 'bg-yellow-50 border-yellow-200' : 'bg-muted/30 border-border'
+                    }`}>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <Badge className={`text-[9px] ${isSkip ? 'bg-blue-100 text-blue-800' : isConflict ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'}`}>
+                          {isSkip ? 'sale-iko-tayari' : isConflict ? 'mgongano' : 'imepelekwa'}
+                        </Badge>
+                        <span className="font-mono text-[9px] text-muted-foreground truncate">{l.step}</span>
+                        <span className="ml-auto text-[9px] font-mono text-muted-foreground">{new Date(l.timestamp).toLocaleString()}</span>
+                      </div>
+                      <p className="break-words">{l.message}</p>
+                      <div className="flex items-center gap-1 flex-wrap text-[9px] font-mono text-muted-foreground">
+                        {l.context?.id && <span>sale_id: {String(l.context.id).slice(0, 8)}…</span>}
+                        {isConflict && (
+                          <Button size="sm" variant="ghost" className="h-5 text-[9px] ml-auto"
+                            onClick={() => setConflictDetail(l)}>
+                            <Eye className="h-3 w-3 mr-1" /> Maelezo
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </CardContent>
+            </Card>
+
+            {/* Stock double-decrement check (admin can pick owner) */}
+            <Card>
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <PackageCheck className="h-4 w-4 text-primary" /> Ukaguzi wa Stock Double-Decrement
+                  </CardTitle>
+                  <Button size="sm" className="h-7 text-[10px] rounded-full" onClick={runStockCheck} disabled={stockChecking || !effectiveOwnerId}>
+                    {stockChecking ? 'Inakagua…' : 'Anza Ukaguzi'}
+                  </Button>
+                </div>
+                <p className="text-[10px] text-muted-foreground">
+                  Inalinganisha hesabu halisi na inventory_movements; inaweka alama nyekundu kwa sale-pairs zinazofuatana ndani ya sek 5
+                  zenye kiasi sawa (dalili ya double decrement).
+                </p>
+              </CardHeader>
+              <CardContent className="space-y-1.5">
+                {stockCheck.length === 0 ? (
+                  <p className="text-xs text-muted-foreground text-center py-3">Bonyeza "Anza Ukaguzi" kuanzisha.</p>
+                ) : (
+                  <>
+                    <div className="flex justify-end">
+                      <Button variant="outline" size="sm" className="h-7 text-[10px] rounded-full"
+                        onClick={() => exportToCSV(stockCheck, [
+                          { header: 'Bidhaa', key: 'name' },
+                          { header: 'Stock Halisi', key: 'actual_stock' },
+                          { header: 'Mabadiliko Yote', key: 'net_change' },
+                          { header: 'Idadi ya Movements', key: 'movement_count' },
+                          { header: 'Sale Pairs Zenye Wasiwasi', key: 'suspicious_pairs' },
+                          { header: 'Movement ya Mwisho', key: 'last_movement' },
+                          { header: 'Ina Bendera', key: 'flag' },
+                        ], 'kiduka_stock_check')}>
+                        <Download className="h-3 w-3 mr-1" /> CSV
+                      </Button>
+                    </div>
+                    {stockCheck.filter((r) => r.flag).map((r) => (
+                      <div key={r.id} className="p-2 rounded-2xl border border-red-200 bg-red-50 text-[11px] space-y-0.5">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <Badge className="bg-red-100 text-red-800 text-[9px]">⚠ Double-decrement</Badge>
+                          <span className="font-medium">{r.name}</span>
+                        </div>
+                        <p className="text-muted-foreground">
+                          Stock: {r.actual_stock} · Movements: {r.movement_count} · Sale pairs zenye wasiwasi: {r.suspicious_pairs}
+                        </p>
+                        <p className="font-mono text-[9px] text-muted-foreground">Mwisho: {r.last_movement ? new Date(r.last_movement).toLocaleString() : '—'}</p>
+                      </div>
+                    ))}
+                    {stockCheck.filter((r) => r.flag).length === 0 && (
+                      <p className="text-xs text-green-700 text-center py-2">✓ Hakuna double-decrement iliyogunduliwa kwa bidhaa {stockCheck.length}.</p>
+                    )}
+                  </>
+                )}
+              </CardContent>
+            </Card>
           </div>
         )}
 
