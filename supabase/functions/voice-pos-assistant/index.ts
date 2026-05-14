@@ -25,6 +25,16 @@ const safeNumber = (value: unknown) => {
   return Number.isFinite(parsed) ? parsed : 0;
 };
 
+const isUuid = (value: unknown) =>
+  typeof value === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+
+const withTimeout = async <T,>(promise: Promise<T>, ms: number) => {
+  const timeout = new Promise<never>((_, reject) => {
+    setTimeout(() => reject(new Error('AI response timeout.')), ms);
+  });
+  return Promise.race([promise, timeout]);
+};
+
 const createFallbackReply = (message: string, outOfStock: string[]) => {
   const normalized = message.toLowerCase();
 
@@ -62,6 +72,7 @@ serve(async (req) => {
 
     const body = await req.json();
     const message = typeof body.message === 'string' ? body.message.trim() : '';
+    const requestedOwnerId = isUuid(body.ownerId) ? body.ownerId : null;
     const currentSale = Array.isArray(body.currentSale) ? (body.currentSale as CurrentSaleItem[]) : [];
     const conversationHistory = Array.isArray(body.conversationHistory)
       ? body.conversationHistory.slice(-4)
@@ -92,28 +103,53 @@ serve(async (req) => {
 
     const adminClient = createClient(supabaseUrl, serviceRoleKey);
 
+    const { data: roleRows } = await adminClient
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.id);
+    const roles = new Set((roleRows ?? []).map((row: { role: string }) => row.role));
+
+    let ownerId = user.id;
+    if (requestedOwnerId && requestedOwnerId !== user.id) {
+      const { data: assistantAccess } = await adminClient
+        .from('assistant_permissions')
+        .select('owner_id')
+        .eq('assistant_id', user.id)
+        .eq('owner_id', requestedOwnerId)
+        .maybeSingle();
+
+      if (assistantAccess?.owner_id || roles.has('super_admin')) {
+        ownerId = requestedOwnerId;
+      } else {
+        return new Response(JSON.stringify({ error: 'Forbidden' }), {
+          status: 403,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+    }
+
     const [profileResult, productsResult, salesResult, expensesResult, customersResult, branchesResult] = await Promise.all([
-      adminClient.from('profiles').select('business_name, full_name').eq('id', user.id).maybeSingle(),
+      adminClient.from('profiles').select('business_name, full_name').eq('id', ownerId).maybeSingle(),
       adminClient
         .from('products')
         .select('id, name, price, stock_quantity, low_stock_threshold, category, is_archived')
-        .eq('owner_id', user.id)
+        .eq('owner_id', ownerId)
         .order('name', { ascending: true })
         .limit(120),
       adminClient
         .from('sales')
         .select('total_amount, created_at')
-        .eq('owner_id', user.id)
+        .eq('owner_id', ownerId)
         .order('created_at', { ascending: false })
         .limit(200),
       adminClient
         .from('expenses')
         .select('amount, expense_date')
-        .eq('owner_id', user.id)
+        .eq('owner_id', ownerId)
         .order('expense_date', { ascending: false })
         .limit(200),
-      adminClient.from('customers').select('id', { count: 'exact', head: true }).eq('owner_id', user.id),
-      adminClient.from('business_branches').select('id', { count: 'exact', head: true }).eq('owner_id', user.id),
+      adminClient.from('customers').select('id', { count: 'exact', head: true }).eq('owner_id', ownerId),
+      adminClient.from('business_branches').select('id', { count: 'exact', head: true }).eq('owner_id', ownerId),
     ]);
 
     const products = (productsResult.data ?? []).filter((product: { is_archived?: boolean | null }) => !product.is_archived);
