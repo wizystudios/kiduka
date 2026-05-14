@@ -1004,6 +1004,48 @@ export default function MobileQAPage() {
           </div>
         </div>
       )}
+
+      {/* Conflict detail dialog */}
+      <Dialog open={!!conflictDetail} onOpenChange={(o) => !o && setConflictDetail(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-sm flex items-center gap-2">
+              <GitMerge className="h-4 w-4" /> Maelezo ya Mgongano
+            </DialogTitle>
+          </DialogHeader>
+          {conflictDetail && (
+            <div className="space-y-2 text-xs">
+              <div className="p-2 rounded-2xl bg-muted/40 space-y-0.5">
+                <p className="font-mono text-[10px] text-muted-foreground">{conflictDetail.step} · {new Date(conflictDetail.timestamp).toLocaleString()}</p>
+                <p>{conflictDetail.message}</p>
+                {conflictDetail.code && <Badge className="bg-yellow-100 text-yellow-800 text-[9px]">{conflictDetail.code}</Badge>}
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="p-2 rounded-2xl border">
+                  <p className="text-[10px] font-bold text-muted-foreground mb-1">Local (offline)</p>
+                  <p className="font-mono text-[10px]">updated_at:</p>
+                  <p className="font-mono text-[10px] break-all">{conflictDetail.context?.localUpdatedAt || '—'}</p>
+                </div>
+                <div className="p-2 rounded-2xl border bg-green-50">
+                  <p className="text-[10px] font-bold text-green-800 mb-1">Server (kushinda)</p>
+                  <p className="font-mono text-[10px]">updated_at:</p>
+                  <p className="font-mono text-[10px] break-all">{conflictDetail.context?.remoteUpdatedAt || '—'}</p>
+                </div>
+              </div>
+              <div className="p-2 rounded-2xl border bg-blue-50">
+                <p className="text-[10px] font-bold text-blue-800 mb-1">Sheria iliyotumika</p>
+                <p className="text-[11px]">
+                  Last-write-wins kwa <span className="font-mono">updated_at</span>: server ina toleo jipya zaidi,
+                  hivyo mabadiliko ya offline yameachwa ili kuzuia kufuta data mpya. Pakua tena (download) ili kupata server state.
+                </p>
+              </div>
+              {conflictDetail.context?.id && (
+                <p className="text-[10px] font-mono text-muted-foreground">Record ID: {conflictDetail.context.id}</p>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
