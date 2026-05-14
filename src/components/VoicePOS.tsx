@@ -48,9 +48,12 @@ interface VoiceAssistantMessage {
 interface VoiceAssistantFunctionResult {
   success: boolean;
   message: string;
-  intent?: 'answer' | 'add_to_sale' | 'remove_from_sale' | 'clear_sale' | 'complete_sale';
+  intent?: 'answer' | 'add_to_sale' | 'remove_from_sale' | 'clear_sale' | 'complete_sale' | 'search_products' | 'navigate';
   productId?: string | null;
   quantity?: number | null;
+  searchQuery?: string | null;
+  route?: string | null;
+  matches?: Array<{ id: string; name: string; price: number; stock_quantity: number }>;
   confidence?: number;
 }
 
