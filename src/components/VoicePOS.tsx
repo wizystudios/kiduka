@@ -783,6 +783,9 @@ export const VoicePOS = () => {
               product: matchedProduct,
               quantity: aiResult.quantity ?? 1,
               confidence: aiResult.confidence,
+              searchQuery: aiResult.searchQuery ?? null,
+              route: aiResult.route ?? null,
+              matches: aiResult.matches ?? [],
             },
           };
         } else {
