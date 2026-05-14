@@ -1288,6 +1288,46 @@ export const VoicePOS = () => {
 
   const StatusIcon = statusMeta.icon;
 
+  // Bilingual user-friendly banner explaining why Nurath might not respond
+  const userBanner = useMemo(() => {
+    if (micPermissionState === 'denied') {
+      return {
+        tone: 'destructive' as const,
+        sw: 'Maikrofoni imezuiwa. Ifungue kwenye mipangilio ya kivinjari ili Nurath asikie.',
+        en: 'Microphone is blocked. Allow it in your browser settings so Nurath can hear you.',
+      };
+    }
+    if (micPermissionState === 'unsupported') {
+      return {
+        tone: 'destructive' as const,
+        sw: 'Kifaa hiki hakitumii maikrofoni ya wavuti.',
+        en: 'This device does not support web microphone access.',
+      };
+    }
+    if (micPermissionState === 'needs-gesture') {
+      return {
+        tone: 'warning' as const,
+        sw: 'Bonyeza mara moja tu kuruhusu maikrofoni; baada ya hapo Nurath atasikia jina lake.',
+        en: 'Tap once to allow the microphone; afterwards Nurath listens for her name.',
+      };
+    }
+    if (voiceStatus === 'error') {
+      return {
+        tone: 'destructive' as const,
+        sw: micError || 'Tatizo la mtandao au seva. Jaribu tena baada ya sekunde chache.',
+        en: 'Network or server issue. Please try again in a few seconds.',
+      };
+    }
+    if (isListening && !isReceivingAudio) {
+      return {
+        tone: 'warning' as const,
+        sw: 'Sisikii sauti — sema kwa karibu zaidi au angalia maikrofoni yako.',
+        en: "I can't hear you — speak closer or check your microphone.",
+      };
+    }
+    return null;
+  }, [isListening, isReceivingAudio, micError, micPermissionState, voiceStatus]);
+
   return (
     <TooltipProvider>
       <div className="mx-auto flex max-w-xl flex-col gap-4 p-4">
