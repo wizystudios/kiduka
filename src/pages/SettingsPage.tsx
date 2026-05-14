@@ -213,6 +213,8 @@ export const SettingsPage = () => {
 
       <SokoniOrderNotificationSettings />
 
+      <EmailConsentSettings />
+
       <CompanyProductsFooter />
     </div>
   );
