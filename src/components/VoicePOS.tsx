@@ -9,6 +9,8 @@ import { useDataAccess } from '@/hooks/useDataAccess';
 import { useToast } from '@/hooks/use-toast';
 import { VoiceCommandProcessor } from '@/utils/voiceCommandProcessor';
 import { speakAssistantText } from '@/utils/voiceAssistantSpeech';
+import { NurathAvatar, type NurathState } from '@/components/NurathAvatar';
+import { useNavigate } from 'react-router-dom';
 import {
   CheckCircle,
   Ear,
@@ -46,9 +48,12 @@ interface VoiceAssistantMessage {
 interface VoiceAssistantFunctionResult {
   success: boolean;
   message: string;
-  intent?: 'answer' | 'add_to_sale' | 'remove_from_sale' | 'clear_sale' | 'complete_sale';
+  intent?: 'answer' | 'add_to_sale' | 'remove_from_sale' | 'clear_sale' | 'complete_sale' | 'search_products' | 'navigate';
   productId?: string | null;
   quantity?: number | null;
+  searchQuery?: string | null;
+  route?: string | null;
+  matches?: Array<{ id: string; name: string; price: number; stock_quantity: number }>;
   confidence?: number;
 }
 
@@ -89,8 +94,15 @@ declare global {
 }
 
 const NURATH_AUTO_LISTEN_KEY = 'kiduka_nurath_handsfree_enabled';
-const WAKE_WORD_ALIASES = ['nurath', 'nurat', 'nurathi', 'nurati', 'nurad', 'norath', 'norat', 'nura', 'nuru', 'nora'];
-const WAKE_WORD_PHRASES = ['new wrath', 'new rat', 'new route', 'no wrath', 'no rat', 'nura t', 'nur a'];
+const WAKE_WORD_ALIASES = [
+  'nurath', 'nurat', 'nurathi', 'nurati', 'nurad', 'nuradi', 'nurahi', 'norath', 'norat', 'norahi',
+  'nura', 'nuru', 'nora', 'noor', 'noora', 'nourath', 'nuwrath', 'nuwrat', 'nuhrath', 'nurta',
+  'nuratha', 'nyurath', 'nyurat', 'nuratth', 'nuraz',
+];
+const WAKE_WORD_PHRASES = [
+  'new wrath', 'new rat', 'new route', 'no wrath', 'no rat', 'nura t', 'nur a', 'nu rath',
+  'noor ath', 'new oath', 'noo rath', 'new arth', 'nyu rath', 'nuh rath',
+];
 
 // Configurable auto-reset thresholds (ms / counts)
 const NURATH_THRESHOLDS = {
@@ -143,20 +155,16 @@ const editDistanceWithinOne = (value: string, target: string) => {
   return edits + (value.length - i) + (target.length - j) <= 1;
 };
 
-const stripWakeWord = (value: string) =>
-  WAKE_WORD_PHRASES.reduce((text, phrase) => text.replace(new RegExp(`\\b${phrase.replace(/\s+/g, '\\s+')}\\b`, 'gi'), ''), value)
-    .replace(/\bnurath\b/gi, '')
-    .replace(/\bnurat\b/gi, '')
-    .replace(/\bnurathi\b/gi, '')
-    .replace(/\bnurati\b/gi, '')
-    .replace(/\bnurad\b/gi, '')
-    .replace(/\bnorath\b/gi, '')
-    .replace(/\bnorat\b/gi, '')
-    .replace(/\bnura\b/gi, '')
-    .replace(/\bnuru\b/gi, '')
-    .replace(/\bnora\b/gi, '')
-    .replace(/\s+/g, ' ')
-    .trim();
+const stripWakeWord = (value: string) => {
+  let out = value;
+  for (const phrase of WAKE_WORD_PHRASES) {
+    out = out.replace(new RegExp(`\\b${phrase.replace(/\s+/g, '\\s+')}\\b`, 'gi'), '');
+  }
+  for (const alias of WAKE_WORD_ALIASES) {
+    out = out.replace(new RegExp(`\\b${alias}\\b`, 'gi'), '');
+  }
+  return out.replace(/\s+/g, ' ').trim();
+};
 
 const detectWakePhrase = (spokenText: string): WakeDebugState => {
   const normalizedText = normalizeVoiceText(spokenText);
@@ -195,6 +203,7 @@ export const VoicePOS = () => {
   const { user } = useAuth();
   const { dataOwnerId } = useDataAccess();
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const [isListening, setIsListening] = useState(false);
   const [assistantMode, setAssistantMode] = useState<AssistantMode>('disabled');
@@ -714,8 +723,57 @@ export const VoicePOS = () => {
       return completeSale(false);
     }
 
+    if (action === 'navigate') {
+      const route: string | null = result.data?.route ?? null;
+      const ROUTE_MAP: Record<string, string> = {
+        dashboard: '/',
+        sales: '/sales',
+        products: '/products',
+        customers: '/customers',
+        reports: '/reports',
+        expenses: '/expenses',
+        sokoni: '/sokoni',
+        settings: '/settings',
+        scanner: '/scanner',
+        'mobile-qa': '/mobile-qa',
+      };
+      const target = route ? ROUTE_MAP[route] : null;
+      if (target) {
+        navigate(target);
+        return result.message || `Sawa, nakupeleka ${route}.`;
+      }
+      return 'Sijapata ukurasa unaouhitaji. Sema tena jina la sehemu.';
+    }
+
+    if (action === 'search_products') {
+      const matches: Array<{ id: string; name: string; price: number; stock_quantity: number }> = result.data?.matches ?? [];
+      if (matches.length === 0) {
+        return 'Sijapata bidhaa yoyote inayolingana. Sema tena jina la bidhaa.';
+      }
+      // Auto-add the top match if exactly one result and it has stock.
+      if (matches.length === 1 && matches[0].stock_quantity > 0) {
+        const product = products.find((p) => p.id === matches[0].id);
+        if (product) {
+          setCurrentSale((prev) => {
+            const existing = prev.find((item) => item.product.id === product.id);
+            if (existing) {
+              return prev.map((item) =>
+                item.product.id === product.id
+                  ? { ...item, quantity: item.quantity + 1, total_price: (item.quantity + 1) * item.unit_price }
+                  : item,
+              );
+            }
+            return [...prev, { product, quantity: 1, unit_price: product.price, total_price: product.price }];
+          });
+          return `Nimeongeza ${product.name} kwenye mauzo. Bei ni shilingi ${product.price.toLocaleString()}.`;
+        }
+      }
+      const top = matches.slice(0, 3).map((m) => m.name).join(', ');
+      return `Nimepata bidhaa ${matches.length}: ${top}. Sema jina kamili au "ongeza" ya bidhaa unayotaka.`;
+    }
+
     return result.message;
-  }, [completeSale]);
+  }, [completeSale, navigate, products]);
 
   const processVoiceCommand = useCallback(async (command: string, source: ListeningSource = 'handsfree') => {
     if (!user || !dataOwnerId) return;
@@ -774,6 +832,9 @@ export const VoicePOS = () => {
               product: matchedProduct,
               quantity: aiResult.quantity ?? 1,
               confidence: aiResult.confidence,
+              searchQuery: aiResult.searchQuery ?? null,
+              route: aiResult.route ?? null,
+              matches: aiResult.matches ?? [],
             },
           };
         } else {
@@ -1421,20 +1482,24 @@ export const VoicePOS = () => {
               <button
                 type="button"
                 onClick={isListening ? stopListening : enableHandsfreeMode}
-                className={`relative flex h-28 w-28 items-center justify-center rounded-full transition-all duration-300 ${
-                  isListening
-                    ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/30'
-                    : 'bg-muted text-muted-foreground'
-                }`}
+                className="relative flex items-center justify-center rounded-full transition-transform duration-200 hover:scale-105 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                 aria-label={isListening ? 'Simamisha Nurath' : 'Anzisha Nurath'}
               >
-                {isListening && (
-                  <>
-                    <span className="absolute inset-0 rounded-full bg-primary/25 animate-ping" />
-                    <span className="absolute inset-[-8px] rounded-full border-2 border-primary/20 animate-pulse" />
-                  </>
-                )}
-                {isListening ? <Mic className="relative z-10 h-12 w-12" /> : <MicOff className="h-12 w-12" />}
+                <NurathAvatar
+                  size="lg"
+                  audioLevel={audioLevel}
+                  state={
+                    (voiceStatus === 'error'
+                      ? 'error'
+                      : voiceStatus === 'processing'
+                        ? 'processing'
+                        : voiceStatus === 'speaking'
+                          ? 'speaking'
+                          : isListening
+                            ? 'listening'
+                            : 'idle') as NurathState
+                  }
+                />
               </button>
 
               <div className="space-y-1">
