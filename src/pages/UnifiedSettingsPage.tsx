@@ -25,6 +25,7 @@ export const UnifiedSettingsPage = () => {
     { id: 'subscription', label: 'Michango', icon: Crown },
     { id: 'ads', label: 'Matangazo', icon: Megaphone },
     { id: 'install', label: 'App', icon: Smartphone },
+    { id: 'qa', label: 'Mobile QA', icon: ClipboardCheck },
     { id: 'help', label: 'Msaada', icon: Headphones },
   ];
 
