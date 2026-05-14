@@ -896,6 +896,23 @@ export default function MobileQAPage() {
           </div>
         )}
 
+        {topTab === 'voice' && (
+          <div className="space-y-3">
+            <Card className="border-blue-200 bg-blue-50/40">
+              <CardContent className="p-2.5 flex items-start gap-2">
+                <Mic className="h-4 w-4 text-blue-600 mt-0.5 shrink-0" />
+                <p className="text-[11px] text-muted-foreground">
+                  Jaribio la wake-word, regression ya aliases, na end-to-end ya amri za sauti hadi malipo.
+                  Kila kitendo kinarekodiwa kwenye <span className="font-mono">nurath_logs</span>.
+                </p>
+              </CardContent>
+            </Card>
+            <WakeWordTestPanel />
+            <VoicePOSE2EPanel />
+            <VoiceTimelinePanel />
+          </div>
+        )}
+
         {topTab === 'bug' && (
           <div className="space-y-3">
             <Card>
