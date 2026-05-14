@@ -1680,6 +1680,54 @@ export type Database = {
           },
         ]
       }
+      qa_bug_reports: {
+        Row: {
+          console_excerpt: string | null
+          created_at: string
+          description: string | null
+          id: string
+          page_path: string
+          reporter_id: string | null
+          screenshot_urls: string[] | null
+          severity: string
+          status: string
+          title: string
+          updated_at: string
+          user_agent: string | null
+          viewport: string | null
+        }
+        Insert: {
+          console_excerpt?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          page_path: string
+          reporter_id?: string | null
+          screenshot_urls?: string[] | null
+          severity?: string
+          status?: string
+          title: string
+          updated_at?: string
+          user_agent?: string | null
+          viewport?: string | null
+        }
+        Update: {
+          console_excerpt?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          page_path?: string
+          reporter_id?: string | null
+          screenshot_urls?: string[] | null
+          severity?: string
+          status?: string
+          title?: string
+          updated_at?: string
+          user_agent?: string | null
+          viewport?: string | null
+        }
+        Relationships: []
+      }
       return_requests: {
         Row: {
           created_at: string | null
