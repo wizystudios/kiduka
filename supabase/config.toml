@@ -19,3 +19,5 @@ project_id = "lufuusufaijuvekkcqgv"
     verify_jwt = true
   [functions.subscription-reminder]
     verify_jwt = false
+  [functions.admin-preview-email]
+    verify_jwt = true
