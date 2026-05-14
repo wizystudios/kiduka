@@ -659,80 +659,88 @@ export const VoicePOS = () => {
     }
   }, [dataOwnerId, fetchProducts, speakResponse, toast]);
 
+  const requestConfirmation = useCallback((kind: 'add_to_sale' | 'clear_sale' | 'complete_sale', description: string, apply: () => Promise<string> | string) => {
+    const expiresAt = Date.now() + 8000;
+    setPendingAction({ kind, description, apply, expiresAt });
+    appendLog({ kind: 'status', source: 'system', stage: 'confirm-request' as any, note: `Pending: ${description}` });
+    return `${description}. Sema "Thibitisha" ili nikamilishe au "Ghairi" kuacha.`;
+  }, [appendLog]);
+
   const applyAssistantAction = useCallback(async (result: any) => {
     const action = result.data?.action || 'answer';
+
+    const performAddToSale = (product: Product, quantity: number) => {
+      const prevSnapshot = JSON.stringify(currentSaleRef.current);
+      setCurrentSale((prev) => {
+        const existing = prev.find((item) => item.product.id === product.id);
+        if (existing) {
+          return prev.map((item) =>
+            item.product.id === product.id
+              ? { ...item, quantity: item.quantity + quantity, total_price: (item.quantity + quantity) * item.unit_price }
+              : item,
+          );
+        }
+        return [...prev, { product, quantity, unit_price: product.price, total_price: quantity * product.price }];
+      });
+      voiceUndoStack.push({ description: `Ongezwa ${product.name} × ${quantity}`, previousCartJson: prevSnapshot });
+      return `Nimeongeza ${product.name} × ${quantity}.`;
+    };
 
     if (action === 'add_to_sale') {
       const product: Product | undefined = result.data?.product;
       const quantity = Math.max(1, Number(result.data?.quantity || 1));
-
-      if (!product) {
-        return 'Sijapata bidhaa hiyo kwa uhakika. Tafadhali sema jina la bidhaa tena.';
-      }
-
+      if (!product) return 'Sijapata bidhaa hiyo kwa uhakika. Tafadhali sema jina la bidhaa tena.';
       const existingSaleItem = currentSaleRef.current.find((item) => item.product.id === product.id);
       const currentQuantity = existingSaleItem?.quantity ?? 0;
-
       if (product.stock_quantity < currentQuantity + quantity) {
         return `Stock ya ${product.name} haitoshi. Iliyopo ni ${product.stock_quantity}.`;
       }
-
-      setCurrentSale((prev) => {
-        const existing = prev.find((item) => item.product.id === product.id);
-
-        if (existing) {
-          return prev.map((item) =>
-            item.product.id === product.id
-              ? {
-                  ...item,
-                  quantity: item.quantity + quantity,
-                  total_price: (item.quantity + quantity) * item.unit_price,
-                }
-              : item,
-          );
-        }
-
-        return [...prev, { product, quantity, unit_price: product.price, total_price: quantity * product.price }];
-      });
-
-      return result.message;
+      return requestConfirmation(
+        'add_to_sale',
+        `Nithibitishie kuongeza ${product.name} × ${quantity} (TSh ${(product.price * quantity).toLocaleString()})`,
+        () => performAddToSale(product, quantity),
+      );
     }
 
     if (action === 'remove_from_sale') {
       const product: Product | undefined = result.data?.product;
       const quantity = Math.max(1, Number(result.data?.quantity || 1));
-
-      if (!product) {
-        return 'Niambie bidhaa unayotaka kuondoa kwenye mauzo ya sasa.';
-      }
-
+      if (!product) return 'Niambie bidhaa unayotaka kuondoa kwenye mauzo ya sasa.';
       const existing = currentSaleRef.current.find((item) => item.product.id === product.id);
-      if (!existing) {
-        return `${product.name} haipo kwenye mauzo ya sasa.`;
-      }
-
+      if (!existing) return `${product.name} haipo kwenye mauzo ya sasa.`;
+      const prevSnapshot = JSON.stringify(currentSaleRef.current);
       setCurrentSale((prev) =>
         prev.flatMap((item) => {
           if (item.product.id !== product.id) return [item];
-
           const remaining = item.quantity - quantity;
           if (remaining <= 0) return [];
-
           return [{ ...item, quantity: remaining, total_price: remaining * item.unit_price }];
         }),
       );
-
+      voiceUndoStack.push({ description: `Ondolewa ${product.name} × ${quantity}`, previousCartJson: prevSnapshot });
       return result.message;
     }
 
     if (action === 'clear_sale') {
       const hadItems = currentSaleRef.current.length > 0;
-      setCurrentSale([]);
-      return hadItems ? 'Sawa, nimefuta mauzo ya sasa.' : 'Hakuna mauzo ya kufuta.';
+      if (!hadItems) return 'Hakuna mauzo ya kufuta.';
+      return requestConfirmation('clear_sale', `Nithibitishie kufuta bidhaa zote (${currentSaleRef.current.length})`, () => {
+        const prevSnapshot = JSON.stringify(currentSaleRef.current);
+        setCurrentSale([]);
+        voiceUndoStack.push({ description: 'Cart imefutwa', previousCartJson: prevSnapshot });
+        return 'Sawa, nimefuta mauzo ya sasa.';
+      });
     }
 
     if (action === 'complete_sale') {
-      return completeSale(false);
+      if (currentSaleRef.current.length === 0) return 'Hakuna bidhaa kwenye mauzo ya sasa.';
+      const total = currentSaleRef.current.reduce((s, i) => s + i.total_price, 0);
+      return requestConfirmation('complete_sale', `Nithibitishie kukamilisha mauzo ya TSh ${total.toLocaleString()}`, async () => {
+        const prevSnapshot = JSON.stringify(currentSaleRef.current);
+        const msg = await completeSale(false);
+        voiceUndoStack.push({ description: 'Mauzo yamekamilika', previousCartJson: prevSnapshot });
+        return msg;
+      });
     }
 
     if (action === 'navigate') {
