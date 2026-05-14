@@ -2009,6 +2009,8 @@ export type Database = {
       sokoni_orders: {
         Row: {
           created_at: string
+          customer_email: string | null
+          customer_name: string | null
           customer_paid_at: string | null
           customer_phone: string
           customer_received: boolean | null
@@ -2016,6 +2018,7 @@ export type Database = {
           delivery_address: string
           delivery_person_name: string | null
           delivery_person_phone: string | null
+          email_consent: boolean
           id: string
           items: Json
           linked_sale_id: string | null
@@ -2030,6 +2033,8 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          customer_email?: string | null
+          customer_name?: string | null
           customer_paid_at?: string | null
           customer_phone: string
           customer_received?: boolean | null
@@ -2037,6 +2042,7 @@ export type Database = {
           delivery_address: string
           delivery_person_name?: string | null
           delivery_person_phone?: string | null
+          email_consent?: boolean
           id?: string
           items: Json
           linked_sale_id?: string | null
@@ -2051,6 +2057,8 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          customer_email?: string | null
+          customer_name?: string | null
           customer_paid_at?: string | null
           customer_phone?: string
           customer_received?: boolean | null
@@ -2058,6 +2066,7 @@ export type Database = {
           delivery_address?: string
           delivery_person_name?: string | null
           delivery_person_phone?: string | null
+          email_consent?: boolean
           id?: string
           items?: Json
           linked_sale_id?: string | null
