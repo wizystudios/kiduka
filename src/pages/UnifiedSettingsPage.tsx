@@ -47,6 +47,10 @@ export const UnifiedSettingsPage = () => {
   }, [activeTab]);
 
   const handleTabChange = (tabId: string) => {
+    if (tabId === 'qa') {
+      navigate('/mobile-qa');
+      return;
+    }
     setActiveTab(tabId);
     const next = new URLSearchParams(searchParams);
     next.set('tab', tabId);
