@@ -910,6 +910,7 @@ export default function MobileQAPage() {
             </Card>
             <WakeWordTestPanel />
             <VoicePOSE2EPanel />
+            <NurathAvatarLatencyPanel />
             <VoiceTimelinePanel ownerId={effectiveOwnerId} isAdmin={isAdmin} />
           </div>
         )}
