@@ -20,6 +20,7 @@ import { exportToCSV } from '@/utils/exportUtils';
 import { VoiceTimelinePanel } from '@/components/qa/VoiceTimelinePanel';
 import { WakeWordTestPanel } from '@/components/qa/WakeWordTestPanel';
 import { VoicePOSE2EPanel } from '@/components/qa/VoicePOSE2EPanel';
+import { NurathAvatarLatencyPanel } from '@/components/qa/NurathAvatarLatencyPanel';
 import { Mic } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { toast } from 'sonner';
