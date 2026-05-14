@@ -28,6 +28,7 @@ import { exportToExcel, exportToPDF, createPrintableTable } from '@/utils/export
 import { AdminPasswordDialog } from './AdminPasswordDialog';
 import { AdminChatPanel } from './AdminChatPanel';
 import { AdminCompliancePanel } from './AdminCompliancePanel';
+import { AdminEmailsPanel } from './AdminEmailsPanel';
 import { AdminUserActivities } from './AdminUserActivities';
 import { AdminMarketplacePanel } from './AdminMarketplacePanel';
 import { AdminAdsPanel } from './AdminAdsPanel';
@@ -1174,6 +1175,7 @@ export const SuperAdminDashboard = () => {
             <TabsTrigger value="marketplace" className="h-8 rounded-full border border-border bg-transparent px-3 text-[11px]">Sokoni</TabsTrigger>
             <TabsTrigger value="ads" className="h-8 rounded-full border border-border bg-transparent px-3 text-[11px]">Matangazo</TabsTrigger>
             <TabsTrigger value="chat" className="h-8 rounded-full border border-border bg-transparent px-3 text-[11px]">Mazungumzo</TabsTrigger>
+            <TabsTrigger value="emails" className="h-8 rounded-full border border-border bg-transparent px-3 text-[11px]">Barua</TabsTrigger>
             <TabsTrigger value="more" className="h-8 rounded-full border border-border bg-transparent px-3 text-[11px]">Zaidi</TabsTrigger>
           </TabsList>
         </div>
@@ -1762,6 +1764,10 @@ export const SuperAdminDashboard = () => {
 
         <TabsContent value="chat" className="space-y-4">
           <AdminChatPanel />
+        </TabsContent>
+
+        <TabsContent value="emails" className="space-y-4">
+          <AdminEmailsPanel />
         </TabsContent>
 
         {/* More Tab */}
