@@ -240,6 +240,7 @@ export const VoicePOS = () => {
   const recoveryInFlightRef = useRef(false);
   const wakeFailureCountRef = useRef(0);
   const lastPermissionCheckRef = useRef(0);
+  const lastProcessedSpeechRef = useRef('');
 
   const [micTestRunning, setMicTestRunning] = useState(false);
   const [micTestResult, setMicTestResult] = useState<{ ok: boolean; level: number; message: string } | null>(null);
@@ -869,10 +870,11 @@ export const VoicePOS = () => {
     const SpeechRecognitionConstructor = window.SpeechRecognition || window.webkitSpeechRecognition;
     const recognition = new SpeechRecognitionConstructor();
 
-    recognition.continuous = config.mode === 'handsfree';
+    const isMobileSpeechRuntime = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    recognition.continuous = config.mode === 'handsfree' && !isMobileSpeechRuntime;
     recognition.interimResults = true;
     recognition.lang = 'sw-TZ';
-    recognition.maxAlternatives = 1;
+    recognition.maxAlternatives = 5;
 
     recognitionModeRef.current = config.mode;
     activeListeningSourceRef.current = config.source;
@@ -907,9 +909,14 @@ export const VoicePOS = () => {
 
       let finalTranscript = '';
       let interimTranscript = '';
+      const allAlternatives: string[] = [];
 
       for (let index = event.resultIndex; index < event.results.length; index += 1) {
-        const transcript = event.results[index][0].transcript;
+        const result = event.results[index];
+        for (let alt = 0; alt < Math.min(result.length ?? 1, 5); alt += 1) {
+          if (result[alt]?.transcript) allAlternatives.push(result[alt].transcript);
+        }
+        const transcript = result[0].transcript;
         if (event.results[index].isFinal) {
           finalTranscript += transcript;
         } else {
@@ -920,12 +927,24 @@ export const VoicePOS = () => {
       if (interimTranscript.trim()) {
         setCurrentTranscript(interimTranscript.trim());
         setVoiceStatus('hearing');
+
+        const interimWake = detectWakePhrase([...allAlternatives, interimTranscript].join(' '));
+        if (config.mode === 'handsfree' && assistantModeRef.current !== 'awake' && interimWake.triggered) {
+          wakeFailureCountRef.current = 0;
+          setWakeDebug(interimWake);
+          updateAssistantMode('awake');
+          setLastResponse('Naam, nipo. Endelea kusema.');
+        }
       }
 
       if (!finalTranscript.trim()) return;
 
       const spokenText = finalTranscript.trim();
-      const wakeDetection = detectWakePhrase(spokenText);
+      const normalizedSpeech = normalizeVoiceText(spokenText);
+      if (normalizedSpeech && normalizedSpeech === lastProcessedSpeechRef.current) return;
+      lastProcessedSpeechRef.current = normalizedSpeech;
+
+      const wakeDetection = detectWakePhrase([...allAlternatives, spokenText].join(' '));
       setWakeDebug(wakeDetection);
       setCurrentTranscript(spokenText);
       setLastCommandAt(Date.now());
