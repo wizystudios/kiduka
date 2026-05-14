@@ -1482,20 +1482,24 @@ export const VoicePOS = () => {
               <button
                 type="button"
                 onClick={isListening ? stopListening : enableHandsfreeMode}
-                className={`relative flex h-28 w-28 items-center justify-center rounded-full transition-all duration-300 ${
-                  isListening
-                    ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/30'
-                    : 'bg-muted text-muted-foreground'
-                }`}
+                className="relative flex items-center justify-center rounded-full transition-transform duration-200 hover:scale-105 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                 aria-label={isListening ? 'Simamisha Nurath' : 'Anzisha Nurath'}
               >
-                {isListening && (
-                  <>
-                    <span className="absolute inset-0 rounded-full bg-primary/25 animate-ping" />
-                    <span className="absolute inset-[-8px] rounded-full border-2 border-primary/20 animate-pulse" />
-                  </>
-                )}
-                {isListening ? <Mic className="relative z-10 h-12 w-12" /> : <MicOff className="h-12 w-12" />}
+                <NurathAvatar
+                  size="lg"
+                  audioLevel={audioLevel}
+                  state={
+                    (voiceStatus === 'error'
+                      ? 'error'
+                      : voiceStatus === 'processing'
+                        ? 'processing'
+                        : voiceStatus === 'speaking'
+                          ? 'speaking'
+                          : isListening
+                            ? 'listening'
+                            : 'idle') as NurathState
+                  }
+                />
               </button>
 
               <div className="space-y-1">
