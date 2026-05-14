@@ -87,7 +87,7 @@ export const MobileBottomNav = () => {
 
   return (
     <>
-      <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border/50 bg-transparent md:hidden">
+      <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border/60 bg-white text-foreground shadow-[0_-1px_8px_rgba(0,0,0,0.04)] md:hidden">
         <div className="relative flex h-16 items-center justify-around px-1">
           <button onClick={() => handleNav('/dashboard')} className={`flex flex-1 flex-col items-center justify-center rounded-xl p-2 transition-all ${isActive('/dashboard') ? 'text-primary' : 'text-muted-foreground'}`}>
             <Home className="h-5 w-5" />

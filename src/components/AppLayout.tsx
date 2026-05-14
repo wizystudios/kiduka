@@ -9,6 +9,7 @@ import { AdminSessionBanner } from "@/components/AdminSessionBanner";
 import { AdminConsentRequest } from "@/components/AdminConsentRequest";
 import { LocationSetupGate } from "@/components/LocationSetupGate";
 import { TopAlertBar } from "@/components/TopAlertBar";
+import { GlobalNurathFloat } from "@/components/GlobalNurathFloat";
 import { useRealTimeNotifications } from "@/hooks/useRealTimeNotifications";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Bell } from "lucide-react";
@@ -77,6 +78,7 @@ export function AppLayout({ children }: AppLayoutProps) {
       </div>
       <UserInfoBar />
       <MobileBottomNav />
+      <GlobalNurathFloat />
     </SidebarProvider>
   );
 }
