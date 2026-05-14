@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useDataAccess } from '@/hooks/useDataAccess';
 import { useToast } from '@/hooks/use-toast';
 import { VoiceCommandProcessor } from '@/utils/voiceCommandProcessor';
 import { speakAssistantText } from '@/utils/voiceAssistantSpeech';
@@ -88,7 +89,8 @@ declare global {
 }
 
 const NURATH_AUTO_LISTEN_KEY = 'kiduka_nurath_handsfree_enabled';
-const WAKE_WORD_ALIASES = ['nurath', 'nurat', 'nurathi', 'norath', 'nura'];
+const WAKE_WORD_ALIASES = ['nurath', 'nurat', 'nurathi', 'nurati', 'nurad', 'norath', 'norat', 'nura', 'nuru', 'nora'];
+const WAKE_WORD_PHRASES = ['new wrath', 'new rat', 'new route', 'no wrath', 'no rat', 'nura t', 'nur a'];
 
 // Configurable auto-reset thresholds (ms / counts)
 const NURATH_THRESHOLDS = {
@@ -116,6 +118,31 @@ const normalizeVoiceText = (value: string) =>
     .replace(/\s+/g, ' ')
     .trim();
 
+const editDistanceWithinOne = (value: string, target: string) => {
+  if (Math.abs(value.length - target.length) > 1) return false;
+  if (value === target) return true;
+
+  let i = 0;
+  let j = 0;
+  let edits = 0;
+  while (i < value.length && j < target.length) {
+    if (value[i] === target[j]) {
+      i += 1;
+      j += 1;
+      continue;
+    }
+    edits += 1;
+    if (edits > 1) return false;
+    if (value.length > target.length) i += 1;
+    else if (value.length < target.length) j += 1;
+    else {
+      i += 1;
+      j += 1;
+    }
+  }
+  return edits + (value.length - i) + (target.length - j) <= 1;
+};
+
 const stripWakeWord = (value: string) =>
   value
     .replace(/\bnurath\b/gi, '')
@@ -132,7 +159,12 @@ const detectWakePhrase = (spokenText: string): WakeDebugState => {
 
   const matchedAlias = WAKE_WORD_ALIASES.find((alias) =>
     normalizedText.includes(alias) ||
-    tokens.some((token) => token === alias || token.startsWith(alias) || alias.startsWith(token)),
+    tokens.some((token) =>
+      token === alias ||
+      (token.length >= 4 && (token.startsWith(alias) || alias.startsWith(token) || editDistanceWithinOne(token, alias)))
+    ),
+  ) ?? WAKE_WORD_PHRASES.find((phrase) =>
+    normalizedText.includes(phrase) || normalizeVoiceText(phrase).replace(/\s/g, '') === tokens.slice(0, 2).join(''),
   ) ?? null;
 
   return {
