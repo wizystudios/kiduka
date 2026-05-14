@@ -324,6 +324,23 @@ export const WakeWordTestPanel = () => {
             </div>
           ))}
         </div>
+        {regression.length > 0 && (
+          <div className="space-y-1 pt-2 border-t">
+            <p className="text-[11px] font-semibold">
+              Regression: {regression.filter((r) => r.pass).length}/{regression.length} zimefaulu
+            </p>
+            {regression.map((r, i) => (
+              <div key={i} className={`p-1.5 rounded-xl text-[10px] flex items-center gap-1.5 ${
+                r.pass ? 'bg-green-50' : 'bg-red-50'
+              }`}>
+                {r.pass ? <CheckCircle2 className="h-3 w-3 text-green-700" /> : <XCircle className="h-3 w-3 text-red-700" />}
+                <span className="font-mono truncate flex-1">"{r.text}"</span>
+                <span className="text-muted-foreground">exp:{r.expected ? 'Y' : 'N'} got:{r.actual ? 'Y' : 'N'}</span>
+                <span className="text-muted-foreground">{r.latencyMs}ms</span>
+              </div>
+            ))}
+          </div>
+        )}
         <div className="flex items-start gap-1.5 p-2 rounded-2xl bg-blue-50/50 border border-blue-100 text-[10px] text-blue-900">
           <Timer className="h-3 w-3 mt-0.5 shrink-0" />
           <span>
