@@ -14,6 +14,7 @@ import { BusinessRegistrationPanel } from '@/components/BusinessRegistrationPane
 
 export const UnifiedSettingsPage = () => {
   const isMobile = useIsMobile();
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'profile');
 
