@@ -64,25 +64,67 @@ serve(async (req) => {
       })
       .eq('id', transaction.id);
 
-    // If payment successful, update related records
-    if (newStatus === 'completed') {
-      // Handle order payment
-      if (transaction.order_id) {
-        await supabase
-          .from('sokoni_orders')
-          .update({
-            payment_status: 'paid',
-            customer_paid_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', transaction.order_id);
+    // Helper to send transactional email
+    const sendEmail = async (templateName: string, recipientEmail: string, idempotencyKey: string, templateData: any) => {
+      try {
+        await supabase.functions.invoke('send-transactional-email', {
+          body: { templateName, recipientEmail, idempotencyKey, templateData },
+        });
+      } catch (e) { console.error('email send failed', e); }
+    };
 
-        // Notify seller
-        const { data: order } = await supabase
-          .from('sokoni_orders')
-          .select('seller_id, tracking_code, total_amount')
-          .eq('id', transaction.order_id)
-          .single();
+    // FAILURE notification
+    if (newStatus === 'failed') {
+      const ownerId = transaction.user_id || transaction.owner_id;
+      if (ownerId) {
+        const { data: profile } = await supabase.from('profiles').select('email, full_name').eq('id', ownerId).maybeSingle();
+        if (profile?.email) {
+          await sendEmail('owner-payment-failed', profile.email, `pay-fail-${transaction.id}`, {
+            name: profile.full_name,
+            amount: transaction.amount,
+            reference,
+            paymentMethod: transaction.payment_method || 'Mobile Money',
+            reason: body.message || body.error || 'Malipo hayakukamilika',
+          });
+        }
+        await supabase.from('admin_notifications').insert({
+          notification_type: 'payment_failed',
+          title: 'Malipo Yameshindikana',
+          message: `Malipo ya TSh ${transaction.amount?.toLocaleString()} yameshindikana. Sababu: ${body.message || 'haijulikani'}`,
+          data: { transaction_id: transaction.id, owner_id: ownerId, amount: transaction.amount, reason: body.message },
+        });
+      }
+    }
+
+    // SUCCESS handling
+    if (newStatus === 'completed') {
+      const ownerId = transaction.user_id || transaction.owner_id;
+
+      // Owner success email
+      if (ownerId) {
+        const { data: profile } = await supabase.from('profiles').select('email, full_name').eq('id', ownerId).maybeSingle();
+        if (profile?.email) {
+          await sendEmail('owner-payment-success', profile.email, `pay-ok-${transaction.id}`, {
+            name: profile.full_name,
+            amount: transaction.amount,
+            reference,
+            paymentMethod: transaction.payment_method || 'Mobile Money',
+            purpose: transaction.subscription_id ? 'subscription' : (transaction.order_id ? 'order' : undefined),
+          });
+        }
+      }
+
+      // Order payment
+      if (transaction.order_id) {
+        await supabase.from('sokoni_orders').update({
+          payment_status: 'paid',
+          customer_paid_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        }).eq('id', transaction.order_id);
+
+        const { data: order } = await supabase.from('sokoni_orders')
+          .select('seller_id, tracking_code, total_amount, customer_email, customer_name, items, customer_phone, email_consent')
+          .eq('id', transaction.order_id).single();
 
         if (order) {
           await supabase.from('admin_notifications').insert({
@@ -91,25 +133,34 @@ serve(async (req) => {
             message: `Oda ${order.tracking_code} imelipwa TSh ${order.total_amount?.toLocaleString()}`,
             data: { order_id: transaction.order_id, amount: order.total_amount }
           });
+
+          // Customer receipt (consent required)
+          if (order.customer_email && order.email_consent !== false) {
+            await sendEmail('customer-order-receipt', order.customer_email, `receipt-${transaction.order_id}`, {
+              customerName: order.customer_name,
+              orderId: transaction.order_id,
+              trackingCode: order.tracking_code,
+              totalAmount: order.total_amount,
+              paymentMethod: transaction.payment_method,
+              reference,
+            });
+          }
         }
       }
 
-      // Handle subscription payment
+      // Subscription payment
       if (transaction.subscription_id) {
         const periodEnd = new Date();
         periodEnd.setMonth(periodEnd.getMonth() + 1);
 
-        await supabase
-          .from('user_subscriptions')
-          .update({
-            status: 'active',
-            current_period_start: new Date().toISOString(),
-            current_period_end: periodEnd.toISOString(),
-            payment_amount: transaction.amount,
-            payment_reference: reference,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', transaction.subscription_id);
+        await supabase.from('user_subscriptions').update({
+          status: 'active',
+          current_period_start: new Date().toISOString(),
+          current_period_end: periodEnd.toISOString(),
+          payment_amount: transaction.amount,
+          payment_reference: reference,
+          updated_at: new Date().toISOString()
+        }).eq('id', transaction.subscription_id);
 
         await supabase.from('admin_notifications').insert({
           notification_type: 'payment_received',

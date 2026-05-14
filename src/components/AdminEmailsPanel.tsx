@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Image as ImageIcon, Send, RefreshCw, Mail, AlertTriangle, ShieldOff, CheckCircle2 } from 'lucide-react';
+import { Image as ImageIcon, Send, RefreshCw, Mail, AlertTriangle, ShieldOff, CheckCircle2, Eye, Download } from 'lucide-react';
 
 const EMAIL_ASSETS_BUCKET = 'email-assets';
 const LOGO_PATH = 'kiduka-logo.png';
@@ -88,13 +88,54 @@ const BrandAssets = () => {
   return (
     <div className="space-y-3">
       <p className="text-xs text-muted-foreground">
-        Picha hizi zinatumika kwenye barua zote (auth + transactional). Pakia mpya na zitabadilika ndani ya dakika chache.
+        Picha hizi zinatumika kwenye barua zote. Pakia mpya na zitabadilika ndani ya dakika chache. Version: <code>{version}</code>
       </p>
       <div className="grid md:grid-cols-2 gap-4">
-        <Slot label="Logo ya Kiduka" path={LOGO_PATH} hint="PNG, mraba (mfano 256x256). Inaonyeshwa juu ya kila barua." />
-        <Slot label="Tangazo la Sokoni" path={AD_PATH} hint="JPG, takriban 1056x440. Inaonyeshwa kwenye sehemu ya tangazo." />
+        <Slot label="Logo ya Kiduka" path={LOGO_PATH} hint="PNG, mraba (mfano 256x256)." />
+        <Slot label="Tangazo la Sokoni" path={AD_PATH} hint="JPG, takriban 1056x440." />
       </div>
+      <LivePreview key={version} />
     </div>
+  );
+};
+
+// ---- Live Preview ----
+const LivePreview = () => {
+  const [templates, setTemplates] = useState<{ name: string; displayName: string }[]>([]);
+  const [selected, setSelected] = useState<string>('owner-login-alert');
+  const [html, setHtml] = useState<string>('');
+
+  useEffect(() => {
+    supabase.functions.invoke('admin-preview-email').then(({ data }) => {
+      if ((data as any)?.templates) setTemplates((data as any).templates);
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!selected) return;
+    (async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      const url = `https://qbjcuenvjrflfbdshogq.supabase.co/functions/v1/admin-preview-email?name=${encodeURIComponent(selected)}&_=${Date.now()}`;
+      const res = await fetch(url, { headers: { Authorization: `Bearer ${session?.access_token}` } });
+      setHtml(await res.text());
+    })();
+  }, [selected]);
+
+  return (
+    <Card>
+      <CardHeader className="pb-2 flex flex-row items-center justify-between gap-2">
+        <CardTitle className="text-sm flex items-center gap-2"><Eye className="h-4 w-4" /> Live preview</CardTitle>
+        <Select value={selected} onValueChange={setSelected}>
+          <SelectTrigger className="w-[240px]"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            {templates.map((t) => <SelectItem key={t.name} value={t.name}>{t.displayName}</SelectItem>)}
+          </SelectContent>
+        </Select>
+      </CardHeader>
+      <CardContent>
+        <iframe srcDoc={html} className="w-full min-h-[600px] rounded-2xl border bg-white" title="Email preview" />
+      </CardContent>
+    </Card>
   );
 };
 

@@ -21,6 +21,10 @@ import { template as customerOrderStatus } from './customer-order-status.tsx'
 import { template as customerOrderReceipt } from './customer-order-receipt.tsx'
 import { template as customerReviewThanks } from './customer-review-thanks.tsx'
 import { template as customerReturnUpdate } from './customer-return-update.tsx'
+import { template as ownerComplianceReminder } from './owner-compliance-reminder.tsx'
+import { template as ownerPaymentSuccess } from './owner-payment-success.tsx'
+import { template as ownerPaymentFailed } from './owner-payment-failed.tsx'
+import { template as ownerSubscriptionReminder } from './owner-subscription-reminder.tsx'
 
 export const TEMPLATES: Record<string, TemplateEntry> = {
   'owner-login-alert': ownerLoginAlert,
@@ -30,6 +34,10 @@ export const TEMPLATES: Record<string, TemplateEntry> = {
   'owner-low-stock': ownerLowStock,
   'owner-new-debt': ownerNewDebt,
   'owner-new-sokoni-order': ownerNewSokoniOrder,
+  'owner-compliance-reminder': ownerComplianceReminder,
+  'owner-payment-success': ownerPaymentSuccess,
+  'owner-payment-failed': ownerPaymentFailed,
+  'owner-subscription-reminder': ownerSubscriptionReminder,
   'customer-order-confirmation': customerOrderConfirmation,
   'customer-order-status': customerOrderStatus,
   'customer-order-receipt': customerOrderReceipt,
