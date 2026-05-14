@@ -257,75 +257,77 @@ serve(async (req) => {
 
     const systemPrompt = `Wewe ni Nurath, msaidizi rasmi wa sauti wa Kiduka. Jibu kwa Kiswahili sanifu cha Tanzania: fasaha, rahisi, chenye heshima, na kisicho cha kimashine. Usitumie Kiingereza isipokuwa jina la bidhaa au mtumiaji ameomba hivyo.
 
-Lengo lako ni mawili:
-1. Elewa ombi la mtumiaji kwa lugha ya kawaida.
-2. Rudisha hatua sahihi kwa mfumo au jibu la ushauri.
+Wewe si chatbot wa amri. Elewa nia ya mtumiaji kwa lugha ya kawaida kabisa kisha rudisha tool call moja sahihi.
 
 Sheria muhimu:
-- Usijibu kama chatbot wa commands. Elewa maana ya ujumbe kwa kawaida.
 - Tumia data uliyopewa tu. Usibuni namba, bidhaa, mauzo, wateja, matawi, au taarifa yoyote.
-- Ukikosa data ya kujibu, sema wazi: "Sina taarifa ya kutosha kuhusu hilo kwa sasa" kisha uliza swali moja la kufafanua.
-- Usitoe madai ya uhakika kama hayapo kwenye context. Epuka uongo kabisa.
-- Kama mtumiaji anataka kuongeza bidhaa kwenye mauzo, tumia intent add_to_sale na productId sahihi kutoka kwenye context.
-- Kama mtumiaji anataka kupunguza au kuondoa bidhaa kwenye mauzo ya sasa, tumia intent remove_from_sale.
-- Kama mtumiaji anataka kufuta mauzo yote ya sasa, tumia intent clear_sale.
-- Kama mtumiaji anataka kukamilisha mauzo, tumia intent complete_sale.
-- Kwa maswali ya ripoti, stock, akaunti, ushauri au muhtasari, tumia intent answer.
-- Ukikosa uhakika wa bidhaa au ombi halieleweki vya kutosha, tumia intent answer na umwombe mtumiaji arudie kwa ufupi.
-- reply iwe sentensi 1–2 tu, ya kirafiki, moja kwa moja, na yenye Kiswahili fasaha.
-- Usitumie maneno ya kigeni yasiyo ya lazima. Epuka Kiswahili kigumu, misimu mingi, au lugha ya roboti.
-- Kama ujumbe ni wa salamu tu au wa kumwita Nurath, reply iwe fupi kama "Naam, nipo" au "Nakusikia, sema".
-- quantity iwe namba halisi kama ipo; vinginevyo acha.
+- Ukikosa data, sema "Sina taarifa ya kutosha kuhusu hilo kwa sasa" kwa intent answer kisha uliza swali moja la kufafanua.
+- Ukimsikia mtumiaji anataka KUNUNUA, KUUZA, KUONGEZA bidhaa kwenye mauzo (mfano "nahitaji kununua soda", "weka juice", "ongeza mkate"), tafuta bidhaa kwenye context. Ukiipata, tumia intent add_to_sale na productId halisi. Ukikosa, tumia intent search_products na neno alilolisema.
+- Ukimsikia anataka kupunguza/ondoa: intent remove_from_sale.
+- Kufuta cart yote: intent clear_sale.
+- Kukamilisha/kulipia mauzo: intent complete_sale.
+- Anaposema "nenda kwa…", "fungua…", "onyesha ukurasa wa…" (mfano "nenda dashboard", "fungua bidhaa", "onyesha ripoti"), tumia intent navigate na route sahihi kutoka orodha hii: dashboard, sales, products, customers, reports, expenses, sokoni, settings, scanner, mobile-qa.
+- Anapouliza kuhusu stock, mauzo ya leo, matumizi, ripoti, ushauri: intent answer.
+- Salamu tu au kuita jina lako: intent answer na reply fupi kama "Naam, nipo" au "Nakusikia, sema".
+- reply iwe sentensi 1–2 tu, fasaha, ya kirafiki.
+- quantity iwe namba halisi kama imetajwa; vinginevyo acha null (default 1).
+- searchQuery iwe neno moja au mawili tu yanayoeleweka.
+- route iwe moja ya orodha hapo juu pekee; vinginevyo tumia answer.
 `;
 
-    const gatewayResponse = await withTimeout(fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${lovableApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          ...conversationHistory,
-          {
-            role: 'user',
-            content: `Ujumbe wa sasa wa mtumiaji: ${message}\n\nContext ya biashara (JSON): ${JSON.stringify(businessContext)}`,
-          },
-        ],
-        temperature: 0.2,
-        max_tokens: 260,
-        tools: [
-          {
-            type: 'function',
-            function: {
-              name: 'voice_pos_response',
-              description: 'Rudisha hatua au jibu la msaidizi wa sauti wa Kiduka.',
-              parameters: {
-                type: 'object',
-                additionalProperties: false,
-                properties: {
-                  intent: {
-                    type: 'string',
-                    enum: ['answer', 'add_to_sale', 'remove_from_sale', 'clear_sale', 'complete_sale'],
+    const gatewayResponse = await callAiGatewayWithRetry({
+      url: 'https://ai.gateway.lovable.dev/v1/chat/completions',
+      init: {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${lovableApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'google/gemini-2.5-flash',
+          messages: [
+            { role: 'system', content: systemPrompt },
+            ...conversationHistory,
+            {
+              role: 'user',
+              content: `Ujumbe wa sasa wa mtumiaji: ${message}\n\nContext ya biashara (JSON): ${JSON.stringify(businessContext)}`,
+            },
+          ],
+          temperature: 0.2,
+          max_tokens: 280,
+          tools: [
+            {
+              type: 'function',
+              function: {
+                name: 'voice_pos_response',
+                description: 'Rudisha hatua au jibu la msaidizi wa sauti wa Kiduka.',
+                parameters: {
+                  type: 'object',
+                  additionalProperties: false,
+                  properties: {
+                    intent: {
+                      type: 'string',
+                      enum: ['answer', 'add_to_sale', 'remove_from_sale', 'clear_sale', 'complete_sale', 'search_products', 'navigate'],
+                    },
+                    reply: { type: 'string' },
+                    productId: { type: ['string', 'null'] },
+                    quantity: { type: ['number', 'null'] },
+                    searchQuery: { type: ['string', 'null'] },
+                    route: {
+                      type: ['string', 'null'],
+                      enum: [null, 'dashboard', 'sales', 'products', 'customers', 'reports', 'expenses', 'sokoni', 'settings', 'scanner', 'mobile-qa'],
+                    },
+                    confidence: { type: 'number' },
                   },
-                  reply: { type: 'string' },
-                  productId: { type: ['string', 'null'] },
-                  quantity: { type: ['number', 'null'] },
-                  confidence: { type: 'number' },
+                  required: ['intent', 'reply', 'productId', 'quantity', 'searchQuery', 'route', 'confidence'],
                 },
-                required: ['intent', 'reply', 'productId', 'quantity', 'confidence'],
               },
             },
-          },
-        ],
-        tool_choice: {
-          type: 'function',
-          function: { name: 'voice_pos_response' },
-        },
-      }),
-    }), 9000);
+          ],
+          tool_choice: { type: 'function', function: { name: 'voice_pos_response' } },
+        }),
+      },
+    }, 8000, 3);
 
     if (!gatewayResponse.ok) {
       if (gatewayResponse.status === 429 || gatewayResponse.status === 402) {
@@ -335,7 +337,6 @@ Sheria muhimu:
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
-
       const errorText = await gatewayResponse.text();
       console.error('Voice assistant AI gateway error:', gatewayResponse.status, errorText);
       throw new Error('AI gateway request failed.');
@@ -345,10 +346,12 @@ Sheria muhimu:
     const toolArguments = aiPayload?.choices?.[0]?.message?.tool_calls?.[0]?.function?.arguments;
 
     let result: {
-      intent: 'answer' | 'add_to_sale' | 'remove_from_sale' | 'clear_sale' | 'complete_sale';
+      intent: 'answer' | 'add_to_sale' | 'remove_from_sale' | 'clear_sale' | 'complete_sale' | 'search_products' | 'navigate';
       reply: string;
-      productId?: string;
-      quantity?: number;
+      productId?: string | null;
+      quantity?: number | null;
+      searchQuery?: string | null;
+      route?: string | null;
       confidence: number;
     } = {
       intent: 'answer',
@@ -366,10 +369,28 @@ Sheria muhimu:
       result.reply = aiPayload.choices[0].message.content;
     }
 
+    // Light validation: drop hallucinated productId.
     if (result.productId && !products.some((product: { id: string }) => product.id === result.productId)) {
-      result.intent = 'answer';
-      result.productId = undefined;
-      result.reply = 'Sijapata bidhaa hiyo kwa uhakika. Tafadhali sema jina la bidhaa tena kwa ufupi.';
+      // Fall back to a search instead of failing.
+      result.intent = 'search_products';
+      result.searchQuery = result.searchQuery || message;
+      result.productId = null;
+      result.reply = 'Hebu nikutafutie bidhaa hiyo kwenye orodha.';
+    }
+
+    // Server-side fuzzy product match for search_products to help the client.
+    let matchedProducts: Array<{ id: string; name: string; price: number; stock_quantity: number }> = [];
+    if (result.intent === 'search_products' && result.searchQuery) {
+      const q = result.searchQuery.toLowerCase().trim();
+      matchedProducts = products
+        .filter((p: { name: string }) => p.name.toLowerCase().includes(q))
+        .slice(0, 5)
+        .map((p: { id: string; name: string; price: number; stock_quantity: number }) => ({
+          id: p.id,
+          name: p.name,
+          price: safeNumber(p.price),
+          stock_quantity: safeNumber(p.stock_quantity),
+        }));
     }
 
     return new Response(
@@ -379,11 +400,12 @@ Sheria muhimu:
         intent: result.intent,
         productId: result.productId ?? null,
         quantity: typeof result.quantity === 'number' ? result.quantity : null,
+        searchQuery: result.searchQuery ?? null,
+        route: result.route ?? null,
+        matches: matchedProducts,
         confidence: result.confidence,
       }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      },
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
     );
   } catch (error) {
     console.error('voice-pos-assistant error:', error);
