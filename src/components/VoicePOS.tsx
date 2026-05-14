@@ -89,6 +89,15 @@ declare global {
 
 const NURATH_AUTO_LISTEN_KEY = 'kiduka_nurath_handsfree_enabled';
 const WAKE_WORD_ALIASES = ['nurath', 'nurat', 'nurathi', 'norath', 'nura'];
+
+// Configurable auto-reset thresholds (ms / counts)
+const NURATH_THRESHOLDS = {
+  noAudioMs: 12000,            // restart if no audio signal for this long while listening
+  recognitionStaleMs: 20000,   // restart if no recognition event for this long
+  wakeFailuresBeforeReset: 5,  // consecutive wake fails before forced reset
+  permissionRecheckMs: 30000,  // recheck mic permission this often
+  watchdogTickMs: 4000,        // watchdog poll interval
+} as const;
 const SLEEP_PATTERNS = [
   /\bzima\b/i,
   /\blala\b/i,
@@ -196,6 +205,11 @@ export const VoicePOS = () => {
   const lastAudioSignalAtRef = useRef(0);
   const staleResetCountRef = useRef(0);
   const recoveryInFlightRef = useRef(false);
+  const wakeFailureCountRef = useRef(0);
+  const lastPermissionCheckRef = useRef(0);
+
+  const [micTestRunning, setMicTestRunning] = useState(false);
+  const [micTestResult, setMicTestResult] = useState<{ ok: boolean; level: number; message: string } | null>(null);
 
   const speechRecognitionSupported = typeof window !== 'undefined' && ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window);
 
@@ -850,6 +864,7 @@ export const VoicePOS = () => {
     };
 
     recognition.onresult = (event: any) => {
+      lastRecognitionActivityRef.current = Date.now();
       if (processingRef.current || isSpeakingRef.current) return;
 
       let finalTranscript = '';
@@ -876,6 +891,11 @@ export const VoicePOS = () => {
       setWakeDebug(wakeDetection);
       setCurrentTranscript(spokenText);
       setLastCommandAt(Date.now());
+      if (wakeDetection.triggered) {
+        wakeFailureCountRef.current = 0;
+      } else if (config.mode === 'handsfree' && assistantModeRef.current !== 'awake') {
+        wakeFailureCountRef.current += 1;
+      }
       appendLog({
         kind: 'wake',
         source: config.source,
@@ -1145,6 +1165,86 @@ export const VoicePOS = () => {
     };
   }, []);
 
+  // Watchdog — uses NURATH_THRESHOLDS to auto-recover stale recognition / mic
+  useEffect(() => {
+    const interval = window.setInterval(() => {
+      if (!shouldRestartRef.current || recognitionModeRef.current !== 'handsfree') return;
+      if (processingRef.current || isSpeakingRef.current || recoveryInFlightRef.current) return;
+
+      const now = Date.now();
+      const audioStale = lastAudioSignalAtRef.current > 0
+        && (now - lastAudioSignalAtRef.current) > NURATH_THRESHOLDS.noAudioMs;
+      const recogStale = (now - lastRecognitionActivityRef.current) > NURATH_THRESHOLDS.recognitionStaleMs;
+      const tooManyWakeFails = wakeFailureCountRef.current >= NURATH_THRESHOLDS.wakeFailuresBeforeReset;
+
+      if (audioStale || recogStale || tooManyWakeFails) {
+        wakeFailureCountRef.current = 0;
+        void recoverHandsfreeListening(
+          audioStale ? 'no audio signal' : recogStale ? 'recognition stalled' : 'too many wake failures',
+        );
+      }
+
+      // Periodic permission recheck (cheap)
+      if (navigator.permissions?.query && now - lastPermissionCheckRef.current > NURATH_THRESHOLDS.permissionRecheckMs) {
+        lastPermissionCheckRef.current = now;
+        navigator.permissions.query({ name: 'microphone' as PermissionName }).then((s) => {
+          if (s.state === 'granted') setMicPermissionState('granted');
+          else if (s.state === 'denied') setMicPermissionState('denied');
+        }).catch(() => undefined);
+      }
+    }, NURATH_THRESHOLDS.watchdogTickMs);
+
+    return () => window.clearInterval(interval);
+  }, [recoverHandsfreeListening]);
+
+  const verifyMicrophone = useCallback(async () => {
+    setMicTestRunning(true);
+    setMicTestResult(null);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const Ctor = window.AudioContext || window.webkitAudioContext;
+      if (!Ctor) throw new Error('no-audio-context');
+      const ctx = new Ctor();
+      const src = ctx.createMediaStreamSource(stream);
+      const analyser = ctx.createAnalyser();
+      analyser.fftSize = 512;
+      src.connect(analyser);
+      const data = new Uint8Array(analyser.frequencyBinCount);
+
+      let peak = 0;
+      const start = Date.now();
+      await new Promise<void>((resolve) => {
+        const tick = () => {
+          analyser.getByteTimeDomainData(data);
+          let sum = 0;
+          for (const v of data) { const n = (v - 128) / 128; sum += n * n; }
+          const rms = Math.sqrt(sum / data.length);
+          if (rms > peak) peak = rms;
+          if (Date.now() - start < 3000) requestAnimationFrame(tick);
+          else resolve();
+        };
+        tick();
+      });
+
+      stream.getTracks().forEach((t) => t.stop());
+      void ctx.close().catch(() => undefined);
+
+      const levelPct = Math.round(Math.min(1, peak * 4.8) * 100);
+      const ok = levelPct >= 8;
+      const message = ok
+        ? `Mic inafanya kazi vizuri (${levelPct}%) / Microphone is working (${levelPct}%).`
+        : `Sisikii sauti yoyote / No audio detected (${levelPct}%). Hakikisha mic haijazuiwa na sema kwa karibu.`;
+      setMicTestResult({ ok, level: levelPct, message });
+      appendLog({ kind: 'status', source: 'system', note: `Mic verify: ${levelPct}% (${ok ? 'ok' : 'silent'})` });
+    } catch (err) {
+      const message = 'Imeshindwa kufungua maikrofoni / Could not access microphone.';
+      setMicTestResult({ ok: false, level: 0, message });
+      appendLog({ kind: 'error', source: 'system', note: `Mic verify failed: ${(err as Error)?.message ?? 'unknown'}` });
+    } finally {
+      setMicTestRunning(false);
+    }
+  }, [appendLog]);
+
   useEffect(() => {
     return () => {
       shouldRestartRef.current = false;
@@ -1188,6 +1288,46 @@ export const VoicePOS = () => {
 
   const StatusIcon = statusMeta.icon;
 
+  // Bilingual user-friendly banner explaining why Nurath might not respond
+  const userBanner = useMemo(() => {
+    if (micPermissionState === 'denied') {
+      return {
+        tone: 'destructive' as const,
+        sw: 'Maikrofoni imezuiwa. Ifungue kwenye mipangilio ya kivinjari ili Nurath asikie.',
+        en: 'Microphone is blocked. Allow it in your browser settings so Nurath can hear you.',
+      };
+    }
+    if (micPermissionState === 'unsupported') {
+      return {
+        tone: 'destructive' as const,
+        sw: 'Kifaa hiki hakitumii maikrofoni ya wavuti.',
+        en: 'This device does not support web microphone access.',
+      };
+    }
+    if (micPermissionState === 'needs-gesture') {
+      return {
+        tone: 'warning' as const,
+        sw: 'Bonyeza mara moja tu kuruhusu maikrofoni; baada ya hapo Nurath atasikia jina lake.',
+        en: 'Tap once to allow the microphone; afterwards Nurath listens for her name.',
+      };
+    }
+    if (voiceStatus === 'error') {
+      return {
+        tone: 'destructive' as const,
+        sw: micError || 'Tatizo la mtandao au seva. Jaribu tena baada ya sekunde chache.',
+        en: 'Network or server issue. Please try again in a few seconds.',
+      };
+    }
+    if (isListening && !isReceivingAudio) {
+      return {
+        tone: 'warning' as const,
+        sw: 'Sisikii sauti — sema kwa karibu zaidi au angalia maikrofoni yako.',
+        en: "I can't hear you — speak closer or check your microphone.",
+      };
+    }
+    return null;
+  }, [isListening, isReceivingAudio, micError, micPermissionState, voiceStatus]);
+
   return (
     <TooltipProvider>
       <div className="mx-auto flex max-w-xl flex-col gap-4 p-4">
@@ -1200,6 +1340,19 @@ export const VoicePOS = () => {
           </CardHeader>
 
           <CardContent className="space-y-5">
+            {userBanner && (
+              <div
+                className={`rounded-2xl border px-4 py-3 text-sm ${
+                  userBanner.tone === 'destructive'
+                    ? 'border-destructive/40 bg-destructive/10 text-destructive'
+                    : 'border-amber-400/40 bg-amber-50 text-amber-900 dark:bg-amber-950/40 dark:text-amber-200'
+                }`}
+                role="status"
+              >
+                <p className="font-medium">{userBanner.sw}</p>
+                <p className="mt-0.5 text-xs opacity-80">{userBanner.en}</p>
+              </div>
+            )}
             <div className="flex flex-col items-center gap-4 text-center">
               <button
                 type="button"
@@ -1263,7 +1416,37 @@ export const VoicePOS = () => {
                   Bonyeza mara moja kisha sema amri yako bila kuita jina la Nurath.
                 </TooltipContent>
               </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="rounded-full"
+                    onClick={() => void verifyMicrophone()}
+                    disabled={micTestRunning}
+                  >
+                    {micTestRunning ? <Loader2 className="h-4 w-4 animate-spin" /> : <Ear className="h-4 w-4" />}
+                    Jaribu Maikrofoni
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  Rekodi sekunde 3 kuthibitisha maikrofoni inafanya kazi. / Records 3 seconds to verify your mic.
+                </TooltipContent>
+              </Tooltip>
             </div>
+
+            {micTestResult && (
+              <div
+                className={`rounded-2xl border px-4 py-2 text-xs ${
+                  micTestResult.ok
+                    ? 'border-emerald-500/40 bg-emerald-50 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-200'
+                    : 'border-destructive/40 bg-destructive/10 text-destructive'
+                }`}
+              >
+                {micTestResult.message}
+              </div>
+            )}
           </CardContent>
         </Card>
 
