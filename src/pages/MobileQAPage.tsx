@@ -177,7 +177,7 @@ export default function MobileQAPage() {
   const isOwner = role === 'owner';
   const allowed = isAdmin || isOwner; // assistants blocked
 
-  const [topTab, setTopTab] = useState<'audit' | 'checklist' | 'sync' | 'logs' | 'bug'>('audit');
+  const [topTab, setTopTab] = useState<'audit' | 'checklist' | 'sync' | 'logs' | 'voice' | 'bug'>('audit');
   const [group, setGroup] = useState<'owner' | 'admin' | 'sokoni' | 'auth'>('owner');
   const [vp, setVp] = useState<typeof VIEWPORTS[number]>(VIEWPORTS[0]);
   const [previewPath, setPreviewPath] = useState<string | null>(null);
