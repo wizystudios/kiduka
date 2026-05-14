@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Headphones, Megaphone, MessageSquare, Settings, ShieldAlert, Smartphone, Crown } from 'lucide-react';
+import { Headphones, Megaphone, MessageSquare, Settings, ShieldAlert, Smartphone, Crown, ClipboardCheck } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { SettingsPage } from '@/pages/SettingsPage';
 import { HelpPage } from '@/pages/HelpPage';
 import { SubscriptionPage } from '@/pages/SubscriptionPage';
@@ -13,6 +14,7 @@ import { BusinessRegistrationPanel } from '@/components/BusinessRegistrationPane
 
 export const UnifiedSettingsPage = () => {
   const isMobile = useIsMobile();
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'profile');
 
@@ -23,6 +25,7 @@ export const UnifiedSettingsPage = () => {
     { id: 'subscription', label: 'Michango', icon: Crown },
     { id: 'ads', label: 'Matangazo', icon: Megaphone },
     { id: 'install', label: 'App', icon: Smartphone },
+    { id: 'qa', label: 'Mobile QA', icon: ClipboardCheck },
     { id: 'help', label: 'Msaada', icon: Headphones },
   ];
 
@@ -44,6 +47,10 @@ export const UnifiedSettingsPage = () => {
   }, [activeTab]);
 
   const handleTabChange = (tabId: string) => {
+    if (tabId === 'qa') {
+      navigate('/mobile-qa');
+      return;
+    }
     setActiveTab(tabId);
     const next = new URLSearchParams(searchParams);
     next.set('tab', tabId);
