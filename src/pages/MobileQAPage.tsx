@@ -276,10 +276,21 @@ export default function MobileQAPage() {
         </div>
         <div className="px-3 pb-2">
           <Tabs value={topTab} onValueChange={(v) => setTopTab(v as any)}>
-            <TabsList className="w-full grid grid-cols-3 h-8">
+            <TabsList className="w-full grid grid-cols-5 h-8">
               <TabsTrigger value="audit" className="text-[10px] sm:text-xs">Audit</TabsTrigger>
               <TabsTrigger value="checklist" className="text-[10px] sm:text-xs gap-1">
-                <ListChecks className="h-3 w-3" /> Checklist
+                <ListChecks className="h-3 w-3" /> List
+              </TabsTrigger>
+              <TabsTrigger value="sync" className="text-[10px] sm:text-xs gap-1">
+                <Database className="h-3 w-3" /> Sync
+                {pendingQueue.filter((x) => !x.synced).length > 0 && (
+                  <span className="ml-0.5 px-1 rounded-full bg-orange-500 text-white text-[9px]">
+                    {pendingQueue.filter((x) => !x.synced).length}
+                  </span>
+                )}
+              </TabsTrigger>
+              <TabsTrigger value="logs" className="text-[10px] sm:text-xs gap-1">
+                <FileText className="h-3 w-3" /> Logs
               </TabsTrigger>
               <TabsTrigger value="bug" className="text-[10px] sm:text-xs gap-1">
                 <Bug className="h-3 w-3" /> Bug
