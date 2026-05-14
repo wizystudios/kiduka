@@ -713,7 +713,7 @@ export const VoicePOS = () => {
   }, [completeSale]);
 
   const processVoiceCommand = useCallback(async (command: string, source: ListeningSource = 'handsfree') => {
-    if (!user) return;
+    if (!user || !dataOwnerId) return;
 
     const normalizedCommand = normalizeVoiceText(command);
     const cleanedCommand = stripWakeWord(command) || command;
@@ -749,7 +749,7 @@ export const VoicePOS = () => {
     }
 
     try {
-      let result = await processor.processCommand(cleanedCommand, user.id);
+      let result = await processor.processCommand(cleanedCommand, dataOwnerId);
       let apiLatencyMs: number | null = null;
 
       if (!result.success) {
@@ -843,6 +843,7 @@ export const VoicePOS = () => {
     applyAssistantAction,
     askVoiceAssistant,
     currentTranscript,
+    dataOwnerId,
     lastApiLatency,
     micPermissionState,
     products,
