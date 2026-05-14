@@ -453,6 +453,31 @@ export default function MobileQAPage() {
       </div>
 
       <div className="p-3 space-y-3">
+        {/* Access banner */}
+        <Card className="border-blue-200 bg-blue-50/40">
+          <CardContent className="p-2.5 flex items-center gap-2 flex-wrap">
+            <ShieldCheck className="h-4 w-4 text-blue-600 shrink-0" />
+            <Badge className="bg-blue-100 text-blue-800 text-[10px]">{isAdmin ? 'Admin' : 'Mmiliki'}</Badge>
+            <p className="text-[11px] text-muted-foreground flex-1 min-w-0">
+              {isAdmin
+                ? 'Una ufikiaji wa data ya wamiliki wote. Chagua mmiliki kwa ukaguzi wa server.'
+                : 'Unaona data ya biashara yako pekee. Logs za simu hii ni za kifaa hiki.'}
+            </p>
+            {isAdmin && (
+              <select
+                value={auditOwnerId}
+                onChange={(e) => setAuditOwnerId(e.target.value)}
+                className="text-[11px] rounded-full border px-2 py-1 bg-background max-w-[160px]"
+              >
+                <option value="">— Mimi mwenyewe —</option>
+                {ownerOptions.map((o) => (
+                  <option key={o.id} value={o.id}>{o.label}</option>
+                ))}
+              </select>
+            )}
+          </CardContent>
+        </Card>
+
         {topTab === 'audit' && (
           <>
             <div className="grid grid-cols-4 gap-2">
