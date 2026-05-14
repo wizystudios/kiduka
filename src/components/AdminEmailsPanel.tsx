@@ -123,10 +123,10 @@ const LivePreview = () => {
 
   return (
     <Card>
-      <CardHeader className="pb-2 flex flex-row items-center justify-between gap-2">
+      <CardHeader className="pb-2 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
         <CardTitle className="text-sm flex items-center gap-2"><Eye className="h-4 w-4" /> Live preview</CardTitle>
         <Select value={selected} onValueChange={setSelected}>
-          <SelectTrigger className="w-[240px]"><SelectValue /></SelectTrigger>
+          <SelectTrigger className="w-full sm:w-[240px]"><SelectValue /></SelectTrigger>
           <SelectContent>
             {templates.map((t) => <SelectItem key={t.name} value={t.name}>{t.displayName}</SelectItem>)}
           </SelectContent>
@@ -285,17 +285,50 @@ const EmailLogs = () => {
     return s;
   }, [deduped]);
 
+  const exportCsv = () => {
+    if (deduped.length === 0) {
+      toast.error('Hakuna data ya kutoa');
+      return;
+    }
+    const headers = ['created_at', 'status', 'template_name', 'recipient_email', 'message_id', 'error_message'];
+    const escape = (v: any) => {
+      const s = v == null ? '' : String(v);
+      return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+    const lines = [headers.join(',')];
+    for (const r of deduped) {
+      lines.push([
+        new Date(r.created_at).toISOString(),
+        r.status,
+        r.template_name || '',
+        r.recipient_email,
+        r.message_id || '',
+        r.error_message || '',
+      ].map(escape).join(','));
+    }
+    const blob = new Blob(['\uFEFF' + lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `email-logs-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-')}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast.success(`Imetolewa rekodi ${deduped.length}`);
+  };
+
   return (
     <div className="space-y-3">
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-        <Card><CardContent className="p-3"><div className="flex items-center gap-2"><Mail className="h-4 w-4 text-blue-600" /><div><p className="text-xs text-muted-foreground">Jumla</p><p className="text-lg font-bold">{stats.total}</p></div></div></CardContent></Card>
-        <Card><CardContent className="p-3"><div className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-green-600" /><div><p className="text-xs text-muted-foreground">Zimetumwa</p><p className="text-lg font-bold text-green-700">{stats.sent}</p></div></div></CardContent></Card>
-        <Card><CardContent className="p-3"><div className="flex items-center gap-2"><ShieldOff className="h-4 w-4 text-yellow-600" /><div><p className="text-xs text-muted-foreground">Zimezuiliwa (consent)</p><p className="text-lg font-bold text-yellow-700">{stats.suppressed}</p></div></div></CardContent></Card>
-        <Card><CardContent className="p-3"><div className="flex items-center gap-2"><AlertTriangle className="h-4 w-4 text-red-600" /><div><p className="text-xs text-muted-foreground">Zimeshindikana</p><p className="text-lg font-bold text-red-700">{stats.failed}</p></div></div></CardContent></Card>
+        <Card><CardContent className="p-3"><div className="flex items-center gap-2"><Mail className="h-4 w-4 text-blue-600 shrink-0" /><div className="min-w-0"><p className="text-xs text-muted-foreground truncate">Jumla</p><p className="text-lg font-bold">{stats.total}</p></div></div></CardContent></Card>
+        <Card><CardContent className="p-3"><div className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-green-600 shrink-0" /><div className="min-w-0"><p className="text-xs text-muted-foreground truncate">Zimetumwa</p><p className="text-lg font-bold text-green-700">{stats.sent}</p></div></div></CardContent></Card>
+        <Card><CardContent className="p-3"><div className="flex items-center gap-2"><ShieldOff className="h-4 w-4 text-yellow-600 shrink-0" /><div className="min-w-0"><p className="text-xs text-muted-foreground truncate">Consent</p><p className="text-lg font-bold text-yellow-700">{stats.suppressed}</p></div></div></CardContent></Card>
+        <Card><CardContent className="p-3"><div className="flex items-center gap-2"><AlertTriangle className="h-4 w-4 text-red-600 shrink-0" /><div className="min-w-0"><p className="text-xs text-muted-foreground truncate">Zimeshindikana</p><p className="text-lg font-bold text-red-700">{stats.failed}</p></div></div></CardContent></Card>
       </div>
 
       <Card>
-        <CardContent className="p-3 grid sm:grid-cols-[1fr_180px_180px_auto] gap-2 items-end">
+        <CardContent className="p-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[1fr_180px_180px_auto_auto] gap-2 items-end">
           <div>
             <Label className="text-xs">Mpokeaji (email)</Label>
             <Input value={filterRecipient} onChange={(e) => setFilterRecipient(e.target.value)} placeholder="tafuta..." onKeyDown={(e) => e.key === 'Enter' && load()} />
@@ -325,7 +358,8 @@ const EmailLogs = () => {
               </SelectContent>
             </Select>
           </div>
-          <Button variant="outline" onClick={load} disabled={loading}><RefreshCw className="h-4 w-4 mr-1" />Refresh</Button>
+          <Button variant="outline" onClick={load} disabled={loading} className="w-full sm:w-auto"><RefreshCw className="h-4 w-4 mr-1" />Refresh</Button>
+          <Button variant="outline" onClick={exportCsv} disabled={deduped.length === 0} className="w-full sm:w-auto"><Download className="h-4 w-4 mr-1" />CSV</Button>
         </CardContent>
       </Card>
 
