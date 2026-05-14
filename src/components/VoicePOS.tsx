@@ -240,7 +240,7 @@ export const VoicePOS = () => {
   const recoveryInFlightRef = useRef(false);
   const wakeFailureCountRef = useRef(0);
   const lastPermissionCheckRef = useRef(0);
-  const lastProcessedSpeechRef = useRef('');
+  const lastProcessedSpeechRef = useRef<{ text: string; at: number }>({ text: '', at: 0 });
 
   const [micTestRunning, setMicTestRunning] = useState(false);
   const [micTestResult, setMicTestResult] = useState<{ ok: boolean; level: number; message: string } | null>(null);
@@ -942,8 +942,9 @@ export const VoicePOS = () => {
 
       const spokenText = finalTranscript.trim();
       const normalizedSpeech = normalizeVoiceText(spokenText);
-      if (normalizedSpeech && normalizedSpeech === lastProcessedSpeechRef.current) return;
-      lastProcessedSpeechRef.current = normalizedSpeech;
+      const now = Date.now();
+      if (normalizedSpeech && normalizedSpeech === lastProcessedSpeechRef.current.text && now - lastProcessedSpeechRef.current.at < 1200) return;
+      lastProcessedSpeechRef.current = { text: normalizedSpeech, at: now };
 
       const wakeDetection = detectWakePhrase([...allAlternatives, spokenText].join(' '));
       setWakeDebug(wakeDetection);
