@@ -113,6 +113,37 @@ export const WakeWordTestPanel = () => {
     }
   }, []);
 
+  const [regression, setRegression] = useState<Array<{
+    text: string; expected: boolean; actual: boolean; pass: boolean; latencyMs: number; matched: string | null;
+  }>>([]);
+
+  const runRegression = useCallback(() => {
+    const out = REGRESSION_FIXTURES.map(({ text, expectMatch }) => {
+      const t0 = performance.now();
+      const det = detectWake(text);
+      const latencyMs = Math.round(performance.now() - t0);
+      const actual = !!det;
+      return { text, expected: expectMatch, actual, pass: actual === expectMatch, latencyMs, matched: det?.matched ?? null };
+    });
+    setRegression(out);
+    const passed = out.filter((r) => r.pass).length;
+    toast.success(`Regression: ${passed}/${out.length} zimefaulu`);
+    void supabase.auth.getUser().then(({ data }) => {
+      if (!data.user) return;
+      void supabase.from('nurath_logs').insert(out.map((r) => ({
+        user_id: data.user!.id,
+        kind: 'wake',
+        source: 'system',
+        stage: 'regression',
+        transcript: r.text,
+        confidence: 0.7,
+        wake_triggered: r.actual,
+        lang: 'sw-TZ',
+        note: `${r.pass ? 'PASS' : 'FAIL'} expected=${r.expected} actual=${r.actual} matched=${r.matched ?? '—'}`,
+      })));
+    });
+  }, []);
+
   const stop = useCallback(() => {
     try { recognitionRef.current?.stop(); } catch { /* ignore */ }
     recognitionRef.current = null;
