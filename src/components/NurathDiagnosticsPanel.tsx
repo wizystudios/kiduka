@@ -52,40 +52,44 @@ export const NurathDiagnosticsPanel = () => {
 
   const loadLogs = async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from('nurath_logs')
-      .select('*')
-      .order('created_at', { ascending: false })
-      .limit(500);
+    const { data, error } = await supabase.functions.invoke('nurath-admin-export', {
+      body: { action: 'list', limit: 500 },
+    });
 
     if (error) {
       toast({ title: 'Imeshindikana kupakua logs', description: error.message, variant: 'destructive' });
       setLoading(false);
       return;
     }
-
-    const baseLogs = (data ?? []) as NurathLogRow[];
-    const userIds = [...new Set(baseLogs.map((log) => log.user_id).filter(Boolean))];
-
-    let shops = new Map<string, string>();
-    if (userIds.length > 0) {
-      const { data: profiles } = await supabase
-        .from('profiles')
-        .select('id, business_name, full_name')
-        .in('id', userIds);
-
-      shops = new Map(
-        (profiles ?? []).map((profile) => [profile.id, profile.business_name || profile.full_name || 'Biashara isiyojulikana']),
-      );
-    }
-
-    setLogs(
-      baseLogs.map((log) => ({
-        ...log,
-        shop_name: shops.get(log.user_id) || 'Biashara isiyojulikana',
-      })),
-    );
+    setLogs(((data as any)?.logs ?? []) as NurathLogRow[]);
     setLoading(false);
+  };
+
+  const generateIncidentSummary = async () => {
+    const { data, error } = await supabase.functions.invoke('nurath-admin-export', {
+      body: { action: 'incident-summary', windowMinutes: 60 },
+    });
+    if (error) {
+      toast({ title: 'Imeshindikana', description: error.message, variant: 'destructive' });
+      return;
+    }
+    const s: any = data;
+    const topShopsRows = (s.topShops ?? []).map((x: any) => `<tr><td>${x.name}</td><td>${x.failures}</td></tr>`).join('');
+    const errRows = Object.entries(s.errorTypeCounts ?? {})
+      .map(([k, v]) => `<tr><td>${k}</td><td>${v}</td></tr>`).join('');
+    const html = `
+      <div class="stats">
+        <div class="stat-card"><strong>${s.total}</strong><br/>Sessions (${s.windowMinutes} min)</div>
+        <div class="stat-card"><strong>${s.failures}</strong><br/>Failures</div>
+        <div class="stat-card"><strong>${s.failureRate}%</strong><br/>Failure rate</div>
+      </div>
+      <h2>Top error types</h2>
+      <table><thead><tr><th>Type</th><th>Count</th></tr></thead><tbody>${errRows}</tbody></table>
+      <h2>Shops affected (top 10)</h2>
+      <table><thead><tr><th>Biashara</th><th>Failures</th></tr></thead><tbody>${topShopsRows || '<tr><td colspan="2">Hakuna</td></tr>'}</tbody></table>
+      <p style="margin-top:20px;font-size:11px;color:#666">Generated: ${s.generatedAt}</p>
+    `;
+    exportToPDF('Nurath Incident Summary (Last 1 Hour)', html);
   };
 
   const clearLogs = async () => {
