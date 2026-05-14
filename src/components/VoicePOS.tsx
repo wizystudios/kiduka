@@ -188,6 +188,7 @@ const formatLogTime = (timestamp: number | null) => {
 
 export const VoicePOS = () => {
   const { user } = useAuth();
+  const { dataOwnerId } = useDataAccess();
   const { toast } = useToast();
 
   const [isListening, setIsListening] = useState(false);
@@ -373,19 +374,19 @@ export const VoicePOS = () => {
   }, [products, currentSale]);
 
   const fetchProducts = useCallback(async () => {
-    if (!user) return;
+    if (!dataOwnerId) return;
 
     try {
       const { data } = await supabase
         .from('products')
         .select('id, name, price, stock_quantity, barcode, low_stock_threshold')
-        .eq('owner_id', user.id);
+        .eq('owner_id', dataOwnerId);
 
       setProducts(data || []);
     } catch (error) {
       console.error('Error fetching products:', error);
     }
-  }, [user]);
+  }, [dataOwnerId]);
 
   useEffect(() => {
     void fetchProducts();
@@ -557,11 +558,12 @@ export const VoicePOS = () => {
   }, []);
 
   const askVoiceAssistant = useCallback(async (command: string) => {
-    if (!user) return null;
+    if (!user || !dataOwnerId) return null;
 
     const { data, error } = await supabase.functions.invoke('voice-pos-assistant', {
       body: {
         message: command,
+        ownerId: dataOwnerId,
         currentSale: currentSaleRef.current,
         conversationHistory: conversationHistoryRef.current,
       },
@@ -573,7 +575,7 @@ export const VoicePOS = () => {
     }
 
     return data as VoiceAssistantFunctionResult;
-  }, [user]);
+  }, [dataOwnerId, user]);
 
   const completeSale = useCallback(async (announce = true) => {
     const saleItems = currentSaleRef.current;
@@ -800,7 +802,7 @@ export const VoicePOS = () => {
         command: cleanedCommand,
         transcript: currentTranscript,
         response: finalMessage,
-        apiLatencyMs: lastApiLatency,
+          apiLatencyMs,
       });
       await speakResponse(finalMessage);
     } catch {
