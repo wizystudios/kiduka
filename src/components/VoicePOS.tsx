@@ -240,7 +240,7 @@ export const VoicePOS = () => {
   const [undoEntries, setUndoEntries] = useState(voiceUndoStack.list());
   const pendingActionRef = useRef<typeof pendingAction>(null);
   useEffect(() => { pendingActionRef.current = pendingAction; }, [pendingAction]);
-  useEffect(() => voiceUndoStack.subscribe(setUndoEntries), []);
+  useEffect(() => { const unsub = voiceUndoStack.subscribe(setUndoEntries); return () => { unsub(); }; }, []);
 
   const recognitionRef = useRef<any>(null);
   const commandProcessorRef = useRef<VoiceCommandProcessor | null>(null);
