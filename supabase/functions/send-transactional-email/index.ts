@@ -160,6 +160,71 @@ Deno.serve(async (req) => {
     )
   }
 
+  // 2b. Consent check (owner profiles + sokoni customers). Fail-open if no record.
+  try {
+    const TEMPLATE_CATEGORY: Record<string, 'security' | 'operations' | 'subscription' | 'marketplace' | 'customer'> = {
+      'owner-login-alert': 'security',
+      'owner-settings-changed': 'security',
+      'owner-subscription-request': 'subscription',
+      'owner-large-transaction': 'operations',
+      'owner-low-stock': 'operations',
+      'owner-new-debt': 'operations',
+      'owner-new-sokoni-order': 'marketplace',
+      'customer-order-confirmation': 'customer',
+      'customer-order-status': 'customer',
+      'customer-order-receipt': 'customer',
+      'customer-review-thanks': 'customer',
+      'customer-return-update': 'customer',
+    }
+    const category = TEMPLATE_CATEGORY[templateName]
+    if (category && category !== 'customer') {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('email_notifications_enabled, email_consent')
+        .ilike('email', effectiveRecipient)
+        .maybeSingle()
+      if (profile) {
+        const masterOff = profile.email_notifications_enabled === false
+        const cat = (profile.email_consent as any) || {}
+        const catOff = cat[category] === false
+        if (masterOff || catOff) {
+          await supabase.from('email_send_log').insert({
+            message_id: messageId,
+            template_name: templateName,
+            recipient_email: effectiveRecipient,
+            status: 'suppressed',
+            error_message: masterOff ? 'consent_master_disabled' : `consent_${category}_disabled`,
+          })
+          return new Response(
+            JSON.stringify({ success: false, reason: 'consent_disabled' }),
+            { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          )
+        }
+      }
+    } else if (category === 'customer') {
+      const { data: customer } = await supabase
+        .from('sokoni_customers')
+        .select('email_transactional_consent')
+        .ilike('email', effectiveRecipient)
+        .maybeSingle()
+      if (customer && customer.email_transactional_consent === false) {
+        await supabase.from('email_send_log').insert({
+          message_id: messageId,
+          template_name: templateName,
+          recipient_email: effectiveRecipient,
+          status: 'suppressed',
+          error_message: 'consent_customer_disabled',
+        })
+        return new Response(
+          JSON.stringify({ success: false, reason: 'consent_disabled' }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+    }
+  } catch (e) {
+    console.warn('consent check failed (fail-open)', e)
+  }
+
   // 3. Get or create unsubscribe token (one token per email address)
   const normalizedEmail = effectiveRecipient.toLowerCase()
   let unsubscribeToken: string
