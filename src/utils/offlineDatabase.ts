@@ -4,7 +4,7 @@
  */
 
 const DB_NAME = 'KidukaPOS_Offline';
-const DB_VERSION = 2; // Bumped for sync_history store
+const DB_VERSION = 3; // Bumped for transaction_logs store
 
 interface SyncRecord {
   id: string;
@@ -93,6 +93,14 @@ class OfflineDatabase {
         // Metadata store - for tracking last sync times
         if (!db.objectStoreNames.contains('metadata')) {
           db.createObjectStore('metadata', { keyPath: 'key' });
+        }
+
+        // Transaction logs - cart/checkout/sync step diagnostics (admin-focused)
+        if (!db.objectStoreNames.contains('transaction_logs')) {
+          const txnStore = db.createObjectStore('transaction_logs', { keyPath: 'id' });
+          txnStore.createIndex('timestamp', 'timestamp', { unique: false });
+          txnStore.createIndex('scope', 'scope', { unique: false });
+          txnStore.createIndex('level', 'level', { unique: false });
         }
       };
     });
@@ -329,10 +337,77 @@ class OfflineDatabase {
     };
   }
 
+  // Transaction logs (admin-facing diagnostics)
+  async addTransactionLog(entry: any): Promise<void> {
+    await this.init();
+    return new Promise((resolve, reject) => {
+      const tx = this.db!.transaction('transaction_logs', 'readwrite');
+      const store = tx.objectStore('transaction_logs');
+      // Cap size: drop oldest 50 once we exceed 500
+      const countReq = store.count();
+      countReq.onsuccess = () => {
+        if (countReq.result > 500) {
+          const idx = store.index('timestamp');
+          const cursorReq = idx.openCursor();
+          let trimmed = 0;
+          cursorReq.onsuccess = (e: any) => {
+            const cursor = e.target.result;
+            if (cursor && trimmed < 50) {
+              cursor.delete();
+              trimmed++;
+              cursor.continue();
+            }
+          };
+        }
+        store.put(entry);
+      };
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+  }
+
+  async getTransactionLogs(limit = 500): Promise<any[]> {
+    await this.init();
+    return new Promise((resolve, reject) => {
+      const tx = this.db!.transaction('transaction_logs', 'readonly');
+      const store = tx.objectStore('transaction_logs');
+      const req = store.getAll();
+      req.onsuccess = () => {
+        const sorted = (req.result as any[]).sort((a, b) => b.timestamp - a.timestamp).slice(0, limit);
+        resolve(sorted);
+      };
+      req.onerror = () => reject(req.error);
+    });
+  }
+
+  async clearTransactionLogs(): Promise<void> {
+    await this.init();
+    return new Promise((resolve, reject) => {
+      const tx = this.db!.transaction('transaction_logs', 'readwrite');
+      tx.objectStore('transaction_logs').clear();
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+  }
+
+  // Get the entire sync queue (synced + pending) for the Sync Status view
+  async getAllSyncQueue(): Promise<SyncRecord[]> {
+    await this.init();
+    return new Promise((resolve, reject) => {
+      const tx = this.db!.transaction('sync_queue', 'readonly');
+      const req = tx.objectStore('sync_queue').getAll();
+      req.onsuccess = () => {
+        const list = (req.result as SyncRecord[]).sort((a, b) => b.timestamp - a.timestamp);
+        resolve(list);
+      };
+      req.onerror = () => reject(req.error);
+    });
+  }
+
   // Clear all data (for logout)
   async clearAll(): Promise<void> {
     await this.init();
-    const stores = ['products', 'sales', 'sales_items', 'customers', 'sync_queue', 'sync_history', 'metadata'];
+    const stores = ['products', 'sales', 'sales_items', 'customers', 'sync_queue', 'sync_history', 'metadata', 'transaction_logs'];
     
     return new Promise((resolve, reject) => {
       const transaction = this.db!.transaction(stores, 'readwrite');

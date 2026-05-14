@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { offlineDB, SyncLogEntry } from '@/utils/offlineDatabase';
+import { txnLogger } from '@/utils/transactionLogger';
 import { toast } from 'sonner';
 
 interface SyncStatus {
@@ -178,77 +179,130 @@ export const useOfflineSync = (ownerId: string | null) => {
 
       let syncedCount = 0;
       let failedCount = 0;
-      const tableStats: Record<string, { synced: number; failed: number }> = {};
+      let conflictCount = 0;
+      const tableStats: Record<string, { synced: number; failed: number; conflicts: number }> = {};
 
       for (const item of pendingItems) {
         try {
-          // Handle sync based on table type
           const tableName = item.table as 'products' | 'sales' | 'customers' | 'sales_items';
-          
-          if (!tableStats[tableName]) {
-            tableStats[tableName] = { synced: 0, failed: 0 };
-          }
+          if (!tableStats[tableName]) tableStats[tableName] = { synced: 0, failed: 0, conflicts: 0 };
 
           if (item.action === 'insert' || item.action === 'update') {
+            // Conflict detection: for products/customers, if server has a newer
+            // updated_at than the local change, prefer server (skip overwrite)
+            // and log the conflict so admins can review.
+            if ((tableName === 'products' || tableName === 'customers') && item.data?.id) {
+              const { data: remote } = await supabase
+                .from(tableName)
+                .select('id, updated_at')
+                .eq('id', item.data.id)
+                .maybeSingle<{ id: string; updated_at: string | null }>();
+              if (
+                remote?.updated_at &&
+                item.data.updated_at &&
+                new Date(remote.updated_at).getTime() > new Date(item.data.updated_at).getTime()
+              ) {
+                conflictCount++;
+                tableStats[tableName].conflicts++;
+                await txnLogger.warn(
+                  'conflict',
+                  `${tableName}_newer_on_server`,
+                  `Server ina toleo jipya zaidi la ${tableName} (${item.data.id}). Mabadiliko ya offline yameachwa.`,
+                  'CONFLICT_REMOTE_NEWER',
+                  { id: item.data.id, localUpdatedAt: item.data.updated_at, remoteUpdatedAt: remote.updated_at },
+                );
+                await offlineDB.addSyncLog({
+                  timestamp: Date.now(),
+                  type: 'conflict',
+                  table: tableName,
+                  itemCount: 1,
+                  status: 'partial',
+                  details: `Mgongano: server ina toleo jipya zaidi (id ${item.data.id}). Local imeachwa.`,
+                });
+                await offlineDB.markAsSynced(item.id);
+                continue;
+              }
+            }
+
+            // For sales: never re-create if id already exists (idempotent).
+            if (tableName === 'sales' && item.data?.id) {
+              const { data: existing } = await supabase
+                .from('sales')
+                .select('id')
+                .eq('id', item.data.id)
+                .maybeSingle();
+              if (existing) {
+                // Already synced previously — drop the queue entry without
+                // re-inserting (prevents duplicate sale + double stock decrement).
+                await txnLogger.info(
+                  'sync',
+                  'sales_already_present',
+                  `Mauzo ${item.data.id} tayari yameingia kwenye database. Imerukwa.`,
+                  { id: item.data.id },
+                );
+                await offlineDB.markAsSynced(item.id);
+                continue;
+              }
+            }
+
             const { error: upsertError } = await supabase
               .from(tableName)
-              .upsert(item.data);
-            
+              .upsert(item.data, { onConflict: 'id' });
             if (upsertError) throw upsertError;
           } else if (item.action === 'delete') {
             const { error: deleteError } = await supabase
               .from(tableName)
               .delete()
               .eq('id', item.data.id);
-            
             if (deleteError) throw deleteError;
           }
 
           await offlineDB.markAsSynced(item.id);
           syncedCount++;
           tableStats[tableName].synced++;
+          await txnLogger.success('sync', `${tableName}_${item.action}`, `Imepelekwa: ${tableName} (${item.data?.id || '—'})`, { id: item.data?.id });
         } catch (error: any) {
           console.error(`Failed to sync item ${item.id}:`, error);
           failedCount++;
           const tableName = item.table;
-          if (!tableStats[tableName]) {
-            tableStats[tableName] = { synced: 0, failed: 0 };
-          }
+          if (!tableStats[tableName]) tableStats[tableName] = { synced: 0, failed: 0, conflicts: 0 };
           tableStats[tableName].failed++;
 
-          // Log individual failure
+          await txnLogger.error(
+            'sync',
+            `${tableName}_${item.action}_failed`,
+            error.message || 'Sync imeshindwa',
+            error.code || error.status?.toString(),
+            { id: item.data?.id, hint: error.hint, details: error.details },
+          );
           await offlineDB.addSyncLog({
             timestamp: Date.now(),
             type: 'error',
             table: tableName,
             itemCount: 1,
             status: 'failed',
-            details: `${item.action} ${tableName}: ${error.message || 'Unknown error'}`
+            details: `${item.action} ${tableName}: ${error.message || 'Unknown error'}${error.code ? ` [${error.code}]` : ''}`,
           });
         }
       }
 
       // Log summary per table
       for (const [table, stats] of Object.entries(tableStats)) {
-        if (stats.synced > 0) {
+        if (stats.synced > 0 || stats.conflicts > 0) {
           await offlineDB.addSyncLog({
             timestamp: Date.now(),
-            type: 'upload',
+            type: stats.conflicts > 0 ? 'conflict' : 'upload',
             table,
             itemCount: stats.synced,
             status: stats.failed > 0 ? 'partial' : 'success',
-            details: `${stats.synced} ${table} zimepakiwa${stats.failed > 0 ? `, ${stats.failed} hazikufanikiwa` : ''}`
+            details: `${stats.synced} ${table} zimepakiwa${stats.failed > 0 ? `, ${stats.failed} hazikufanikiwa` : ''}${stats.conflicts > 0 ? `, ${stats.conflicts} migongano` : ''}`,
           });
         }
       }
 
-      if (syncedCount > 0) {
-        toast.success(`Data ${syncedCount} zimesawazishwa!`);
-      }
-
-      if (failedCount > 0) {
-        toast.error(`${failedCount} hazikufanikiwa kusawazishwa`);
-      }
+      if (syncedCount > 0) toast.success(`Data ${syncedCount} zimesawazishwa!`);
+      if (conflictCount > 0) toast.warning(`Migongano ${conflictCount} imeandikwa kwenye Mobile QA`);
+      if (failedCount > 0) toast.error(`${failedCount} hazikufanikiwa kusawazishwa`);
 
       // Update metadata
       await offlineDB.setMetadata('lastSync', Date.now());
