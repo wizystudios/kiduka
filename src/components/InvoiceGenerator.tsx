@@ -103,7 +103,8 @@ export const InvoiceGenerator = ({
           </div>
 
           {/* Items Table */}
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto -mx-2 px-2">
+          <table className="w-full text-sm min-w-[480px]">
             <thead className="border-b">
               <tr>
                 <th className="text-left py-2">Bidhaa</th>
