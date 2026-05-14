@@ -394,6 +394,160 @@ export default function MobileQAPage() {
           </div>
         )}
 
+        {topTab === 'sync' && (
+          <div className="space-y-3">
+            <Card>
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    {isOnline ? <Wifi className="h-4 w-4 text-green-600" /> : <WifiOff className="h-4 w-4 text-red-600" />}
+                    Hali ya Sync
+                  </CardTitle>
+                  <Button variant="outline" size="sm" className="h-7 text-[10px] rounded-full" onClick={refreshSync}>
+                    <RefreshCw className="h-3 w-3 mr-1" /> Onyesha upya
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <div className="grid grid-cols-3 gap-2 text-center">
+                  <div className="p-2 rounded-2xl bg-muted/50">
+                    <p className="text-[10px] text-muted-foreground">Mtandao</p>
+                    <p className={`text-xs font-bold ${isOnline ? 'text-green-700' : 'text-red-700'}`}>{isOnline ? 'Online' : 'Offline'}</p>
+                  </div>
+                  <div className="p-2 rounded-2xl bg-muted/50">
+                    <p className="text-[10px] text-muted-foreground">Vinasubiri</p>
+                    <p className="text-xs font-bold text-orange-700">{pendingQueue.filter((x) => !x.synced).length}</p>
+                  </div>
+                  <div className="p-2 rounded-2xl bg-muted/50">
+                    <p className="text-[10px] text-muted-foreground">Sync ya mwisho</p>
+                    <p className="text-[10px] font-mono">{lastSync ? new Date(lastSync).toLocaleTimeString() : '—'}</p>
+                  </div>
+                </div>
+                <p className="text-[11px] text-muted-foreground leading-relaxed">
+                  Ukiwa offline, kila muamala unaohifadhiwa kwenye simu yako. Mara mtandao unaporudi,
+                  data inasawazishwa moja kwa moja na database ya Kiduka. Hakuna duplicate (kila muamala
+                  una ID ya kipekee na sync inahakiki kabla ya kuweka).
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm">Foleni ya Pending ({pendingQueue.filter((x) => !x.synced).length})</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-1.5">
+                {pendingQueue.filter((x) => !x.synced).length === 0 ? (
+                  <p className="text-xs text-muted-foreground text-center py-3">Foleni ni tupu — kila kitu kimesawazishwa.</p>
+                ) : pendingQueue.filter((x) => !x.synced).map((item) => (
+                  <div key={item.id} className="p-2 rounded-2xl border text-xs space-y-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <Badge className="bg-orange-100 text-orange-800 text-[10px]">{item.action}</Badge>
+                      <Badge variant="outline" className="text-[10px]">{item.table}</Badge>
+                      <span className="font-mono text-[10px] text-muted-foreground ml-auto">
+                        {new Date(item.timestamp).toLocaleString()}
+                      </span>
+                    </div>
+                    <p className="font-mono text-[10px] text-muted-foreground truncate">id: {item.data?.id || '—'}</p>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm">Historia ya Sync (50 za hivi karibuni)</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-1">
+                {syncHistory.length === 0 ? (
+                  <p className="text-xs text-muted-foreground text-center py-3">Hakuna historia bado.</p>
+                ) : syncHistory.map((h) => (
+                  <div key={h.id} className="flex items-start gap-2 p-1.5 rounded-xl text-[11px] border-b last:border-b-0">
+                    <Badge className={`text-[9px] ${
+                      h.type === 'error' ? 'bg-red-100 text-red-800' :
+                      h.type === 'conflict' ? 'bg-yellow-100 text-yellow-800' :
+                      h.type === 'upload' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'
+                    }`}>{h.type}</Badge>
+                    <div className="flex-1 min-w-0">
+                      <p className="truncate">{h.details}</p>
+                      <p className="text-[9px] text-muted-foreground font-mono">
+                        {new Date(h.timestamp).toLocaleString()} · {h.table}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {topTab === 'logs' && (
+          <div className="space-y-3">
+            <Card>
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <FileText className="h-4 w-4 text-primary" /> Transaction Logs
+                  </CardTitle>
+                  <div className="flex gap-1">
+                    <Button variant="outline" size="sm" className="h-7 text-[10px] rounded-full" onClick={refreshLogs}>
+                      <RefreshCw className="h-3 w-3 mr-1" /> Onyesha
+                    </Button>
+                    <Button variant="outline" size="sm" className="h-7 text-[10px] rounded-full"
+                      onClick={async () => { await txnLogger.clear(); refreshLogs(); toast.success('Logs zimefutwa'); }}>
+                      <Trash2 className="h-3 w-3 mr-1" /> Futa
+                    </Button>
+                  </div>
+                </div>
+                <p className="text-[10px] text-muted-foreground">
+                  Hatua za cart/checkout/sync na error codes. Kwa admin/uchunguzi (mmiliki anaweza kuona pia).
+                </p>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <div className="flex gap-1 flex-wrap">
+                  {(['all','error','warn','sync','cart','conflict'] as const).map((f) => (
+                    <Button key={f} size="sm" variant={logFilter === f ? 'default' : 'outline'}
+                      className="h-7 text-[10px] rounded-full" onClick={() => setLogFilter(f)}>{f}</Button>
+                  ))}
+                </div>
+                <div className="space-y-1 max-h-[60vh] overflow-y-auto">
+                  {logs
+                    .filter((l) => logFilter === 'all' ||
+                      (logFilter === 'error' && l.level === 'error') ||
+                      (logFilter === 'warn' && l.level === 'warn') ||
+                      (logFilter === 'sync' && l.scope === 'sync') ||
+                      (logFilter === 'cart' && (l.scope === 'cart' || l.scope === 'checkout' || l.scope === 'payment')) ||
+                      (logFilter === 'conflict' && l.scope === 'conflict'))
+                    .map((l) => (
+                    <div key={l.id} className={`p-2 rounded-2xl border text-[11px] space-y-0.5 ${
+                      l.level === 'error' ? 'bg-red-50 border-red-200' :
+                      l.level === 'warn' ? 'bg-yellow-50 border-yellow-200' :
+                      l.level === 'success' ? 'bg-green-50 border-green-200' : 'bg-muted/30 border-border'
+                    }`}>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <Badge className="text-[9px]" variant="outline">{l.scope}</Badge>
+                        <span className="font-mono text-[9px] text-muted-foreground">{l.step}</span>
+                        {l.code && <Badge className="text-[9px] bg-red-100 text-red-800">{l.code}</Badge>}
+                        <span className="ml-auto text-[9px] font-mono text-muted-foreground">
+                          {new Date(l.timestamp).toLocaleTimeString()}
+                        </span>
+                      </div>
+                      <p className="break-words">{l.message}</p>
+                      {l.context && Object.keys(l.context).length > 0 && (
+                        <pre className="text-[9px] font-mono bg-background/60 p-1 rounded-lg overflow-x-auto">
+{JSON.stringify(l.context, null, 0)}
+                        </pre>
+                      )}
+                    </div>
+                  ))}
+                  {logs.length === 0 && (
+                    <p className="text-xs text-muted-foreground text-center py-4">Hakuna logs bado. Fanya muamala/sync ili logs zionekane.</p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
         {topTab === 'bug' && (
           <div className="space-y-3">
             <Card>
