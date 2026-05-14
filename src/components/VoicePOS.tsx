@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useDataAccess } from '@/hooks/useDataAccess';
 import { useToast } from '@/hooks/use-toast';
 import { VoiceCommandProcessor } from '@/utils/voiceCommandProcessor';
 import { speakAssistantText } from '@/utils/voiceAssistantSpeech';
@@ -88,7 +89,8 @@ declare global {
 }
 
 const NURATH_AUTO_LISTEN_KEY = 'kiduka_nurath_handsfree_enabled';
-const WAKE_WORD_ALIASES = ['nurath', 'nurat', 'nurathi', 'norath', 'nura'];
+const WAKE_WORD_ALIASES = ['nurath', 'nurat', 'nurathi', 'nurati', 'nurad', 'norath', 'norat', 'nura', 'nuru', 'nora'];
+const WAKE_WORD_PHRASES = ['new wrath', 'new rat', 'new route', 'no wrath', 'no rat', 'nura t', 'nur a'];
 
 // Configurable auto-reset thresholds (ms / counts)
 const NURATH_THRESHOLDS = {
@@ -116,13 +118,43 @@ const normalizeVoiceText = (value: string) =>
     .replace(/\s+/g, ' ')
     .trim();
 
+const editDistanceWithinOne = (value: string, target: string) => {
+  if (Math.abs(value.length - target.length) > 1) return false;
+  if (value === target) return true;
+
+  let i = 0;
+  let j = 0;
+  let edits = 0;
+  while (i < value.length && j < target.length) {
+    if (value[i] === target[j]) {
+      i += 1;
+      j += 1;
+      continue;
+    }
+    edits += 1;
+    if (edits > 1) return false;
+    if (value.length > target.length) i += 1;
+    else if (value.length < target.length) j += 1;
+    else {
+      i += 1;
+      j += 1;
+    }
+  }
+  return edits + (value.length - i) + (target.length - j) <= 1;
+};
+
 const stripWakeWord = (value: string) =>
-  value
+  WAKE_WORD_PHRASES.reduce((text, phrase) => text.replace(new RegExp(`\\b${phrase.replace(/\s+/g, '\\s+')}\\b`, 'gi'), ''), value)
     .replace(/\bnurath\b/gi, '')
     .replace(/\bnurat\b/gi, '')
     .replace(/\bnurathi\b/gi, '')
+    .replace(/\bnurati\b/gi, '')
+    .replace(/\bnurad\b/gi, '')
     .replace(/\bnorath\b/gi, '')
+    .replace(/\bnorat\b/gi, '')
     .replace(/\bnura\b/gi, '')
+    .replace(/\bnuru\b/gi, '')
+    .replace(/\bnora\b/gi, '')
     .replace(/\s+/g, ' ')
     .trim();
 
@@ -132,7 +164,12 @@ const detectWakePhrase = (spokenText: string): WakeDebugState => {
 
   const matchedAlias = WAKE_WORD_ALIASES.find((alias) =>
     normalizedText.includes(alias) ||
-    tokens.some((token) => token === alias || token.startsWith(alias) || alias.startsWith(token)),
+    tokens.some((token) =>
+      token === alias ||
+      (token.length >= 4 && (token.startsWith(alias) || alias.startsWith(token) || editDistanceWithinOne(token, alias)))
+    ),
+  ) ?? WAKE_WORD_PHRASES.find((phrase) =>
+    normalizedText.includes(phrase) || normalizeVoiceText(phrase).replace(/\s/g, '') === tokens.slice(0, 2).join(''),
   ) ?? null;
 
   return {
@@ -156,6 +193,7 @@ const formatLogTime = (timestamp: number | null) => {
 
 export const VoicePOS = () => {
   const { user } = useAuth();
+  const { dataOwnerId } = useDataAccess();
   const { toast } = useToast();
 
   const [isListening, setIsListening] = useState(false);
@@ -207,6 +245,7 @@ export const VoicePOS = () => {
   const recoveryInFlightRef = useRef(false);
   const wakeFailureCountRef = useRef(0);
   const lastPermissionCheckRef = useRef(0);
+  const lastProcessedSpeechRef = useRef<{ text: string; at: number }>({ text: '', at: 0 });
 
   const [micTestRunning, setMicTestRunning] = useState(false);
   const [micTestResult, setMicTestResult] = useState<{ ok: boolean; level: number; message: string } | null>(null);
@@ -341,19 +380,19 @@ export const VoicePOS = () => {
   }, [products, currentSale]);
 
   const fetchProducts = useCallback(async () => {
-    if (!user) return;
+    if (!dataOwnerId) return;
 
     try {
       const { data } = await supabase
         .from('products')
         .select('id, name, price, stock_quantity, barcode, low_stock_threshold')
-        .eq('owner_id', user.id);
+        .eq('owner_id', dataOwnerId);
 
       setProducts(data || []);
     } catch (error) {
       console.error('Error fetching products:', error);
     }
-  }, [user]);
+  }, [dataOwnerId]);
 
   useEffect(() => {
     void fetchProducts();
@@ -525,11 +564,12 @@ export const VoicePOS = () => {
   }, []);
 
   const askVoiceAssistant = useCallback(async (command: string) => {
-    if (!user) return null;
+    if (!user || !dataOwnerId) return null;
 
     const { data, error } = await supabase.functions.invoke('voice-pos-assistant', {
       body: {
         message: command,
+        ownerId: dataOwnerId,
         currentSale: currentSaleRef.current,
         conversationHistory: conversationHistoryRef.current,
       },
@@ -541,7 +581,7 @@ export const VoicePOS = () => {
     }
 
     return data as VoiceAssistantFunctionResult;
-  }, [user]);
+  }, [dataOwnerId, user]);
 
   const completeSale = useCallback(async (announce = true) => {
     const saleItems = currentSaleRef.current;
@@ -550,12 +590,16 @@ export const VoicePOS = () => {
       return 'Hakuna bidhaa kwenye mauzo ya sasa.';
     }
 
+    if (!dataOwnerId) {
+      return 'Sijapata biashara ya kuhusisha mauzo haya. Tafadhali ingia tena kisha ujaribu.';
+    }
+
     try {
       const totalAmount = saleItems.reduce((sum, item) => sum + item.total_price, 0);
 
       const { data: sale, error: saleError } = await supabase
         .from('sales')
-        .insert({ owner_id: user?.id, total_amount: totalAmount, payment_method: 'cash' })
+        .insert({ owner_id: dataOwnerId, total_amount: totalAmount, payment_method: 'cash' })
         .select()
         .single();
 
@@ -592,7 +636,7 @@ export const VoicePOS = () => {
       toast({ title: 'Hitilafu', description: 'Imeshindwa kukamilisha mauzo', variant: 'destructive' });
       return 'Imeshindwa kukamilisha mauzo. Jaribu tena.';
     }
-  }, [fetchProducts, speakResponse, toast, user]);
+  }, [dataOwnerId, fetchProducts, speakResponse, toast]);
 
   const applyAssistantAction = useCallback(async (result: any) => {
     const action = result.data?.action || 'answer';
@@ -674,7 +718,7 @@ export const VoicePOS = () => {
   }, [completeSale]);
 
   const processVoiceCommand = useCallback(async (command: string, source: ListeningSource = 'handsfree') => {
-    if (!user) return;
+    if (!user || !dataOwnerId) return;
 
     const normalizedCommand = normalizeVoiceText(command);
     const cleanedCommand = stripWakeWord(command) || command;
@@ -710,7 +754,7 @@ export const VoicePOS = () => {
     }
 
     try {
-      let result = await processor.processCommand(cleanedCommand, user.id);
+      let result = await processor.processCommand(cleanedCommand, dataOwnerId);
       let apiLatencyMs: number | null = null;
 
       if (!result.success) {
@@ -768,7 +812,7 @@ export const VoicePOS = () => {
         command: cleanedCommand,
         transcript: currentTranscript,
         response: finalMessage,
-        apiLatencyMs: lastApiLatency,
+          apiLatencyMs,
       });
       await speakResponse(finalMessage);
     } catch {
@@ -804,6 +848,7 @@ export const VoicePOS = () => {
     applyAssistantAction,
     askVoiceAssistant,
     currentTranscript,
+    dataOwnerId,
     lastApiLatency,
     micPermissionState,
     products,
@@ -831,10 +876,11 @@ export const VoicePOS = () => {
     const SpeechRecognitionConstructor = window.SpeechRecognition || window.webkitSpeechRecognition;
     const recognition = new SpeechRecognitionConstructor();
 
-    recognition.continuous = config.mode === 'handsfree';
+    const isMobileSpeechRuntime = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    recognition.continuous = config.mode === 'handsfree' && !isMobileSpeechRuntime;
     recognition.interimResults = true;
     recognition.lang = 'sw-TZ';
-    recognition.maxAlternatives = 1;
+    recognition.maxAlternatives = 5;
 
     recognitionModeRef.current = config.mode;
     activeListeningSourceRef.current = config.source;
@@ -869,9 +915,14 @@ export const VoicePOS = () => {
 
       let finalTranscript = '';
       let interimTranscript = '';
+      const allAlternatives: string[] = [];
 
       for (let index = event.resultIndex; index < event.results.length; index += 1) {
-        const transcript = event.results[index][0].transcript;
+        const result = event.results[index];
+        for (let alt = 0; alt < Math.min(result.length ?? 1, 5); alt += 1) {
+          if (result[alt]?.transcript) allAlternatives.push(result[alt].transcript);
+        }
+        const transcript = result[0].transcript;
         if (event.results[index].isFinal) {
           finalTranscript += transcript;
         } else {
@@ -882,12 +933,25 @@ export const VoicePOS = () => {
       if (interimTranscript.trim()) {
         setCurrentTranscript(interimTranscript.trim());
         setVoiceStatus('hearing');
+
+        const interimWake = detectWakePhrase([...allAlternatives, interimTranscript].join(' '));
+        if (config.mode === 'handsfree' && assistantModeRef.current !== 'awake' && interimWake.triggered) {
+          wakeFailureCountRef.current = 0;
+          setWakeDebug(interimWake);
+          updateAssistantMode('awake');
+          setLastResponse('Naam, nipo. Endelea kusema.');
+        }
       }
 
       if (!finalTranscript.trim()) return;
 
       const spokenText = finalTranscript.trim();
-      const wakeDetection = detectWakePhrase(spokenText);
+      const normalizedSpeech = normalizeVoiceText(spokenText);
+      const now = Date.now();
+      if (normalizedSpeech && normalizedSpeech === lastProcessedSpeechRef.current.text && now - lastProcessedSpeechRef.current.at < 1200) return;
+      lastProcessedSpeechRef.current = { text: normalizedSpeech, at: now };
+
+      const wakeDetection = detectWakePhrase([...allAlternatives, spokenText].join(' '));
       setWakeDebug(wakeDetection);
       setCurrentTranscript(spokenText);
       setLastCommandAt(Date.now());

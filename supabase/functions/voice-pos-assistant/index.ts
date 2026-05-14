@@ -25,6 +25,16 @@ const safeNumber = (value: unknown) => {
   return Number.isFinite(parsed) ? parsed : 0;
 };
 
+const isUuid = (value: unknown) =>
+  typeof value === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+
+const withTimeout = async <T,>(promise: Promise<T>, ms: number) => {
+  const timeout = new Promise<never>((_, reject) => {
+    setTimeout(() => reject(new Error('AI response timeout.')), ms);
+  });
+  return Promise.race([promise, timeout]);
+};
+
 const createFallbackReply = (message: string, outOfStock: string[]) => {
   const normalized = message.toLowerCase();
 
@@ -62,6 +72,7 @@ serve(async (req) => {
 
     const body = await req.json();
     const message = typeof body.message === 'string' ? body.message.trim() : '';
+    const requestedOwnerId = isUuid(body.ownerId) ? body.ownerId : null;
     const currentSale = Array.isArray(body.currentSale) ? (body.currentSale as CurrentSaleItem[]) : [];
     const conversationHistory = Array.isArray(body.conversationHistory)
       ? body.conversationHistory.slice(-4)
@@ -92,28 +103,53 @@ serve(async (req) => {
 
     const adminClient = createClient(supabaseUrl, serviceRoleKey);
 
+    const { data: roleRows } = await adminClient
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.id);
+    const roles = new Set((roleRows ?? []).map((row: { role: string }) => row.role));
+
+    let ownerId = user.id;
+    if (requestedOwnerId && requestedOwnerId !== user.id) {
+      const { data: assistantAccess } = await adminClient
+        .from('assistant_permissions')
+        .select('owner_id')
+        .eq('assistant_id', user.id)
+        .eq('owner_id', requestedOwnerId)
+        .maybeSingle();
+
+      if (assistantAccess?.owner_id || roles.has('super_admin')) {
+        ownerId = requestedOwnerId;
+      } else {
+        return new Response(JSON.stringify({ error: 'Forbidden' }), {
+          status: 403,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+    }
+
     const [profileResult, productsResult, salesResult, expensesResult, customersResult, branchesResult] = await Promise.all([
-      adminClient.from('profiles').select('business_name, full_name').eq('id', user.id).maybeSingle(),
+      adminClient.from('profiles').select('business_name, full_name').eq('id', ownerId).maybeSingle(),
       adminClient
         .from('products')
         .select('id, name, price, stock_quantity, low_stock_threshold, category, is_archived')
-        .eq('owner_id', user.id)
+        .eq('owner_id', ownerId)
         .order('name', { ascending: true })
         .limit(120),
       adminClient
         .from('sales')
         .select('total_amount, created_at')
-        .eq('owner_id', user.id)
+        .eq('owner_id', ownerId)
         .order('created_at', { ascending: false })
         .limit(200),
       adminClient
         .from('expenses')
         .select('amount, expense_date')
-        .eq('owner_id', user.id)
+        .eq('owner_id', ownerId)
         .order('expense_date', { ascending: false })
         .limit(200),
-      adminClient.from('customers').select('id', { count: 'exact', head: true }).eq('owner_id', user.id),
-      adminClient.from('business_branches').select('id', { count: 'exact', head: true }).eq('owner_id', user.id),
+      adminClient.from('customers').select('id', { count: 'exact', head: true }).eq('owner_id', ownerId),
+      adminClient.from('business_branches').select('id', { count: 'exact', head: true }).eq('owner_id', ownerId),
     ]);
 
     const products = (productsResult.data ?? []).filter((product: { is_archived?: boolean | null }) => !product.is_archived);
@@ -141,7 +177,7 @@ serve(async (req) => {
     }));
 
     const businessContext = {
-      owner_id: user.id,
+      owner_id: ownerId,
       business_name: profileResult.data?.business_name ?? 'Biashara yako',
       owner_name: profileResult.data?.full_name ?? '',
       totals: {
@@ -177,7 +213,7 @@ serve(async (req) => {
       },
     };
 
-    const systemPrompt = `Wewe ni Nurath, msaidizi rasmi wa sauti wa Kiduka. Ongea kama mwanamke mwenye sauti ya upole, mwepesi na wa kitaalamu. Jibu kwa Kiswahili cha Tanzania, kifupi, cha asili, na kisicho cha kimashine. Kama mtumiaji ameongea English kidogo, bado mwelewe lakini mjibu kwa Kiswahili rahisi isipokuwa aombe lugha nyingine.
+    const systemPrompt = `Wewe ni Nurath, msaidizi rasmi wa sauti wa Kiduka. Jibu kwa Kiswahili sanifu cha Tanzania: fasaha, rahisi, chenye heshima, na kisicho cha kimashine. Usitumie Kiingereza isipokuwa jina la bidhaa au mtumiaji ameomba hivyo.
 
 Lengo lako ni mawili:
 1. Elewa ombi la mtumiaji kwa lugha ya kawaida.
@@ -185,20 +221,22 @@ Lengo lako ni mawili:
 
 Sheria muhimu:
 - Usijibu kama chatbot wa commands. Elewa maana ya ujumbe kwa kawaida.
-- Tumia data uliyopewa tu; usibuni namba au bidhaa.
+- Tumia data uliyopewa tu. Usibuni namba, bidhaa, mauzo, wateja, matawi, au taarifa yoyote.
+- Ukikosa data ya kujibu, sema wazi: "Sina taarifa ya kutosha kuhusu hilo kwa sasa" kisha uliza swali moja la kufafanua.
+- Usitoe madai ya uhakika kama hayapo kwenye context. Epuka uongo kabisa.
 - Kama mtumiaji anataka kuongeza bidhaa kwenye mauzo, tumia intent add_to_sale na productId sahihi kutoka kwenye context.
 - Kama mtumiaji anataka kupunguza au kuondoa bidhaa kwenye mauzo ya sasa, tumia intent remove_from_sale.
 - Kama mtumiaji anataka kufuta mauzo yote ya sasa, tumia intent clear_sale.
 - Kama mtumiaji anataka kukamilisha mauzo, tumia intent complete_sale.
 - Kwa maswali ya ripoti, stock, akaunti, ushauri au muhtasari, tumia intent answer.
 - Ukikosa uhakika wa bidhaa au ombi halieleweki vya kutosha, tumia intent answer na umwombe mtumiaji arudie kwa ufupi.
-- reply iwe sentensi fupi, ya kirafiki, ya moja kwa moja, na ya asili kabisa kwa Kiswahili.
-- Usitumie maneno ya kigeni yasiyo ya lazima. Epuka Kiswahili kigumu au cha roboti.
+- reply iwe sentensi 1–2 tu, ya kirafiki, moja kwa moja, na yenye Kiswahili fasaha.
+- Usitumie maneno ya kigeni yasiyo ya lazima. Epuka Kiswahili kigumu, misimu mingi, au lugha ya roboti.
 - Kama ujumbe ni wa salamu tu au wa kumwita Nurath, reply iwe fupi kama "Naam, nipo" au "Nakusikia, sema".
 - quantity iwe namba halisi kama ipo; vinginevyo acha.
 `;
 
-    const gatewayResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+    const gatewayResponse = await withTimeout(fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${lovableApiKey}`,
@@ -214,12 +252,14 @@ Sheria muhimu:
             content: `Ujumbe wa sasa wa mtumiaji: ${message}\n\nContext ya biashara (JSON): ${JSON.stringify(businessContext)}`,
           },
         ],
+        temperature: 0.2,
+        max_tokens: 260,
         tools: [
           {
             type: 'function',
             function: {
               name: 'voice_pos_response',
-              description: 'Rudisha hatua au jibu la msaidizi wa Voice POS.',
+              description: 'Rudisha hatua au jibu la msaidizi wa sauti wa Kiduka.',
               parameters: {
                 type: 'object',
                 additionalProperties: false,
@@ -229,11 +269,11 @@ Sheria muhimu:
                     enum: ['answer', 'add_to_sale', 'remove_from_sale', 'clear_sale', 'complete_sale'],
                   },
                   reply: { type: 'string' },
-                  productId: { type: 'string' },
-                  quantity: { type: 'number' },
+                  productId: { type: ['string', 'null'] },
+                  quantity: { type: ['number', 'null'] },
                   confidence: { type: 'number' },
                 },
-                required: ['intent', 'reply', 'confidence'],
+                required: ['intent', 'reply', 'productId', 'quantity', 'confidence'],
               },
             },
           },
@@ -243,7 +283,7 @@ Sheria muhimu:
           function: { name: 'voice_pos_response' },
         },
       }),
-    });
+    }), 9000);
 
     if (!gatewayResponse.ok) {
       if (gatewayResponse.status === 429 || gatewayResponse.status === 402) {
