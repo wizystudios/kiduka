@@ -260,7 +260,10 @@ export const WakeWordTestPanel = () => {
                 <MicOff className="h-3 w-3 mr-1" /> Sitisha
               </Button>
             )}
-            <Button size="sm" variant="outline" className="h-7 text-[10px] rounded-full" onClick={() => setAttempts([])}>
+            <Button size="sm" variant="outline" className="h-7 text-[10px] rounded-full" onClick={runRegression}>
+              <PlayCircle className="h-3 w-3 mr-1" /> Regression
+            </Button>
+            <Button size="sm" variant="outline" className="h-7 text-[10px] rounded-full" onClick={() => { setAttempts([]); setRegression([]); }}>
               <RefreshCw className="h-3 w-3 mr-1" /> Futa
             </Button>
           </div>
