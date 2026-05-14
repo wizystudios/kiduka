@@ -168,8 +168,13 @@ const VIEWPORTS = [
 
 export default function MobileQAPage() {
   const navigate = useNavigate();
-  const { user } = useAuth();
-  const [topTab, setTopTab] = useState<'audit' | 'checklist' | 'bug' | 'sync' | 'logs'>('audit');
+  const { user, userProfile } = useAuth();
+  const role: string | undefined = userProfile?.role;
+  const isAdmin = role === 'super_admin';
+  const isOwner = role === 'owner';
+  const allowed = isAdmin || isOwner; // assistants blocked
+
+  const [topTab, setTopTab] = useState<'audit' | 'checklist' | 'sync' | 'logs' | 'bug'>('audit');
   const [group, setGroup] = useState<'owner' | 'admin' | 'sokoni' | 'auth'>('owner');
   const [vp, setVp] = useState<typeof VIEWPORTS[number]>(VIEWPORTS[0]);
   const [previewPath, setPreviewPath] = useState<string | null>(null);
@@ -182,7 +187,18 @@ export default function MobileQAPage() {
 
   // Transaction logs state
   const [logs, setLogs] = useState<TxnLog[]>([]);
-  const [logFilter, setLogFilter] = useState<'all' | 'error' | 'warn' | 'sync' | 'cart' | 'conflict'>('all');
+  const [logFilter, setLogFilter] = useState<'all' | 'error' | 'warn' | 'sync' | 'cart' | 'conflict' | 'idempotency'>('all');
+
+  // Conflict detail dialog
+  const [conflictDetail, setConflictDetail] = useState<TxnLog | null>(null);
+
+  // Stock double-decrement check
+  const [stockCheck, setStockCheck] = useState<any[]>([]);
+  const [stockChecking, setStockChecking] = useState(false);
+
+  // Admin: switch which owner's server-side data we audit
+  const [ownerOptions, setOwnerOptions] = useState<{ id: string; label: string }[]>([]);
+  const [auditOwnerId, setAuditOwnerId] = useState<string>('');
 
   const refreshSync = async () => {
     const queue = await offlineDB.getAllSyncQueue();
@@ -195,9 +211,10 @@ export default function MobileQAPage() {
   const refreshLogs = async () => setLogs(await txnLogger.list(300));
 
   useEffect(() => {
+    if (!allowed) return;
     if (topTab === 'sync') refreshSync();
     if (topTab === 'logs') refreshLogs();
-  }, [topTab]);
+  }, [topTab, allowed]);
 
   useEffect(() => {
     const on = () => setIsOnline(true);
@@ -206,6 +223,90 @@ export default function MobileQAPage() {
     window.addEventListener('offline', off);
     return () => { window.removeEventListener('online', on); window.removeEventListener('offline', off); };
   }, []);
+
+  // Load owner list for super_admin owner-switcher
+  useEffect(() => {
+    if (!isAdmin) return;
+    supabase.from('profiles').select('id, full_name, business_name, email').limit(200)
+      .then(({ data }) => {
+        const opts = (data ?? []).map((p: any) => ({
+          id: p.id,
+          label: p.business_name || p.full_name || p.email || p.id.slice(0, 8),
+        }));
+        setOwnerOptions(opts);
+      });
+  }, [isAdmin]);
+
+  // Effective owner for server-side audits
+  const effectiveOwnerId = isAdmin ? (auditOwnerId || user?.id || '') : (user?.id || '');
+
+  // Idempotency audit trail (built from local txn logs) — sales-related only
+  const idempoTrail = useMemo(() => {
+    return logs
+      .filter((l) =>
+        l.scope === 'sync' &&
+        (l.step?.includes('sales') || l.step?.includes('idempot')) ||
+        (l.scope === 'conflict')
+      )
+      .slice(0, 200);
+  }, [logs]);
+
+  // Stock double-decrement check: compare products.stock_quantity vs
+  // sum(inventory_movements.quantity_change) per product for the chosen owner.
+  const runStockCheck = async () => {
+    if (!effectiveOwnerId) { toast.error('Hakuna mmiliki uliyechaguliwa'); return; }
+    setStockChecking(true);
+    try {
+      const { data: products, error: pErr } = await supabase
+        .from('products')
+        .select('id, name, stock_quantity, low_stock_threshold')
+        .eq('owner_id', effectiveOwnerId)
+        .limit(500);
+      if (pErr) throw pErr;
+      const { data: moves, error: mErr } = await supabase
+        .from('inventory_movements')
+        .select('product_id, movement_type, quantity_change, created_at')
+        .eq('owner_id', effectiveOwnerId)
+        .order('created_at', { ascending: true })
+        .limit(5000);
+      if (mErr) throw mErr;
+
+      const byProduct: Record<string, any[]> = {};
+      (moves ?? []).forEach((m: any) => {
+        if (!byProduct[m.product_id]) byProduct[m.product_id] = [];
+        byProduct[m.product_id].push(m);
+      });
+
+      const rows = (products ?? []).map((p: any) => {
+        const ms = byProduct[p.id] || [];
+        // Detect double-decrement: two 'sale' movements within 5s with the same change
+        const sales = ms.filter((m) => m.movement_type === 'sale');
+        let suspicious = 0;
+        for (let i = 1; i < sales.length; i++) {
+          const dt = new Date(sales[i].created_at).getTime() - new Date(sales[i - 1].created_at).getTime();
+          if (dt < 5000 && sales[i].quantity_change === sales[i - 1].quantity_change) suspicious++;
+        }
+        const netChange = ms.reduce((s, m) => s + Number(m.quantity_change || 0), 0);
+        return {
+          id: p.id,
+          name: p.name,
+          actual_stock: p.stock_quantity,
+          movement_count: ms.length,
+          net_change: netChange,
+          suspicious_pairs: suspicious,
+          last_movement: ms[ms.length - 1]?.created_at || null,
+          flag: suspicious > 0,
+        };
+      });
+      setStockCheck(rows);
+      const flagged = rows.filter((r) => r.flag).length;
+      toast.success(`Ukaguzi umekamilika: bidhaa ${rows.length}, ${flagged} zenye dalili za double-decrement`);
+    } catch (e: any) {
+      toast.error(e.message || 'Ukaguzi umeshindwa');
+    } finally {
+      setStockChecking(false);
+    }
+  };
 
   // Checklist state (in-memory)
   const [checkState, setCheckState] = useState<Record<string, StepStatus>>({});
