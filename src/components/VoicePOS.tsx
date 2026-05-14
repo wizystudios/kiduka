@@ -144,12 +144,17 @@ const editDistanceWithinOne = (value: string, target: string) => {
 };
 
 const stripWakeWord = (value: string) =>
-  value
+  WAKE_WORD_PHRASES.reduce((text, phrase) => text.replace(new RegExp(`\\b${phrase.replace(/\s+/g, '\\s+')}\\b`, 'gi'), ''), value)
     .replace(/\bnurath\b/gi, '')
     .replace(/\bnurat\b/gi, '')
     .replace(/\bnurathi\b/gi, '')
+    .replace(/\bnurati\b/gi, '')
+    .replace(/\bnurad\b/gi, '')
     .replace(/\bnorath\b/gi, '')
+    .replace(/\bnorat\b/gi, '')
     .replace(/\bnura\b/gi, '')
+    .replace(/\bnuru\b/gi, '')
+    .replace(/\bnora\b/gi, '')
     .replace(/\s+/g, ' ')
     .trim();
 
