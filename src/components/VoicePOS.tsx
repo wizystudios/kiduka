@@ -1580,6 +1580,53 @@ export const VoicePOS = () => {
               {micError && micPermissionState !== 'granted' && (
                 <p className="text-xs text-destructive">{micError}</p>
               )}
+
+              {pendingAction && (
+                <div className="w-full max-w-md rounded-2xl border border-amber-300 bg-amber-50 p-3 text-left dark:bg-amber-950/40">
+                  <p className="text-sm font-medium text-amber-900 dark:text-amber-100">{pendingAction.description}</p>
+                  <p className="mt-0.5 text-[11px] text-amber-700 dark:text-amber-300">Sema "Thibitisha" au "Ghairi" — au tumia vitufe.</p>
+                  <div className="mt-2 flex gap-2">
+                    <Button
+                      size="sm"
+                      className="rounded-full"
+                      onClick={async () => {
+                        const pa = pendingAction;
+                        setPendingAction(null);
+                        try { const msg = await pa.apply(); setLastResponse(msg); void speakResponse(msg); } catch { /* ignore */ }
+                      }}
+                    >
+                      <CheckCircle className="h-4 w-4" /> Thibitisha
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="rounded-full"
+                      onClick={() => { setPendingAction(null); setLastResponse('Sawa, nimeghairi.'); }}
+                    >
+                      Ghairi
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {undoEntries.length > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="rounded-full text-xs"
+                  onClick={() => {
+                    const entry = voiceUndoStack.pop();
+                    if (!entry) return;
+                    try {
+                      const restored: SaleItem[] = JSON.parse(entry.previousCartJson);
+                      setCurrentSale(restored);
+                      setLastResponse(`Nimerudisha: ${entry.description}.`);
+                    } catch { /* ignore */ }
+                  }}
+                >
+                  <Undo2 className="h-3.5 w-3.5" /> Tendua: {undoEntries[0].description}
+                </Button>
+              )}
             </div>
 
             <div className="flex flex-wrap items-center justify-center gap-2">
