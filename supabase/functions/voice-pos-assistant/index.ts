@@ -28,11 +28,53 @@ const safeNumber = (value: unknown) => {
 const isUuid = (value: unknown) =>
   typeof value === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
 
-const withTimeout = async <T,>(promise: Promise<T>, ms: number) => {
+const withTimeout = async <T,>(promise: Promise<T>, ms: number, label = 'operation') => {
   const timeout = new Promise<never>((_, reject) => {
-    setTimeout(() => reject(new Error('AI response timeout.')), ms);
+    setTimeout(() => reject(new Error(`${label} timeout after ${ms}ms`)), ms);
   });
   return Promise.race([promise, timeout]);
+};
+
+/**
+ * Retry/Timeout policy for the Lovable AI gateway:
+ *   - Per-attempt timeout: 8000ms
+ *   - Max attempts: 3 (initial + 2 retries)
+ *   - Backoff: 400ms, 1200ms (exponential)
+ *   - Total worst-case latency: ~26s — but typical paths return in <2.5s
+ *   - Retries triggered for: network errors, 5xx, and timeouts
+ *   - 429 / 402 are surfaced immediately (no retry) so the client can show
+ *     rate-limit / credit-exhaustion messaging instead of silently waiting.
+ */
+const callAiGatewayWithRetry = async (
+  fetchInit: { url: string; init: RequestInit },
+  perAttemptTimeoutMs = 8000,
+  maxAttempts = 3,
+) => {
+  const backoffs = [400, 1200];
+  let lastError: unknown = null;
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    try {
+      const res = await withTimeout(
+        fetch(fetchInit.url, fetchInit.init),
+        perAttemptTimeoutMs,
+        `ai-gateway attempt ${attempt + 1}`,
+      );
+      if (res.ok) return res;
+      // Don't retry rate-limit / credit-exhaustion / auth errors.
+      if (res.status === 429 || res.status === 402 || res.status === 401 || res.status === 403) {
+        return res;
+      }
+      // 4xx other than the above are permanent client errors — don't retry.
+      if (res.status >= 400 && res.status < 500) return res;
+      lastError = new Error(`Gateway returned ${res.status}`);
+    } catch (err) {
+      lastError = err;
+    }
+    if (attempt < maxAttempts - 1) {
+      await new Promise((r) => setTimeout(r, backoffs[attempt] ?? 1500));
+    }
+  }
+  throw lastError instanceof Error ? lastError : new Error('AI gateway failed after retries');
 };
 
 const createFallbackReply = (message: string, outOfStock: string[]) => {
