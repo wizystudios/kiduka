@@ -891,6 +891,11 @@ export const VoicePOS = () => {
       setWakeDebug(wakeDetection);
       setCurrentTranscript(spokenText);
       setLastCommandAt(Date.now());
+      if (wakeDetection.triggered) {
+        wakeFailureCountRef.current = 0;
+      } else if (config.mode === 'handsfree' && assistantModeRef.current !== 'awake') {
+        wakeFailureCountRef.current += 1;
+      }
       appendLog({
         kind: 'wake',
         source: config.source,
