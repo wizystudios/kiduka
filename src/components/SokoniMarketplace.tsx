@@ -1319,6 +1319,42 @@ export const SokoniMarketplace = () => {
                         onChange={(e) => setDeliveryAddress(e.target.value)}
                       />
                     </div>
+                    <div>
+                      <label className="text-xs font-medium text-muted-foreground">Jina lako (hiari)</label>
+                      <Input
+                        placeholder="Jina kamili"
+                        className="mt-1 rounded-2xl"
+                        value={customerName}
+                        onChange={(e) => setCustomerName(e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium text-muted-foreground">Email (hiari — kwa risiti na taarifa za oda)</label>
+                      <Input
+                        type="email"
+                        placeholder="jina@mfano.com"
+                        className="mt-1 rounded-2xl"
+                        value={customerEmail}
+                        onChange={(e) => setCustomerEmail(e.target.value)}
+                      />
+                      {customerEmail.trim() && (
+                        <label className="mt-2 flex items-start gap-2 text-xs text-muted-foreground cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={emailConsent}
+                            onChange={(e) => setEmailConsent(e.target.checked)}
+                            className="mt-0.5 h-4 w-4 rounded border-border accent-primary"
+                          />
+                          <span>
+                            Ninakubali kupokea barua pepe kuhusu oda yangu (uthibitisho, risiti, na hali ya oda).
+                          </span>
+                        </label>
+                      )}
+                    </div>
+                        value={deliveryAddress}
+                        onChange={(e) => setDeliveryAddress(e.target.value)}
+                      />
+                    </div>
 
                     {/* Delivery Estimation */}
                     {cart.length > 0 && userRegion && (
