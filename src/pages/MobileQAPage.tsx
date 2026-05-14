@@ -580,9 +580,41 @@ export default function MobileQAPage() {
                     {isOnline ? <Wifi className="h-4 w-4 text-green-600" /> : <WifiOff className="h-4 w-4 text-red-600" />}
                     Hali ya Sync
                   </CardTitle>
-                  <Button variant="outline" size="sm" className="h-7 text-[10px] rounded-full" onClick={refreshSync}>
-                    <RefreshCw className="h-3 w-3 mr-1" /> Onyesha upya
-                  </Button>
+                  <div className="flex gap-1 flex-wrap">
+                    <Button variant="outline" size="sm" className="h-7 text-[10px] rounded-full" onClick={refreshSync}>
+                      <RefreshCw className="h-3 w-3 mr-1" /> Onyesha upya
+                    </Button>
+                    <Button variant="outline" size="sm" className="h-7 text-[10px] rounded-full"
+                      onClick={() => {
+                        const rows = [
+                          ...pendingQueue.map((q) => ({ kind: 'queue', synced: q.synced ? 'yes' : 'no', table: q.table, action: q.action, item_id: q.data?.id || '', queue_id: q.id, timestamp: new Date(q.timestamp).toISOString(), details: '' })),
+                          ...syncHistory.map((h) => ({ kind: 'history', synced: '', table: h.table, action: h.type, item_id: '', queue_id: h.id, timestamp: new Date(h.timestamp).toISOString(), details: h.details || '' })),
+                        ];
+                        exportToCSV(rows, [
+                          { header: 'Kind', key: 'kind' }, { header: 'Synced', key: 'synced' },
+                          { header: 'Table', key: 'table' }, { header: 'Action', key: 'action' },
+                          { header: 'Item ID', key: 'item_id' }, { header: 'Queue/Log ID', key: 'queue_id' },
+                          { header: 'Timestamp', key: 'timestamp' }, { header: 'Details', key: 'details' },
+                        ], 'kiduka_sync_status');
+                        toast.success('CSV imeshushwa');
+                      }}>
+                      <Download className="h-3 w-3 mr-1" /> CSV
+                    </Button>
+                    <Button variant="outline" size="sm" className="h-7 text-[10px] rounded-full"
+                      onClick={() => {
+                        const rowsHtml = (h: any[]) => h.map((r) => `<tr><td>${new Date(r.timestamp).toLocaleString()}</td><td>${r.table || ''}</td><td>${r.type || r.action || ''}</td><td>${r.details || r.data?.id || ''}</td></tr>`).join('');
+                        printAsPDF('Kiduka — Sync Status & Historia', `
+                          <h2>Foleni ya Pending (${pendingQueue.filter((x) => !x.synced).length})</h2>
+                          <table><thead><tr><th>Wakati</th><th>Jedwali</th><th>Kitendo</th><th>ID / Maelezo</th></tr></thead>
+                          <tbody>${rowsHtml(pendingQueue.filter((x) => !x.synced))}</tbody></table>
+                          <h2>Historia ya Sync</h2>
+                          <table><thead><tr><th>Wakati</th><th>Jedwali</th><th>Aina</th><th>Maelezo</th></tr></thead>
+                          <tbody>${rowsHtml(syncHistory)}</tbody></table>
+                        `);
+                      }}>
+                      <Printer className="h-3 w-3 mr-1" /> PDF
+                    </Button>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent className="space-y-2">
