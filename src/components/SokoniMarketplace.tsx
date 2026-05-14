@@ -634,6 +634,8 @@ export const SokoniMarketplace = () => {
 
       setCart([]);
       setCustomerPhone('');
+      setCustomerEmail('');
+      setCustomerName('');
       setDeliveryAddress('');
       setCouponCode('');
       setCouponDiscount(0);
