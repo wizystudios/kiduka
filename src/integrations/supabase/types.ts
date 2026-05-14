@@ -2428,6 +2428,15 @@ export type Database = {
         }
         Returns: number
       }
+      notify_owner_email: {
+        Args: {
+          _data: Json
+          _idempotency: string
+          _owner_id: string
+          _template: string
+        }
+        Returns: undefined
+      }
       process_sokoni_order_to_sale: {
         Args: { order_id: string }
         Returns: string
