@@ -1351,10 +1351,6 @@ export const SokoniMarketplace = () => {
                         </label>
                       )}
                     </div>
-                        value={deliveryAddress}
-                        onChange={(e) => setDeliveryAddress(e.target.value)}
-                      />
-                    </div>
 
                     {/* Delivery Estimation */}
                     {cart.length > 0 && userRegion && (
