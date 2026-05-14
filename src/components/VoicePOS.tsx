@@ -1416,7 +1416,37 @@ export const VoicePOS = () => {
                   Bonyeza mara moja kisha sema amri yako bila kuita jina la Nurath.
                 </TooltipContent>
               </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="rounded-full"
+                    onClick={() => void verifyMicrophone()}
+                    disabled={micTestRunning}
+                  >
+                    {micTestRunning ? <Loader2 className="h-4 w-4 animate-spin" /> : <Ear className="h-4 w-4" />}
+                    Jaribu Maikrofoni
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  Rekodi sekunde 3 kuthibitisha maikrofoni inafanya kazi. / Records 3 seconds to verify your mic.
+                </TooltipContent>
+              </Tooltip>
             </div>
+
+            {micTestResult && (
+              <div
+                className={`rounded-2xl border px-4 py-2 text-xs ${
+                  micTestResult.ok
+                    ? 'border-emerald-500/40 bg-emerald-50 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-200'
+                    : 'border-destructive/40 bg-destructive/10 text-destructive'
+                }`}
+              >
+                {micTestResult.message}
+              </div>
+            )}
           </CardContent>
         </Card>
 
