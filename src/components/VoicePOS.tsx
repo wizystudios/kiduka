@@ -9,6 +9,8 @@ import { useDataAccess } from '@/hooks/useDataAccess';
 import { useToast } from '@/hooks/use-toast';
 import { VoiceCommandProcessor } from '@/utils/voiceCommandProcessor';
 import { speakAssistantText } from '@/utils/voiceAssistantSpeech';
+import { NurathAvatar, type NurathState } from '@/components/NurathAvatar';
+import { useNavigate } from 'react-router-dom';
 import {
   CheckCircle,
   Ear,
