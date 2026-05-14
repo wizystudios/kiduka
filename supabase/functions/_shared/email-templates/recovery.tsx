@@ -1,71 +1,26 @@
 /// <reference types="npm:@types/react@18.3.1" />
-
 import * as React from 'npm:react@18.3.1'
-
-import {
-  Body,
-  Button,
-  Container,
-  Head,
-  Heading,
-  Html,
-  Preview,
-  Text,
-} from 'npm:@react-email/components@0.0.22'
+import { Text } from 'npm:@react-email/components@0.0.22'
+import { AuthBrandLayout, inlineText } from './brand-layout.tsx'
 
 interface RecoveryEmailProps {
   siteName: string
   confirmationUrl: string
 }
 
-export const RecoveryEmail = ({
-  siteName,
-  confirmationUrl,
-}: RecoveryEmailProps) => (
-  <Html lang="en" dir="ltr">
-    <Head />
-    <Preview>Reset your password for {siteName}</Preview>
-    <Body style={main}>
-      <Container style={container}>
-        <Heading style={h1}>Reset your password</Heading>
-        <Text style={text}>
-          We received a request to reset your password for {siteName}. Click
-          the button below to choose a new password.
-        </Text>
-        <Button style={button} href={confirmationUrl}>
-          Reset Password
-        </Button>
-        <Text style={footer}>
-          If you didn't request a password reset, you can safely ignore this
-          email. Your password will not be changed.
-        </Text>
-      </Container>
-    </Body>
-  </Html>
+export const RecoveryEmail = ({ confirmationUrl }: RecoveryEmailProps) => (
+  <AuthBrandLayout
+    preview="Rekebisha nenosiri lako la Kiduka"
+    heading="Rekebisha nenosiri lako"
+    intro="Tumepokea ombi la kubadilisha nenosiri la akaunti yako ya Kiduka. Bonyeza kitufe hapa chini kuchagua nenosiri jipya."
+    ctaUrl={confirmationUrl}
+    ctaLabel="Weka Nenosiri Jipya"
+    expiryNote="Kiungo hiki kinaisha baada ya saa 1."
+  >
+    <Text style={inlineText}>
+      Kama haukuomba kubadili nenosiri, ipuuze email hii — nenosiri lako halitabadilika.
+    </Text>
+  </AuthBrandLayout>
 )
 
 export default RecoveryEmail
-
-const main = { backgroundColor: '#ffffff', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }
-const container = { padding: '20px 25px' }
-const h1 = {
-  fontSize: '22px',
-  fontWeight: 'bold' as const,
-  color: '#0a0f1c',
-  margin: '0 0 20px',
-}
-const text = {
-  fontSize: '14px',
-  color: '#475569',
-  lineHeight: '1.5',
-  margin: '0 0 25px',
-}
-const button = {
-  backgroundColor: '#2563eb',
-  color: '#ffffff',
-  fontSize: '14px',
-  borderRadius: '9999px',
-  padding: '12px 20px',
-  textDecoration: 'none',
-}
-const footer = { fontSize: '12px', color: '#999999', margin: '30px 0 0' }
