@@ -584,12 +584,16 @@ export const VoicePOS = () => {
       return 'Hakuna bidhaa kwenye mauzo ya sasa.';
     }
 
+    if (!dataOwnerId) {
+      return 'Sijapata biashara ya kuhusisha mauzo haya. Tafadhali ingia tena kisha ujaribu.';
+    }
+
     try {
       const totalAmount = saleItems.reduce((sum, item) => sum + item.total_price, 0);
 
       const { data: sale, error: saleError } = await supabase
         .from('sales')
-        .insert({ owner_id: user?.id, total_amount: totalAmount, payment_method: 'cash' })
+        .insert({ owner_id: dataOwnerId, total_amount: totalAmount, payment_method: 'cash' })
         .select()
         .single();
 
@@ -626,7 +630,7 @@ export const VoicePOS = () => {
       toast({ title: 'Hitilafu', description: 'Imeshindwa kukamilisha mauzo', variant: 'destructive' });
       return 'Imeshindwa kukamilisha mauzo. Jaribu tena.';
     }
-  }, [fetchProducts, speakResponse, toast, user]);
+  }, [dataOwnerId, fetchProducts, speakResponse, toast]);
 
   const applyAssistantAction = useCallback(async (result: any) => {
     const action = result.data?.action || 'answer';
