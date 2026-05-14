@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Image as ImageIcon, Send, RefreshCw, Mail, AlertTriangle, ShieldOff, CheckCircle2 } from 'lucide-react';
+import { Image as ImageIcon, Send, RefreshCw, Mail, AlertTriangle, ShieldOff, CheckCircle2, Eye, Download } from 'lucide-react';
 
 const EMAIL_ASSETS_BUCKET = 'email-assets';
 const LOGO_PATH = 'kiduka-logo.png';
