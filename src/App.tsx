@@ -14,6 +14,7 @@ import Index from '@/pages/Index';
 import { AuthPage } from '@/pages/AuthPage';
 import { ResetPasswordPage } from '@/pages/ResetPasswordPage';
 import { EmailVerificationStatus } from '@/components/EmailVerificationStatus';
+import UnsubscribePage from '@/pages/UnsubscribePage';
 import { Dashboard } from '@/pages/Dashboard';
 import { ProductsPage } from '@/pages/ProductsPage';
 import { AddProductPage } from '@/pages/AddProductPage';
