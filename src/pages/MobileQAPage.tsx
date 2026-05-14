@@ -802,9 +802,35 @@ export default function MobileQAPage() {
                   <CardTitle className="text-sm flex items-center gap-2">
                     <FileText className="h-4 w-4 text-primary" /> Transaction Logs
                   </CardTitle>
-                  <div className="flex gap-1">
+                  <div className="flex gap-1 flex-wrap">
                     <Button variant="outline" size="sm" className="h-7 text-[10px] rounded-full" onClick={refreshLogs}>
                       <RefreshCw className="h-3 w-3 mr-1" /> Onyesha
+                    </Button>
+                    <Button variant="outline" size="sm" className="h-7 text-[10px] rounded-full"
+                      onClick={() => {
+                        exportToCSV(logs.map((l) => ({
+                          timestamp: new Date(l.timestamp).toISOString(),
+                          scope: l.scope, step: l.step, level: l.level,
+                          code: l.code || '', message: l.message,
+                          context: l.context ? JSON.stringify(l.context) : '',
+                        })), [
+                          { header: 'Wakati', key: 'timestamp' },
+                          { header: 'Scope', key: 'scope' }, { header: 'Step', key: 'step' },
+                          { header: 'Kiwango', key: 'level' }, { header: 'Code', key: 'code' },
+                          { header: 'Ujumbe', key: 'message' }, { header: 'Context', key: 'context' },
+                        ], 'kiduka_transaction_logs');
+                        toast.success('CSV imeshushwa');
+                      }}>
+                      <Download className="h-3 w-3 mr-1" /> CSV
+                    </Button>
+                    <Button variant="outline" size="sm" className="h-7 text-[10px] rounded-full"
+                      onClick={() => {
+                        const body = `<table><thead><tr><th>Wakati</th><th>Scope</th><th>Step</th><th>Lvl</th><th>Code</th><th>Ujumbe</th></tr></thead><tbody>${
+                          logs.map((l) => `<tr><td>${new Date(l.timestamp).toLocaleString()}</td><td>${l.scope}</td><td>${l.step}</td><td>${l.level}</td><td>${l.code || ''}</td><td>${l.message}</td></tr>`).join('')
+                        }</tbody></table>`;
+                        printAsPDF('Kiduka — Transaction Logs', body);
+                      }}>
+                      <Printer className="h-3 w-3 mr-1" /> PDF
                     </Button>
                     <Button variant="outline" size="sm" className="h-7 text-[10px] rounded-full"
                       onClick={async () => { await txnLogger.clear(); refreshLogs(); toast.success('Logs zimefutwa'); }}>
@@ -818,7 +844,7 @@ export default function MobileQAPage() {
               </CardHeader>
               <CardContent className="space-y-2">
                 <div className="flex gap-1 flex-wrap">
-                  {(['all','error','warn','sync','cart','conflict'] as const).map((f) => (
+                  {(['all','error','warn','sync','cart','conflict','idempotency'] as const).map((f) => (
                     <Button key={f} size="sm" variant={logFilter === f ? 'default' : 'outline'}
                       className="h-7 text-[10px] rounded-full" onClick={() => setLogFilter(f)}>{f}</Button>
                   ))}
@@ -830,7 +856,8 @@ export default function MobileQAPage() {
                       (logFilter === 'warn' && l.level === 'warn') ||
                       (logFilter === 'sync' && l.scope === 'sync') ||
                       (logFilter === 'cart' && (l.scope === 'cart' || l.scope === 'checkout' || l.scope === 'payment')) ||
-                      (logFilter === 'conflict' && l.scope === 'conflict'))
+                      (logFilter === 'conflict' && l.scope === 'conflict') ||
+                      (logFilter === 'idempotency' && (l.step?.includes('already_present') || l.scope === 'conflict')))
                     .map((l) => (
                     <div key={l.id} className={`p-2 rounded-2xl border text-[11px] space-y-0.5 ${
                       l.level === 'error' ? 'bg-red-50 border-red-200' :
