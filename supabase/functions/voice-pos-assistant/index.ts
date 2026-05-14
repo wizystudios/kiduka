@@ -177,7 +177,7 @@ serve(async (req) => {
     }));
 
     const businessContext = {
-      owner_id: user.id,
+      owner_id: ownerId,
       business_name: profileResult.data?.business_name ?? 'Biashara yako',
       owner_name: profileResult.data?.full_name ?? '',
       totals: {
@@ -213,7 +213,7 @@ serve(async (req) => {
       },
     };
 
-    const systemPrompt = `Wewe ni Nurath, msaidizi rasmi wa sauti wa Kiduka. Ongea kama mwanamke mwenye sauti ya upole, mwepesi na wa kitaalamu. Jibu kwa Kiswahili cha Tanzania, kifupi, cha asili, na kisicho cha kimashine. Kama mtumiaji ameongea English kidogo, bado mwelewe lakini mjibu kwa Kiswahili rahisi isipokuwa aombe lugha nyingine.
+    const systemPrompt = `Wewe ni Nurath, msaidizi rasmi wa sauti wa Kiduka. Jibu kwa Kiswahili sanifu cha Tanzania: fasaha, rahisi, chenye heshima, na kisicho cha kimashine. Usitumie Kiingereza isipokuwa jina la bidhaa au mtumiaji ameomba hivyo.
 
 Lengo lako ni mawili:
 1. Elewa ombi la mtumiaji kwa lugha ya kawaida.
@@ -221,20 +221,22 @@ Lengo lako ni mawili:
 
 Sheria muhimu:
 - Usijibu kama chatbot wa commands. Elewa maana ya ujumbe kwa kawaida.
-- Tumia data uliyopewa tu; usibuni namba au bidhaa.
+- Tumia data uliyopewa tu. Usibuni namba, bidhaa, mauzo, wateja, matawi, au taarifa yoyote.
+- Ukikosa data ya kujibu, sema wazi: "Sina taarifa ya kutosha kuhusu hilo kwa sasa" kisha uliza swali moja la kufafanua.
+- Usitoe madai ya uhakika kama hayapo kwenye context. Epuka uongo kabisa.
 - Kama mtumiaji anataka kuongeza bidhaa kwenye mauzo, tumia intent add_to_sale na productId sahihi kutoka kwenye context.
 - Kama mtumiaji anataka kupunguza au kuondoa bidhaa kwenye mauzo ya sasa, tumia intent remove_from_sale.
 - Kama mtumiaji anataka kufuta mauzo yote ya sasa, tumia intent clear_sale.
 - Kama mtumiaji anataka kukamilisha mauzo, tumia intent complete_sale.
 - Kwa maswali ya ripoti, stock, akaunti, ushauri au muhtasari, tumia intent answer.
 - Ukikosa uhakika wa bidhaa au ombi halieleweki vya kutosha, tumia intent answer na umwombe mtumiaji arudie kwa ufupi.
-- reply iwe sentensi fupi, ya kirafiki, ya moja kwa moja, na ya asili kabisa kwa Kiswahili.
-- Usitumie maneno ya kigeni yasiyo ya lazima. Epuka Kiswahili kigumu au cha roboti.
+- reply iwe sentensi 1–2 tu, ya kirafiki, moja kwa moja, na yenye Kiswahili fasaha.
+- Usitumie maneno ya kigeni yasiyo ya lazima. Epuka Kiswahili kigumu, misimu mingi, au lugha ya roboti.
 - Kama ujumbe ni wa salamu tu au wa kumwita Nurath, reply iwe fupi kama "Naam, nipo" au "Nakusikia, sema".
 - quantity iwe namba halisi kama ipo; vinginevyo acha.
 `;
 
-    const gatewayResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+    const gatewayResponse = await withTimeout(fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${lovableApiKey}`,
@@ -250,6 +252,8 @@ Sheria muhimu:
             content: `Ujumbe wa sasa wa mtumiaji: ${message}\n\nContext ya biashara (JSON): ${JSON.stringify(businessContext)}`,
           },
         ],
+        temperature: 0.2,
+        max_tokens: 260,
         tools: [
           {
             type: 'function',
@@ -279,7 +283,7 @@ Sheria muhimu:
           function: { name: 'voice_pos_response' },
         },
       }),
-    });
+    }), 9000);
 
     if (!gatewayResponse.ok) {
       if (gatewayResponse.status === 429 || gatewayResponse.status === 402) {
