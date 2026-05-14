@@ -807,6 +807,47 @@ export const VoicePOS = () => {
     setLastCommandAt(Date.now());
     appendLog({ kind: 'command', source, command: cleanedCommand, transcript: command });
 
+    // Intercept confirm/cancel/undo voice commands
+    const pa = pendingActionRef.current;
+    if (pa && Date.now() < pa.expiresAt) {
+      if (isConfirmCommand(cleanedCommand) || isConfirmCommand(normalizedCommand)) {
+        setPendingAction(null);
+        try {
+          const msg = await pa.apply();
+          setLastResponse(msg);
+          await speakResponse(msg);
+        } catch {
+          await speakResponse('Imeshindwa kutekeleza.');
+        }
+        return;
+      }
+      if (isCancelCommand(cleanedCommand) || isCancelCommand(normalizedCommand)) {
+        setPendingAction(null);
+        const msg = 'Sawa, nimeghairi.';
+        setLastResponse(msg);
+        await speakResponse(msg);
+        return;
+      }
+    }
+    if (isUndoCommand(cleanedCommand) || isUndoCommand(normalizedCommand)) {
+      const entry = voiceUndoStack.pop();
+      if (entry) {
+        try {
+          const restored: SaleItem[] = JSON.parse(entry.previousCartJson);
+          setCurrentSale(restored);
+          const msg = `Nimerudisha: ${entry.description}.`;
+          setLastResponse(msg);
+          await speakResponse(msg);
+        } catch {
+          await speakResponse('Sijaweza kurudisha hatua hiyo.');
+        }
+      } else {
+        await speakResponse('Hakuna hatua ya kurudisha.');
+      }
+      return;
+    }
+
+
     if (SLEEP_PATTERNS.some((pattern) => pattern.test(normalizedCommand))) {
       const sleepReply = 'Sawa, nimelala. Ukiita Nurath nitarudi.';
       updateAssistantMode('sleeping');
