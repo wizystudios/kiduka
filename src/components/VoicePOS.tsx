@@ -662,7 +662,7 @@ export const VoicePOS = () => {
   const requestConfirmation = useCallback((kind: 'add_to_sale' | 'clear_sale' | 'complete_sale', description: string, apply: () => Promise<string> | string) => {
     const expiresAt = Date.now() + 8000;
     setPendingAction({ kind, description, apply, expiresAt });
-    appendLog({ kind: 'status', source: 'system', stage: 'confirm-request' as any, note: `Pending: ${description}` });
+    appendLog({ kind: 'status', source: 'system', note: `Pending: ${description}` });
     return `${description}. Sema "Thibitisha" ili nikamilishe au "Ghairi" kuacha.`;
   }, [appendLog]);
 
