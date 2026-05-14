@@ -659,80 +659,88 @@ export const VoicePOS = () => {
     }
   }, [dataOwnerId, fetchProducts, speakResponse, toast]);
 
+  const requestConfirmation = useCallback((kind: 'add_to_sale' | 'clear_sale' | 'complete_sale', description: string, apply: () => Promise<string> | string) => {
+    const expiresAt = Date.now() + 8000;
+    setPendingAction({ kind, description, apply, expiresAt });
+    appendLog({ kind: 'status', source: 'system', note: `Pending: ${description}` });
+    return `${description}. Sema "Thibitisha" ili nikamilishe au "Ghairi" kuacha.`;
+  }, [appendLog]);
+
   const applyAssistantAction = useCallback(async (result: any) => {
     const action = result.data?.action || 'answer';
+
+    const performAddToSale = (product: Product, quantity: number) => {
+      const prevSnapshot = JSON.stringify(currentSaleRef.current);
+      setCurrentSale((prev) => {
+        const existing = prev.find((item) => item.product.id === product.id);
+        if (existing) {
+          return prev.map((item) =>
+            item.product.id === product.id
+              ? { ...item, quantity: item.quantity + quantity, total_price: (item.quantity + quantity) * item.unit_price }
+              : item,
+          );
+        }
+        return [...prev, { product, quantity, unit_price: product.price, total_price: quantity * product.price }];
+      });
+      voiceUndoStack.push({ description: `Ongezwa ${product.name} × ${quantity}`, previousCartJson: prevSnapshot });
+      return `Nimeongeza ${product.name} × ${quantity}.`;
+    };
 
     if (action === 'add_to_sale') {
       const product: Product | undefined = result.data?.product;
       const quantity = Math.max(1, Number(result.data?.quantity || 1));
-
-      if (!product) {
-        return 'Sijapata bidhaa hiyo kwa uhakika. Tafadhali sema jina la bidhaa tena.';
-      }
-
+      if (!product) return 'Sijapata bidhaa hiyo kwa uhakika. Tafadhali sema jina la bidhaa tena.';
       const existingSaleItem = currentSaleRef.current.find((item) => item.product.id === product.id);
       const currentQuantity = existingSaleItem?.quantity ?? 0;
-
       if (product.stock_quantity < currentQuantity + quantity) {
         return `Stock ya ${product.name} haitoshi. Iliyopo ni ${product.stock_quantity}.`;
       }
-
-      setCurrentSale((prev) => {
-        const existing = prev.find((item) => item.product.id === product.id);
-
-        if (existing) {
-          return prev.map((item) =>
-            item.product.id === product.id
-              ? {
-                  ...item,
-                  quantity: item.quantity + quantity,
-                  total_price: (item.quantity + quantity) * item.unit_price,
-                }
-              : item,
-          );
-        }
-
-        return [...prev, { product, quantity, unit_price: product.price, total_price: quantity * product.price }];
-      });
-
-      return result.message;
+      return requestConfirmation(
+        'add_to_sale',
+        `Nithibitishie kuongeza ${product.name} × ${quantity} (TSh ${(product.price * quantity).toLocaleString()})`,
+        () => performAddToSale(product, quantity),
+      );
     }
 
     if (action === 'remove_from_sale') {
       const product: Product | undefined = result.data?.product;
       const quantity = Math.max(1, Number(result.data?.quantity || 1));
-
-      if (!product) {
-        return 'Niambie bidhaa unayotaka kuondoa kwenye mauzo ya sasa.';
-      }
-
+      if (!product) return 'Niambie bidhaa unayotaka kuondoa kwenye mauzo ya sasa.';
       const existing = currentSaleRef.current.find((item) => item.product.id === product.id);
-      if (!existing) {
-        return `${product.name} haipo kwenye mauzo ya sasa.`;
-      }
-
+      if (!existing) return `${product.name} haipo kwenye mauzo ya sasa.`;
+      const prevSnapshot = JSON.stringify(currentSaleRef.current);
       setCurrentSale((prev) =>
         prev.flatMap((item) => {
           if (item.product.id !== product.id) return [item];
-
           const remaining = item.quantity - quantity;
           if (remaining <= 0) return [];
-
           return [{ ...item, quantity: remaining, total_price: remaining * item.unit_price }];
         }),
       );
-
+      voiceUndoStack.push({ description: `Ondolewa ${product.name} × ${quantity}`, previousCartJson: prevSnapshot });
       return result.message;
     }
 
     if (action === 'clear_sale') {
       const hadItems = currentSaleRef.current.length > 0;
-      setCurrentSale([]);
-      return hadItems ? 'Sawa, nimefuta mauzo ya sasa.' : 'Hakuna mauzo ya kufuta.';
+      if (!hadItems) return 'Hakuna mauzo ya kufuta.';
+      return requestConfirmation('clear_sale', `Nithibitishie kufuta bidhaa zote (${currentSaleRef.current.length})`, () => {
+        const prevSnapshot = JSON.stringify(currentSaleRef.current);
+        setCurrentSale([]);
+        voiceUndoStack.push({ description: 'Cart imefutwa', previousCartJson: prevSnapshot });
+        return 'Sawa, nimefuta mauzo ya sasa.';
+      });
     }
 
     if (action === 'complete_sale') {
-      return completeSale(false);
+      if (currentSaleRef.current.length === 0) return 'Hakuna bidhaa kwenye mauzo ya sasa.';
+      const total = currentSaleRef.current.reduce((s, i) => s + i.total_price, 0);
+      return requestConfirmation('complete_sale', `Nithibitishie kukamilisha mauzo ya TSh ${total.toLocaleString()}`, async () => {
+        const prevSnapshot = JSON.stringify(currentSaleRef.current);
+        const msg = await completeSale(false);
+        voiceUndoStack.push({ description: 'Mauzo yamekamilika', previousCartJson: prevSnapshot });
+        return msg;
+      });
     }
 
     if (action === 'navigate') {
@@ -798,6 +806,47 @@ export const VoicePOS = () => {
     setLastCommand(cleanedCommand);
     setLastCommandAt(Date.now());
     appendLog({ kind: 'command', source, command: cleanedCommand, transcript: command });
+
+    // Intercept confirm/cancel/undo voice commands
+    const pa = pendingActionRef.current;
+    if (pa && Date.now() < pa.expiresAt) {
+      if (isConfirmCommand(cleanedCommand) || isConfirmCommand(normalizedCommand)) {
+        setPendingAction(null);
+        try {
+          const msg = await pa.apply();
+          setLastResponse(msg);
+          await speakResponse(msg);
+        } catch {
+          await speakResponse('Imeshindwa kutekeleza.');
+        }
+        return;
+      }
+      if (isCancelCommand(cleanedCommand) || isCancelCommand(normalizedCommand)) {
+        setPendingAction(null);
+        const msg = 'Sawa, nimeghairi.';
+        setLastResponse(msg);
+        await speakResponse(msg);
+        return;
+      }
+    }
+    if (isUndoCommand(cleanedCommand) || isUndoCommand(normalizedCommand)) {
+      const entry = voiceUndoStack.pop();
+      if (entry) {
+        try {
+          const restored: SaleItem[] = JSON.parse(entry.previousCartJson);
+          setCurrentSale(restored);
+          const msg = `Nimerudisha: ${entry.description}.`;
+          setLastResponse(msg);
+          await speakResponse(msg);
+        } catch {
+          await speakResponse('Sijaweza kurudisha hatua hiyo.');
+        }
+      } else {
+        await speakResponse('Hakuna hatua ya kurudisha.');
+      }
+      return;
+    }
+
 
     if (SLEEP_PATTERNS.some((pattern) => pattern.test(normalizedCommand))) {
       const sleepReply = 'Sawa, nimelala. Ukiita Nurath nitarudi.';
@@ -1530,6 +1579,53 @@ export const VoicePOS = () => {
 
               {micError && micPermissionState !== 'granted' && (
                 <p className="text-xs text-destructive">{micError}</p>
+              )}
+
+              {pendingAction && (
+                <div className="w-full max-w-md rounded-2xl border border-amber-300 bg-amber-50 p-3 text-left dark:bg-amber-950/40">
+                  <p className="text-sm font-medium text-amber-900 dark:text-amber-100">{pendingAction.description}</p>
+                  <p className="mt-0.5 text-[11px] text-amber-700 dark:text-amber-300">Sema "Thibitisha" au "Ghairi" — au tumia vitufe.</p>
+                  <div className="mt-2 flex gap-2">
+                    <Button
+                      size="sm"
+                      className="rounded-full"
+                      onClick={async () => {
+                        const pa = pendingAction;
+                        setPendingAction(null);
+                        try { const msg = await pa.apply(); setLastResponse(msg); void speakResponse(msg); } catch { /* ignore */ }
+                      }}
+                    >
+                      <CheckCircle className="h-4 w-4" /> Thibitisha
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="rounded-full"
+                      onClick={() => { setPendingAction(null); setLastResponse('Sawa, nimeghairi.'); }}
+                    >
+                      Ghairi
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {undoEntries.length > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="rounded-full text-xs"
+                  onClick={() => {
+                    const entry = voiceUndoStack.pop();
+                    if (!entry) return;
+                    try {
+                      const restored: SaleItem[] = JSON.parse(entry.previousCartJson);
+                      setCurrentSale(restored);
+                      setLastResponse(`Nimerudisha: ${entry.description}.`);
+                    } catch { /* ignore */ }
+                  }}
+                >
+                  <Undo2 className="h-3.5 w-3.5" /> Tendua: {undoEntries[0].description}
+                </Button>
               )}
             </div>
 

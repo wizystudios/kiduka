@@ -19,6 +19,7 @@ import { offlineDB } from '@/utils/offlineDatabase';
 import { exportToCSV } from '@/utils/exportUtils';
 import { VoiceTimelinePanel } from '@/components/qa/VoiceTimelinePanel';
 import { WakeWordTestPanel } from '@/components/qa/WakeWordTestPanel';
+import { VoicePOSE2EPanel } from '@/components/qa/VoicePOSE2EPanel';
 import { Mic } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { toast } from 'sonner';
@@ -892,6 +893,23 @@ export default function MobileQAPage() {
                 </div>
               </CardContent>
             </Card>
+          </div>
+        )}
+
+        {topTab === 'voice' && (
+          <div className="space-y-3">
+            <Card className="border-blue-200 bg-blue-50/40">
+              <CardContent className="p-2.5 flex items-start gap-2">
+                <Mic className="h-4 w-4 text-blue-600 mt-0.5 shrink-0" />
+                <p className="text-[11px] text-muted-foreground">
+                  Jaribio la wake-word, regression ya aliases, na end-to-end ya amri za sauti hadi malipo.
+                  Kila kitendo kinarekodiwa kwenye <span className="font-mono">nurath_logs</span>.
+                </p>
+              </CardContent>
+            </Card>
+            <WakeWordTestPanel />
+            <VoicePOSE2EPanel />
+            <VoiceTimelinePanel ownerId={effectiveOwnerId} isAdmin={isAdmin} />
           </div>
         )}
 

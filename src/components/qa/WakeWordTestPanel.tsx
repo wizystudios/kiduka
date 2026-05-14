@@ -2,9 +2,37 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Mic, MicOff, RefreshCw, CheckCircle2, XCircle, Languages, Timer } from 'lucide-react';
+import { Mic, MicOff, RefreshCw, CheckCircle2, XCircle, Languages, Timer, PlayCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+
+const REGRESSION_FIXTURES: Array<{ text: string; expectMatch: boolean }> = [
+  { text: 'nurath nahitaji kununua juice', expectMatch: true },
+  { text: 'nura tafadhali ongeza soda', expectMatch: true },
+  { text: 'nurati maliza muuzo', expectMatch: true },
+  { text: 'nurat nenda dashboard', expectMatch: true },
+  { text: 'new wrath ongeza maziwa', expectMatch: true },
+  { text: 'nu rath onyesha bidhaa', expectMatch: true },
+  { text: 'noor ath nakuhitaji', expectMatch: true },
+  { text: 'nuratha tafuta chai', expectMatch: true },
+  { text: 'nyurath ongeza mkate', expectMatch: true },
+  { text: 'nuradi maliza', expectMatch: true },
+  { text: 'norath habari', expectMatch: true },
+  { text: 'nora karibu', expectMatch: true },
+  { text: 'noora samahani', expectMatch: true },
+  { text: 'nuhrath fungua scanner', expectMatch: true },
+  { text: 'new rat asante', expectMatch: true },
+  { text: 'nourath karibu', expectMatch: true },
+  { text: 'habari yako', expectMatch: false },
+  { text: 'nipe ripoti', expectMatch: false },
+  { text: 'tafadhali fungua skana', expectMatch: false },
+  { text: 'maliza muuzo sasa', expectMatch: false },
+  { text: 'asante sana', expectMatch: false },
+  { text: 'numero moja', expectMatch: false },
+  { text: 'nani yuko hapo', expectMatch: false },
+  { text: 'samahani sijaelewa', expectMatch: false },
+  { text: 'naomba msaada', expectMatch: false },
+];
 
 // Mirror of VoicePOS detection (kept locally so QA can test even if VoicePOS is off)
 const WAKE_WORD_ALIASES = [
@@ -83,6 +111,37 @@ export const WakeWordTestPanel = () => {
       window.speechSynthesis.addEventListener('voiceschanged', load);
       return () => window.speechSynthesis.removeEventListener('voiceschanged', load);
     }
+  }, []);
+
+  const [regression, setRegression] = useState<Array<{
+    text: string; expected: boolean; actual: boolean; pass: boolean; latencyMs: number; matched: string | null;
+  }>>([]);
+
+  const runRegression = useCallback(() => {
+    const out = REGRESSION_FIXTURES.map(({ text, expectMatch }) => {
+      const t0 = performance.now();
+      const det = detectWake(text);
+      const latencyMs = Math.round(performance.now() - t0);
+      const actual = !!det;
+      return { text, expected: expectMatch, actual, pass: actual === expectMatch, latencyMs, matched: det?.matched ?? null };
+    });
+    setRegression(out);
+    const passed = out.filter((r) => r.pass).length;
+    toast.success(`Regression: ${passed}/${out.length} zimefaulu`);
+    void supabase.auth.getUser().then(({ data }) => {
+      if (!data.user) return;
+      void supabase.from('nurath_logs').insert(out.map((r) => ({
+        user_id: data.user!.id,
+        kind: 'wake',
+        source: 'system',
+        stage: 'regression',
+        transcript: r.text,
+        confidence: 0.7,
+        wake_triggered: r.actual,
+        lang: 'sw-TZ',
+        note: `${r.pass ? 'PASS' : 'FAIL'} expected=${r.expected} actual=${r.actual} matched=${r.matched ?? '—'}`,
+      })));
+    });
   }, []);
 
   const stop = useCallback(() => {
@@ -201,7 +260,10 @@ export const WakeWordTestPanel = () => {
                 <MicOff className="h-3 w-3 mr-1" /> Sitisha
               </Button>
             )}
-            <Button size="sm" variant="outline" className="h-7 text-[10px] rounded-full" onClick={() => setAttempts([])}>
+            <Button size="sm" variant="outline" className="h-7 text-[10px] rounded-full" onClick={runRegression}>
+              <PlayCircle className="h-3 w-3 mr-1" /> Regression
+            </Button>
+            <Button size="sm" variant="outline" className="h-7 text-[10px] rounded-full" onClick={() => { setAttempts([]); setRegression([]); }}>
               <RefreshCw className="h-3 w-3 mr-1" /> Futa
             </Button>
           </div>
@@ -262,6 +324,23 @@ export const WakeWordTestPanel = () => {
             </div>
           ))}
         </div>
+        {regression.length > 0 && (
+          <div className="space-y-1 pt-2 border-t">
+            <p className="text-[11px] font-semibold">
+              Regression: {regression.filter((r) => r.pass).length}/{regression.length} zimefaulu
+            </p>
+            {regression.map((r, i) => (
+              <div key={i} className={`p-1.5 rounded-xl text-[10px] flex items-center gap-1.5 ${
+                r.pass ? 'bg-green-50' : 'bg-red-50'
+              }`}>
+                {r.pass ? <CheckCircle2 className="h-3 w-3 text-green-700" /> : <XCircle className="h-3 w-3 text-red-700" />}
+                <span className="font-mono truncate flex-1">"{r.text}"</span>
+                <span className="text-muted-foreground">exp:{r.expected ? 'Y' : 'N'} got:{r.actual ? 'Y' : 'N'}</span>
+                <span className="text-muted-foreground">{r.latencyMs}ms</span>
+              </div>
+            ))}
+          </div>
+        )}
         <div className="flex items-start gap-1.5 p-2 rounded-2xl bg-blue-50/50 border border-blue-100 text-[10px] text-blue-900">
           <Timer className="h-3 w-3 mt-0.5 shrink-0" />
           <span>
