@@ -123,10 +123,10 @@ const LivePreview = () => {
 
   return (
     <Card>
-      <CardHeader className="pb-2 flex flex-row items-center justify-between gap-2">
+      <CardHeader className="pb-2 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
         <CardTitle className="text-sm flex items-center gap-2"><Eye className="h-4 w-4" /> Live preview</CardTitle>
         <Select value={selected} onValueChange={setSelected}>
-          <SelectTrigger className="w-[240px]"><SelectValue /></SelectTrigger>
+          <SelectTrigger className="w-full sm:w-[240px]"><SelectValue /></SelectTrigger>
           <SelectContent>
             {templates.map((t) => <SelectItem key={t.name} value={t.name}>{t.displayName}</SelectItem>)}
           </SelectContent>
