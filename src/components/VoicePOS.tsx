@@ -89,8 +89,15 @@ declare global {
 }
 
 const NURATH_AUTO_LISTEN_KEY = 'kiduka_nurath_handsfree_enabled';
-const WAKE_WORD_ALIASES = ['nurath', 'nurat', 'nurathi', 'nurati', 'nurad', 'norath', 'norat', 'nura', 'nuru', 'nora'];
-const WAKE_WORD_PHRASES = ['new wrath', 'new rat', 'new route', 'no wrath', 'no rat', 'nura t', 'nur a'];
+const WAKE_WORD_ALIASES = [
+  'nurath', 'nurat', 'nurathi', 'nurati', 'nurad', 'nuradi', 'nurahi', 'norath', 'norat', 'norahi',
+  'nura', 'nuru', 'nora', 'noor', 'noora', 'nourath', 'nuwrath', 'nuwrat', 'nuhrath', 'nurta',
+  'nuratha', 'nyurath', 'nyurat', 'nuratth', 'nuraz',
+];
+const WAKE_WORD_PHRASES = [
+  'new wrath', 'new rat', 'new route', 'no wrath', 'no rat', 'nura t', 'nur a', 'nu rath',
+  'noor ath', 'new oath', 'noo rath', 'new arth', 'nyu rath', 'nuh rath',
+];
 
 // Configurable auto-reset thresholds (ms / counts)
 const NURATH_THRESHOLDS = {
