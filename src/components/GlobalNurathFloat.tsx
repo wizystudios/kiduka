@@ -38,8 +38,8 @@ export const GlobalNurathFloat = () => {
     return window.localStorage.getItem('kiduka_nurath_float_hidden') === '1';
   });
 
-  useEffect(() => nurathBus.subscribeState(setSnap), []);
-  useEffect(() => nurathBus.subscribeLogs(setLogs), []);
+  useEffect(() => { const off = nurathBus.subscribeState(setSnap); return () => { off(); }; }, []);
+  useEffect(() => { const off = nurathBus.subscribeLogs(setLogs); return () => { off(); }; }, []);
 
   useEffect(() => {
     try {
