@@ -1159,6 +1159,86 @@ export const VoicePOS = () => {
     };
   }, []);
 
+  // Watchdog — uses NURATH_THRESHOLDS to auto-recover stale recognition / mic
+  useEffect(() => {
+    const interval = window.setInterval(() => {
+      if (!shouldRestartRef.current || recognitionModeRef.current !== 'handsfree') return;
+      if (processingRef.current || isSpeakingRef.current || recoveryInFlightRef.current) return;
+
+      const now = Date.now();
+      const audioStale = lastAudioSignalAtRef.current > 0
+        && (now - lastAudioSignalAtRef.current) > NURATH_THRESHOLDS.noAudioMs;
+      const recogStale = (now - lastRecognitionActivityRef.current) > NURATH_THRESHOLDS.recognitionStaleMs;
+      const tooManyWakeFails = wakeFailureCountRef.current >= NURATH_THRESHOLDS.wakeFailuresBeforeReset;
+
+      if (audioStale || recogStale || tooManyWakeFails) {
+        wakeFailureCountRef.current = 0;
+        void recoverHandsfreeListening(
+          audioStale ? 'no audio signal' : recogStale ? 'recognition stalled' : 'too many wake failures',
+        );
+      }
+
+      // Periodic permission recheck (cheap)
+      if (navigator.permissions?.query && now - lastPermissionCheckRef.current > NURATH_THRESHOLDS.permissionRecheckMs) {
+        lastPermissionCheckRef.current = now;
+        navigator.permissions.query({ name: 'microphone' as PermissionName }).then((s) => {
+          if (s.state === 'granted') setMicPermissionState('granted');
+          else if (s.state === 'denied') setMicPermissionState('denied');
+        }).catch(() => undefined);
+      }
+    }, NURATH_THRESHOLDS.watchdogTickMs);
+
+    return () => window.clearInterval(interval);
+  }, [recoverHandsfreeListening]);
+
+  const verifyMicrophone = useCallback(async () => {
+    setMicTestRunning(true);
+    setMicTestResult(null);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const Ctor = window.AudioContext || window.webkitAudioContext;
+      if (!Ctor) throw new Error('no-audio-context');
+      const ctx = new Ctor();
+      const src = ctx.createMediaStreamSource(stream);
+      const analyser = ctx.createAnalyser();
+      analyser.fftSize = 512;
+      src.connect(analyser);
+      const data = new Uint8Array(analyser.frequencyBinCount);
+
+      let peak = 0;
+      const start = Date.now();
+      await new Promise<void>((resolve) => {
+        const tick = () => {
+          analyser.getByteTimeDomainData(data);
+          let sum = 0;
+          for (const v of data) { const n = (v - 128) / 128; sum += n * n; }
+          const rms = Math.sqrt(sum / data.length);
+          if (rms > peak) peak = rms;
+          if (Date.now() - start < 3000) requestAnimationFrame(tick);
+          else resolve();
+        };
+        tick();
+      });
+
+      stream.getTracks().forEach((t) => t.stop());
+      void ctx.close().catch(() => undefined);
+
+      const levelPct = Math.round(Math.min(1, peak * 4.8) * 100);
+      const ok = levelPct >= 8;
+      const message = ok
+        ? `Mic inafanya kazi vizuri (${levelPct}%) / Microphone is working (${levelPct}%).`
+        : `Sisikii sauti yoyote / No audio detected (${levelPct}%). Hakikisha mic haijazuiwa na sema kwa karibu.`;
+      setMicTestResult({ ok, level: levelPct, message });
+      appendLog({ kind: 'status', source: 'system', note: `Mic verify: ${levelPct}% (${ok ? 'ok' : 'silent'})` });
+    } catch (err) {
+      const message = 'Imeshindwa kufungua maikrofoni / Could not access microphone.';
+      setMicTestResult({ ok: false, level: 0, message });
+      appendLog({ kind: 'error', source: 'system', note: `Mic verify failed: ${(err as Error)?.message ?? 'unknown'}` });
+    } finally {
+      setMicTestRunning(false);
+    }
+  }, [appendLog]);
+
   useEffect(() => {
     return () => {
       shouldRestartRef.current = false;
