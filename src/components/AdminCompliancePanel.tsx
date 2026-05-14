@@ -364,7 +364,25 @@ export const AdminCompliancePanel = () => {
                       Muda: {new Date(r.required_after).toLocaleDateString('sw-TZ')}
                     </div>
 
-                    <div className="flex gap-1 pt-1">
+                    <div className="flex gap-1 pt-1 flex-wrap">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="rounded-xl text-xs h-7"
+                        onClick={async () => {
+                          const msg = window.prompt('Ujumbe wa ziada (hiari):', '') || '';
+                          try {
+                            const { data, error } = await supabase.functions.invoke('compliance-reminder', {
+                              body: { ownerId: r.owner_id, adminMessage: msg || undefined },
+                            });
+                            if (error) throw error;
+                            if ((data as any)?.error) throw new Error((data as any).error);
+                            toast.success('Kumbusho limetumwa');
+                          } catch (e: any) { toast.error(e.message || 'Imeshindikana'); }
+                        }}
+                      >
+                        <Send className="h-3 w-3 mr-1" /> Kumbusha
+                      </Button>
                       {r.block_mode === 'none' ? (
                         <Button
                           variant="outline"
