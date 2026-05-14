@@ -231,6 +231,16 @@ export const VoicePOS = () => {
     timestamp: null,
   });
   const [nurathLogs, setNurathLogs] = useState<NurathLogEntry[]>([]);
+  const [pendingAction, setPendingAction] = useState<null | {
+    kind: 'add_to_sale' | 'clear_sale' | 'complete_sale';
+    description: string;
+    apply: () => Promise<string> | string;
+    expiresAt: number;
+  }>(null);
+  const [undoEntries, setUndoEntries] = useState(voiceUndoStack.list());
+  const pendingActionRef = useRef<typeof pendingAction>(null);
+  useEffect(() => { pendingActionRef.current = pendingAction; }, [pendingAction]);
+  useEffect(() => voiceUndoStack.subscribe(setUndoEntries), []);
 
   const recognitionRef = useRef<any>(null);
   const commandProcessorRef = useRef<VoiceCommandProcessor | null>(null);
