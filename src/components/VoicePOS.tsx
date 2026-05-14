@@ -205,6 +205,11 @@ export const VoicePOS = () => {
   const lastAudioSignalAtRef = useRef(0);
   const staleResetCountRef = useRef(0);
   const recoveryInFlightRef = useRef(false);
+  const wakeFailureCountRef = useRef(0);
+  const lastPermissionCheckRef = useRef(0);
+
+  const [micTestRunning, setMicTestRunning] = useState(false);
+  const [micTestResult, setMicTestResult] = useState<{ ok: boolean; level: number; message: string } | null>(null);
 
   const speechRecognitionSupported = typeof window !== 'undefined' && ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window);
 
