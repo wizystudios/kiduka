@@ -9,13 +9,37 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import {
   ArrowLeft, Smartphone, ExternalLink, CheckCircle2, AlertTriangle, Clock,
   Tablet, Monitor, Bug, ListChecks, X, Upload, Wifi, WifiOff,
-  RefreshCw, FileText, Database, Trash2,
+  RefreshCw, FileText, Database, Trash2, Lock, Download, Printer, ShieldCheck,
+  PackageCheck, GitMerge, Eye,
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { txnLogger, TxnLog } from '@/utils/transactionLogger';
 import { offlineDB } from '@/utils/offlineDatabase';
+import { exportToCSV } from '@/utils/exportUtils';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { toast } from 'sonner';
+
+// ---- helpers ----
+const printAsPDF = (title: string, htmlBody: string) => {
+  const w = window.open('', '_blank', 'width=900,height=700');
+  if (!w) { toast.error('Ruhusu pop-ups ili kuchapisha PDF'); return; }
+  w.document.write(`<!doctype html><html><head><title>${title}</title>
+    <style>
+      body{font-family:ui-sans-serif,system-ui,-apple-system;padding:24px;color:#111;}
+      h1{font-size:18px;margin:0 0 12px;} h2{font-size:14px;margin:18px 0 6px;}
+      table{width:100%;border-collapse:collapse;font-size:11px;}
+      th,td{border:1px solid #ddd;padding:6px 8px;text-align:left;vertical-align:top;}
+      th{background:#f5f5f5;} .meta{color:#666;font-size:11px;margin-bottom:12px;}
+      .badge{display:inline-block;padding:1px 6px;border-radius:9999px;background:#eee;font-size:10px;margin-right:4px;}
+    </style></head><body>
+    <h1>${title}</h1>
+    <div class="meta">Imetolewa: ${new Date().toLocaleString()} · Kiduka Mobile QA</div>
+    ${htmlBody}
+    <script>window.onload=()=>{setTimeout(()=>window.print(),250);};</script>
+    </body></html>`);
+  w.document.close();
+};
 
 type Severity = 'fixed' | 'open' | 'todo';
 type Page = {
@@ -144,8 +168,13 @@ const VIEWPORTS = [
 
 export default function MobileQAPage() {
   const navigate = useNavigate();
-  const { user } = useAuth();
-  const [topTab, setTopTab] = useState<'audit' | 'checklist' | 'bug' | 'sync' | 'logs'>('audit');
+  const { user, userProfile } = useAuth();
+  const role: string | undefined = userProfile?.role;
+  const isAdmin = role === 'super_admin';
+  const isOwner = role === 'owner';
+  const allowed = isAdmin || isOwner; // assistants blocked
+
+  const [topTab, setTopTab] = useState<'audit' | 'checklist' | 'sync' | 'logs' | 'bug'>('audit');
   const [group, setGroup] = useState<'owner' | 'admin' | 'sokoni' | 'auth'>('owner');
   const [vp, setVp] = useState<typeof VIEWPORTS[number]>(VIEWPORTS[0]);
   const [previewPath, setPreviewPath] = useState<string | null>(null);
@@ -158,7 +187,18 @@ export default function MobileQAPage() {
 
   // Transaction logs state
   const [logs, setLogs] = useState<TxnLog[]>([]);
-  const [logFilter, setLogFilter] = useState<'all' | 'error' | 'warn' | 'sync' | 'cart' | 'conflict'>('all');
+  const [logFilter, setLogFilter] = useState<'all' | 'error' | 'warn' | 'sync' | 'cart' | 'conflict' | 'idempotency'>('all');
+
+  // Conflict detail dialog
+  const [conflictDetail, setConflictDetail] = useState<TxnLog | null>(null);
+
+  // Stock double-decrement check
+  const [stockCheck, setStockCheck] = useState<any[]>([]);
+  const [stockChecking, setStockChecking] = useState(false);
+
+  // Admin: switch which owner's server-side data we audit
+  const [ownerOptions, setOwnerOptions] = useState<{ id: string; label: string }[]>([]);
+  const [auditOwnerId, setAuditOwnerId] = useState<string>('');
 
   const refreshSync = async () => {
     const queue = await offlineDB.getAllSyncQueue();
@@ -171,9 +211,10 @@ export default function MobileQAPage() {
   const refreshLogs = async () => setLogs(await txnLogger.list(300));
 
   useEffect(() => {
+    if (!allowed) return;
     if (topTab === 'sync') refreshSync();
     if (topTab === 'logs') refreshLogs();
-  }, [topTab]);
+  }, [topTab, allowed]);
 
   useEffect(() => {
     const on = () => setIsOnline(true);
@@ -182,6 +223,90 @@ export default function MobileQAPage() {
     window.addEventListener('offline', off);
     return () => { window.removeEventListener('online', on); window.removeEventListener('offline', off); };
   }, []);
+
+  // Load owner list for super_admin owner-switcher
+  useEffect(() => {
+    if (!isAdmin) return;
+    supabase.from('profiles').select('id, full_name, business_name, email').limit(200)
+      .then(({ data }) => {
+        const opts = (data ?? []).map((p: any) => ({
+          id: p.id,
+          label: p.business_name || p.full_name || p.email || p.id.slice(0, 8),
+        }));
+        setOwnerOptions(opts);
+      });
+  }, [isAdmin]);
+
+  // Effective owner for server-side audits
+  const effectiveOwnerId = isAdmin ? (auditOwnerId || user?.id || '') : (user?.id || '');
+
+  // Idempotency audit trail (built from local txn logs) — sales-related only
+  const idempoTrail = useMemo(() => {
+    return logs
+      .filter((l) =>
+        l.scope === 'sync' &&
+        (l.step?.includes('sales') || l.step?.includes('idempot')) ||
+        (l.scope === 'conflict')
+      )
+      .slice(0, 200);
+  }, [logs]);
+
+  // Stock double-decrement check: compare products.stock_quantity vs
+  // sum(inventory_movements.quantity_change) per product for the chosen owner.
+  const runStockCheck = async () => {
+    if (!effectiveOwnerId) { toast.error('Hakuna mmiliki uliyechaguliwa'); return; }
+    setStockChecking(true);
+    try {
+      const { data: products, error: pErr } = await supabase
+        .from('products')
+        .select('id, name, stock_quantity, low_stock_threshold')
+        .eq('owner_id', effectiveOwnerId)
+        .limit(500);
+      if (pErr) throw pErr;
+      const { data: moves, error: mErr } = await supabase
+        .from('inventory_movements')
+        .select('product_id, movement_type, quantity_change, created_at')
+        .eq('owner_id', effectiveOwnerId)
+        .order('created_at', { ascending: true })
+        .limit(5000);
+      if (mErr) throw mErr;
+
+      const byProduct: Record<string, any[]> = {};
+      (moves ?? []).forEach((m: any) => {
+        if (!byProduct[m.product_id]) byProduct[m.product_id] = [];
+        byProduct[m.product_id].push(m);
+      });
+
+      const rows = (products ?? []).map((p: any) => {
+        const ms = byProduct[p.id] || [];
+        // Detect double-decrement: two 'sale' movements within 5s with the same change
+        const sales = ms.filter((m) => m.movement_type === 'sale');
+        let suspicious = 0;
+        for (let i = 1; i < sales.length; i++) {
+          const dt = new Date(sales[i].created_at).getTime() - new Date(sales[i - 1].created_at).getTime();
+          if (dt < 5000 && sales[i].quantity_change === sales[i - 1].quantity_change) suspicious++;
+        }
+        const netChange = ms.reduce((s, m) => s + Number(m.quantity_change || 0), 0);
+        return {
+          id: p.id,
+          name: p.name,
+          actual_stock: p.stock_quantity,
+          movement_count: ms.length,
+          net_change: netChange,
+          suspicious_pairs: suspicious,
+          last_movement: ms[ms.length - 1]?.created_at || null,
+          flag: suspicious > 0,
+        };
+      });
+      setStockCheck(rows);
+      const flagged = rows.filter((r) => r.flag).length;
+      toast.success(`Ukaguzi umekamilika: bidhaa ${rows.length}, ${flagged} zenye dalili za double-decrement`);
+    } catch (e: any) {
+      toast.error(e.message || 'Ukaguzi umeshindwa');
+    } finally {
+      setStockChecking(false);
+    }
+  };
 
   // Checklist state (in-memory)
   const [checkState, setCheckState] = useState<Record<string, StepStatus>>({});
@@ -260,6 +385,33 @@ export default function MobileQAPage() {
     }
   };
 
+  // Access gate: assistants and unauthenticated users blocked.
+  if (!user) {
+    return (
+      <div className="min-h-[100dvh] flex items-center justify-center p-6">
+        <Card className="max-w-md w-full"><CardContent className="p-6 text-center space-y-2">
+          <Lock className="h-8 w-8 mx-auto text-muted-foreground" />
+          <p className="text-sm">Lazima uingie kwanza ili kufungua Mobile QA.</p>
+          <Button onClick={() => navigate('/auth')} className="rounded-full mt-2">Ingia</Button>
+        </CardContent></Card>
+      </div>
+    );
+  }
+  if (!allowed) {
+    return (
+      <div className="min-h-[100dvh] flex items-center justify-center p-6">
+        <Card className="max-w-md w-full"><CardContent className="p-6 text-center space-y-2">
+          <ShieldCheck className="h-8 w-8 mx-auto text-red-600" />
+          <p className="text-sm font-medium">Mobile QA ni kwa wamiliki na admin pekee.</p>
+          <p className="text-[11px] text-muted-foreground">
+            Wasaidizi hawawezi kufikia kurasa hii ili kulinda data ya mauzo na sync ya biashara nyingine.
+          </p>
+          <Button variant="outline" onClick={() => navigate('/dashboard')} className="rounded-full mt-2">Rudi Dashboard</Button>
+        </CardContent></Card>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-[100dvh] bg-background pb-20">
       <div className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b">
@@ -301,6 +453,31 @@ export default function MobileQAPage() {
       </div>
 
       <div className="p-3 space-y-3">
+        {/* Access banner */}
+        <Card className="border-blue-200 bg-blue-50/40">
+          <CardContent className="p-2.5 flex items-center gap-2 flex-wrap">
+            <ShieldCheck className="h-4 w-4 text-blue-600 shrink-0" />
+            <Badge className="bg-blue-100 text-blue-800 text-[10px]">{isAdmin ? 'Admin' : 'Mmiliki'}</Badge>
+            <p className="text-[11px] text-muted-foreground flex-1 min-w-0">
+              {isAdmin
+                ? 'Una ufikiaji wa data ya wamiliki wote. Chagua mmiliki kwa ukaguzi wa server.'
+                : 'Unaona data ya biashara yako pekee. Logs za simu hii ni za kifaa hiki.'}
+            </p>
+            {isAdmin && (
+              <select
+                value={auditOwnerId}
+                onChange={(e) => setAuditOwnerId(e.target.value)}
+                className="text-[11px] rounded-full border px-2 py-1 bg-background max-w-[160px]"
+              >
+                <option value="">— Mimi mwenyewe —</option>
+                {ownerOptions.map((o) => (
+                  <option key={o.id} value={o.id}>{o.label}</option>
+                ))}
+              </select>
+            )}
+          </CardContent>
+        </Card>
+
         {topTab === 'audit' && (
           <>
             <div className="grid grid-cols-4 gap-2">
@@ -403,9 +580,41 @@ export default function MobileQAPage() {
                     {isOnline ? <Wifi className="h-4 w-4 text-green-600" /> : <WifiOff className="h-4 w-4 text-red-600" />}
                     Hali ya Sync
                   </CardTitle>
-                  <Button variant="outline" size="sm" className="h-7 text-[10px] rounded-full" onClick={refreshSync}>
-                    <RefreshCw className="h-3 w-3 mr-1" /> Onyesha upya
-                  </Button>
+                  <div className="flex gap-1 flex-wrap">
+                    <Button variant="outline" size="sm" className="h-7 text-[10px] rounded-full" onClick={refreshSync}>
+                      <RefreshCw className="h-3 w-3 mr-1" /> Onyesha upya
+                    </Button>
+                    <Button variant="outline" size="sm" className="h-7 text-[10px] rounded-full"
+                      onClick={() => {
+                        const rows = [
+                          ...pendingQueue.map((q) => ({ kind: 'queue', synced: q.synced ? 'yes' : 'no', table: q.table, action: q.action, item_id: q.data?.id || '', queue_id: q.id, timestamp: new Date(q.timestamp).toISOString(), details: '' })),
+                          ...syncHistory.map((h) => ({ kind: 'history', synced: '', table: h.table, action: h.type, item_id: '', queue_id: h.id, timestamp: new Date(h.timestamp).toISOString(), details: h.details || '' })),
+                        ];
+                        exportToCSV(rows, [
+                          { header: 'Kind', key: 'kind' }, { header: 'Synced', key: 'synced' },
+                          { header: 'Table', key: 'table' }, { header: 'Action', key: 'action' },
+                          { header: 'Item ID', key: 'item_id' }, { header: 'Queue/Log ID', key: 'queue_id' },
+                          { header: 'Timestamp', key: 'timestamp' }, { header: 'Details', key: 'details' },
+                        ], 'kiduka_sync_status');
+                        toast.success('CSV imeshushwa');
+                      }}>
+                      <Download className="h-3 w-3 mr-1" /> CSV
+                    </Button>
+                    <Button variant="outline" size="sm" className="h-7 text-[10px] rounded-full"
+                      onClick={() => {
+                        const rowsHtml = (h: any[]) => h.map((r) => `<tr><td>${new Date(r.timestamp).toLocaleString()}</td><td>${r.table || ''}</td><td>${r.type || r.action || ''}</td><td>${r.details || r.data?.id || ''}</td></tr>`).join('');
+                        printAsPDF('Kiduka — Sync Status & Historia', `
+                          <h2>Foleni ya Pending (${pendingQueue.filter((x) => !x.synced).length})</h2>
+                          <table><thead><tr><th>Wakati</th><th>Jedwali</th><th>Kitendo</th><th>ID / Maelezo</th></tr></thead>
+                          <tbody>${rowsHtml(pendingQueue.filter((x) => !x.synced))}</tbody></table>
+                          <h2>Historia ya Sync</h2>
+                          <table><thead><tr><th>Wakati</th><th>Jedwali</th><th>Aina</th><th>Maelezo</th></tr></thead>
+                          <tbody>${rowsHtml(syncHistory)}</tbody></table>
+                        `);
+                      }}>
+                      <Printer className="h-3 w-3 mr-1" /> PDF
+                    </Button>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent className="space-y-2">
@@ -477,6 +686,111 @@ export default function MobileQAPage() {
                 ))}
               </CardContent>
             </Card>
+
+            {/* Idempotency audit trail (per-sale) */}
+            <Card>
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <GitMerge className="h-4 w-4 text-primary" /> Idempotency — Audit kwa kila Mauzo
+                  </CardTitle>
+                  <Button variant="outline" size="sm" className="h-7 text-[10px] rounded-full" onClick={refreshLogs}>
+                    <RefreshCw className="h-3 w-3 mr-1" /> Onyesha
+                  </Button>
+                </div>
+                <p className="text-[10px] text-muted-foreground">
+                  Inaonyesha lini sale tayari ipo kwa server (insert imerukwa) na lini stock decrement imezuiwa.
+                  Inalinganishwa na queue ID na timestamps.
+                </p>
+              </CardHeader>
+              <CardContent className="space-y-1.5">
+                {idempoTrail.length === 0 ? (
+                  <p className="text-xs text-muted-foreground text-center py-3">Hakuna events za idempotency bado.</p>
+                ) : idempoTrail.map((l) => {
+                  const isSkip = l.step?.includes('already_present');
+                  const isConflict = l.scope === 'conflict';
+                  return (
+                    <div key={l.id} className={`p-2 rounded-2xl border text-[11px] space-y-0.5 ${
+                      isSkip ? 'bg-blue-50 border-blue-200' :
+                      isConflict ? 'bg-yellow-50 border-yellow-200' : 'bg-muted/30 border-border'
+                    }`}>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <Badge className={`text-[9px] ${isSkip ? 'bg-blue-100 text-blue-800' : isConflict ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'}`}>
+                          {isSkip ? 'sale-iko-tayari' : isConflict ? 'mgongano' : 'imepelekwa'}
+                        </Badge>
+                        <span className="font-mono text-[9px] text-muted-foreground truncate">{l.step}</span>
+                        <span className="ml-auto text-[9px] font-mono text-muted-foreground">{new Date(l.timestamp).toLocaleString()}</span>
+                      </div>
+                      <p className="break-words">{l.message}</p>
+                      <div className="flex items-center gap-1 flex-wrap text-[9px] font-mono text-muted-foreground">
+                        {l.context?.id && <span>sale_id: {String(l.context.id).slice(0, 8)}…</span>}
+                        {isConflict && (
+                          <Button size="sm" variant="ghost" className="h-5 text-[9px] ml-auto"
+                            onClick={() => setConflictDetail(l)}>
+                            <Eye className="h-3 w-3 mr-1" /> Maelezo
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </CardContent>
+            </Card>
+
+            {/* Stock double-decrement check (admin can pick owner) */}
+            <Card>
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <PackageCheck className="h-4 w-4 text-primary" /> Ukaguzi wa Stock Double-Decrement
+                  </CardTitle>
+                  <Button size="sm" className="h-7 text-[10px] rounded-full" onClick={runStockCheck} disabled={stockChecking || !effectiveOwnerId}>
+                    {stockChecking ? 'Inakagua…' : 'Anza Ukaguzi'}
+                  </Button>
+                </div>
+                <p className="text-[10px] text-muted-foreground">
+                  Inalinganisha hesabu halisi na inventory_movements; inaweka alama nyekundu kwa sale-pairs zinazofuatana ndani ya sek 5
+                  zenye kiasi sawa (dalili ya double decrement).
+                </p>
+              </CardHeader>
+              <CardContent className="space-y-1.5">
+                {stockCheck.length === 0 ? (
+                  <p className="text-xs text-muted-foreground text-center py-3">Bonyeza "Anza Ukaguzi" kuanzisha.</p>
+                ) : (
+                  <>
+                    <div className="flex justify-end">
+                      <Button variant="outline" size="sm" className="h-7 text-[10px] rounded-full"
+                        onClick={() => exportToCSV(stockCheck, [
+                          { header: 'Bidhaa', key: 'name' },
+                          { header: 'Stock Halisi', key: 'actual_stock' },
+                          { header: 'Mabadiliko Yote', key: 'net_change' },
+                          { header: 'Idadi ya Movements', key: 'movement_count' },
+                          { header: 'Sale Pairs Zenye Wasiwasi', key: 'suspicious_pairs' },
+                          { header: 'Movement ya Mwisho', key: 'last_movement' },
+                          { header: 'Ina Bendera', key: 'flag' },
+                        ], 'kiduka_stock_check')}>
+                        <Download className="h-3 w-3 mr-1" /> CSV
+                      </Button>
+                    </div>
+                    {stockCheck.filter((r) => r.flag).map((r) => (
+                      <div key={r.id} className="p-2 rounded-2xl border border-red-200 bg-red-50 text-[11px] space-y-0.5">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <Badge className="bg-red-100 text-red-800 text-[9px]">⚠ Double-decrement</Badge>
+                          <span className="font-medium">{r.name}</span>
+                        </div>
+                        <p className="text-muted-foreground">
+                          Stock: {r.actual_stock} · Movements: {r.movement_count} · Sale pairs zenye wasiwasi: {r.suspicious_pairs}
+                        </p>
+                        <p className="font-mono text-[9px] text-muted-foreground">Mwisho: {r.last_movement ? new Date(r.last_movement).toLocaleString() : '—'}</p>
+                      </div>
+                    ))}
+                    {stockCheck.filter((r) => r.flag).length === 0 && (
+                      <p className="text-xs text-green-700 text-center py-2">✓ Hakuna double-decrement iliyogunduliwa kwa bidhaa {stockCheck.length}.</p>
+                    )}
+                  </>
+                )}
+              </CardContent>
+            </Card>
           </div>
         )}
 
@@ -488,9 +802,35 @@ export default function MobileQAPage() {
                   <CardTitle className="text-sm flex items-center gap-2">
                     <FileText className="h-4 w-4 text-primary" /> Transaction Logs
                   </CardTitle>
-                  <div className="flex gap-1">
+                  <div className="flex gap-1 flex-wrap">
                     <Button variant="outline" size="sm" className="h-7 text-[10px] rounded-full" onClick={refreshLogs}>
                       <RefreshCw className="h-3 w-3 mr-1" /> Onyesha
+                    </Button>
+                    <Button variant="outline" size="sm" className="h-7 text-[10px] rounded-full"
+                      onClick={() => {
+                        exportToCSV(logs.map((l) => ({
+                          timestamp: new Date(l.timestamp).toISOString(),
+                          scope: l.scope, step: l.step, level: l.level,
+                          code: l.code || '', message: l.message,
+                          context: l.context ? JSON.stringify(l.context) : '',
+                        })), [
+                          { header: 'Wakati', key: 'timestamp' },
+                          { header: 'Scope', key: 'scope' }, { header: 'Step', key: 'step' },
+                          { header: 'Kiwango', key: 'level' }, { header: 'Code', key: 'code' },
+                          { header: 'Ujumbe', key: 'message' }, { header: 'Context', key: 'context' },
+                        ], 'kiduka_transaction_logs');
+                        toast.success('CSV imeshushwa');
+                      }}>
+                      <Download className="h-3 w-3 mr-1" /> CSV
+                    </Button>
+                    <Button variant="outline" size="sm" className="h-7 text-[10px] rounded-full"
+                      onClick={() => {
+                        const body = `<table><thead><tr><th>Wakati</th><th>Scope</th><th>Step</th><th>Lvl</th><th>Code</th><th>Ujumbe</th></tr></thead><tbody>${
+                          logs.map((l) => `<tr><td>${new Date(l.timestamp).toLocaleString()}</td><td>${l.scope}</td><td>${l.step}</td><td>${l.level}</td><td>${l.code || ''}</td><td>${l.message}</td></tr>`).join('')
+                        }</tbody></table>`;
+                        printAsPDF('Kiduka — Transaction Logs', body);
+                      }}>
+                      <Printer className="h-3 w-3 mr-1" /> PDF
                     </Button>
                     <Button variant="outline" size="sm" className="h-7 text-[10px] rounded-full"
                       onClick={async () => { await txnLogger.clear(); refreshLogs(); toast.success('Logs zimefutwa'); }}>
@@ -504,7 +844,7 @@ export default function MobileQAPage() {
               </CardHeader>
               <CardContent className="space-y-2">
                 <div className="flex gap-1 flex-wrap">
-                  {(['all','error','warn','sync','cart','conflict'] as const).map((f) => (
+                  {(['all','error','warn','sync','cart','conflict','idempotency'] as const).map((f) => (
                     <Button key={f} size="sm" variant={logFilter === f ? 'default' : 'outline'}
                       className="h-7 text-[10px] rounded-full" onClick={() => setLogFilter(f)}>{f}</Button>
                   ))}
@@ -516,7 +856,8 @@ export default function MobileQAPage() {
                       (logFilter === 'warn' && l.level === 'warn') ||
                       (logFilter === 'sync' && l.scope === 'sync') ||
                       (logFilter === 'cart' && (l.scope === 'cart' || l.scope === 'checkout' || l.scope === 'payment')) ||
-                      (logFilter === 'conflict' && l.scope === 'conflict'))
+                      (logFilter === 'conflict' && l.scope === 'conflict') ||
+                      (logFilter === 'idempotency' && (l.step?.includes('already_present') || l.scope === 'conflict')))
                     .map((l) => (
                     <div key={l.id} className={`p-2 rounded-2xl border text-[11px] space-y-0.5 ${
                       l.level === 'error' ? 'bg-red-50 border-red-200' :
@@ -663,6 +1004,48 @@ export default function MobileQAPage() {
           </div>
         </div>
       )}
+
+      {/* Conflict detail dialog */}
+      <Dialog open={!!conflictDetail} onOpenChange={(o) => !o && setConflictDetail(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-sm flex items-center gap-2">
+              <GitMerge className="h-4 w-4" /> Maelezo ya Mgongano
+            </DialogTitle>
+          </DialogHeader>
+          {conflictDetail && (
+            <div className="space-y-2 text-xs">
+              <div className="p-2 rounded-2xl bg-muted/40 space-y-0.5">
+                <p className="font-mono text-[10px] text-muted-foreground">{conflictDetail.step} · {new Date(conflictDetail.timestamp).toLocaleString()}</p>
+                <p>{conflictDetail.message}</p>
+                {conflictDetail.code && <Badge className="bg-yellow-100 text-yellow-800 text-[9px]">{conflictDetail.code}</Badge>}
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="p-2 rounded-2xl border">
+                  <p className="text-[10px] font-bold text-muted-foreground mb-1">Local (offline)</p>
+                  <p className="font-mono text-[10px]">updated_at:</p>
+                  <p className="font-mono text-[10px] break-all">{conflictDetail.context?.localUpdatedAt || '—'}</p>
+                </div>
+                <div className="p-2 rounded-2xl border bg-green-50">
+                  <p className="text-[10px] font-bold text-green-800 mb-1">Server (kushinda)</p>
+                  <p className="font-mono text-[10px]">updated_at:</p>
+                  <p className="font-mono text-[10px] break-all">{conflictDetail.context?.remoteUpdatedAt || '—'}</p>
+                </div>
+              </div>
+              <div className="p-2 rounded-2xl border bg-blue-50">
+                <p className="text-[10px] font-bold text-blue-800 mb-1">Sheria iliyotumika</p>
+                <p className="text-[11px]">
+                  Last-write-wins kwa <span className="font-mono">updated_at</span>: server ina toleo jipya zaidi,
+                  hivyo mabadiliko ya offline yameachwa ili kuzuia kufuta data mpya. Pakua tena (download) ili kupata server state.
+                </p>
+              </div>
+              {conflictDetail.context?.id && (
+                <p className="text-[10px] font-mono text-muted-foreground">Record ID: {conflictDetail.context.id}</p>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
