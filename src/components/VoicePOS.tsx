@@ -200,6 +200,7 @@ export const VoicePOS = () => {
   const { user } = useAuth();
   const { dataOwnerId } = useDataAccess();
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const [isListening, setIsListening] = useState(false);
   const [assistantMode, setAssistantMode] = useState<AssistantMode>('disabled');
