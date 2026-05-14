@@ -242,6 +242,7 @@ export const VoicePOS = () => {
   useEffect(() => { pendingActionRef.current = pendingAction; }, [pendingAction]);
   useEffect(() => { const unsub = voiceUndoStack.subscribe(setUndoEntries); return () => { unsub(); }; }, []);
 
+  const [showAvatarDetails, setShowAvatarDetails] = useState(true);
   const recognitionRef = useRef<any>(null);
   const commandProcessorRef = useRef<VoiceCommandProcessor | null>(null);
   const assistantModeRef = useRef<AssistantMode>('disabled');
