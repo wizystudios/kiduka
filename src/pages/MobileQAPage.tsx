@@ -909,7 +909,7 @@ export default function MobileQAPage() {
             </Card>
             <WakeWordTestPanel />
             <VoicePOSE2EPanel />
-            <VoiceTimelinePanel />
+            <VoiceTimelinePanel ownerId={effectiveOwnerId} isAdmin={isAdmin} />
           </div>
         )}
 
