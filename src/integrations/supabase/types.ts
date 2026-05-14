@@ -1276,40 +1276,52 @@ export type Database = {
         Row: {
           api_latency_ms: number | null
           command: string | null
+          confidence: number | null
           created_at: string
           id: string
           kind: string
+          lang: string | null
           note: string | null
           response: string | null
           source: string
+          stage: string | null
           transcript: string | null
           user_id: string
+          utterance_id: string | null
           wake_triggered: boolean | null
         }
         Insert: {
           api_latency_ms?: number | null
           command?: string | null
+          confidence?: number | null
           created_at?: string
           id?: string
           kind: string
+          lang?: string | null
           note?: string | null
           response?: string | null
           source: string
+          stage?: string | null
           transcript?: string | null
           user_id: string
+          utterance_id?: string | null
           wake_triggered?: boolean | null
         }
         Update: {
           api_latency_ms?: number | null
           command?: string | null
+          confidence?: number | null
           created_at?: string
           id?: string
           kind?: string
+          lang?: string | null
           note?: string | null
           response?: string | null
           source?: string
+          stage?: string | null
           transcript?: string | null
           user_id?: string
+          utterance_id?: string | null
           wake_triggered?: boolean | null
         }
         Relationships: []
