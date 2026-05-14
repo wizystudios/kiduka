@@ -1,116 +1,121 @@
 
-# Mpango Mkuu — Nurath + Security + Email Notifications
+# Mpango: Mobile QA ya Sauti + Nurath Mpya Kabisa
 
-Tutafanya kazi hii kwa awamu tatu mfululizo katika run moja. Kwa sababu emails zinahitaji domain + email infrastructure, nitafungua dialog ya email setup kwanza halafu nitaendelea moja kwa moja na kazi nyingine wakati DNS inaverify.
-
----
-
-## Awamu 1 — Nurath UX kwa watumiaji wa kawaida
-
-### 1.1 Status Banner (Swahili + English)
-Banner mpya juu ya `VoicePOS` itaonyesha sababu rahisi ya kushindwa kujibu:
-- Mic blocked → "Ruhusu maikrofoni kwenye kivinjari / Allow microphone access"
-- No speech signal → "Sisikii sauti — sema kwa karibu zaidi / I can't hear you — speak closer"
-- Network/API issue → "Tatizo la mtandao au seva / Network or server issue"
-- All good but waiting → "Niko tayari, sema 'Nurath' / Ready, say 'Nurath'"
-
-Banner inategemea state ya `permissionState`, `lastAudioSignalAtRef`, na `lastApiError`.
-
-### 1.2 "Verify my microphone" one-tap test
-Kitufe kipya kidogo ndani ya VoicePOS:
-- Inarekodi sample ya sekunde 3
-- Inahesabu peak audio level kupitia `AnalyserNode`
-- Inarudisha matokeo: "Mic inafanya kazi vizuri (level: NN%)" au "Hakuna sauti imefika"
-- Inahifadhi log moja `kind: 'mic-test'` kwenye `nurath_logs`
-
-### 1.3 Configurable auto-reset thresholds
-Kuongeza constants kwenye `VoicePOS.tsx`:
-```
-NURATH_THRESHOLDS = {
-  noAudioMs: 12000,           // sekunde 12 bila sauti → reset
-  recognitionStaleMs: 20000,  // sekunde 20 bila event → restart
-  wakeFailuresBeforeReset: 5, // baada ya 5 wake fails mfululizo
-  permissionRecheckMs: 30000, // recheck permission kila sek 30
-}
-```
-`recoverHandsfreeListening` itatumia thresholds hizi badala ya hard-coded values, na ita-recover bila ku-interrupt session ya sasa kama bado iko hai.
+Hii ni kazi kubwa yenye sehemu mbili kuu: (A) zana za uchunguzi wa sauti ndani ya **Mobile QA**, na (B) kujenga upya **Nurath** kuwa msaidizi kamili wa sauti mwenye avatar.
 
 ---
 
-## Awamu 2 — Super Admin Security & Diagnostics
+## Sehemu A — Mobile QA: Voice Diagnostics (admin/owner-only kama kawaida)
 
-### 2.1 Server-side guard kwa diagnostics
-- Kufunga RLS kali zaidi kwenye `nurath_logs` (tayari iko, tutahakiki SELECT ni `super_admin` only)
-- Edge function mpya `nurath-admin-export` inafanya server-side role check kabla ya kurudisha logs/exports. Hata mtu ajaribu kufungua `/diagnostics` URL moja kwa moja, edge function itarejesha 403 isipokuwa ana role `super_admin`
-- Component `NurathDiagnosticsPanel` ita-fetch kupitia edge function hii badala ya `supabase.from('nurath_logs').select` ya client-side
+### A1. Lugha ya Speech Recognition
+- Lazimisha `recognition.lang = 'sw-TZ'` kila run (hakuna fallback ya Kiingereza kwenye recognition).
+- Onyesha kwenye kila kipande cha timeline lugha iliyotumika + voice ya TTS iliyochaguliwa (jina, lang code).
+- Kifungo cha "Test Lugha" Mobile QA → kinaonyesha lugha ya sasa na list ya voices za `sw-*` zilizopo kwenye kifaa.
 
-### 2.2 Incident Summary (saa 1 iliyopita)
-Kitufe kipya "Incident Summary" kwenye `NurathDiagnosticsPanel`:
-- Inakusanya logs za saa 1 zilizopita
-- Inahesabu: total sessions, total failures, top error types (no-wake, no-speech, no-response, system-error), shops affected (top 10 by failure count)
-- Inazalisha PDF kupitia `exportToPDF` na pia inatoa option ya kutuma email kwa super admin (template `nurath-incident-summary`) — itatumia email infra ya Awamu 3
+### A2. Voice Timeline (per-utterance)
+Kila muamala wa sauti utahifadhiwa kwenye `voiceTimelineLogger` (in-memory + IndexedDB). Vituo:
+- `onstart` — mic imeanza
+- `interim` — kila partial transcript + confidence
+- `final` — final transcript + confidence
+- `wake-match` — neno gani limelingana (`nurath`, `nura`, `nurati`...) na njia (alias/fuzzy/phrase)
+- `strip` — transcript baada ya kuondoa wake-word
+- `backend-call` — wakati request imetumwa kwenda `voice-pos-assistant`
+- `backend-response` — wakati jibu limefika + status
+- `tts-start` / `tts-end`
+- Latency (ms) kati ya hatua
 
----
+UI: tab mpya **"Sauti"** ndani ya Mobile QA, expandable rows per utterance.
 
-## Awamu 3 — Email System (consent-aware)
+### A3. Confidence + Interim/Final filter
+- Onyesha `confidence` (0–1) na badge `INTERIM` / `FINAL` kwa kila transcript.
+- Slider ya minimum confidence (default 0.6) — chini ya hapo zinaonyeshwa kwa rangi nyekundu na hazitumwi kwa AI.
 
-### 3.1 Email infrastructure
-Kwa sababu hakuna domain wala infra bado, nitafungua dialog ya email setup. Baada ya domain kuchaguliwa, nitafanya scaffolding ya transactional emails (`send-transactional-email` + queue) na auth emails kwa branding ya Kiduka.
+### A4. Timeout + Retry
+- Edge function `voice-pos-assistant`: timeout client-side ya **8s**, retry mara **2** na exponential backoff (500ms, 1500ms).
+- Sheria zinaonyeshwa kwenye Mobile QA tab Sauti (kisanduku cha "Sheria za Timeout"):
+  - Timeout: 8000ms kwa request moja
+  - Retries: 2
+  - Backoff: 500ms → 1500ms
+  - Total max wait: ~11s kabla ya kumwambia mtumiaji "Sina mtandao mzuri"
 
-### 3.2 Consent toggles
-**Owner consent** (`profiles.email_notifications_enabled` boolean, default true):
-- Sehemu mpya kwenye `Mipangilio (Settings)` → "Arifa za Email"
-- Toggles tofauti kwa kila aina: security, business operations, subscription. Owner anaweza kuzima zote au baadhi.
-
-**Customer consent** (`sokoni_customers.email_marketing_consent` + `email_transactional_consent`):
-- Checkout form: checkbox "Nakubali kupokea email za order updates" (inayotakiwa kwa transactional)
-- Profile page ya customer: toggle ya kuzima/kuwasha
-
-### 3.3 Email templates (Kiduka brand: blue/green/white, logo, footer ya ads/system links)
-Templates zote zitakuwa na: header na logo ya Kiduka, content, footer yenye link ya kufungua app + ad slot dynamic kutoka `ads` table, na unsubscribe footer (system-managed).
-
-**Owner emails:**
-- `owner-login-alert` — kuingia kwa device mpya
-- `owner-settings-changed` — mabadiliko muhimu ya settings
-- `owner-subscription-request` — confirmation ya ombi la subscription
-- `owner-large-transaction` — muamala mkubwa
-- `owner-low-stock` — stock chini
-- `owner-new-debt` — deni jipya limeingia
-- `owner-new-sokoni-order` — order mpya ya Sokoni
-
-**Customer emails:**
-- `customer-order-confirmation` — order imepokelewa
-- `customer-order-status` — status update (confirmed/shipped/delivered)
-- `customer-order-receipt` — risiti
-- `customer-review-thanks` — asante kwa kutoa review
-- `customer-return-update` — return request status
-
-### 3.4 Trigger wiring
-Kila template itaitwa kupitia `supabase.functions.invoke('send-transactional-email', ...)` kutoka:
-- Code ya client (kwa actions kama login, settings change, checkout, review)
-- Database webhooks → edge function (kwa events kama large transaction, low stock, new debt, status change)
-
-Kila mahali pa kutuma, code itacheck consent kwanza:
-```ts
-if (!profile.email_notifications_enabled) return;
-if (!profile.email_consent[category]) return;
-```
+### A5. Wake-Word Test Screen
+- Tab/section "Jaribio la Nurath".
+- Button "Anza Kusikiliza" → mic inawaka, inakaa wazi 30s.
+- Sema "Nurath" mara kadhaa; kila jaribio linaonyesha:
+  - Transcript ghafi
+  - Match: ✅/❌
+  - Alias/method iliyolingana
+  - Confidence
+  - Sababu ya kufeli (mfano: "edit-distance > 1", "no token in transcript")
+- Counter: detected X / Y attempts.
 
 ---
 
-## Mpangilio wa kazi
+## Sehemu B — Nurath Mpya (Full Voice Agent)
 
-1. **Kwanza:** Fungua email setup dialog (user achague domain)
-2. **Wakati DNS inaverify:** Anza Awamu 1 (Nurath UX) na Awamu 2 (admin guard + incident summary UI)
-3. **Baada ya domain kuwa tayari:** Setup email infra → scaffold templates → wire triggers → ongeza consent UI
+### B1. Avatar
+- SVG/PNG ya **mwanamke wa Kiislamu mwenye hijab, akitabasamu**, rangi za brand (blue/green).
+- Itazalishwa kwa imagegen (`premium`, transparent PNG).
+- Inaonyeshwa: idle (tabasamu), listening (pulse ring), speaking (mouth animation rahisi via CSS).
+
+### B2. Uwezo Mpya wa Nurath (tool-calling)
+Nurath atatumia AI gateway na **tool-calling** (Vercel AI SDK style kwenye edge function) ili afanye kazi kweli, sio kujibu tu.
+
+Tools zitakazoongezwa:
+1. `search_products(query)` — kutoka catalog ya owner au Sokoni.
+2. `add_to_cart(productId, qty)` — anaongeza POS cart au Sokoni cart.
+3. `list_cart()` — anasoma cart.
+4. `checkout(paymentMethod)` — anakamilisha mauzo.
+5. `place_sokoni_order(items, address)` — wateja wa Sokoni.
+6. `get_stock(productId)` na `get_sales_today()` — maswali ya owner.
+7. `navigate(route)` — anapeleka ukurasa.
+
+Mtiririko wa mfano:
+- Mtumiaji: "Nurath, nataka kununua kinywaji"
+- Nurath: "Sawa, una chaguo gani — soda, juisi, au maji?"
+- Mtumiaji: "Juisi"
+- Nurath: anaita `search_products("juisi")` → anaonyesha kwenye skrini + "Nimepata Azam Juisi 500ml kwa TZS 1,500. Niagize?"
+- Mtumiaji: "Ndio, agiza"
+- Nurath: anaita `add_to_cart` + `place_sokoni_order` → "Order yako imewekwa, namba SKN-XXXX."
+
+### B3. Kiswahili Sanifu Pekee
+- System prompt ngumu: Kiswahili sanifu cha Tanzania, hakuna Kiingereza, hakuna kubuni data.
+- Kama hakuna data: "Sina taarifa hiyo kwa sasa."
+- Speech rate 0.84, voice `sw-TZ` (au best Swahili voice inayopatikana).
+
+### B4. Utambuzi wa "Nurath" Hata Zaidi
+- Kuongeza phonetic aliases zaidi: `nooraat`, `nurahh`, `nuraat`, `nurat`, `nurra`.
+- Multi-pass: kama interim ina alias yoyote → triggered.
+- Visual feedback haraka (avatar inawaka) hata kabla ya final transcript.
+
+### B5. Permissions
+- Owner: anaweza kuuliza data ya biashara yake, kufanya mauzo, ku-check stock.
+- Customer kwenye Sokoni: anaweza kutafuta, kuongeza cart, ku-place order.
+- Assistant: tools chache kulingana na permissions zilizopo.
 
 ---
 
-## Nini hakitafanyika sasa
-- **Marketing emails / newsletters** — hazitaungwa mkono (deliverability rule)
-- **Customer activity beyond transactional** — review thanks ni borderline; nitaiweka kama transactional kwa sababu inatokana na action ya mteja
-- **Receiving email replies** — emails ni outbound tu
+## Faili Zitakazobadilishwa/Kuongezwa
+
+**Mpya:**
+- `src/utils/voiceTimelineLogger.ts` — logger maalum ya timeline.
+- `src/components/NurathAvatar.tsx` — avatar component.
+- `src/assets/nurath-avatar.png` — generated image.
+- `src/components/qa/VoiceTimelinePanel.tsx`
+- `src/components/qa/WakeWordTestPanel.tsx`
+
+**Kubadilishwa:**
+- `src/components/VoicePOS.tsx` — ku-integrate logger, avatar, stricter sw-TZ, expanded aliases.
+- `src/utils/voiceAssistantSpeech.ts` — sw-TZ pekee.
+- `supabase/functions/voice-pos-assistant/index.ts` — tool-calling, timeout/retry, Kiswahili strict.
+- `src/pages/MobileQAPage.tsx` — tabs mpya za Sauti & Wake-Word.
 
 ---
 
-Je, niendelee na mpango huu? (Ukikubali nitafungua email setup dialog kwanza halafu nitaendelea moja kwa moja na Nurath na security work.)
+## Maswali Kabla Ya Kuanza
+
+1. **Avatar style**: Unataka illustration (cartoon-ish, friendly) au semi-realistic? Nashauri illustration ili ikae vizuri kwenye brand.
+2. **Tool-calling scope**: Nianze na tools zote 7 hapo juu, au tuanze na chache (search + add to cart + checkout) kisha tuongeze?
+3. **Customer voice kwenye Sokoni**: Iwe enabled kwa wateja wote wa Sokoni au kwa owner pekee mwanzoni?
+
+Kazi hii ni kubwa — nakadiria itahitaji **migration ndogo** (kuhifadhi voice timeline logs) na **deploy ya edge function**. Nikipata majibu ya maswali matatu hapo juu naanza mara moja.

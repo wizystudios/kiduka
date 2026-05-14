@@ -17,6 +17,9 @@ import { useAuth } from '@/hooks/useAuth';
 import { txnLogger, TxnLog } from '@/utils/transactionLogger';
 import { offlineDB } from '@/utils/offlineDatabase';
 import { exportToCSV } from '@/utils/exportUtils';
+import { VoiceTimelinePanel } from '@/components/qa/VoiceTimelinePanel';
+import { WakeWordTestPanel } from '@/components/qa/WakeWordTestPanel';
+import { Mic } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 
@@ -174,7 +177,7 @@ export default function MobileQAPage() {
   const isOwner = role === 'owner';
   const allowed = isAdmin || isOwner; // assistants blocked
 
-  const [topTab, setTopTab] = useState<'audit' | 'checklist' | 'sync' | 'logs' | 'bug'>('audit');
+  const [topTab, setTopTab] = useState<'audit' | 'checklist' | 'sync' | 'logs' | 'voice' | 'bug'>('audit');
   const [group, setGroup] = useState<'owner' | 'admin' | 'sokoni' | 'auth'>('owner');
   const [vp, setVp] = useState<typeof VIEWPORTS[number]>(VIEWPORTS[0]);
   const [previewPath, setPreviewPath] = useState<string | null>(null);
@@ -428,7 +431,7 @@ export default function MobileQAPage() {
         </div>
         <div className="px-3 pb-2">
           <Tabs value={topTab} onValueChange={(v) => setTopTab(v as any)}>
-            <TabsList className="w-full grid grid-cols-5 h-8">
+            <TabsList className="w-full grid grid-cols-6 h-8">
               <TabsTrigger value="audit" className="text-[10px] sm:text-xs">Audit</TabsTrigger>
               <TabsTrigger value="checklist" className="text-[10px] sm:text-xs gap-1">
                 <ListChecks className="h-3 w-3" /> List
@@ -443,6 +446,9 @@ export default function MobileQAPage() {
               </TabsTrigger>
               <TabsTrigger value="logs" className="text-[10px] sm:text-xs gap-1">
                 <FileText className="h-3 w-3" /> Logs
+              </TabsTrigger>
+              <TabsTrigger value="voice" className="text-[10px] sm:text-xs gap-1">
+                <Mic className="h-3 w-3" /> Sauti
               </TabsTrigger>
               <TabsTrigger value="bug" className="text-[10px] sm:text-xs gap-1">
                 <Bug className="h-3 w-3" /> Bug
