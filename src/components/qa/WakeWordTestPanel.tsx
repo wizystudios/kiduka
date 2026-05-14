@@ -2,9 +2,37 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Mic, MicOff, RefreshCw, CheckCircle2, XCircle, Languages, Timer } from 'lucide-react';
+import { Mic, MicOff, RefreshCw, CheckCircle2, XCircle, Languages, Timer, PlayCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+
+const REGRESSION_FIXTURES: Array<{ text: string; expectMatch: boolean }> = [
+  { text: 'nurath nahitaji kununua juice', expectMatch: true },
+  { text: 'nura tafadhali ongeza soda', expectMatch: true },
+  { text: 'nurati maliza muuzo', expectMatch: true },
+  { text: 'nurat nenda dashboard', expectMatch: true },
+  { text: 'new wrath ongeza maziwa', expectMatch: true },
+  { text: 'nu rath onyesha bidhaa', expectMatch: true },
+  { text: 'noor ath nakuhitaji', expectMatch: true },
+  { text: 'nuratha tafuta chai', expectMatch: true },
+  { text: 'nyurath ongeza mkate', expectMatch: true },
+  { text: 'nuradi maliza', expectMatch: true },
+  { text: 'norath habari', expectMatch: true },
+  { text: 'nora karibu', expectMatch: true },
+  { text: 'noora samahani', expectMatch: true },
+  { text: 'nuhrath fungua scanner', expectMatch: true },
+  { text: 'new rat asante', expectMatch: true },
+  { text: 'nourath karibu', expectMatch: true },
+  { text: 'habari yako', expectMatch: false },
+  { text: 'nipe ripoti', expectMatch: false },
+  { text: 'tafadhali fungua skana', expectMatch: false },
+  { text: 'maliza muuzo sasa', expectMatch: false },
+  { text: 'asante sana', expectMatch: false },
+  { text: 'numero moja', expectMatch: false },
+  { text: 'nani yuko hapo', expectMatch: false },
+  { text: 'samahani sijaelewa', expectMatch: false },
+  { text: 'naomba msaada', expectMatch: false },
+];
 
 // Mirror of VoicePOS detection (kept locally so QA can test even if VoicePOS is off)
 const WAKE_WORD_ALIASES = [
