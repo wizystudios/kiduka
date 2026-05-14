@@ -3,7 +3,44 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { NurathAvatar, type NurathState } from '@/components/NurathAvatar';
-import { CheckCircle2, XCircle, Activity } from 'lucide-react';
+import { CheckCircle2, XCircle, Activity, Download, FileText } from 'lucide-react';
+
+const downloadBlob = (blob: Blob, filename: string) => {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename; document.body.appendChild(a); a.click();
+  a.remove(); setTimeout(() => URL.revokeObjectURL(url), 1000);
+};
+
+const exportCsv = (rows: Row[], passed: number) => {
+  const head = ['state', 'latency_ms', 'pill_visible', 'pill_text', 'ring_class', 'pass'];
+  const body = rows.map(r => [r.state, r.latencyMs, r.pillVisible, r.pillText ?? '', r.ringClass ?? '', r.pass]);
+  const csv = [head, ...body, [], ['summary', `${passed}/${rows.length} pass`]]
+    .map(line => line.map(v => `"${String(v).replace(/"/g, '""')}"`).join(','))
+    .join('\n');
+  downloadBlob(new Blob([csv], { type: 'text/csv;charset=utf-8' }), `nurath-latency-${Date.now()}.csv`);
+};
+
+const exportPdf = (rows: Row[], passed: number) => {
+  // Lightweight HTML→PDF via browser print. Works on mobile + desktop.
+  const html = `<!doctype html><html><head><meta charset="utf-8"/><title>Nurath Avatar QA</title>
+    <style>body{font-family:system-ui,-apple-system,sans-serif;padding:24px;color:#111}
+      h1{margin:0 0 4px;font-size:18px} p{margin:0 0 16px;color:#555;font-size:12px}
+      table{width:100%;border-collapse:collapse;font-size:12px}
+      th,td{border:1px solid #d4d4d8;padding:6px 8px;text-align:left}
+      th{background:#f4f4f5} .pass{color:#16a34a;font-weight:600} .fail{color:#dc2626;font-weight:600}
+      .meta{display:flex;gap:16px;font-size:12px;color:#374151;margin:8px 0 16px}
+    </style></head><body>
+    <h1>Nurath Avatar — Visibility & Latency QA</h1>
+    <div class="meta"><span>Tarehe: ${new Date().toLocaleString()}</span><span>Matokeo: <strong>${passed}/${rows.length}</strong> pass</span></div>
+    <table><thead><tr><th>State</th><th>Latency (ms)</th><th>Pill</th><th>Ring</th><th>Status</th></tr></thead><tbody>
+    ${rows.map(r => `<tr><td>${r.state}</td><td>${r.latencyMs.toFixed(2)}</td><td>${r.pillVisible ? (r.pillText ?? '—') : 'haijatokea'}</td><td>${r.ringClass ?? '—'}</td><td class="${r.pass ? 'pass' : 'fail'}">${r.pass ? 'PASS' : 'FAIL'}</td></tr>`).join('')}
+    </tbody></table>
+    <script>window.onload=()=>{setTimeout(()=>window.print(),200)}</script>
+    </body></html>`;
+  const w = window.open('', '_blank', 'noopener,noreferrer,width=900,height=700');
+  if (w) { w.document.write(html); w.document.close(); }
+};
 
 type Row = {
   state: NurathState;
@@ -94,15 +131,23 @@ export const NurathAvatarLatencyPanel = () => {
           <p className="mt-2 text-xs text-muted-foreground">State sasa: <strong>{state}</strong></p>
         </div>
 
-        <div className="flex items-center justify-between gap-2">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <Button onClick={runOnce} disabled={running} className="rounded-full">
             {running ? 'Inajaribu…' : 'Anza jaribio'}
           </Button>
-          {rows.length > 0 && (
-            <Badge variant={passed === rows.length ? 'default' : 'destructive'} className="rounded-full">
-              {passed}/{rows.length} pass
-            </Badge>
-          )}
+          <div className="flex items-center gap-2">
+            {rows.length > 0 && (
+              <Badge variant={passed === rows.length ? 'default' : 'destructive'} className="rounded-full">
+                {passed}/{rows.length} pass
+              </Badge>
+            )}
+            <Button size="sm" variant="outline" className="rounded-full" disabled={!rows.length} onClick={() => exportCsv(rows, passed)}>
+              <Download className="mr-1.5 h-3.5 w-3.5" /> CSV
+            </Button>
+            <Button size="sm" variant="outline" className="rounded-full" disabled={!rows.length} onClick={() => exportPdf(rows, passed)}>
+              <FileText className="mr-1.5 h-3.5 w-3.5" /> PDF
+            </Button>
+          </div>
         </div>
 
         {rows.length > 0 && (

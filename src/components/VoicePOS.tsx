@@ -10,6 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { VoiceCommandProcessor } from '@/utils/voiceCommandProcessor';
 import { speakAssistantText } from '@/utils/voiceAssistantSpeech';
 import { NurathAvatar, type NurathState } from '@/components/NurathAvatar';
+import { nurathBus } from '@/utils/nurathBus';
 import { voiceUndoStack, isUndoCommand, isConfirmCommand, isCancelCommand } from '@/utils/voiceConfirmStack';
 import { Undo2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -241,6 +242,19 @@ export const VoicePOS = () => {
   const pendingActionRef = useRef<typeof pendingAction>(null);
   useEffect(() => { pendingActionRef.current = pendingAction; }, [pendingAction]);
   useEffect(() => { const unsub = voiceUndoStack.subscribe(setUndoEntries); return () => { unsub(); }; }, []);
+
+  // Mirror live state to global Nurath bus so the floating avatar persists across pages
+  useEffect(() => {
+    nurathBus.setActive(true);
+    return () => { nurathBus.setActive(false); nurathBus.publishState({ state: 'idle', audioLevel: 0, isListening: false }); };
+  }, []);
+  useEffect(() => {
+    const mapped: NurathState = voiceStatus === 'hearing' ? 'listening'
+      : voiceStatus === 'permission' ? 'error'
+      : (voiceStatus as NurathState);
+    nurathBus.publishState({ state: mapped, audioLevel, isListening });
+    nurathBus.log('state', `voiceStatus → ${voiceStatus}`, { audioLevel: Number(audioLevel.toFixed(2)) }, mapped);
+  }, [voiceStatus, audioLevel, isListening]);
 
   const [showAvatarDetails, setShowAvatarDetails] = useState(true);
   const recognitionRef = useRef<any>(null);
