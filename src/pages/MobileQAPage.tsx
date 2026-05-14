@@ -431,7 +431,7 @@ export default function MobileQAPage() {
         </div>
         <div className="px-3 pb-2">
           <Tabs value={topTab} onValueChange={(v) => setTopTab(v as any)}>
-            <TabsList className="w-full grid grid-cols-5 h-8">
+            <TabsList className="w-full grid grid-cols-6 h-8">
               <TabsTrigger value="audit" className="text-[10px] sm:text-xs">Audit</TabsTrigger>
               <TabsTrigger value="checklist" className="text-[10px] sm:text-xs gap-1">
                 <ListChecks className="h-3 w-3" /> List
@@ -446,6 +446,9 @@ export default function MobileQAPage() {
               </TabsTrigger>
               <TabsTrigger value="logs" className="text-[10px] sm:text-xs gap-1">
                 <FileText className="h-3 w-3" /> Logs
+              </TabsTrigger>
+              <TabsTrigger value="voice" className="text-[10px] sm:text-xs gap-1">
+                <Mic className="h-3 w-3" /> Sauti
               </TabsTrigger>
               <TabsTrigger value="bug" className="text-[10px] sm:text-xs gap-1">
                 <Bug className="h-3 w-3" /> Bug
