@@ -230,6 +230,10 @@ export const NurathDiagnosticsPanel = () => {
                 <FileText className="h-4 w-4" />
                 PDF
               </Button>
+              <Button type="button" size="sm" variant="default" onClick={generateIncidentSummary}>
+                <AlertTriangle className="h-4 w-4" />
+                Incident Summary (1h)
+              </Button>
               <Button type="button" size="sm" variant="outline" onClick={clearLogs}>
                 <Trash2 className="h-4 w-4" />
                 Futa
