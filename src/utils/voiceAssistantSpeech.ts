@@ -82,15 +82,17 @@ const loadVoices = async () => {
 };
 
 const selectBestVoice = (voices: SpeechSynthesisVoice[], preferredVoiceGender: 'female' | 'male' = 'female') => {
-  const genderFiltered = preferredVoiceGender === 'female'
-    ? voices.filter((voice) => FEMALE_VOICE_PATTERNS.some((pattern) => pattern.test(voice.name)))
-    : voices;
+  const swahiliVoices = voices.filter((voice) => SWAHILI_VOICE_PATTERNS.some((pattern) => pattern.test(voice.lang) || pattern.test(voice.name)));
+  const eastAfricaVoices = voices.filter((voice) => EAST_AFRICA_ENGLISH_PATTERNS.some((pattern) => pattern.test(voice.lang) || pattern.test(voice.name)));
+  const femaleVoices = voices.filter((voice) => FEMALE_VOICE_PATTERNS.some((pattern) => pattern.test(voice.name)));
 
-  const preferredPool = genderFiltered.length > 0 ? genderFiltered : voices;
+  const preferredPool = preferredVoiceGender === 'female' && femaleVoices.length > 0 ? femaleVoices : voices;
 
   return (
-    preferredPool.find((voice) => SWAHILI_VOICE_PATTERNS.some((pattern) => pattern.test(voice.lang) || pattern.test(voice.name))) ||
-    preferredPool.find((voice) => EAST_AFRICA_ENGLISH_PATTERNS.some((pattern) => pattern.test(voice.lang) || pattern.test(voice.name))) ||
+    swahiliVoices.find((voice) => preferredVoiceGender !== 'female' || FEMALE_VOICE_PATTERNS.some((pattern) => pattern.test(voice.name))) ||
+    swahiliVoices[0] ||
+    eastAfricaVoices.find((voice) => preferredVoiceGender !== 'female' || FEMALE_VOICE_PATTERNS.some((pattern) => pattern.test(voice.name))) ||
+    eastAfricaVoices[0] ||
     preferredPool.find((voice) => voice.lang.toLowerCase().startsWith('en')) ||
     null
   );
@@ -99,8 +101,8 @@ const selectBestVoice = (voices: SpeechSynthesisVoice[], preferredVoiceGender: '
 const speakChunk = (chunk: string, voice: SpeechSynthesisVoice | null) =>
   new Promise<void>((resolve) => {
     const utterance = new SpeechSynthesisUtterance(chunk);
-    utterance.lang = voice?.lang || 'sw-TZ';
-    utterance.rate = voice?.lang.toLowerCase().startsWith('sw') ? 0.82 : 0.88;
+    utterance.lang = voice?.lang.toLowerCase().startsWith('sw') ? voice.lang : 'sw-TZ';
+    utterance.rate = voice?.lang.toLowerCase().startsWith('sw') ? 0.84 : 0.78;
     utterance.pitch = 1;
     utterance.volume = 1;
 
