@@ -1549,6 +1549,7 @@ export const VoicePOS = () => {
                 <NurathAvatar
                   size="lg"
                   audioLevel={audioLevel}
+                  showStatusBadge={showAvatarDetails}
                   state={
                     (voiceStatus === 'error'
                       ? 'error'
@@ -1563,13 +1564,24 @@ export const VoicePOS = () => {
                 />
               </button>
 
-              <div className="space-y-1">
-                <Badge variant="secondary" className="rounded-full px-3 py-1">
-                  <StatusIcon className={`mr-1 h-3.5 w-3.5 ${voiceStatus === 'processing' ? 'animate-spin' : ''}`} />
-                  {statusMeta.label}
-                </Badge>
-                <p className="text-sm text-muted-foreground">{statusMeta.detail}</p>
-              </div>
+              <button
+                type="button"
+                onClick={() => setShowAvatarDetails(v => !v)}
+                className="text-[11px] text-muted-foreground underline-offset-2 hover:underline"
+                aria-expanded={showAvatarDetails}
+              >
+                {showAvatarDetails ? 'Ficha hali ya Nurath' : 'Tazama hali ya Nurath'}
+              </button>
+
+              {showAvatarDetails && (
+                <div className="space-y-1">
+                  <Badge variant="secondary" className="rounded-full px-3 py-1">
+                    <StatusIcon className={`mr-1 h-3.5 w-3.5 ${voiceStatus === 'processing' ? 'animate-spin' : ''}`} />
+                    {statusMeta.label}
+                  </Badge>
+                  <p className="text-sm text-muted-foreground">{statusMeta.detail}</p>
+                </div>
+              )}
 
               {lastResponse && (
                 <p className="rounded-2xl bg-muted/60 px-4 py-3 text-sm text-foreground max-w-md">
