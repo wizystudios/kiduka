@@ -101,15 +101,23 @@ export const NurathAvatarLatencyPanel = () => {
           <p className="mt-2 text-xs text-muted-foreground">State sasa: <strong>{state}</strong></p>
         </div>
 
-        <div className="flex items-center justify-between gap-2">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <Button onClick={runOnce} disabled={running} className="rounded-full">
             {running ? 'Inajaribu…' : 'Anza jaribio'}
           </Button>
-          {rows.length > 0 && (
-            <Badge variant={passed === rows.length ? 'default' : 'destructive'} className="rounded-full">
-              {passed}/{rows.length} pass
-            </Badge>
-          )}
+          <div className="flex items-center gap-2">
+            {rows.length > 0 && (
+              <Badge variant={passed === rows.length ? 'default' : 'destructive'} className="rounded-full">
+                {passed}/{rows.length} pass
+              </Badge>
+            )}
+            <Button size="sm" variant="outline" className="rounded-full" disabled={!rows.length} onClick={() => exportCsv(rows, passed)}>
+              <Download className="mr-1.5 h-3.5 w-3.5" /> CSV
+            </Button>
+            <Button size="sm" variant="outline" className="rounded-full" disabled={!rows.length} onClick={() => exportPdf(rows, passed)}>
+              <FileText className="mr-1.5 h-3.5 w-3.5" /> PDF
+            </Button>
+          </div>
         </div>
 
         {rows.length > 0 && (
