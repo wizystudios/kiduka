@@ -9,9 +9,12 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import {
   ArrowLeft, Smartphone, ExternalLink, CheckCircle2, AlertTriangle, Clock,
   Tablet, Monitor, Bug, ListChecks, X, Upload, Wifi, WifiOff,
+  RefreshCw, FileText, Database, Trash2,
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { txnLogger, TxnLog } from '@/utils/transactionLogger';
+import { offlineDB } from '@/utils/offlineDatabase';
 import { toast } from 'sonner';
 
 type Severity = 'fixed' | 'open' | 'todo';
@@ -142,10 +145,43 @@ const VIEWPORTS = [
 export default function MobileQAPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [topTab, setTopTab] = useState<'audit' | 'checklist' | 'bug'>('audit');
+  const [topTab, setTopTab] = useState<'audit' | 'checklist' | 'bug' | 'sync' | 'logs'>('audit');
   const [group, setGroup] = useState<'owner' | 'admin' | 'sokoni' | 'auth'>('owner');
   const [vp, setVp] = useState<typeof VIEWPORTS[number]>(VIEWPORTS[0]);
   const [previewPath, setPreviewPath] = useState<string | null>(null);
+
+  // Sync status state
+  const [pendingQueue, setPendingQueue] = useState<any[]>([]);
+  const [syncHistory, setSyncHistory] = useState<any[]>([]);
+  const [lastSync, setLastSync] = useState<number | null>(null);
+  const [isOnline, setIsOnline] = useState<boolean>(typeof navigator !== 'undefined' ? navigator.onLine : true);
+
+  // Transaction logs state
+  const [logs, setLogs] = useState<TxnLog[]>([]);
+  const [logFilter, setLogFilter] = useState<'all' | 'error' | 'warn' | 'sync' | 'cart' | 'conflict'>('all');
+
+  const refreshSync = async () => {
+    const queue = await offlineDB.getAllSyncQueue();
+    const hist = await offlineDB.getSyncHistory(50);
+    const status = await offlineDB.getSyncStatus();
+    setPendingQueue(queue);
+    setSyncHistory(hist);
+    setLastSync(status.lastSync);
+  };
+  const refreshLogs = async () => setLogs(await txnLogger.list(300));
+
+  useEffect(() => {
+    if (topTab === 'sync') refreshSync();
+    if (topTab === 'logs') refreshLogs();
+  }, [topTab]);
+
+  useEffect(() => {
+    const on = () => setIsOnline(true);
+    const off = () => setIsOnline(false);
+    window.addEventListener('online', on);
+    window.addEventListener('offline', off);
+    return () => { window.removeEventListener('online', on); window.removeEventListener('offline', off); };
+  }, []);
 
   // Checklist state (in-memory)
   const [checkState, setCheckState] = useState<Record<string, StepStatus>>({});
