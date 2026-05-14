@@ -723,8 +723,57 @@ export const VoicePOS = () => {
       return completeSale(false);
     }
 
+    if (action === 'navigate') {
+      const route: string | null = result.data?.route ?? null;
+      const ROUTE_MAP: Record<string, string> = {
+        dashboard: '/',
+        sales: '/sales',
+        products: '/products',
+        customers: '/customers',
+        reports: '/reports',
+        expenses: '/expenses',
+        sokoni: '/sokoni',
+        settings: '/settings',
+        scanner: '/scanner',
+        'mobile-qa': '/mobile-qa',
+      };
+      const target = route ? ROUTE_MAP[route] : null;
+      if (target) {
+        navigate(target);
+        return result.message || `Sawa, nakupeleka ${route}.`;
+      }
+      return 'Sijapata ukurasa unaouhitaji. Sema tena jina la sehemu.';
+    }
+
+    if (action === 'search_products') {
+      const matches: Array<{ id: string; name: string; price: number; stock_quantity: number }> = result.data?.matches ?? [];
+      if (matches.length === 0) {
+        return 'Sijapata bidhaa yoyote inayolingana. Sema tena jina la bidhaa.';
+      }
+      // Auto-add the top match if exactly one result and it has stock.
+      if (matches.length === 1 && matches[0].stock_quantity > 0) {
+        const product = products.find((p) => p.id === matches[0].id);
+        if (product) {
+          setCurrentSale((prev) => {
+            const existing = prev.find((item) => item.product.id === product.id);
+            if (existing) {
+              return prev.map((item) =>
+                item.product.id === product.id
+                  ? { ...item, quantity: item.quantity + 1, total_price: (item.quantity + 1) * item.unit_price }
+                  : item,
+              );
+            }
+            return [...prev, { product, quantity: 1, unit_price: product.price, total_price: product.price }];
+          });
+          return `Nimeongeza ${product.name} kwenye mauzo. Bei ni shilingi ${product.price.toLocaleString()}.`;
+        }
+      }
+      const top = matches.slice(0, 3).map((m) => m.name).join(', ');
+      return `Nimepata bidhaa ${matches.length}: ${top}. Sema jina kamili au "ongeza" ya bidhaa unayotaka.`;
+    }
+
     return result.message;
-  }, [completeSale]);
+  }, [completeSale, navigate, products]);
 
   const processVoiceCommand = useCallback(async (command: string, source: ListeningSource = 'handsfree') => {
     if (!user || !dataOwnerId) return;
