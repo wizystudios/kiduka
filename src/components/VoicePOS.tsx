@@ -864,6 +864,7 @@ export const VoicePOS = () => {
     };
 
     recognition.onresult = (event: any) => {
+      lastRecognitionActivityRef.current = Date.now();
       if (processingRef.current || isSpeakingRef.current) return;
 
       let finalTranscript = '';
