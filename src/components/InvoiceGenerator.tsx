@@ -124,6 +124,7 @@ export const InvoiceGenerator = ({
               ))}
             </tbody>
           </table>
+          </div>
 
           {/* Total */}
           <div className="border-t pt-4">
