@@ -194,9 +194,9 @@ export const useOfflineSync = (ownerId: string | null) => {
             if ((tableName === 'products' || tableName === 'customers') && item.data?.id) {
               const { data: remote } = await supabase
                 .from(tableName)
-                .select('id, updated_at, stock_quantity')
+                .select('id, updated_at')
                 .eq('id', item.data.id)
-                .maybeSingle();
+                .maybeSingle<{ id: string; updated_at: string | null }>();
               if (
                 remote?.updated_at &&
                 item.data.updated_at &&
