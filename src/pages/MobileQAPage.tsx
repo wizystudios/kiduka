@@ -9,13 +9,37 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import {
   ArrowLeft, Smartphone, ExternalLink, CheckCircle2, AlertTriangle, Clock,
   Tablet, Monitor, Bug, ListChecks, X, Upload, Wifi, WifiOff,
-  RefreshCw, FileText, Database, Trash2,
+  RefreshCw, FileText, Database, Trash2, Lock, Download, Printer, ShieldCheck,
+  PackageCheck, GitMerge, Eye,
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { txnLogger, TxnLog } from '@/utils/transactionLogger';
 import { offlineDB } from '@/utils/offlineDatabase';
+import { exportToCSV } from '@/utils/exportUtils';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { toast } from 'sonner';
+
+// ---- helpers ----
+const printAsPDF = (title: string, htmlBody: string) => {
+  const w = window.open('', '_blank', 'width=900,height=700');
+  if (!w) { toast.error('Ruhusu pop-ups ili kuchapisha PDF'); return; }
+  w.document.write(`<!doctype html><html><head><title>${title}</title>
+    <style>
+      body{font-family:ui-sans-serif,system-ui,-apple-system;padding:24px;color:#111;}
+      h1{font-size:18px;margin:0 0 12px;} h2{font-size:14px;margin:18px 0 6px;}
+      table{width:100%;border-collapse:collapse;font-size:11px;}
+      th,td{border:1px solid #ddd;padding:6px 8px;text-align:left;vertical-align:top;}
+      th{background:#f5f5f5;} .meta{color:#666;font-size:11px;margin-bottom:12px;}
+      .badge{display:inline-block;padding:1px 6px;border-radius:9999px;background:#eee;font-size:10px;margin-right:4px;}
+    </style></head><body>
+    <h1>${title}</h1>
+    <div class="meta">Imetolewa: ${new Date().toLocaleString()} · Kiduka Mobile QA</div>
+    ${htmlBody}
+    <script>window.onload=()=>{setTimeout(()=>window.print(),250);};</script>
+    </body></html>`);
+  w.document.close();
+};
 
 type Severity = 'fixed' | 'open' | 'todo';
 type Page = {
