@@ -383,6 +383,29 @@ export const AdminCompliancePanel = () => {
                       >
                         <Send className="h-3 w-3 mr-1" /> Kumbusha
                       </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="rounded-xl text-xs h-7 border-blue-300 text-blue-700 hover:bg-blue-50"
+                        onClick={async () => {
+                          if (!window.confirm(`Jaribu arifa zote (compliance + subscription) sasa hivi kwa ${r.business_name || r.full_name}?`)) return;
+                          try {
+                            const [c, s] = await Promise.all([
+                              supabase.functions.invoke('compliance-reminder', {
+                                body: { ownerId: r.owner_id, adminMessage: '🧪 JARIBIO LA ARIFA — limeanzishwa na admin kwa kuthibitisha utumaji.' },
+                              }),
+                              supabase.functions.invoke('subscription-reminder', {
+                                body: { ownerId: r.owner_id, force: true, adminMessage: '🧪 JARIBIO LA ARIFA — limeanzishwa na admin.' },
+                              }),
+                            ]);
+                            const errs = [c.error, s.error].filter(Boolean).map((e: any) => e.message).join('; ');
+                            if (errs) throw new Error(errs);
+                            toast.success('Arifa za majaribio zimetumwa — angalia Logs ndani ya Barua');
+                          } catch (e: any) { toast.error(e.message || 'Jaribio limeshindikana'); }
+                        }}
+                      >
+                        🧪 Jaribu Sasa
+                      </Button>
                       {r.block_mode === 'none' ? (
                         <Button
                           variant="outline"

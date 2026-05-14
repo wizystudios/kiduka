@@ -30,6 +30,8 @@ import { SubscriptionPage } from '@/pages/SubscriptionPage';
 import { SubscriptionGuard } from '@/components/SubscriptionGuard';
 import { InventorySnapshotPage } from '@/pages/InventorySnapshotPage';
 import { PWAInstallerPage } from '@/pages/PWAInstallerPage';
+import ComplianceNotificationsPage from '@/pages/ComplianceNotificationsPage';
+import MobileQAPage from '@/pages/MobileQAPage';
 
 // AI and Business Intelligence Pages
 import { BusinessIntelligencePage } from '@/pages/BusinessIntelligencePage';
@@ -253,7 +255,18 @@ export default function App() {
                   </AppLayout>
                 </ProtectedRoute>
               } />
-              
+
+              <Route path="/compliance-notifications" element={
+                <ProtectedRoute>
+                  <ComplianceNotificationsPage />
+                </ProtectedRoute>
+              } />
+
+              <Route path="/mobile-qa" element={
+                <ProtectedRoute>
+                  <MobileQAPage />
+                </ProtectedRoute>
+              } />
               <Route path="/notification-settings" element={
                 <ProtectedRoute>
                   <AppLayout>
