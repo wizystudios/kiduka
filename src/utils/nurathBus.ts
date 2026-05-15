@@ -19,8 +19,15 @@ export interface NurathSnapshot {
   audioLevel: number;
   isListening: boolean;
   active: boolean; // a pipeline (VoicePOS) is mounted/owning the bus
+  enabled: boolean; // user has turned always-on wake listening on
+  needsGesture: boolean;
   updatedAt: number;
 }
+
+export type NurathCommand =
+  | { type: 'start'; source?: 'float' | 'page' | 'wake' | 'system' }
+  | { type: 'stop'; source?: 'float' | 'page' | 'wake' | 'system' }
+  | { type: 'open-logs' };
 
 const MAX_LOGS = 200;
 
@@ -29,6 +36,8 @@ let snapshot: NurathSnapshot = {
   audioLevel: 0,
   isListening: false,
   active: false,
+  enabled: false,
+  needsGesture: false,
   updatedAt: Date.now(),
 };
 
@@ -36,6 +45,7 @@ let logs: NurathLogEvent[] = [];
 
 const stateListeners = new Set<(s: NurathSnapshot) => void>();
 const logListeners = new Set<(l: NurathLogEvent[]) => void>();
+const commandListeners = new Set<(command: NurathCommand) => void>();
 
 const notifyState = () => stateListeners.forEach(fn => fn(snapshot));
 const notifyLogs = () => logListeners.forEach(fn => fn(logs));
@@ -73,6 +83,10 @@ export const nurathBus = {
     notifyLogs();
   },
 
+  dispatch(command: NurathCommand) {
+    commandListeners.forEach(fn => fn(command));
+  },
+
   subscribeState(fn: (s: NurathSnapshot) => void) {
     stateListeners.add(fn);
     fn(snapshot);
@@ -83,5 +97,10 @@ export const nurathBus = {
     logListeners.add(fn);
     fn(logs);
     return () => logListeners.delete(fn);
+  },
+
+  subscribeCommands(fn: (command: NurathCommand) => void) {
+    commandListeners.add(fn);
+    return () => commandListeners.delete(fn);
   },
 };

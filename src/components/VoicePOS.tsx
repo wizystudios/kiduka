@@ -1285,6 +1285,49 @@ export const VoicePOS = () => {
     });
   }, [startRecognitionSession]);
 
+  useEffect(() => {
+    const consumePendingWakeCommand = () => {
+      let pending = '';
+      try {
+        pending = window.localStorage.getItem('kiduka_nurath_pending_start') || '';
+        window.localStorage.removeItem('kiduka_nurath_pending_start');
+      } catch {
+        pending = '';
+      }
+
+      const command = pending.trim();
+      if (command && command !== '1') {
+        updateAssistantMode('awake');
+        setCurrentTranscript(command);
+        setLastResponse(`Nimekusikia: ${command}`);
+        void processVoiceCommand(command, 'handsfree');
+      }
+    };
+
+    const off = nurathBus.subscribeCommands((command) => {
+      if (command.type === 'open-logs') return;
+
+      if (command.type === 'stop') {
+        stopListening();
+        return;
+      }
+
+      if (command.type === 'start') {
+        if (isListeningRef.current && shouldRestartRef.current) {
+          updateAssistantMode('awake');
+          consumePendingWakeCommand();
+          return;
+        }
+
+        enableHandsfreeMode();
+        window.setTimeout(consumePendingWakeCommand, 700);
+      }
+    });
+
+    consumePendingWakeCommand();
+    return () => { off(); };
+  }, [enableHandsfreeMode, processVoiceCommand, stopListening, updateAssistantMode]);
+
   const startPushToTalkFallback = useCallback(() => {
     if (isListening && shouldRestartRef.current) {
       updateAssistantMode('awake');
