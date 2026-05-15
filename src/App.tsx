@@ -8,6 +8,7 @@ import { NotificationSettingsPage } from '@/pages/NotificationSettingsPage';
 import { CustomerReportsPage } from '@/pages/CustomerReportsPage';
 import { ProductReportsPage } from '@/pages/ProductReportsPage';
 import { Toaster } from '@/components/ui/toaster';
+import { GlobalNurathFloat } from '@/components/GlobalNurathFloat';
 
 // Pages
 import Index from '@/pages/Index';
@@ -547,6 +548,7 @@ export default function App() {
               {/* Catch all route */}
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
+            <GlobalNurathFloat />
             <Toaster />
           </div>
         </AuthProvider>
