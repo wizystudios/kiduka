@@ -169,9 +169,14 @@ export const GlobalNurathFloat = () => {
     if (!user) return;
     let optedOut = false;
     try { optedOut = window.localStorage.getItem(NURATH_AUTO_LISTEN_KEY) === 'false'; } catch {}
+    if (location.pathname === '/voice-pos') {
+      try { recognitionRef.current?.abort?.(); } catch {}
+      recognitionRef.current = null;
+      return;
+    }
     if (!optedOut) startWakeListener('system');
     return () => stopWakeListener(false);
-  }, [startWakeListener, stopWakeListener, user]);
+  }, [location.pathname, startWakeListener, stopWakeListener, user]);
 
   if (!user || HIDE_ROUTES.includes(location.pathname)) return null;
 
