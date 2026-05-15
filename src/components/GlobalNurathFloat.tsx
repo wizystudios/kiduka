@@ -158,7 +158,7 @@ export const GlobalNurathFloat = () => {
 
   useEffect(() => {
     const off = nurathBus.subscribeCommands((command) => {
-      if (command.type === 'start') startWakeListener(command.source === 'system' ? 'system' : 'float');
+      if (command.type === 'start') return;
       if (command.type === 'stop') stopWakeListener(true);
       if (command.type === 'open-logs') setOpen(true);
     });
