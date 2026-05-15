@@ -112,7 +112,7 @@ export const GlobalNurathFloat = () => {
       nurathBus.log('mic', `Wake-word imesikika: ${wake.matchedAlias}`, { command: wake.command }, 'listening');
       window.localStorage.setItem('kiduka_nurath_pending_start', wake.command || '1');
       if (location.pathname !== '/voice-pos') navigate('/voice-pos');
-      restartingRef.current = window.setTimeout(() => {
+      window.setTimeout(() => {
         nurathBus.dispatch({ type: 'start', source: 'wake' });
       }, 250);
     };
