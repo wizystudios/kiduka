@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Eye, EyeOff, ListOrdered, Mic, Trash2, X } from 'lucide-react';
+import { Eye, EyeOff, ListOrdered, Mic, MicOff, Trash2, X } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -9,6 +9,14 @@ import { cn } from '@/lib/utils';
 import { NurathAvatar } from '@/components/NurathAvatar';
 import { nurathBus, type NurathLogEvent, type NurathSnapshot } from '@/utils/nurathBus';
 import { useAuth } from '@/hooks/useAuth';
+import { detectNurathWakePhrase, NURATH_AUTO_LISTEN_KEY, NURATH_OFF_PATTERNS } from '@/utils/nurathWakeWord';
+
+declare global {
+  interface Window {
+    SpeechRecognition: any;
+    webkitSpeechRecognition: any;
+  }
+}
 
 const KIND_COLORS: Record<string, string> = {
   state: 'bg-blue-500/15 text-blue-700 dark:text-blue-300',
@@ -18,14 +26,8 @@ const KIND_COLORS: Record<string, string> = {
   info: 'bg-muted text-foreground',
 };
 
-/**
- * A persistent, page-spanning Nurath avatar. It mirrors the active VoicePOS
- * pipeline through nurathBus so users always see what Nurath is doing — even
- * after navigating away from /voice-pos. Clicking it opens a logs drawer.
- *
- * Visibility: user-controllable via the EyeOff toggle. Hidden by default if
- * `kiduka_nurath_float_hidden` is set in localStorage.
- */
+const HIDE_ROUTES = ['/auth', '/forgot-password', '/reset-password', '/verify-email', '/unsubscribe'];
+
 export const GlobalNurathFloat = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -37,28 +39,144 @@ export const GlobalNurathFloat = () => {
     if (typeof window === 'undefined') return false;
     return window.localStorage.getItem('kiduka_nurath_float_hidden') === '1';
   });
+  const recognitionRef = useRef<any>(null);
+  const enabledRef = useRef(false);
+  const restartingRef = useRef<number | null>(null);
+
+  const stopWakeListener = useCallback((persist = true) => {
+    enabledRef.current = false;
+    if (persist) window.localStorage.setItem(NURATH_AUTO_LISTEN_KEY, 'false');
+    if (restartingRef.current) window.clearTimeout(restartingRef.current);
+    restartingRef.current = null;
+    try { recognitionRef.current?.abort?.(); } catch {}
+    recognitionRef.current = null;
+    nurathBus.publishState({ enabled: false, needsGesture: false, isListening: false, state: 'idle', audioLevel: 0 });
+    nurathBus.log('mic', 'Nurath amezimwa mpaka umwashe tena.', { source: 'global' }, 'idle');
+  }, []);
+
+  const startWakeListener = useCallback((source: 'float' | 'wake' | 'system' = 'float') => {
+    if (typeof window === 'undefined') return false;
+    const SpeechRecognitionConstructor = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognitionConstructor) {
+      nurathBus.publishState({ state: 'error', enabled: false, needsGesture: false });
+      nurathBus.log('error', 'Kivinjari hiki hakitumii SpeechRecognition.', { source }, 'error');
+      return false;
+    }
+
+    try { recognitionRef.current?.abort?.(); } catch {}
+
+    const recognition = new SpeechRecognitionConstructor();
+    recognition.lang = 'sw-TZ';
+    recognition.continuous = !/Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    recognition.interimResults = true;
+    recognition.maxAlternatives = 5;
+    recognitionRef.current = recognition;
+    enabledRef.current = true;
+    window.localStorage.setItem(NURATH_AUTO_LISTEN_KEY, 'true');
+    nurathBus.publishState({ enabled: true, needsGesture: false, state: 'listening', isListening: true });
+
+    recognition.onstart = () => {
+      nurathBus.publishState({ enabled: true, needsGesture: false, state: 'listening', isListening: true });
+      nurathBus.log('mic', 'Nurath anasikiliza jina lake kwenye app nzima.', { source }, 'listening');
+    };
+
+    recognition.onresult = (event: any) => {
+      const alternatives: string[] = [];
+      let finalText = '';
+      let interimText = '';
+
+      for (let index = event.resultIndex; index < event.results.length; index += 1) {
+        const result = event.results[index];
+        for (let alt = 0; alt < Math.min(result.length ?? 1, 5); alt += 1) {
+          if (result[alt]?.transcript) alternatives.push(result[alt].transcript);
+        }
+        if (result[0]?.transcript) {
+          if (event.results[index].isFinal) finalText += result[0].transcript;
+          else interimText += result[0].transcript;
+        }
+      }
+
+      const heard = (finalText || interimText).trim();
+      if (!heard) return;
+      nurathBus.publishState({ state: 'listening', isListening: true });
+      nurathBus.log('transcript', heard, { phase: finalText ? 'final' : 'interim' }, 'listening');
+
+      const wake = detectNurathWakePhrase([...alternatives, heard].join(' '));
+      if (NURATH_OFF_PATTERNS.some((pattern) => pattern.test(wake.normalizedText))) {
+        stopWakeListener(true);
+        nurathBus.dispatch({ type: 'stop', source: 'wake' });
+        return;
+      }
+
+      if (!wake.triggered) return;
+      nurathBus.log('mic', `Wake-word imesikika: ${wake.matchedAlias}`, { command: wake.command }, 'listening');
+      window.localStorage.setItem('kiduka_nurath_pending_start', wake.command || '1');
+      if (location.pathname !== '/voice-pos') navigate('/voice-pos');
+      restartingRef.current = window.setTimeout(() => {
+        nurathBus.dispatch({ type: 'start', source: 'wake' });
+      }, 250);
+    };
+
+    recognition.onerror = (event: any) => {
+      if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+        enabledRef.current = false;
+        nurathBus.publishState({ state: 'error', enabled: false, needsGesture: true, isListening: false });
+        nurathBus.log('error', 'Ruhusu maikrofoni mara moja ili Nurath abaki hai.', { error: event.error, source }, 'error');
+        return;
+      }
+      if (event.error !== 'aborted' && event.error !== 'no-speech') {
+        nurathBus.log('error', `Hitilafu ya kusikiliza: ${event.error}`, { source }, 'error');
+      }
+    };
+
+    recognition.onend = () => {
+      if (!enabledRef.current) return;
+      nurathBus.publishState({ state: 'listening', enabled: true, isListening: true });
+      restartingRef.current = window.setTimeout(() => {
+        if (!enabledRef.current) return;
+        try { recognition.start(); } catch {}
+      }, 350);
+    };
+
+    try {
+      recognition.start();
+      return true;
+    } catch (error) {
+      enabledRef.current = false;
+      nurathBus.publishState({ state: 'error', enabled: false, needsGesture: true, isListening: false });
+      nurathBus.log('error', 'Nurath hakuweza kuanza kusikiliza. Bonyeza avatar mara moja.', { source, error: String(error) }, 'error');
+      return false;
+    }
+  }, [location.pathname, navigate, stopWakeListener]);
 
   useEffect(() => { const off = nurathBus.subscribeState(setSnap); return () => { off(); }; }, []);
   useEffect(() => { const off = nurathBus.subscribeLogs(setLogs); return () => { off(); }; }, []);
 
   useEffect(() => {
-    try {
-      window.localStorage.setItem('kiduka_nurath_float_hidden', hidden ? '1' : '0');
-    } catch {}
+    try { window.localStorage.setItem('kiduka_nurath_float_hidden', hidden ? '1' : '0'); } catch {}
   }, [hidden]);
 
-  // Hide on auth/marketing/storefront routes & when not logged in.
-  // NOTE: '/' is intentionally allowed for logged-in users so Nurath remains
-  // reachable from the landing/dashboard entry point.
-  const HIDE_ROUTES = ['/auth', '/forgot-password', '/reset-password', '/verify-email', '/unsubscribe'];
-  const isStorefront = location.pathname.startsWith('/duka/') || location.pathname.startsWith('/sokoni') || location.pathname === '/track-order';
-  if (!user || HIDE_ROUTES.includes(location.pathname) || isStorefront) return null;
+  useEffect(() => {
+    const off = nurathBus.subscribeCommands((command) => {
+      if (command.type === 'start') startWakeListener(command.source === 'system' ? 'system' : 'float');
+      if (command.type === 'stop') stopWakeListener(true);
+      if (command.type === 'open-logs') setOpen(true);
+    });
+    return () => { off(); };
+  }, [startWakeListener, stopWakeListener]);
 
-  // Do not render the floating avatar on the Voice POS page itself — the page
-  // already shows a centered avatar so we avoid duplicates.
+  useEffect(() => {
+    if (!user) return;
+    let optedOut = false;
+    try { optedOut = window.localStorage.getItem(NURATH_AUTO_LISTEN_KEY) === 'false'; } catch {}
+    if (!optedOut) startWakeListener('system');
+    return () => stopWakeListener(false);
+  }, [startWakeListener, stopWakeListener, user]);
+
+  if (!user || HIDE_ROUTES.includes(location.pathname)) return null;
+
   const onVoicePage = location.pathname === '/voice-pos';
 
-  // If the user explicitly hid it, show only a tiny re-show pill
   if (hidden && !onVoicePage) {
     return (
       <button
@@ -82,12 +200,14 @@ export const GlobalNurathFloat = () => {
           <div className="relative">
             <button
               onClick={() => {
-                // Primary tap: jump straight to the live voice pipeline so the
-                // mic actually starts. Auto-start kicks in on /voice-pos mount.
-                if (location.pathname !== '/voice-pos') navigate('/voice-pos');
-                else setOpen(true);
+                if (snap.enabled || snap.active) {
+                  if (location.pathname !== '/voice-pos') navigate('/voice-pos');
+                  nurathBus.dispatch({ type: 'start', source: 'float' });
+                  return;
+                }
+                startWakeListener('float');
               }}
-              aria-label={location.pathname === '/voice-pos' ? 'Fungua kumbukumbu za Nurath' : 'Anzisha Nurath'}
+              aria-label="Anzisha Nurath"
               className="rounded-full focus:outline-none focus:ring-2 focus:ring-primary"
             >
               <NurathAvatar
@@ -112,11 +232,9 @@ export const GlobalNurathFloat = () => {
               <EyeOff className="h-3 w-3" />
             </button>
           </div>
-          {!snap.active && (
-            <span className="rounded-full bg-background/90 border border-border px-2 py-0.5 text-[10px] text-muted-foreground shadow-sm backdrop-blur">
-              Bonyeza ku-anzisha
-            </span>
-          )}
+          <span className="rounded-full bg-background/90 border border-border px-2 py-0.5 text-[10px] text-muted-foreground shadow-sm backdrop-blur">
+            {snap.enabled || snap.isListening ? 'Sema “Nurath”' : snap.needsGesture ? 'Bonyeza kuruhusu mic' : 'Bonyeza mara moja'}
+          </span>
         </div>
       )}
 
@@ -128,15 +246,18 @@ export const GlobalNurathFloat = () => {
               <div className="flex-1 text-left">
                 <p className="text-sm font-semibold">Nurath — Kumbukumbu za Maikrofoni</p>
                 <p className="text-[11px] text-muted-foreground">
-                  Hali sasa: <strong>{snap.state}</strong> · {snap.active ? 'Pipeline hai' : 'Hakuna pipeline'} · {logs.length} matukio
+                  Hali sasa: <strong>{snap.state}</strong> · {snap.enabled ? 'Always-on hai' : 'Imezimwa'} · {logs.length} matukio
                 </p>
               </div>
             </SheetTitle>
           </SheetHeader>
 
           <div className="mt-3 flex items-center gap-2">
-            <Button size="sm" variant="outline" className="rounded-full" onClick={() => navigate('/voice-pos')}>
-              <Mic className="mr-1.5 h-3.5 w-3.5" /> Fungua Voice POS
+            <Button size="sm" variant="outline" className="rounded-full" onClick={() => startWakeListener('float')}>
+              <Mic className="mr-1.5 h-3.5 w-3.5" /> Washa
+            </Button>
+            <Button size="sm" variant="outline" className="rounded-full" onClick={() => stopWakeListener(true)}>
+              <MicOff className="mr-1.5 h-3.5 w-3.5" /> Zima
             </Button>
             <Button size="sm" variant="ghost" className="rounded-full" onClick={() => nurathBus.clearLogs()}>
               <Trash2 className="mr-1.5 h-3.5 w-3.5" /> Futa kumbukumbu
