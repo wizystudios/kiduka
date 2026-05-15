@@ -47,8 +47,10 @@ export const GlobalNurathFloat = () => {
     } catch {}
   }, [hidden]);
 
-  // Don't render on auth/landing/marketplace storefronts or when not logged in
-  const HIDE_ROUTES = ['/', '/auth', '/forgot-password', '/reset-password', '/verify-email', '/unsubscribe'];
+  // Hide on auth/marketing/storefront routes & when not logged in.
+  // NOTE: '/' is intentionally allowed for logged-in users so Nurath remains
+  // reachable from the landing/dashboard entry point.
+  const HIDE_ROUTES = ['/auth', '/forgot-password', '/reset-password', '/verify-email', '/unsubscribe'];
   const isStorefront = location.pathname.startsWith('/duka/') || location.pathname.startsWith('/sokoni') || location.pathname === '/track-order';
   if (!user || HIDE_ROUTES.includes(location.pathname) || isStorefront) return null;
 
@@ -79,8 +81,13 @@ export const GlobalNurathFloat = () => {
         >
           <div className="relative">
             <button
-              onClick={() => setOpen(true)}
-              aria-label="Fungua kumbukumbu za Nurath"
+              onClick={() => {
+                // Primary tap: jump straight to the live voice pipeline so the
+                // mic actually starts. Auto-start kicks in on /voice-pos mount.
+                if (location.pathname !== '/voice-pos') navigate('/voice-pos');
+                else setOpen(true);
+              }}
+              aria-label={location.pathname === '/voice-pos' ? 'Fungua kumbukumbu za Nurath' : 'Anzisha Nurath'}
               className="rounded-full focus:outline-none focus:ring-2 focus:ring-primary"
             >
               <NurathAvatar
@@ -91,6 +98,13 @@ export const GlobalNurathFloat = () => {
               />
             </button>
             <button
+              onClick={(e) => { e.stopPropagation(); setOpen(true); }}
+              aria-label="Fungua kumbukumbu za Nurath"
+              className="absolute -top-1 -left-1 inline-flex h-5 w-5 items-center justify-center rounded-full bg-background border border-border text-muted-foreground hover:text-foreground shadow-sm"
+            >
+              <ListOrdered className="h-3 w-3" />
+            </button>
+            <button
               onClick={(e) => { e.stopPropagation(); setHidden(true); }}
               aria-label="Ficha Nurath"
               className="absolute -top-1 -right-1 inline-flex h-5 w-5 items-center justify-center rounded-full bg-background border border-border text-muted-foreground hover:text-foreground shadow-sm"
@@ -98,6 +112,11 @@ export const GlobalNurathFloat = () => {
               <EyeOff className="h-3 w-3" />
             </button>
           </div>
+          {!snap.active && (
+            <span className="rounded-full bg-background/90 border border-border px-2 py-0.5 text-[10px] text-muted-foreground shadow-sm backdrop-blur">
+              Bonyeza ku-anzisha
+            </span>
+          )}
         </div>
       )}
 
