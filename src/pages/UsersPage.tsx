@@ -138,93 +138,41 @@ export const UsersPage = () => {
     }
 
     setCreating(true);
-    
-    const ownerAccessToken = session.access_token;
-    const ownerRefreshToken = session.refresh_token;
-    const ownerId = user.id;
     const ownerBusinessName = userProfile.business_name || '';
 
-    console.log('Creating assistant for owner:', ownerId, 'Business:', ownerBusinessName);
-
     try {
-      // Step 1: Create the assistant user
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: newUser.email,
-        password: newUser.password,
-        options: {
-          data: {
-            full_name: newUser.full_name,
-            business_name: ownerBusinessName,
-            role: 'assistant',
-            owner_id: ownerId
-          }
-        }
+      // Use edge function with service role so the owner's session is NEVER touched
+      const { data, error } = await supabase.functions.invoke('owner-create-assistant', {
+        body: {
+          email: newUser.email.trim().toLowerCase(),
+          password: newUser.password,
+          full_name: newUser.full_name.trim(),
+          business_name: ownerBusinessName,
+        },
       });
 
-      if (authError) {
-        console.error('Signup error:', authError);
-        toast.error('Imeshindwa kusajili: ' + authError.message);
+      if (error) {
+        console.error('Edge function error:', error);
+        toast.error('Imeshindwa kuongeza msaidizi: ' + (error.message || 'kosa la mfumo'));
         setCreating(false);
         return;
       }
 
-      if (!authData.user) {
-        toast.error('Imeshindwa kuunda account');
+      if (data?.error) {
+        toast.error(data.error);
         setCreating(false);
         return;
       }
 
-      const assistantId = authData.user.id;
-      console.log('Assistant created with ID:', assistantId);
-
-      // Step 2: Restore owner session
-      console.log('Restoring owner session...');
-      const { error: sessionError } = await supabase.auth.setSession({
-        access_token: ownerAccessToken,
-        refresh_token: ownerRefreshToken
-      });
-
-      if (sessionError) {
-        console.error('Failed to restore owner session:', sessionError);
-        toast.error('Tatizo la session. Tafadhali refresh page.');
-        setCreating(false);
-        return;
-      }
-
-      // Step 3: Use the secure RPC function to add permissions
-      console.log('Adding assistant permissions via RPC...');
-      const { data: rpcResult, error: rpcError } = await supabase.rpc('add_assistant_permission', {
-        p_assistant_id: assistantId,
-        p_owner_id: ownerId,
-        p_business_name: ownerBusinessName
-      });
-
-      if (rpcError) {
-        console.error('RPC error:', rpcError);
-        toast.error('Msaidizi ameundwa lakini ruhusa hazijawekwa. Jaribu tena.');
-      } else {
-        console.log('RPC result:', rpcResult);
-        logActivity('assistant_add', `Msaidizi "${newUser.full_name}" ameongezwa`, { assistant_email: newUser.email });
-        toast.success(`Msaidizi "${newUser.full_name}" ameongezwa! Anaweza kuingia na: ${newUser.email}`);
-      }
+      logActivity('assistant_add', `Msaidizi "${newUser.full_name}" ameongezwa`, { assistant_email: newUser.email });
+      toast.success(`Msaidizi "${newUser.full_name}" ameongezwa! Anaweza kuingia na: ${newUser.email}`);
 
       setNewUser({ email: '', password: '', full_name: '' });
       setDialogOpen(false);
-      
       await fetchAssistants();
-
-    } catch (error: any) {
-      console.error('Create assistant error:', error);
-      toast.error('Imeshindwa kuongeza msaidizi: ' + (error.message || 'Unknown error'));
-      
-      try {
-        await supabase.auth.setSession({
-          access_token: ownerAccessToken,
-          refresh_token: ownerRefreshToken
-        });
-      } catch (e) {
-        console.error('Failed to restore session on error:', e);
-      }
+    } catch (err: any) {
+      console.error('Create assistant exception:', err);
+      toast.error('Imeshindwa kuongeza msaidizi: ' + (err?.message || 'Kosa lisilojulikana'));
     } finally {
       setCreating(false);
     }
