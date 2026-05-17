@@ -33,7 +33,7 @@ export const SokoniBottomNav = ({ cartCount, onCartClick }: SokoniBottomNavProps
 
   return (
     <>
-      <div className="fixed bottom-0 left-0 right-0 z-50 bg-transparent border-t border-border/50 safe-area-pb">
+      <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-border/50 safe-area-pb shadow-[0_-2px_8px_rgba(0,0,0,0.04)]">
         <div className="grid grid-cols-4 h-16">
           {navItems.map((item) => {
             const Icon = item.icon;
