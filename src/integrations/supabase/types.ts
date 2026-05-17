@@ -1326,6 +1326,45 @@ export type Database = {
         }
         Relationships: []
       }
+      owner_payment_numbers: {
+        Row: {
+          account_name: string | null
+          created_at: string
+          id: string
+          instructions: string | null
+          is_active: boolean
+          is_default: boolean
+          lipa_namba: string
+          network: string
+          owner_id: string
+          updated_at: string
+        }
+        Insert: {
+          account_name?: string | null
+          created_at?: string
+          id?: string
+          instructions?: string | null
+          is_active?: boolean
+          is_default?: boolean
+          lipa_namba: string
+          network: string
+          owner_id: string
+          updated_at?: string
+        }
+        Update: {
+          account_name?: string | null
+          created_at?: string
+          id?: string
+          instructions?: string | null
+          is_active?: boolean
+          is_default?: boolean
+          lipa_namba?: string
+          network?: string
+          owner_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       payment_transactions: {
         Row: {
           amount: number
