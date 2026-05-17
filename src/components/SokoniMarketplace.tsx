@@ -834,6 +834,37 @@ export const SokoniMarketplace = () => {
               <Grid3X3 className="h-3 w-3" />
               Zote
             </Button>
+            {/* Quick-jump pills to home sections */}
+            <Button
+              variant="ghost" size="sm"
+              className="rounded-full text-xs text-primary-foreground hover:bg-primary-foreground/10"
+              onClick={() => {
+                setActiveTab('home');
+                setTimeout(() => document.getElementById('sec-top-deals')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
+              }}
+            >
+              <TrendingUp className="h-3 w-3 mr-1" /> Top Deals
+            </Button>
+            <Button
+              variant="ghost" size="sm"
+              className="rounded-full text-xs text-primary-foreground hover:bg-primary-foreground/10"
+              onClick={() => {
+                setActiveTab('home');
+                setTimeout(() => document.getElementById('sec-top-ranking')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
+              }}
+            >
+              <Star className="h-3 w-3 mr-1" /> Top Ranking
+            </Button>
+            <Button
+              variant="ghost" size="sm"
+              className="rounded-full text-xs text-primary-foreground hover:bg-primary-foreground/10"
+              onClick={() => {
+                setActiveTab('home');
+                setTimeout(() => document.getElementById('sec-bidhaa-mpya')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
+              }}
+            >
+              <Clock className="h-3 w-3 mr-1" /> Bidhaa Mpya
+            </Button>
             {categories.map(cat => (
               <Button 
                 key={cat.name}
@@ -910,7 +941,7 @@ export const SokoniMarketplace = () => {
           </div>
 
           {/* Top Deals */}
-          <section>
+          <section id="sec-top-deals" className="scroll-mt-32">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <TrendingUp className="h-5 w-5 text-destructive" />
@@ -934,7 +965,7 @@ export const SokoniMarketplace = () => {
 
           {/* Top Ranking & New Arrivals */}
           <div className="grid md:grid-cols-2 gap-6">
-            <section>
+            <section id="sec-top-ranking" className="scroll-mt-32">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
                   <Star className="h-5 w-5 text-yellow-500" />
@@ -951,7 +982,7 @@ export const SokoniMarketplace = () => {
               </div>
             </section>
 
-            <section>
+            <section id="sec-bidhaa-mpya" className="scroll-mt-32">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
                   <Clock className="h-5 w-5 text-blue-500" />
