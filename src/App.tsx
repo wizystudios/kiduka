@@ -80,6 +80,7 @@ import UnifiedSalesPage from '@/pages/UnifiedSalesPage';
 import UnifiedSettingsPage from '@/pages/UnifiedSettingsPage';
 import { BranchManager } from '@/components/BranchManager';
 import RewardsPage from '@/pages/RewardsPage';
+import LipaNambaPage from '@/pages/LipaNambaPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -436,6 +437,12 @@ export default function App() {
                   <AppLayout>
                     <RewardsPage />
                   </AppLayout>
+                </ProtectedRoute>
+              } />
+
+              <Route path="/lipa-namba" element={
+                <ProtectedRoute allowedRoles={['owner','super_admin']}>
+                  <AppLayout><LipaNambaPage /></AppLayout>
                 </ProtectedRoute>
               } />
               
