@@ -226,16 +226,28 @@ export const CustomerLedger = ({ customerId, customerName, open, onOpenChange }:
                             {getStatusBadge(transaction.payment_status)}
                           </div>
                           {transaction.payment_status !== 'paid' && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => {
-                                setSelectedTransaction(transaction);
-                                setPaymentDialogOpen(true);
-                              }}
-                            >
-                              Lipa
-                            </Button>
+                            <div className="flex gap-1.5">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="rounded-full"
+                                onClick={() => setQrFor(transaction)}
+                                title="QR ya malipo kwa deni hili"
+                              >
+                                <QrCode className="h-3.5 w-3.5 mr-1" /> QR
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="rounded-full"
+                                onClick={() => {
+                                  setSelectedTransaction(transaction);
+                                  setPaymentDialogOpen(true);
+                                }}
+                              >
+                                Lipa
+                              </Button>
+                            </div>
                           )}
                         </div>
                       </CardHeader>
