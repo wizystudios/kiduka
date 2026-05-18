@@ -19,6 +19,8 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+import { QrCode } from 'lucide-react';
+import { DebtPaymentQR } from '@/components/DebtPaymentQR';
 
 interface Transaction {
   id: string;
@@ -48,6 +50,14 @@ export const CustomerLedger = ({ customerId, customerName, open, onOpenChange }:
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const [paymentAmount, setPaymentAmount] = useState('');
+  const [qrFor, setQrFor] = useState<Transaction | null>(null);
+  const [customerPhone, setCustomerPhone] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!open || !customerId) return;
+    supabase.from('customers').select('phone').eq('id', customerId).maybeSingle()
+      .then(({ data }) => setCustomerPhone((data as any)?.phone || null));
+  }, [open, customerId]);
 
   useEffect(() => {
     if (open && customerId) {
@@ -216,16 +226,28 @@ export const CustomerLedger = ({ customerId, customerName, open, onOpenChange }:
                             {getStatusBadge(transaction.payment_status)}
                           </div>
                           {transaction.payment_status !== 'paid' && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => {
-                                setSelectedTransaction(transaction);
-                                setPaymentDialogOpen(true);
-                              }}
-                            >
-                              Lipa
-                            </Button>
+                            <div className="flex gap-1.5">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="rounded-full"
+                                onClick={() => setQrFor(transaction)}
+                                title="QR ya malipo kwa deni hili"
+                              >
+                                <QrCode className="h-3.5 w-3.5 mr-1" /> QR
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="rounded-full"
+                                onClick={() => {
+                                  setSelectedTransaction(transaction);
+                                  setPaymentDialogOpen(true);
+                                }}
+                              >
+                                Lipa
+                              </Button>
+                            </div>
                           )}
                         </div>
                       </CardHeader>
@@ -332,6 +354,18 @@ export const CustomerLedger = ({ customerId, customerName, open, onOpenChange }:
           )}
         </DialogContent>
       </Dialog>
+
+      {qrFor && (
+        <DebtPaymentQR
+          open={!!qrFor}
+          onOpenChange={(o) => !o && setQrFor(null)}
+          customerName={customerName}
+          customerPhone={customerPhone}
+          amount={qrFor.balance > 0 ? qrFor.balance : qrFor.total_amount}
+          reference={qrFor.id}
+          notes={qrFor.notes || undefined}
+        />
+      )}
     </>
   );
 };
