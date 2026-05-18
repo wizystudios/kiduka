@@ -50,6 +50,14 @@ export const CustomerLedger = ({ customerId, customerName, open, onOpenChange }:
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const [paymentAmount, setPaymentAmount] = useState('');
+  const [qrFor, setQrFor] = useState<Transaction | null>(null);
+  const [customerPhone, setCustomerPhone] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!open || !customerId) return;
+    supabase.from('customers').select('phone').eq('id', customerId).maybeSingle()
+      .then(({ data }) => setCustomerPhone((data as any)?.phone || null));
+  }, [open, customerId]);
 
   useEffect(() => {
     if (open && customerId) {
