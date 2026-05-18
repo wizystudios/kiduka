@@ -354,6 +354,18 @@ export const CustomerLedger = ({ customerId, customerName, open, onOpenChange }:
           )}
         </DialogContent>
       </Dialog>
+
+      {qrFor && (
+        <DebtPaymentQR
+          open={!!qrFor}
+          onOpenChange={(o) => !o && setQrFor(null)}
+          customerName={customerName}
+          customerPhone={customerPhone}
+          amount={qrFor.balance > 0 ? qrFor.balance : qrFor.total_amount}
+          reference={qrFor.id}
+          notes={qrFor.notes || undefined}
+        />
+      )}
     </>
   );
 };
