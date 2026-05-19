@@ -1,100 +1,54 @@
+## Lengo
+Hamisha umiliki wa data kutoka kwa **mtu (owner_id = auth user)** kwenda kwa **biashara (business_id)**. Hii itaruhusu:
+- Biashara moja kuwa na wamiliki wengi (co-owners), wasaidizi, mameneja wa matawi.
+- Data kuendelea kuwepo hata kama mmiliki mmoja ataondoka/akifa.
+- Mfumo wa majukumu unaopanuka: Owner, Branch Manager, Cashier, Accountant, n.k.
 
-# Mpango wa Kazi — Changamoto za Wateja
+## Mkakati: Awamu 3 zisizovunja chochote
 
-Mambo ni mengi, kwa hiyo nitayagawa katika **awamu 4** ambazo nitafanya **sequentially** (moja baada ya nyingine) katika loops zinazofuata. Kila awamu itakuwa na deliverables zinazoonekana mara moja kwenye preview.
+### Awamu A — Schema mpya (bila kuvunja ya zamani)
+1. Unda jedwali jipya `businesses`:
+   - `id`, `name`, `tin`, `nida`, `license`, `phone`, `email`, `region`, `district`, `created_at`
+2. Unda jedwali `business_members` (M2M users ↔ businesses):
+   - `business_id`, `user_id`, `role` (enum: `owner`, `co_owner`, `branch_manager`, `cashier`, `salesperson`, `inventory_officer`, `accountant`, `assistant`)
+   - `branch_id` (nullable — kwa wafanyakazi waliopangwa kwenye tawi moja)
+   - `is_active`, `joined_at`
+3. Unda enum mpya `business_role` na security definer functions:
+   - `get_user_business_id(uuid)` → business ya msingi ya mtumiaji
+   - `is_business_member(uuid business, uuid user)`
+   - `has_business_role(uuid business, uuid user, business_role)`
+   - `can_access_business_data(uuid business_id)` — analog ya `can_access_owner_data` lakini kwa business
 
----
+### Awamu B — Ongeza `business_id` kwenye jedwali zote (nullable mwanzoni)
+Jedwali zinazohitaji `business_id`:
+`products, sales, sales_items, customers, customer_transactions, expenses, income_records, journal_entries, micro_loans, loan_payments, discounts, coupon_codes, business_ads, business_branches, owner_payment_numbers, marketplace_listings, sokoni_orders, inventory_movements, inventory_snapshots, whatsapp_messages, user_activities, abandoned_carts, business_compliance, business_contracts`.
 
-## Awamu 1 — Bug Fixes & Matawi (Loop 1)
+Backfill script:
+- Kwa kila `owner_id` ya kipekee, tengeneza row moja kwenye `businesses` (jina = `profiles.business_name`).
+- Tengeneza row kwenye `business_members` (`user_id = owner_id`, `role = 'owner'`).
+- Update kila jedwali: `business_id = <new business.id>` kulingana na `owner_id`.
+- Kwa wasaidizi waliopo kwenye `assistant_permissions`: tengeneza `business_members` rows na `role = 'assistant'`.
 
-**1.1 Makundi → Ongeza Msaidizi bug**
-- Chunguza form ya kuongeza msaidizi kwenye `GroupsPage` / `AssistantHarakaManager` — angalia console + error halisi.
-- Hakikisha `assistant_permissions` row inaundwa, password validation inafanya kazi, na owner_id inawekwa sahihi.
-- Fix RLS au insert logic kulingana na error.
+### Awamu C — Hamisha RLS na code
+1. Ongeza RLS policies mpya zinazotumia `can_access_business_data(business_id)` **sambamba** na zile za zamani.
+2. Update code ya frontend kwa awamu:
+   - Tengeneza hook mpya `useBusinessContext()` inayorudisha `business_id` na `role` ya mtumiaji wa sasa.
+   - Hatua kwa hatua, badilisha queries kutoka `.eq('owner_id', dataOwnerId)` kwenda `.eq('business_id', businessId)`.
+3. Baada ya code yote kuhama: weka `business_id` `NOT NULL`, ondoa RLS za zamani na column `owner_id` (au iache kama audit field).
 
-**1.2 Matawi — Owner anaona kila kitu**
-- Ongeza filter ya **"Tawi Lote"** (default) kwenye Dashboard, Mauzo, Ripoti.
-- Hakikisha queries za sales/expenses/products zinatumia `owner_id` (sio `branch_id`) kwa owner, ili matokeo yote ya matawi yote yajumuishwe.
-- Branch selector dropdown juu ya kila ripoti — owner anaweza kuchagua tawi moja au "Yote".
+## Maamuzi yanayohitajika kabla sijaanza
 
----
+1. **Wigo wa awamu ya kwanza**: Nianze na **Awamu A pekee** (unda `businesses` + `business_members` + backfill, bila kubadilisha RLS au code yoyote ya queries)? Hii ni salama 100% — hakuna kitu kitavunjika, na tutapata msingi wa kujenga juu yake.
 
-## Awamu 2 — Mauzo Reports + Export (Loop 2)
+2. **Majukumu (roles)**: Nianzishe na seti kamili (`owner`, `co_owner`, `branch_manager`, `cashier`, `salesperson`, `inventory_officer`, `accountant`, `assistant`) au tuanze na `owner`, `manager`, `assistant` tu na tuongeze baadaye?
 
-**2.1 Filters kamili kwenye `UnifiedSalesPage`**
-- Pills: Leo · Wiki · Mwezi · Mwaka · **Maalum** (date range picker)
-- Specific year/month/week selectors (dropdowns) zinazofungua sub-filters.
+3. **Biashara nyingi kwa mtumiaji mmoja**: Mtumiaji aweze kuwa member wa biashara zaidi ya moja (mfano: mfanyakazi wa biashara mbili tofauti) au mtu mmoja = biashara moja tu kwa sasa?
 
-**2.2 Total summary cards juu**
-- Jumla ya mauzo, idadi ya risiti, faida, mteja mpya — kwa kipindi kilichochaguliwa.
+## Kwa nini awamu, sio mara moja?
+Refactor kamili kwa mara moja ingehitaji kubadilisha ~80+ files, RLS policies zote, na hatari ya kupoteza data ni kubwa sana. Mbinu ya awamu inahakikisha:
+- Hakuna downtime.
+- Tunaweza ku-rollback awamu yoyote.
+- Tunajaribu kila awamu na watumiaji halisi kabla ya kuendelea.
 
-**2.3 Export PDF + CSV**
-- Tumia `exportUtils.ts` iliyopo + ongeza PDF (jsPDF) yenye Kiduka branding.
-- Button "Pakua Ripoti" → chagua PDF au CSV.
-
----
-
-## Awamu 3 — Lipa Namba QR System + Risiti (Loops 3–4)
-
-**3.1 Owner Lipa Namba Setup** (mpya)
-- Migration: jedwali `owner_payment_numbers` (owner_id, network, lipa_namba, account_name, is_default).
-- Settings page mpya: "Lipa Namba Zangu" — owner anachagua mtandao (M-Pesa, Tigo Pesa, Airtel Money, Halopesa, Azampesa) na anaweka namba zake.
-- Badge **"MPYA"** kwenye Settings na banner ya tangazo dashboard (kama vile ads zingine zinavyofanya kazi), click → /settings/lipa-namba.
-
-**3.2 QR Generator per customer/debt**
-- Tumia `qrcode` npm package (au qrcode.react ipo).
-- QR encodes: `kiduka://pay?to=<lipa_namba>&network=<network>&amount=<balance>&ref=<debt_id>&customer=<name>`
-- Wakati owner ana-click "Lipa" kwa mdaiwa → dialog inaonyesha QR + namba + maelekezo ya USSD ya mtandao husika.
-
-**3.3 WhatsApp + Email + Auto-clear**
-- WhatsApp message ya deni inajumuisha link `/pay/:debtId` yenye QR + Lipa Namba zote.
-- Email template `debt-reminder` inaongezewa QR image (data URL) + Lipa Namba.
-- Edge function mpya `confirm-debt-payment` (au extend `clickpesa-webhook`) — wakati malipo yanapokelewa au owner anathibitisha manually → `customer_transactions.payment_status='paid'`, `customers.outstanding_balance -= amount`, mteja anatolewa kwenye Wadaiwa.
-
-**3.4 Risiti HTML + QR scannable + SMS/WA**
-- `EnhancedReceiptPrinter` itoe HTML kamili (sio plain text) + QR inayoelekeza `/receipt/:saleId` (tayari ipo).
-- Vifungo viwili kwenye risiti dialog: **"Tuma WhatsApp"** (wa.me) + **"Tuma SMS"** (edge function `send-sms` iliyopo).
-- Input ya namba ya simu ya mteja kabla ya kutuma.
-
----
-
-## Awamu 4 — Sokoni UI (Loop 5)
-
-**4.1 Hamisha tabs juu**
-- "Top Deals · Top Ranking · Bidhaa Mpya" zihame kutoka sehemu zao za sasa na ziwe **horizontal pills** baada ya "Zote" kwenye filter bar ya juu ya `SokoniMarketplace`.
-- Ondoa vifungo vya "Zaidi" (kila kategoria inafunguka kama tab kamili).
-
-**4.2 Bottom nav background**
-- `SokoniBottomNav` → `bg-white` na border ya juu nyepesi.
-
----
-
-## Technical Notes
-
-**Migrations zinazohitajika:**
-- `owner_payment_numbers` (jedwali jipya + RLS)
-- Index kwenye `customer_transactions(owner_id, payment_status)` kwa speed
-- Trigger ya kufuta deni auto wakati payment_status inabadilika kuwa 'paid'
-
-**Edge functions:**
-- `confirm-debt-payment` (mpya) — manual confirmation + auto-clear
-- Extend `send-transactional-email` kuongeza QR image kwenye debt reminder template
-
-**Vifurushi:**
-- `qrcode` (kama haipo) au tumia component iliyopo
-
-**Foreseen warnings:** Supabase linter inaweza kutoa warnings za search_path kwenye function mpya — nitarekebisha mara moja.
-
----
-
-## Mpangilio wa Utekelezaji
-
-| Loop | Awamu | Kile unachoona |
-|------|-------|----------------|
-| 1 (sasa baada ya approval) | 1.1 + 1.2 | Msaidizi anaongezwa, owner anaona ripoti za matawi yote |
-| 2 | 2 | Filters + export PDF/CSV kwenye Mauzo |
-| 3 | 3.1 + 3.2 | Lipa Namba setup + QR generator |
-| 4 | 3.3 + 3.4 | Auto-clear deni + risiti HTML kwa WA/SMS |
-| 5 | 4 | Sokoni nav makeover |
-
-Baada ya kupitisha mpango huu nitaanza **Awamu 1** mara moja.
+## Pendekezo
+Nipe ruhusa nianze na **Awamu A pekee** sasa (migration moja salama). Baada ya kuthibitisha data ime-backfill vizuri, tutaendelea na Awamu B.

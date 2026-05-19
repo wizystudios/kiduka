@@ -481,6 +481,113 @@ export type Database = {
         }
         Relationships: []
       }
+      business_members: {
+        Row: {
+          branch_id: string | null
+          business_id: string
+          created_at: string
+          id: string
+          invited_by: string | null
+          is_active: boolean
+          joined_at: string
+          role: Database["public"]["Enums"]["business_role"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          branch_id?: string | null
+          business_id: string
+          created_at?: string
+          id?: string
+          invited_by?: string | null
+          is_active?: boolean
+          joined_at?: string
+          role?: Database["public"]["Enums"]["business_role"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          branch_id?: string | null
+          business_id?: string
+          created_at?: string
+          id?: string
+          invited_by?: string | null
+          is_active?: boolean
+          joined_at?: string
+          role?: Database["public"]["Enums"]["business_role"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_members_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      businesses: {
+        Row: {
+          business_license: string | null
+          created_at: string
+          created_by: string | null
+          district: string | null
+          email: string | null
+          founded_at: string | null
+          id: string
+          legal_name: string | null
+          logo_url: string | null
+          name: string
+          nida_number: string | null
+          phone: string | null
+          region: string | null
+          street: string | null
+          tin_number: string | null
+          updated_at: string
+          ward: string | null
+        }
+        Insert: {
+          business_license?: string | null
+          created_at?: string
+          created_by?: string | null
+          district?: string | null
+          email?: string | null
+          founded_at?: string | null
+          id?: string
+          legal_name?: string | null
+          logo_url?: string | null
+          name: string
+          nida_number?: string | null
+          phone?: string | null
+          region?: string | null
+          street?: string | null
+          tin_number?: string | null
+          updated_at?: string
+          ward?: string | null
+        }
+        Update: {
+          business_license?: string | null
+          created_at?: string
+          created_by?: string | null
+          district?: string | null
+          email?: string | null
+          founded_at?: string | null
+          id?: string
+          legal_name?: string | null
+          logo_url?: string | null
+          name?: string
+          nida_number?: string | null
+          phone?: string | null
+          region?: string | null
+          street?: string | null
+          tin_number?: string | null
+          updated_at?: string
+          ward?: string | null
+        }
+        Relationships: []
+      }
       chat_messages: {
         Row: {
           created_at: string
@@ -2499,6 +2606,10 @@ export type Database = {
         Returns: Json
       }
       can_access_branch: { Args: { p_branch_id: string }; Returns: boolean }
+      can_access_business_data: {
+        Args: { _business_id: string }
+        Returns: boolean
+      }
       can_access_owner_data: {
         Args: { target_owner_id: string }
         Returns: boolean
@@ -2513,12 +2624,26 @@ export type Database = {
         Returns: number
       }
       generate_tracking_code: { Args: never; Returns: string }
+      get_primary_business_id: { Args: { _user_id?: string }; Returns: string }
+      get_user_business_ids: { Args: { _user_id?: string }; Returns: string[] }
       get_user_role: { Args: { _user_id: string }; Returns: string }
+      has_business_role: {
+        Args: {
+          _business_id: string
+          _role: Database["public"]["Enums"]["business_role"]
+          _user_id?: string
+        }
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
+        Returns: boolean
+      }
+      is_business_member: {
+        Args: { _business_id: string; _user_id?: string }
         Returns: boolean
       }
       move_to_dlq: {
@@ -2567,6 +2692,15 @@ export type Database = {
     }
     Enums: {
       app_role: "owner" | "assistant" | "super_admin"
+      business_role:
+        | "owner"
+        | "co_owner"
+        | "branch_manager"
+        | "cashier"
+        | "salesperson"
+        | "inventory_officer"
+        | "accountant"
+        | "assistant"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -2695,6 +2829,16 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["owner", "assistant", "super_admin"],
+      business_role: [
+        "owner",
+        "co_owner",
+        "branch_manager",
+        "cashier",
+        "salesperson",
+        "inventory_officer",
+        "accountant",
+        "assistant",
+      ],
     },
   },
 } as const
