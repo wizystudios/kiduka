@@ -7,6 +7,7 @@ import { DollarSign, Store, AlertTriangle, TrendingDown, ShoppingCart, Package, 
 import { StockAlertWidget, ExpensesWidget, TransactionsWidget, ProductsWidget, LoansWidget, DebtorsWidget } from '@/components/DashboardWidgets';
 import { AdBanner } from '@/components/AdBanner';
 import { DashboardAdCarousel } from '@/components/DashboardAdCarousel';
+import { BusinessSwitcher } from '@/components/BusinessSwitcher';
 
 export const Dashboard = () => {
   const { user, userProfile, loading: authLoading } = useAuth();
