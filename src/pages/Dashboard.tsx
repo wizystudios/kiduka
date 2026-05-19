@@ -67,6 +67,11 @@ export const Dashboard = () => {
 
   return (
     <div className="h-[calc(100dvh-8rem)] overflow-y-auto px-4 pt-2 pb-32 space-y-2 md:h-auto md:overflow-visible md:pb-0">
+      {/* Business switcher */}
+      <div className="flex justify-center pt-1">
+        <BusinessSwitcher />
+      </div>
+
       {/* Hero Sales Section - centered, no box */}
       <div className="text-center pt-0.5">
         <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Mauzo Leo</p>
