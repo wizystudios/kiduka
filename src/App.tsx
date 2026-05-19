@@ -100,6 +100,7 @@ export default function App() {
     <QueryClientProvider client={queryClient}>
       <Router>
         <AuthProvider>
+          <BusinessProvider>
           <div className="App">
             <Routes>
               {/* Public Routes */}
