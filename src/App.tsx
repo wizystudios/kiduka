@@ -560,6 +560,7 @@ export default function App() {
             <GlobalNurathFloat />
             <Toaster />
           </div>
+          </BusinessProvider>
         </AuthProvider>
       </Router>
     </QueryClientProvider>
