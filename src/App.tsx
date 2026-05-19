@@ -2,6 +2,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from '@/hooks/useAuth';
+import { BusinessProvider } from '@/hooks/useBusinessContext';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { AppLayout } from '@/components/AppLayout';
 import { NotificationSettingsPage } from '@/pages/NotificationSettingsPage';
@@ -99,6 +100,7 @@ export default function App() {
     <QueryClientProvider client={queryClient}>
       <Router>
         <AuthProvider>
+          <BusinessProvider>
           <div className="App">
             <Routes>
               {/* Public Routes */}
@@ -558,6 +560,7 @@ export default function App() {
             <GlobalNurathFloat />
             <Toaster />
           </div>
+          </BusinessProvider>
         </AuthProvider>
       </Router>
     </QueryClientProvider>
