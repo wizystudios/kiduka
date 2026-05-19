@@ -740,6 +740,7 @@ export type Database = {
       customers: {
         Row: {
           branch_id: string | null
+          business_id: string | null
           created_at: string
           credit_limit: number | null
           email: string | null
@@ -754,6 +755,7 @@ export type Database = {
         }
         Insert: {
           branch_id?: string | null
+          business_id?: string | null
           created_at?: string
           credit_limit?: number | null
           email?: string | null
@@ -768,6 +770,7 @@ export type Database = {
         }
         Update: {
           branch_id?: string | null
+          business_id?: string | null
           created_at?: string
           credit_limit?: number | null
           email?: string | null
@@ -786,6 +789,13 @@ export type Database = {
             columns: ["branch_id"]
             isOneToOne: false
             referencedRelation: "business_branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customers_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
             referencedColumns: ["id"]
           },
         ]
@@ -1624,6 +1634,7 @@ export type Database = {
         Row: {
           barcode: string | null
           branch_id: string | null
+          business_id: string | null
           category: string | null
           cost_price: number | null
           created_at: string
@@ -1647,6 +1658,7 @@ export type Database = {
         Insert: {
           barcode?: string | null
           branch_id?: string | null
+          business_id?: string | null
           category?: string | null
           cost_price?: number | null
           created_at?: string
@@ -1670,6 +1682,7 @@ export type Database = {
         Update: {
           barcode?: string | null
           branch_id?: string | null
+          business_id?: string | null
           category?: string | null
           cost_price?: number | null
           created_at?: string
@@ -1696,6 +1709,13 @@ export type Database = {
             columns: ["branch_id"]
             isOneToOne: false
             referencedRelation: "business_branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "products_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
             referencedColumns: ["id"]
           },
           {
@@ -1977,6 +1997,7 @@ export type Database = {
       sales: {
         Row: {
           branch_id: string | null
+          business_id: string | null
           created_at: string
           created_by: string | null
           customer_id: string | null
@@ -1990,6 +2011,7 @@ export type Database = {
         }
         Insert: {
           branch_id?: string | null
+          business_id?: string | null
           created_at?: string
           created_by?: string | null
           customer_id?: string | null
@@ -2003,6 +2025,7 @@ export type Database = {
         }
         Update: {
           branch_id?: string | null
+          business_id?: string | null
           created_at?: string
           created_by?: string | null
           customer_id?: string | null
@@ -2020,6 +2043,13 @@ export type Database = {
             columns: ["branch_id"]
             isOneToOne: false
             referencedRelation: "business_branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
             referencedColumns: ["id"]
           },
           {
