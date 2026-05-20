@@ -102,13 +102,14 @@ export const SokoniProductDetail = ({
     if (!product) return;
     try {
       const { data, error } = await supabase
-        .from('product_reviews')
+        .from('public_product_reviews' as any)
         .select('rating')
         .eq('product_id', product.id);
       if (error) throw error;
-      if (data && data.length > 0) {
-        setAverageRating(data.reduce((sum, r) => sum + r.rating, 0) / data.length);
-        setReviewCount(data.length);
+      const rows = (data as any[]) || [];
+      if (rows.length > 0) {
+        setAverageRating(rows.reduce((sum: number, r: any) => sum + r.rating, 0) / rows.length);
+        setReviewCount(rows.length);
       } else {
         setAverageRating(0);
         setReviewCount(0);

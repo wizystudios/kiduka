@@ -39,9 +39,32 @@ serve(async (req) => {
     }
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-    const body: PaymentRequest = await req.json();
 
+    // Require authentication and verify caller identity
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(JSON.stringify({ success: false, error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+    const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!;
+    const userClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      global: { headers: { Authorization: authHeader } },
+    });
+    const { data: { user: caller } } = await userClient.auth.getUser();
+    if (!caller) {
+      return new Response(JSON.stringify({ success: false, error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+
+    const body: PaymentRequest = await req.json();
     const { amount, phone_number, order_id, subscription_id, transaction_type, user_id, description } = body;
+
+    // user_id MUST match the authenticated caller (no spoofing)
+    if (user_id && user_id !== caller.id) {
+      return new Response(JSON.stringify({ success: false, error: 'user_id mismatch' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+    const effectiveUserId = caller.id;
 
     if (!amount || !phone_number || !transaction_type) {
       return new Response(
@@ -62,7 +85,7 @@ serve(async (req) => {
     const { data: transaction, error: txError } = await supabase
       .from('payment_transactions')
       .insert({
-        user_id,
+        user_id: effectiveUserId,
         order_id,
         subscription_id,
         transaction_type,
