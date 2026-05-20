@@ -233,15 +233,15 @@ export const SokoniMarketplace = () => {
         }
       }
 
-      const { data: productsData, error: productsError } = await supabase
-        .from('products')
+      const { data: productsDataRaw, error: productsError } = await supabase
+        .from('public_marketplace_products' as any)
         .select('id, name, price, description, category, stock_quantity, image_url, owner_id, created_at, branch_id')
-        .gt('stock_quantity', 0)
         .order('created_at', { ascending: false });
 
       if (productsError) throw productsError;
+      const productsData = (productsDataRaw as any[]) || [];
 
-      const sellerIds = [...new Set(productsData?.map(p => p.owner_id) || [])];
+      const sellerIds = [...new Set(productsData.map((p: any) => p.owner_id))];
 
       let profilesData: SellerProfile[] = [];
       let discountsData: ActiveDiscount[] = [];
@@ -251,7 +251,7 @@ export const SokoniMarketplace = () => {
         const branchIds = [...new Set((productsData || []).map(p => (p as any).branch_id).filter(Boolean))];
         
         const [profilesResult, discountsResult] = await Promise.all([
-          supabase.from('profiles').select('id, business_name, phone, region, district').in('id', sellerIds),
+          supabase.from('public_storefronts' as any).select('id, business_name, phone, region, district').in('id', sellerIds),
           supabase.from('discounts').select('id, discount_type, value, applicable_products').eq('active', true)
             .or(`end_date.is.null,end_date.gte.${new Date().toISOString().split('T')[0]}`)
         ]);
