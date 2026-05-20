@@ -67,7 +67,7 @@ export const ProductReviews = ({ productId, productName }: ProductReviewsProps) 
       if (error) throw error;
       
       // Fetch replies for these reviews
-      const reviewIds = (data || []).map(r => r.id);
+      const reviewIds = ((data as any[]) || []).map((r: any) => r.id);
       let repliesMap: Record<string, ReviewReply> = {};
       if (reviewIds.length > 0) {
         const { data: replies } = await supabase
@@ -79,7 +79,7 @@ export const ProductReviews = ({ productId, productName }: ProductReviewsProps) 
         });
       }
       
-      setReviews((data || []).map((r: any) => ({ ...r, reply: repliesMap[r.id] || null })));
+      setReviews(((data as any[]) || []).map((r: any) => ({ ...r, reply: repliesMap[r.id] || null })));
     } catch (error) {
       console.error('Error fetching reviews:', error);
     } finally {
