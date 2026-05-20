@@ -93,27 +93,11 @@ export const OrderTrackingPage = () => {
     setOrders([]);
     setHasSearched(true);
 
-    try {
-      const { data, error } = await supabase
-        .from('sokoni_orders')
-        .select('id, tracking_code, order_status, payment_status, total_amount, items, created_at, updated_at, customer_received, seller_id, delivery_address, delivery_person_name, delivery_person_phone')
-        .or(`customer_phone.eq.${normalizedPhone},customer_phone.eq.${phoneValue}`)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-
-      if (data && data.length > 0) {
-        const parsedOrders = await fetchSellerRegions(data);
-        setOrders(parsedOrders);
-      } else {
-        setNotFound(true);
-      }
-    } catch (error) {
-      console.error('Error searching orders:', error);
-      toast.error('Imeshindwa kutafuta oda. Tafadhali jaribu tena.');
-    } finally {
-      setLoading(false);
-    }
+    // Phone-only lookup is no longer supported for privacy. Customers must use
+    // their tracking code (or phone + tracking code combination) to view orders.
+    toast.info('Kwa ulinzi wa wateja, tumia tracking code kufuatilia oda.');
+    setNotFound(true);
+    setLoading(false);
   };
 
   const handleSearchByTrackingCode = async (code: string) => {
@@ -128,16 +112,29 @@ export const OrderTrackingPage = () => {
     setHasSearched(true);
 
     try {
-      const { data, error } = await supabase
-        .from('sokoni_orders')
-        .select('id, tracking_code, order_status, payment_status, total_amount, items, created_at, updated_at, customer_received, seller_id, delivery_address, delivery_person_name, delivery_person_phone')
-        .ilike('tracking_code', `%${code.trim().toUpperCase()}%`)
-        .order('created_at', { ascending: false });
+      // Use secure RPC that requires phone + tracking code match.
+      const phoneInput = window.prompt('Ingiza namba ya simu uliyotumia kuagiza:') || '';
+      if (!phoneInput) {
+        setLoading(false);
+        return;
+      }
+
+      const { data, error } = await supabase.rpc('track_sokoni_order' as any, {
+        p_phone: phoneInput,
+        p_tracking_code: code.trim(),
+      });
 
       if (error) throw error;
 
-      if (data && data.length > 0) {
-        const parsedOrders = await fetchSellerRegions(data);
+      const rows = ((data as any[]) || []).map((o: any) => ({
+        ...o,
+        seller_id: o.seller_id || '',
+        delivery_address: o.delivery_address || '',
+        customer_received: o.customer_received || false,
+      }));
+
+      if (rows.length > 0) {
+        const parsedOrders = await fetchSellerRegions(rows);
         setOrders(parsedOrders);
       } else {
         setNotFound(true);

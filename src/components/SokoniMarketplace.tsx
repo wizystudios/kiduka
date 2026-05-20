@@ -390,52 +390,36 @@ export const SokoniMarketplace = () => {
     setValidatingCoupon(true);
     try {
       const sellerIds = [...new Set(cart.map(i => i.owner_id))];
-      const { data, error } = await supabase
-        .from('coupon_codes')
-        .select('*')
-        .eq('is_active', true)
-        .ilike('code', couponCode.trim().toUpperCase())
-        .in('owner_id', sellerIds)
-        .maybeSingle();
+      const { data, error } = await supabase.rpc('validate_coupon' as any, {
+        p_code: couponCode.trim(),
+        p_subtotal: cartSubtotal,
+        p_seller_ids: sellerIds,
+      });
 
-      if (error || !data) {
-        toast.error('Coupon code si sahihi au haifanyi kazi');
+      if (error) {
+        toast.error('Imeshindwa kuthibitisha coupon');
+        setValidatingCoupon(false);
+        return;
+      }
+
+      const result = data as any;
+      if (!result?.valid) {
+        const errMap: Record<string, string> = {
+          invalid_or_inactive: 'Coupon code si sahihi au haifanyi kazi',
+          expired: 'Coupon imeisha muda',
+          exhausted: 'Coupon imekwisha matumizi',
+          min_order: `Oda ya chini ni TSh ${(result?.min_order_amount || 0).toLocaleString()}`,
+        };
+        toast.error(errMap[result?.error] || 'Coupon haiwezi kutumika');
         setCouponDiscount(0);
         setCouponApplied(false);
         setValidatingCoupon(false);
         return;
       }
 
-      const coupon = data as any;
-      if (coupon.expires_at && new Date(coupon.expires_at) < new Date()) {
-        toast.error('Coupon imeisha muda');
-        setValidatingCoupon(false);
-        return;
-      }
-      if (coupon.max_uses && coupon.used_count >= coupon.max_uses) {
-        toast.error('Coupon imekwisha matumizi');
-        setValidatingCoupon(false);
-        return;
-      }
-      if (coupon.min_order_amount && cartSubtotal < coupon.min_order_amount) {
-        toast.error(`Oda ya chini ni TSh ${coupon.min_order_amount.toLocaleString()}`);
-        setValidatingCoupon(false);
-        return;
-      }
-
-      let discount = 0;
-      if (coupon.discount_type === 'percentage') {
-        discount = Math.round(cartSubtotal * (coupon.discount_value / 100));
-      } else {
-        discount = coupon.discount_value;
-      }
-      
-      setCouponDiscount(discount);
+      setCouponDiscount(result.discount_amount || 0);
       setCouponApplied(true);
-      toast.success(`Punguzo la TSh ${discount.toLocaleString()} limeongezwa!`);
-
-      // Increment used_count
-      await supabase.from('coupon_codes').update({ used_count: coupon.used_count + 1 }).eq('id', coupon.id);
+      toast.success(`Punguzo la TSh ${(result.discount_amount || 0).toLocaleString()} limeongezwa!`);
     } catch (e) {
       toast.error('Imeshindwa kuthibitisha coupon');
     }
