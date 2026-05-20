@@ -76,71 +76,54 @@ export const SokoniCustomerAuth = ({ open, onOpenChange, onSuccess }: SokoniCust
     }
 
     setLoading(true);
-    
+
     try {
       if (mode === 'register') {
-        const { data: existing } = await supabase
-          .from('sokoni_customers' as any)
-          .select('id')
-          .eq('phone', formattedPhone)
-          .single();
-
-        if (existing) {
-          toast.error('Nambari hii tayari imeandikishwa. Ingia badala yake.');
-          setMode('login');
+        const { data, error } = await supabase.rpc('sokoni_register_customer' as any, {
+          p_phone: formattedPhone,
+          p_pin: pin,
+          p_name: name || null,
+        });
+        if (error) throw error;
+        const result = data as any;
+        if (!result?.success) {
+          if (result?.error === 'already_registered') {
+            toast.error('Nambari hii tayari imeandikishwa. Ingia badala yake.');
+            setMode('login');
+          } else if (result?.error === 'weak_pin') {
+            toast.error('Nywila ni dhaifu sana.');
+          } else {
+            toast.error('Imeshindwa kuunda akaunti.');
+          }
           setLoading(false);
           return;
         }
-
-        const { data, error } = await supabase
-          .from('sokoni_customers' as any)
-          .insert([{ phone: formattedPhone, name: name || null, pin }])
-          .select()
-          .single();
-
-        if (error) throw error;
-        
         localStorage.setItem(STORAGE_KEY, formattedPhone);
+        localStorage.setItem('sokoni_customer_pin', pin);
         toast.success('Akaunti imeundwa! Karibu Sokoni');
         onOpenChange(false);
         onSuccess?.();
       } else {
-        const { data, error } = await supabase
-          .from('sokoni_customers' as any)
-          .select('*')
-          .eq('phone', formattedPhone)
-          .single();
-
-        if (error || !data) {
-          toast.error('Nambari hii haijaandikishwa. Jisajili kwanza.');
-          setMode('register');
+        const { data, error } = await supabase.rpc('sokoni_verify_pin' as any, {
+          p_phone: formattedPhone,
+          p_pin: pin,
+        });
+        if (error) throw error;
+        const result = data as any;
+        if (!result?.success) {
+          if (result?.error === 'not_found') {
+            toast.error('Nambari hii haijaandikishwa. Jisajili kwanza.');
+            setMode('register');
+          } else {
+            toast.error('Nywila si sahihi. Tafadhali jaribu tena.');
+          }
           setLoading(false);
           return;
         }
-
-        const customer = data as any;
-        
-        if (!customer.pin) {
-          await supabase
-            .from('sokoni_customers' as any)
-            .update({ pin })
-            .eq('id', customer.id);
-          
-          localStorage.setItem(STORAGE_KEY, formattedPhone);
-          toast.success(`Karibu tena${customer.name ? ', ' + customer.name : ''}! Nywila yako imewekwa.`);
-          onOpenChange(false);
-          onSuccess?.();
-          return;
-        }
-
-        if (customer.pin !== pin) {
-          toast.error('Nywila si sahihi. Tafadhali jaribu tena.');
-          setLoading(false);
-          return;
-        }
-
+        const c = result.customer;
         localStorage.setItem(STORAGE_KEY, formattedPhone);
-        toast.success(`Karibu tena${customer.name ? ', ' + customer.name : ''}!`);
+        localStorage.setItem('sokoni_customer_pin', pin);
+        toast.success(`Karibu tena${c?.name ? ', ' + c.name : ''}!`);
         onOpenChange(false);
         onSuccess?.();
       }
