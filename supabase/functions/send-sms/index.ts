@@ -18,6 +18,24 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
+    // Require authentication
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: 'Unauthorized', success: false }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+    const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2');
+    const userClient = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_ANON_KEY')!,
+      { global: { headers: { Authorization: authHeader } } }
+    );
+    const { data: { user } } = await userClient.auth.getUser();
+    if (!user) {
+      return new Response(JSON.stringify({ error: 'Unauthorized', success: false }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+
     const { phoneNumber, message, transactionId }: SMSRequest = await req.json();
     
     console.log('SMS request received:', { phoneNumber, transactionId });
