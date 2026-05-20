@@ -1085,6 +1085,13 @@ export type Database = {
             referencedRelation: "products"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "inventory_movements_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "public_marketplace_products"
+            referencedColumns: ["id"]
+          },
         ]
       }
       inventory_snapshots: {
@@ -1124,6 +1131,13 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_snapshots_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "public_marketplace_products"
             referencedColumns: ["id"]
           },
         ]
@@ -1584,6 +1598,13 @@ export type Database = {
             referencedRelation: "products"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "product_images_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "public_marketplace_products"
+            referencedColumns: ["id"]
+          },
         ]
       }
       product_reviews: {
@@ -1626,6 +1647,13 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_reviews_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "public_marketplace_products"
             referencedColumns: ["id"]
           },
         ]
@@ -1723,6 +1751,13 @@ export type Database = {
             columns: ["parent_product_id"]
             isOneToOne: false
             referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "products_parent_product_id_fkey"
+            columns: ["parent_product_id"]
+            isOneToOne: false
+            referencedRelation: "public_marketplace_products"
             referencedColumns: ["id"]
           },
         ]
@@ -1992,6 +2027,13 @@ export type Database = {
             referencedRelation: "product_reviews"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "review_replies_review_id_fkey"
+            columns: ["review_id"]
+            isOneToOne: false
+            referencedRelation: "public_product_reviews"
+            referencedColumns: ["id"]
+          },
         ]
       }
       sales: {
@@ -2098,6 +2140,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "sales_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "public_marketplace_products"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "sales_items_sale_id_fkey"
             columns: ["sale_id"]
             isOneToOne: false
@@ -2143,6 +2192,13 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_predictions_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "public_marketplace_products"
             referencedColumns: ["id"]
           },
         ]
@@ -2213,7 +2269,7 @@ export type Database = {
           id: string
           name: string | null
           phone: string
-          pin: string | null
+          pin_hash: string | null
           region: string | null
           updated_at: string
         }
@@ -2226,7 +2282,7 @@ export type Database = {
           id?: string
           name?: string | null
           phone: string
-          pin?: string | null
+          pin_hash?: string | null
           region?: string | null
           updated_at?: string
         }
@@ -2239,7 +2295,7 @@ export type Database = {
           id?: string
           name?: string | null
           phone?: string
-          pin?: string | null
+          pin_hash?: string | null
           region?: string | null
           updated_at?: string
         }
@@ -2608,7 +2664,137 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      public_marketplace_products: {
+        Row: {
+          branch_id: string | null
+          category: string | null
+          created_at: string | null
+          description: string | null
+          id: string | null
+          image_url: string | null
+          name: string | null
+          owner_id: string | null
+          price: number | null
+          stock_quantity: number | null
+        }
+        Insert: {
+          branch_id?: string | null
+          category?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string | null
+          image_url?: string | null
+          name?: string | null
+          owner_id?: string | null
+          price?: number | null
+          stock_quantity?: number | null
+        }
+        Update: {
+          branch_id?: string | null
+          category?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string | null
+          image_url?: string | null
+          name?: string | null
+          owner_id?: string | null
+          price?: number | null
+          stock_quantity?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "products_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "business_branches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      public_product_reviews: {
+        Row: {
+          created_at: string | null
+          customer_name: string | null
+          id: string | null
+          is_verified_purchase: boolean | null
+          product_id: string | null
+          rating: number | null
+          review_text: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          customer_name?: string | null
+          id?: string | null
+          is_verified_purchase?: boolean | null
+          product_id?: string | null
+          rating?: number | null
+          review_text?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          customer_name?: string | null
+          id?: string | null
+          is_verified_purchase?: boolean | null
+          product_id?: string | null
+          rating?: number | null
+          review_text?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_reviews_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_reviews_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "public_marketplace_products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      public_storefronts: {
+        Row: {
+          business_name: string | null
+          district: string | null
+          facebook_pixel_id: string | null
+          google_pixel_id: string | null
+          id: string | null
+          phone: string | null
+          region: string | null
+          store_description: string | null
+          store_logo_url: string | null
+          store_slug: string | null
+        }
+        Insert: {
+          business_name?: string | null
+          district?: string | null
+          facebook_pixel_id?: string | null
+          google_pixel_id?: string | null
+          id?: string | null
+          phone?: string | null
+          region?: string | null
+          store_description?: string | null
+          store_logo_url?: string | null
+          store_slug?: string | null
+        }
+        Update: {
+          business_name?: string | null
+          district?: string | null
+          facebook_pixel_id?: string | null
+          google_pixel_id?: string | null
+          id?: string | null
+          phone?: string | null
+          region?: string | null
+          store_description?: string | null
+          store_logo_url?: string | null
+          store_slug?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       add_assistant_permission: {
@@ -2706,6 +2892,18 @@ export type Database = {
           read_ct: number
         }[]
       }
+      sokoni_register_customer: {
+        Args: { p_name?: string; p_phone: string; p_pin: string }
+        Returns: Json
+      }
+      sokoni_update_customer_name: {
+        Args: { p_name: string; p_phone: string; p_pin: string }
+        Returns: Json
+      }
+      sokoni_verify_pin: {
+        Args: { p_phone: string; p_pin: string }
+        Returns: Json
+      }
       track_sokoni_order: {
         Args: { p_phone: string; p_tracking_code: string }
         Returns: {
@@ -2718,6 +2916,10 @@ export type Database = {
           tracking_code: string
           updated_at: string
         }[]
+      }
+      validate_coupon: {
+        Args: { p_code: string; p_seller_ids: string[]; p_subtotal: number }
+        Returns: Json
       }
     }
     Enums: {
