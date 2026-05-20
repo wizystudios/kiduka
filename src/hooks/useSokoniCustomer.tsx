@@ -5,10 +5,10 @@ interface SokoniCustomer {
   id: string;
   phone: string;
   name: string | null;
-  created_at: string;
 }
 
 const STORAGE_KEY = 'sokoni_customer_phone';
+const PIN_KEY = 'sokoni_customer_pin';
 
 export const useSokoniCustomer = () => {
   const [customer, setCustomer] = useState<SokoniCustomer | null>(null);
@@ -17,99 +17,92 @@ export const useSokoniCustomer = () => {
 
   useEffect(() => {
     const savedPhone = localStorage.getItem(STORAGE_KEY);
-    if (savedPhone) {
-      fetchCustomerByPhone(savedPhone);
+    const savedPin = localStorage.getItem(PIN_KEY);
+    if (savedPhone && savedPin) {
+      verifyAndLoad(savedPhone, savedPin);
     } else {
       setLoading(false);
     }
   }, []);
 
-  const fetchCustomerByPhone = async (phone: string) => {
+  const verifyAndLoad = async (phone: string, pin: string): Promise<SokoniCustomer | null> => {
+    setLoading(true);
     try {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from('sokoni_customers' as any)
-        .select('*')
-        .eq('phone', phone)
-        .single();
-
-      if (error && error.code !== 'PGRST116') {
-        console.error('Error fetching customer:', error);
+      const { data, error } = await supabase.rpc('sokoni_verify_pin' as any, {
+        p_phone: phone,
+        p_pin: pin,
+      });
+      if (error) {
+        console.error('verify_pin error:', error);
         return null;
       }
-
-      if (data) {
-        const customerData = data as unknown as SokoniCustomer;
-        setCustomer(customerData);
+      const result = data as any;
+      if (result?.success && result?.customer) {
+        const c = result.customer as SokoniCustomer;
+        setCustomer(c);
         setIsLoggedIn(true);
         localStorage.setItem(STORAGE_KEY, phone);
-        return customerData;
+        localStorage.setItem(PIN_KEY, pin);
+        return c;
       }
-      return null;
-    } catch (error) {
-      console.error('Error:', error);
       return null;
     } finally {
       setLoading(false);
     }
   };
 
-  const register = async (phone: string, name?: string): Promise<SokoniCustomer | null> => {
+  const register = async (phone: string, pin: string, name?: string): Promise<SokoniCustomer | null> => {
+    setLoading(true);
     try {
-      setLoading(true);
-      const existing = await fetchCustomerByPhone(phone);
-      if (existing) return existing;
-
-      const { data, error } = await supabase
-        .from('sokoni_customers' as any)
-        .insert([{ phone, name: name || null }])
-        .select()
-        .single();
-
+      const { data, error } = await supabase.rpc('sokoni_register_customer' as any, {
+        p_phone: phone,
+        p_pin: pin,
+        p_name: name || null,
+      });
       if (error) {
-        console.error('Error creating customer:', error);
+        console.error('register error:', error);
         return null;
       }
-
-      const customerData = data as unknown as SokoniCustomer;
-      setCustomer(customerData);
-      setIsLoggedIn(true);
-      localStorage.setItem(STORAGE_KEY, phone);
-      return customerData;
-    } catch (error) {
-      console.error('Error:', error);
+      const result = data as any;
+      if (result?.success && result?.customer) {
+        const c = result.customer as SokoniCustomer;
+        setCustomer(c);
+        setIsLoggedIn(true);
+        localStorage.setItem(STORAGE_KEY, phone);
+        localStorage.setItem(PIN_KEY, pin);
+        return c;
+      }
       return null;
     } finally {
       setLoading(false);
     }
   };
 
-  const login = async (phone: string): Promise<SokoniCustomer | null> => {
-    return await fetchCustomerByPhone(phone);
+  const login = async (phone: string, pin: string): Promise<SokoniCustomer | null> => {
+    return await verifyAndLoad(phone, pin);
   };
 
   const logout = useCallback(() => {
     localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(PIN_KEY);
     setCustomer(null);
     setIsLoggedIn(false);
   }, []);
 
   const updateName = async (name: string) => {
     if (!customer) return false;
+    const pin = localStorage.getItem(PIN_KEY);
+    if (!pin) return false;
     try {
-      const { error } = await supabase
-        .from('sokoni_customers' as any)
-        .update({ name })
-        .eq('id', customer.id);
-
-      if (error) {
-        console.error('Error updating name:', error);
-        return false;
-      }
+      const { data, error } = await supabase.rpc('sokoni_update_customer_name' as any, {
+        p_phone: customer.phone,
+        p_pin: pin,
+        p_name: name,
+      });
+      if (error || !(data as any)?.success) return false;
       setCustomer({ ...customer, name });
       return true;
-    } catch (error) {
-      console.error('Error:', error);
+    } catch {
       return false;
     }
   };

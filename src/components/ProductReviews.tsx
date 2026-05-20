@@ -24,7 +24,6 @@ interface ReviewReply {
 
 interface Review {
   id: string;
-  customer_phone: string;
   customer_name: string | null;
   rating: number;
   review_text: string | null;
@@ -60,7 +59,7 @@ export const ProductReviews = ({ productId, productName }: ProductReviewsProps) 
   const fetchReviews = async () => {
     try {
       const { data, error } = await supabase
-        .from('product_reviews')
+        .from('public_product_reviews' as any)
         .select('*')
         .eq('product_id', productId)
         .order('created_at', { ascending: false });
@@ -68,7 +67,7 @@ export const ProductReviews = ({ productId, productName }: ProductReviewsProps) 
       if (error) throw error;
       
       // Fetch replies for these reviews
-      const reviewIds = (data || []).map(r => r.id);
+      const reviewIds = ((data as any[]) || []).map((r: any) => r.id);
       let repliesMap: Record<string, ReviewReply> = {};
       if (reviewIds.length > 0) {
         const { data: replies } = await supabase
@@ -80,7 +79,7 @@ export const ProductReviews = ({ productId, productName }: ProductReviewsProps) 
         });
       }
       
-      setReviews((data || []).map(r => ({ ...r, reply: repliesMap[r.id] || null })));
+      setReviews(((data as any[]) || []).map((r: any) => ({ ...r, reply: repliesMap[r.id] || null })));
     } catch (error) {
       console.error('Error fetching reviews:', error);
     } finally {
@@ -177,10 +176,8 @@ export const ProductReviews = ({ productId, productName }: ProductReviewsProps) 
     });
   };
 
-  const maskPhone = (phone: string) => {
-    if (phone.length < 6) return '***';
-    return phone.slice(0, 3) + '***' + phone.slice(-3);
-  };
+  // Anonymous customer label (phone no longer exposed)
+  const anonymousLabel = () => 'Mteja';
 
   return (
     <div className="space-y-4">
@@ -297,7 +294,7 @@ export const ProductReviews = ({ productId, productName }: ProductReviewsProps) 
                     </div>
                     <div>
                       <p className="text-sm font-medium">
-                        {review.customer_name || maskPhone(review.customer_phone)}
+                        {review.customer_name || anonymousLabel()}
                       </p>
                       <div className="flex items-center gap-1">
                         <StarRating value={review.rating} size="sm" />

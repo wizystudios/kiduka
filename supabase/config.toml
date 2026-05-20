@@ -3,6 +3,12 @@ project_id = "lufuusufaijuvekkcqgv"
 [functions]
   [functions.auth-email-hook]
     verify_jwt = false
+  [functions.clickpesa-payment]
+    verify_jwt = true
+  [functions.send-whatsapp]
+    verify_jwt = true
+  [functions.send-sms]
+    verify_jwt = true
   [functions.handle-email-suppression]
     verify_jwt = false
   [functions.handle-email-unsubscribe]

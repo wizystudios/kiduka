@@ -84,9 +84,9 @@ export const StorefrontPage = () => {
 
   const fetchStore = async () => {
     try {
-      // Try by store_slug first
+      // Try by store_slug first via safe public view
       let { data: profile, error } = await supabase
-        .from('profiles')
+        .from('public_storefronts' as any)
         .select('id, business_name, phone, region, district, store_description, store_logo_url, google_pixel_id, facebook_pixel_id')
         .eq('store_slug', slug)
         .maybeSingle();
@@ -94,45 +94,35 @@ export const StorefrontPage = () => {
       // Fallback: direct profile id from Sokoni cards
       if (!profile && slug) {
         const fallbackById = await supabase
-          .from('profiles')
+          .from('public_storefronts' as any)
           .select('id, business_name, phone, region, district, store_description, store_logo_url, google_pixel_id, facebook_pixel_id')
           .eq('id', slug)
           .maybeSingle();
-        profile = fallbackById.data;
+        profile = fallbackById.data as any;
         error = fallbackById.error;
       }
 
       // If not found by slug, try matching by generated slug from business_name
       if (!profile) {
         const { data: allProfiles } = await supabase
-          .from('profiles')
-          .select('id, business_name, phone, region, district, store_description, store_logo_url, google_pixel_id, facebook_pixel_id, store_slug')
-          .not('business_name', 'is', null);
-        
+          .from('public_storefronts' as any)
+          .select('id, business_name, phone, region, district, store_description, store_logo_url, google_pixel_id, facebook_pixel_id, store_slug');
+
         if (allProfiles) {
-          profile = allProfiles.find((p: any) => {
+          profile = (allProfiles as any[]).find((p: any) => {
             const generated = p.business_name?.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
             return generated === slug;
-          }) as any;
-          
-          // Auto-set the store_slug for future visits
-          if (profile) {
-            await supabase
-              .from('profiles')
-              .update({ store_slug: slug })
-              .eq('id', profile.id);
-          }
+          });
         }
       }
 
       // Check if the store actually has products (not deleted)
       if (profile) {
         const { count } = await supabase
-          .from('products')
+          .from('public_marketplace_products' as any)
           .select('*', { count: 'exact', head: true })
-          .eq('owner_id', profile.id)
-          .gt('stock_quantity', 0);
-        
+          .eq('owner_id', (profile as any).id);
+
         if (!count || count === 0) {
           setNotFound(true);
           setLoading(false);
@@ -151,19 +141,18 @@ export const StorefrontPage = () => {
       // Fetch products AND branches in parallel
       const [productsRes, branchesRes] = await Promise.all([
         supabase
-          .from('products')
+          .from('public_marketplace_products' as any)
           .select('id, name, price, description, category, stock_quantity, image_url, branch_id')
-          .eq('owner_id', profile.id)
-          .gt('stock_quantity', 0)
+          .eq('owner_id', (profile as any).id)
           .order('created_at', { ascending: false }),
         supabase
           .from('business_branches')
           .select('id, branch_name, region, district, ward, street')
-          .eq('owner_id', profile.id)
+          .eq('owner_id', (profile as any).id)
           .eq('is_active', true)
       ]);
 
-      setProducts(productsRes.data || []);
+      setProducts(((productsRes.data as any[]) || []) as any);
       setBranches(branchesRes.data || []);
     } catch (error) {
       console.error('Error fetching store:', error);
