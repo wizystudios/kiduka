@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+
 import { 
   Search, Package, Truck, CheckCircle, Clock, XCircle,
   Phone, Store, RefreshCw, CreditCard, ArrowUpRight, Sparkles, MapPin, Navigation, Hash
@@ -39,37 +39,34 @@ interface TrackedOrder {
 export const OrderTrackingPage = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const [searchValue, setSearchValue] = useState('');
-  const [searchMode, setSearchMode] = useState<'phone' | 'tracking'>('phone');
+  const [trackingCode, setTrackingCode] = useState('');
+  const [phone, setPhone] = useState('');
   const [loading, setLoading] = useState(false);
   const [orders, setOrders] = useState<TrackedOrder[]>([]);
   const [notFound, setNotFound] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
 
   useEffect(() => {
-    const phoneParam = searchParams.get('phone');
     const codeParam = searchParams.get('code');
-    if (codeParam) {
-      setSearchValue(codeParam);
-      setSearchMode('tracking');
-      setTimeout(() => handleSearchByTrackingCode(codeParam), 500);
-    } else if (phoneParam) {
-      setSearchValue(phoneParam);
-      setSearchMode('phone');
-      setTimeout(() => handleSearchByPhone(phoneParam), 500);
+    const phoneParam = searchParams.get('phone');
+    if (codeParam) setTrackingCode(codeParam);
+    if (phoneParam) setPhone(phoneParam);
+    if (codeParam && phoneParam) {
+      setTimeout(() => runSearch(codeParam, phoneParam), 400);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
   const fetchSellerRegions = async (data: any[]) => {
     const sellerIds = [...new Set(data.map(o => o.seller_id))];
     const { data: sellerProfiles } = await supabase
-      .from('profiles')
+      .from('public_storefronts' as any)
       .select('id, region, district')
       .in('id', sellerIds);
 
     const sellerMap: Record<string, { region?: string; district?: string }> = {};
-    sellerProfiles?.forEach(p => {
-      sellerMap[p.id] = { region: (p as any).region, district: (p as any).district };
+    (sellerProfiles as any[] | null)?.forEach((p: any) => {
+      sellerMap[p.id] = { region: p.region, district: p.district };
     });
 
     return data.map(order => ({
@@ -81,8 +78,12 @@ export const OrderTrackingPage = () => {
     }));
   };
 
-  const handleSearchByPhone = async (phoneValue: string) => {
+  const runSearch = async (code: string, phoneValue: string) => {
     const normalizedPhone = normalizeTzPhoneDigits(phoneValue);
+    if (!code || code.trim().length < 3) {
+      toast.error('Tafadhali jaza tracking code sahihi');
+      return;
+    }
     if (!normalizedPhone) {
       toast.error('Namba ya simu si sahihi');
       return;
@@ -93,34 +94,9 @@ export const OrderTrackingPage = () => {
     setOrders([]);
     setHasSearched(true);
 
-    // Phone-only lookup is no longer supported for privacy. Customers must use
-    // their tracking code (or phone + tracking code combination) to view orders.
-    toast.info('Kwa ulinzi wa wateja, tumia tracking code kufuatilia oda.');
-    setNotFound(true);
-    setLoading(false);
-  };
-
-  const handleSearchByTrackingCode = async (code: string) => {
-    if (!code || code.trim().length < 3) {
-      toast.error('Tafadhali jaza tracking code sahihi');
-      return;
-    }
-
-    setLoading(true);
-    setNotFound(false);
-    setOrders([]);
-    setHasSearched(true);
-
     try {
-      // Use secure RPC that requires phone + tracking code match.
-      const phoneInput = window.prompt('Ingiza namba ya simu uliyotumia kuagiza:') || '';
-      if (!phoneInput) {
-        setLoading(false);
-        return;
-      }
-
       const { data, error } = await supabase.rpc('track_sokoni_order' as any, {
-        p_phone: phoneInput,
+        p_phone: normalizedPhone,
         p_tracking_code: code.trim(),
       });
 
@@ -141,22 +117,19 @@ export const OrderTrackingPage = () => {
       }
     } catch (error) {
       console.error('Error searching orders:', error);
-      toast.error('Imeshindwa kutafuta oda. Tafadhali jaribu tena.');
+      toast.error('Imeshindwa kutafuta oda. Hakikisha tracking code na simu ni sahihi.');
+      setNotFound(true);
     } finally {
       setLoading(false);
     }
   };
 
   const handleSearch = () => {
-    if (!searchValue) {
-      toast.error(searchMode === 'phone' ? 'Tafadhali jaza namba ya simu' : 'Tafadhali jaza tracking code');
+    if (!trackingCode || !phone) {
+      toast.error('Tafadhali jaza tracking code na namba ya simu');
       return;
     }
-    if (searchMode === 'phone') {
-      handleSearchByPhone(searchValue);
-    } else {
-      handleSearchByTrackingCode(searchValue);
-    }
+    runSearch(trackingCode, phone);
   };
 
   const getStatusInfo = (status: string) => {
@@ -277,32 +250,41 @@ export const OrderTrackingPage = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                {/* Search Mode Tabs */}
-                <Tabs value={searchMode} onValueChange={(v) => { setSearchMode(v as 'phone' | 'tracking'); setSearchValue(''); }}>
-                  <TabsList className="w-full grid grid-cols-2">
-                    <TabsTrigger value="phone" className="text-xs gap-1">
-                      <Phone className="h-3 w-3" /> Namba ya Simu
-                    </TabsTrigger>
-                    <TabsTrigger value="tracking" className="text-xs gap-1">
-                      <Hash className="h-3 w-3" /> Tracking Code
-                    </TabsTrigger>
-                  </TabsList>
-                </Tabs>
-
-                <div className="relative">
-                  {searchMode === 'phone' ? (
-                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  ) : (
+                <div className="space-y-2">
+                  <label className="text-xs text-muted-foreground flex items-center gap-1">
+                    <Hash className="h-3 w-3" /> Tracking Code
+                  </label>
+                  <div className="relative">
                     <Hash className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  )}
-                  <Input
-                    type={searchMode === 'phone' ? 'tel' : 'text'}
-                    placeholder={searchMode === 'phone' ? '0712 345 678' : 'SKN-XXXXXX'}
-                    value={searchValue}
-                    onChange={(e) => setSearchValue(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-                    className="pl-10"
-                  />
+                    <Input
+                      type="text"
+                      placeholder="SKN-XXXXXX"
+                      value={trackingCode}
+                      onChange={(e) => setTrackingCode(e.target.value)}
+                      onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                      className="pl-10"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-xs text-muted-foreground flex items-center gap-1">
+                    <Phone className="h-3 w-3" /> Namba ya Simu
+                  </label>
+                  <div className="relative">
+                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      type="tel"
+                      placeholder="0712 345 678"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                      className="pl-10"
+                    />
+                  </div>
+                  <p className="text-[10px] text-muted-foreground">
+                    Namba uliyotumia kuagiza. Tunatumia kuthibitisha umiliki wa oda.
+                  </p>
                 </div>
 
                 <Button 
@@ -332,7 +314,7 @@ export const OrderTrackingPage = () => {
                   <Package className="h-10 w-10 text-muted-foreground mx-auto mb-2" />
                   <h3 className="font-bold text-sm">Hakuna Oda</h3>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Hakuna oda zilizopatikana. Jaribu {searchMode === 'phone' ? 'tracking code' : 'namba ya simu'} badala yake.
+                    Hakuna oda iliyopatikana kwa tracking code na simu uliyoingiza. Hakikisha vyote ni sahihi.
                   </p>
                 </CardContent>
               </Card>
@@ -450,7 +432,7 @@ export const OrderTrackingPage = () => {
                           <Button 
                             size="sm"
                             className="w-full"
-                            onClick={() => navigate(`/customer-payment?phone=${searchValue}&code=${order.tracking_code}`)}
+                            onClick={() => navigate(`/customer-payment?phone=${phone}&code=${order.tracking_code}`)}
                           >
                             <CreditCard className="h-3 w-3 mr-1" />
                             Thibitisha na Lipa
@@ -469,7 +451,7 @@ export const OrderTrackingPage = () => {
                           <OrderReviewForm
                             orderId={order.id}
                             items={order.items}
-                            customerPhone={searchValue}
+                            customerPhone={phone}
                           />
                         )}
 
@@ -478,7 +460,7 @@ export const OrderTrackingPage = () => {
                           <ReturnRequestForm
                             orderId={order.id}
                             sellerId={order.seller_id}
-                            customerPhone={searchValue}
+                            customerPhone={phone}
                             items={order.items}
                             totalAmount={order.total_amount}
                           />

@@ -20,6 +20,16 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Internal-only: must be called with the service-role key (DB triggers, cron, other fns).
+  const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+  const authHeader = req.headers.get('Authorization') || '';
+  if (authHeader.replace(/^Bearer\s+/i, '') !== serviceRoleKey) {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+      status: 401,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+
   try {
     const { order_id, old_status, new_status, tracking_code, customer_phone } = await req.json();
 
@@ -31,7 +41,7 @@ serve(async (req) => {
     }
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabaseKey = serviceRoleKey;
 
     const message = STATUS_MESSAGES[new_status] || `Hali ya oda yako imebadilika kuwa: ${new_status}`;
     const trackingLink = `https://kiduka.lovable.app/track-order?code=${tracking_code}`;
