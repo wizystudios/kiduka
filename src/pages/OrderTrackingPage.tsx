@@ -250,32 +250,41 @@ export const OrderTrackingPage = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                {/* Search Mode Tabs */}
-                <Tabs value={searchMode} onValueChange={(v) => { setSearchMode(v as 'phone' | 'tracking'); setSearchValue(''); }}>
-                  <TabsList className="w-full grid grid-cols-2">
-                    <TabsTrigger value="phone" className="text-xs gap-1">
-                      <Phone className="h-3 w-3" /> Namba ya Simu
-                    </TabsTrigger>
-                    <TabsTrigger value="tracking" className="text-xs gap-1">
-                      <Hash className="h-3 w-3" /> Tracking Code
-                    </TabsTrigger>
-                  </TabsList>
-                </Tabs>
-
-                <div className="relative">
-                  {searchMode === 'phone' ? (
-                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  ) : (
+                <div className="space-y-2">
+                  <label className="text-xs text-muted-foreground flex items-center gap-1">
+                    <Hash className="h-3 w-3" /> Tracking Code
+                  </label>
+                  <div className="relative">
                     <Hash className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  )}
-                  <Input
-                    type={searchMode === 'phone' ? 'tel' : 'text'}
-                    placeholder={searchMode === 'phone' ? '0712 345 678' : 'SKN-XXXXXX'}
-                    value={searchValue}
-                    onChange={(e) => setSearchValue(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-                    className="pl-10"
-                  />
+                    <Input
+                      type="text"
+                      placeholder="SKN-XXXXXX"
+                      value={trackingCode}
+                      onChange={(e) => setTrackingCode(e.target.value)}
+                      onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                      className="pl-10"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-xs text-muted-foreground flex items-center gap-1">
+                    <Phone className="h-3 w-3" /> Namba ya Simu
+                  </label>
+                  <div className="relative">
+                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      type="tel"
+                      placeholder="0712 345 678"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                      className="pl-10"
+                    />
+                  </div>
+                  <p className="text-[10px] text-muted-foreground">
+                    Namba uliyotumia kuagiza. Tunatumia kuthibitisha umiliki wa oda.
+                  </p>
                 </div>
 
                 <Button 
@@ -305,7 +314,7 @@ export const OrderTrackingPage = () => {
                   <Package className="h-10 w-10 text-muted-foreground mx-auto mb-2" />
                   <h3 className="font-bold text-sm">Hakuna Oda</h3>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Hakuna oda zilizopatikana. Jaribu {searchMode === 'phone' ? 'tracking code' : 'namba ya simu'} badala yake.
+                    Hakuna oda iliyopatikana kwa tracking code na simu uliyoingiza. Hakikisha vyote ni sahihi.
                   </p>
                 </CardContent>
               </Card>
