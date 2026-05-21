@@ -39,37 +39,34 @@ interface TrackedOrder {
 export const OrderTrackingPage = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const [searchValue, setSearchValue] = useState('');
-  const [searchMode, setSearchMode] = useState<'phone' | 'tracking'>('phone');
+  const [trackingCode, setTrackingCode] = useState('');
+  const [phone, setPhone] = useState('');
   const [loading, setLoading] = useState(false);
   const [orders, setOrders] = useState<TrackedOrder[]>([]);
   const [notFound, setNotFound] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
 
   useEffect(() => {
-    const phoneParam = searchParams.get('phone');
     const codeParam = searchParams.get('code');
-    if (codeParam) {
-      setSearchValue(codeParam);
-      setSearchMode('tracking');
-      setTimeout(() => handleSearchByTrackingCode(codeParam), 500);
-    } else if (phoneParam) {
-      setSearchValue(phoneParam);
-      setSearchMode('phone');
-      setTimeout(() => handleSearchByPhone(phoneParam), 500);
+    const phoneParam = searchParams.get('phone');
+    if (codeParam) setTrackingCode(codeParam);
+    if (phoneParam) setPhone(phoneParam);
+    if (codeParam && phoneParam) {
+      setTimeout(() => runSearch(codeParam, phoneParam), 400);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
   const fetchSellerRegions = async (data: any[]) => {
     const sellerIds = [...new Set(data.map(o => o.seller_id))];
     const { data: sellerProfiles } = await supabase
-      .from('profiles')
+      .from('public_storefronts' as any)
       .select('id, region, district')
       .in('id', sellerIds);
 
     const sellerMap: Record<string, { region?: string; district?: string }> = {};
-    sellerProfiles?.forEach(p => {
-      sellerMap[p.id] = { region: (p as any).region, district: (p as any).district };
+    (sellerProfiles as any[] | null)?.forEach((p: any) => {
+      sellerMap[p.id] = { region: p.region, district: p.district };
     });
 
     return data.map(order => ({
@@ -81,8 +78,12 @@ export const OrderTrackingPage = () => {
     }));
   };
 
-  const handleSearchByPhone = async (phoneValue: string) => {
+  const runSearch = async (code: string, phoneValue: string) => {
     const normalizedPhone = normalizeTzPhoneDigits(phoneValue);
+    if (!code || code.trim().length < 3) {
+      toast.error('Tafadhali jaza tracking code sahihi');
+      return;
+    }
     if (!normalizedPhone) {
       toast.error('Namba ya simu si sahihi');
       return;
@@ -93,34 +94,9 @@ export const OrderTrackingPage = () => {
     setOrders([]);
     setHasSearched(true);
 
-    // Phone-only lookup is no longer supported for privacy. Customers must use
-    // their tracking code (or phone + tracking code combination) to view orders.
-    toast.info('Kwa ulinzi wa wateja, tumia tracking code kufuatilia oda.');
-    setNotFound(true);
-    setLoading(false);
-  };
-
-  const handleSearchByTrackingCode = async (code: string) => {
-    if (!code || code.trim().length < 3) {
-      toast.error('Tafadhali jaza tracking code sahihi');
-      return;
-    }
-
-    setLoading(true);
-    setNotFound(false);
-    setOrders([]);
-    setHasSearched(true);
-
     try {
-      // Use secure RPC that requires phone + tracking code match.
-      const phoneInput = window.prompt('Ingiza namba ya simu uliyotumia kuagiza:') || '';
-      if (!phoneInput) {
-        setLoading(false);
-        return;
-      }
-
       const { data, error } = await supabase.rpc('track_sokoni_order' as any, {
-        p_phone: phoneInput,
+        p_phone: normalizedPhone,
         p_tracking_code: code.trim(),
       });
 
@@ -141,22 +117,19 @@ export const OrderTrackingPage = () => {
       }
     } catch (error) {
       console.error('Error searching orders:', error);
-      toast.error('Imeshindwa kutafuta oda. Tafadhali jaribu tena.');
+      toast.error('Imeshindwa kutafuta oda. Hakikisha tracking code na simu ni sahihi.');
+      setNotFound(true);
     } finally {
       setLoading(false);
     }
   };
 
   const handleSearch = () => {
-    if (!searchValue) {
-      toast.error(searchMode === 'phone' ? 'Tafadhali jaza namba ya simu' : 'Tafadhali jaza tracking code');
+    if (!trackingCode || !phone) {
+      toast.error('Tafadhali jaza tracking code na namba ya simu');
       return;
     }
-    if (searchMode === 'phone') {
-      handleSearchByPhone(searchValue);
-    } else {
-      handleSearchByTrackingCode(searchValue);
-    }
+    runSearch(trackingCode, phone);
   };
 
   const getStatusInfo = (status: string) => {
