@@ -432,7 +432,7 @@ export const OrderTrackingPage = () => {
                           <Button 
                             size="sm"
                             className="w-full"
-                            onClick={() => navigate(`/customer-payment?phone=${searchValue}&code=${order.tracking_code}`)}
+                            onClick={() => navigate(`/customer-payment?phone=${phone}&code=${order.tracking_code}`)}
                           >
                             <CreditCard className="h-3 w-3 mr-1" />
                             Thibitisha na Lipa
@@ -451,7 +451,7 @@ export const OrderTrackingPage = () => {
                           <OrderReviewForm
                             orderId={order.id}
                             items={order.items}
-                            customerPhone={searchValue}
+                            customerPhone={phone}
                           />
                         )}
 
@@ -460,7 +460,7 @@ export const OrderTrackingPage = () => {
                           <ReturnRequestForm
                             orderId={order.id}
                             sellerId={order.seller_id}
-                            customerPhone={searchValue}
+                            customerPhone={phone}
                             items={order.items}
                             totalAmount={order.total_amount}
                           />
