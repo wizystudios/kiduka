@@ -12,9 +12,18 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders })
   }
 
+  // Internal-only: must be called with the service-role key (pg_cron, other fns).
+  const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+  const authHeader = req.headers.get('Authorization') || ''
+  if (authHeader.replace(/^Bearer\s+/i, '') !== serviceRoleKey) {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+      status: 401,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
+  }
+
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
-    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const supabase = createClient(supabaseUrl, serviceRoleKey)
 
     // Get pending scheduled messages that are due
