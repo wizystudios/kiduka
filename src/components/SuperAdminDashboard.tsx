@@ -178,6 +178,9 @@ export const SuperAdminDashboard = () => {
   const [deleteDialog, setDeleteDialog] = useState<{type: string; id: string; name: string} | null>(null);
   const [passwordDialog, setPasswordDialog] = useState<{action: string; callback: () => void; description?: string} | null>(null);
   const [selectedBusiness, setSelectedBusiness] = useState<string | null>(null);
+  const [businessSelectorOpen, setBusinessSelectorOpen] = useState(false);
+  const [businessSearch, setBusinessSearch] = useState('');
+  const [deletionDialog, setDeletionDialog] = useState<{ ownerId: string; name: string } | null>(null);
   const [approvalDialog, setApprovalDialog] = useState<{subId: string; duration: string} | null>(null);
   const [userPasswordChange, setUserPasswordChange] = useState<{userId: string; userName: string; newPassword: string} | null>(null);
   const [banDialog, setBanDialog] = useState<{userId: string; userName: string; duration: string} | null>(null);
