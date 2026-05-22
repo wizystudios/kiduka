@@ -2465,6 +2465,16 @@ export const SuperAdminDashboard = () => {
         action={passwordDialog?.action || ''}
         description={passwordDialog?.description}
       />
+
+      {deletionDialog && (
+        <BusinessDeletionDialog
+          open={!!deletionDialog}
+          onOpenChange={(o) => { if (!o) setDeletionDialog(null); }}
+          ownerId={deletionDialog.ownerId}
+          expectedName={deletionDialog.name}
+          onDeleted={() => { setSelectedBusiness(null); fetchAllData(); }}
+        />
+      )}
     </div>
   );
 };
