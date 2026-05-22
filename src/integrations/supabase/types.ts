@@ -2384,6 +2384,30 @@ export type Database = {
           },
         ]
       }
+      sokoni_pin_attempts: {
+        Row: {
+          attempt_count: number
+          first_attempt_at: string
+          last_attempt_at: string
+          locked_until: string | null
+          phone: string
+        }
+        Insert: {
+          attempt_count?: number
+          first_attempt_at?: string
+          last_attempt_at?: string
+          locked_until?: string | null
+          phone: string
+        }
+        Update: {
+          attempt_count?: number
+          first_attempt_at?: string
+          last_attempt_at?: string
+          locked_until?: string | null
+          phone?: string
+        }
+        Relationships: []
+      }
       suppliers: {
         Row: {
           address: string | null
@@ -2810,6 +2834,14 @@ export type Database = {
           p_assistant_email: string
           p_business_name?: string
           p_owner_id: string
+        }
+        Returns: Json
+      }
+      admin_delete_business: {
+        Args: {
+          p_confirmation_name: string
+          p_owner_id: string
+          p_scope?: Json
         }
         Returns: Json
       }
