@@ -1,54 +1,82 @@
-## Lengo
-Hamisha umiliki wa data kutoka kwa **mtu (owner_id = auth user)** kwenda kwa **biashara (business_id)**. Hii itaruhusu:
-- Biashara moja kuwa na wamiliki wengi (co-owners), wasaidizi, mameneja wa matawi.
-- Data kuendelea kuwepo hata kama mmiliki mmoja ataondoka/akifa.
-- Mfumo wa majukumu unaopanuka: Owner, Branch Manager, Cashier, Accountant, n.k.
+# Mpango wa Kazi — Awamu 5
 
-## Mkakati: Awamu 3 zisizovunja chochote
+Kazi yote itafanyika kwa mpangilio huu. Baada ya kila awamu nitakupa update fupi kabla ya kuendelea.
 
-### Awamu A — Schema mpya (bila kuvunja ya zamani)
-1. Unda jedwali jipya `businesses`:
-   - `id`, `name`, `tin`, `nida`, `license`, `phone`, `email`, `region`, `district`, `created_at`
-2. Unda jedwali `business_members` (M2M users ↔ businesses):
-   - `business_id`, `user_id`, `role` (enum: `owner`, `co_owner`, `branch_manager`, `cashier`, `salesperson`, `inventory_officer`, `accountant`, `assistant`)
-   - `branch_id` (nullable — kwa wafanyakazi waliopangwa kwenye tawi moja)
-   - `is_active`, `joined_at`
-3. Unda enum mpya `business_role` na security definer functions:
-   - `get_user_business_id(uuid)` → business ya msingi ya mtumiaji
-   - `is_business_member(uuid business, uuid user)`
-   - `has_business_role(uuid business, uuid user, business_role)`
-   - `can_access_business_data(uuid business_id)` — analog ya `can_access_owner_data` lakini kwa business
+## Awamu 1 — Zana za Super Admin (kipaumbele cha kwanza)
 
-### Awamu B — Ongeza `business_id` kwenye jedwali zote (nullable mwanzoni)
-Jedwali zinazohitaji `business_id`:
-`products, sales, sales_items, customers, customer_transactions, expenses, income_records, journal_entries, micro_loans, loan_payments, discounts, coupon_codes, business_ads, business_branches, owner_payment_numbers, marketplace_listings, sokoni_orders, inventory_movements, inventory_snapshots, whatsapp_messages, user_activities, abandoned_carts, business_compliance, business_contracts`.
+**Lengo:** Admin aweze kutafuta biashara, kuchagua sehemu za kufuta, au kufuta biashara nzima kwa uthibitisho wa kuandika jina halisi.
 
-Backfill script:
-- Kwa kila `owner_id` ya kipekee, tengeneza row moja kwenye `businesses` (jina = `profiles.business_name`).
-- Tengeneza row kwenye `business_members` (`user_id = owner_id`, `role = 'owner'`).
-- Update kila jedwali: `business_id = <new business.id>` kulingana na `owner_id`.
-- Kwa wasaidizi waliopo kwenye `assistant_permissions`: tengeneza `business_members` rows na `role = 'assistant'`.
+- **Search box** kwenye `SuperAdminDashboard` (component ya kuchagua biashara) — search kwa: jina la biashara, jina la mmiliki, email, simu. Debounce 300ms (hakuna kitufe).
+- **Modal mpya `BusinessDeletionDialog`** ikiwa na sehemu mbili:
+  1. **Futa kipande kipande** — checkboxes: Bidhaa, Mauzo, Wateja, Oda za Sokoni, Madeni, Wafanyakazi, Matawi, Ada/Subscription, Logs.
+  2. **Futa biashara nzima** — kitufe chekundu kinachofungua hatua ya uthibitisho.
+- **Uthibitisho wa kufuta:** Mtumiaji aandike **jina kamili sahihi la biashara** (au la mtumiaji ikiwa anafuta user). Input ikilinganishwa case-insensitive. Hakuna nenosiri tofauti — jina lenyewe ndio nenosiri (ulivyochagua).
+- **DB:** RPC mpya `admin_delete_business(business_id, confirmation_name, scope)` — `SECURITY DEFINER`, inathibitisha `super_admin`, inalinganisha jina, kisha inafuta kwa mpangilio sahihi wa FK (sales_items → sales → products → customers → loans → orders → branches → members → business).
+- **Audit log:** Kila kitendo cha kufuta kinahifadhiwa kwenye `admin_notifications` na sababu/scope.
 
-### Awamu C — Hamisha RLS na code
-1. Ongeza RLS policies mpya zinazotumia `can_access_business_data(business_id)` **sambamba** na zile za zamani.
-2. Update code ya frontend kwa awamu:
-   - Tengeneza hook mpya `useBusinessContext()` inayorudisha `business_id` na `role` ya mtumiaji wa sasa.
-   - Hatua kwa hatua, badilisha queries kutoka `.eq('owner_id', dataOwnerId)` kwenda `.eq('business_id', businessId)`.
-3. Baada ya code yote kuhama: weka `business_id` `NOT NULL`, ondoa RLS za zamani na column `owner_id` (au iache kama audit field).
+## Awamu 2 — Risiti ya Oda (Customer-facing)
 
-## Maamuzi yanayohitajika kabla sijaanza
+**Lengo:** Baada ya checkout au kufuatilia oda, mteja apate risiti inayoweza kupakuliwa/kuchapishwa, ikifungwa na tracking code.
 
-1. **Wigo wa awamu ya kwanza**: Nianze na **Awamu A pekee** (unda `businesses` + `business_members` + backfill, bila kubadilisha RLS au code yoyote ya queries)? Hii ni salama 100% — hakuna kitu kitavunjika, na tutapata msingi wa kujenga juu yake.
+- Ukurasa mpya `/risiti/:trackingCode` (`OrderReceiptPage.tsx`) — unatumia `track_sokoni_order` RPC (inahitaji simu + code) au public view salama.
+- Risiti inaonyesha: logo ya Kiduka, jina la duka, code ya SKN, bidhaa, jumla, hali ya malipo, QR code, tarehe.
+- Button mbili: **Pakua PDF** (kutumia `jspdf` + `html2canvas` — tayari iko kwenye project? nitakagua), na **Chapisha** (window.print na print-stylesheet).
+- Link ya risiti inaongezwa kwenye: ukurasa wa checkout success, `OrderTrackingPage`, na WhatsApp confirmation message.
 
-2. **Majukumu (roles)**: Nianzishe na seti kamili (`owner`, `co_owner`, `branch_manager`, `cashier`, `salesperson`, `inventory_officer`, `accountant`, `assistant`) au tuanze na `owner`, `manager`, `assistant` tu na tuongeze baadaye?
+## Awamu 3 — OrderTracking Manual Refresh + Auto-retry
 
-3. **Biashara nyingi kwa mtumiaji mmoja**: Mtumiaji aweze kuwa member wa biashara zaidi ya moja (mfano: mfanyakazi wa biashara mbili tofauti) au mtu mmoja = biashara moja tu kwa sasa?
+**Lengo:** Mteja aweze kupata hali mpya bila kuandika tena code/simu.
 
-## Kwa nini awamu, sio mara moja?
-Refactor kamili kwa mara moja ingehitaji kubadilisha ~80+ files, RLS policies zote, na hatari ya kupoteza data ni kubwa sana. Mbinu ya awamu inahakikisha:
-- Hakuna downtime.
-- Tunaweza ku-rollback awamu yoyote.
-- Tunajaribu kila awamu na watumiaji halisi kabla ya kuendelea.
+- **State persistence:** Baada ya search ya kwanza ya mafanikio, hifadhi `{phone, code}` kwenye `sessionStorage` ya tab hiyo.
+- **Manual refresh button** (icon ya RotateCw) — inaita RPC tena na badge ya "Imesasishwa sasa hivi".
+- **Auto-retry polling:** Polling kila sekunde 30 ikiwa oda iko kwenye hali tendaji (`new`, `confirmed`, `out_for_delivery`). Inasimama ikifika `delivered` au `cancelled`.
+- **Exponential backoff** kwa makosa ya mtandao: 5s → 10s → 20s → 60s, max retries 5.
+- **Visibility API:** Polling inasimama tab inapokuwa hidden, na kuanza tena ikirudi.
 
-## Pendekezo
-Nipe ruhusa nianze na **Awamu A pekee** sasa (migration moja salama). Baada ya kuthibitisha data ime-backfill vizuri, tutaendelea na Awamu B.
+## Awamu 4 — Rate Limit + Lockout kwa `sokoni_verify_pin`
+
+**Tahadhari:** Backend yetu haina primitives za rate limiting bado, kwa hivyo implementation ni ad-hoc kupitia jedwali. Nimethibitisha umeomba waziwazi.
+
+- Jedwali jipya `sokoni_pin_attempts` (phone, attempt_count, last_attempt_at, locked_until). RLS: `false` kwa wote (service role tu).
+- Logic ndani ya `sokoni_verify_pin` RPC:
+  - Kabla ya kuthibitisha: kagua kama `locked_until > now()` → rudisha `{success: false, error: 'locked', retry_after}`.
+  - PIN ikiwa sahihi: futa rekodi ya jaribio.
+  - PIN ikiwa mbaya: ongeza `attempt_count`. Baada ya **5 fails ndani ya dakika 15** → lock kwa **dakika 30**.
+- Frontend (`SokoniCustomerAuth`) inaonyesha countdown timer ikiwa imefungwa.
+
+## Awamu 5 — Dashibodi ya Takwimu za Mauzo na Bidhaa
+
+**Lengo:** Mmiliki aone afya ya biashara haraka.
+
+- Ukurasa mpya `SalesInventoryAnalyticsPage` (au upanue `SalesAnalyticsPage` iliyopo). Inatumia `business_id` (sio `owner_id`) kupitia hook ya `useBusinessContext`.
+- **Chart 1 — Mauzo ya kila siku** (Line chart, siku 30 zilizopita) — Recharts.
+- **Chart 2 — Bidhaa bora 10** (Bar chart, idadi + mapato).
+- **Widget 3 — Tahadhari za stock ndogo** (orodha ya bidhaa zenye `stock_quantity <= low_stock_threshold`, na CTA ya kwenda kuongeza stock).
+- **Realtime refresh** kupitia Supabase Realtime channel kwenye `sales` na `products`.
+
+## Awamu 6 — Uthibitisho wa Business Ownership
+
+Baada ya awamu zote, nitafanya ukaguzi:
+- Kuhakikisha queries zote mpya nilizoongeza zinatumia `business_id` (sio `owner_id`).
+- Kuongeza `business_id` filter kwenye dashibodi mpya.
+- Kukagua kuwa RLS mpya hairuhusu mtumiaji wa biashara A kuona data ya biashara B.
+
+---
+
+## Maelezo ya kiufundi muhimu
+
+- **Migrations:** Awamu 1, 4 zinahitaji migration mpya za DB.
+- **Edge functions:** Hakuna edge function mpya — `sokoni_verify_pin` ni RPC ya DB tayari.
+- **Files mpya:** ~6 components, 1 page, 2 migrations, 0 edge functions.
+- **Files zinazohaririwa:** `SuperAdminDashboard`, `OrderTrackingPage`, `SokoniCustomerAuth`, navigation config.
+- **Hakuna mabadiliko ya schema kwa tables zinazomilikiwa na mteja** — backfill ya `business_id` ilikamilika tayari.
+
+## Vitu visivyofanyika
+
+- Sitabadilisha logic ya auth ya watumiaji wa kawaida (signup/login).
+- Sitaongeza receipt PDF kwa POS sales za ndani — tu kwa Sokoni orders (ulivyoomba).
+- Sitatengeneza dashibodi mpya ya BI nzima — nitapanua `SalesAnalyticsPage` iliyopo kuepuka duplication.
+
+---
+
+**Ukikubali, nitaanza Awamu 1 mara moja na nitakupa update fupi kila awamu inapokamilika.**

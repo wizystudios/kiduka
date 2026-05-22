@@ -32,6 +32,11 @@ import { AdminEmailsPanel } from './AdminEmailsPanel';
 import { AdminUserActivities } from './AdminUserActivities';
 import { AdminMarketplacePanel } from './AdminMarketplacePanel';
 import { AdminAdsPanel } from './AdminAdsPanel';
+import { BusinessDeletionDialog } from './BusinessDeletionDialog';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { Check, ChevronsUpDown } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface User {
   id: string;
@@ -173,6 +178,9 @@ export const SuperAdminDashboard = () => {
   const [deleteDialog, setDeleteDialog] = useState<{type: string; id: string; name: string} | null>(null);
   const [passwordDialog, setPasswordDialog] = useState<{action: string; callback: () => void; description?: string} | null>(null);
   const [selectedBusiness, setSelectedBusiness] = useState<string | null>(null);
+  const [businessSelectorOpen, setBusinessSelectorOpen] = useState(false);
+  const [businessSearch, setBusinessSearch] = useState('');
+  const [deletionDialog, setDeletionDialog] = useState<{ ownerId: string; name: string } | null>(null);
   const [approvalDialog, setApprovalDialog] = useState<{subId: string; duration: string} | null>(null);
   const [userPasswordChange, setUserPasswordChange] = useState<{userId: string; userName: string; newPassword: string} | null>(null);
   const [banDialog, setBanDialog] = useState<{userId: string; userName: string; duration: string} | null>(null);
@@ -1021,20 +1029,75 @@ export const SuperAdminDashboard = () => {
           </div>
         </div>
         <div className="flex items-center gap-2 overflow-x-auto -mx-1 px-1 pb-1 [&::-webkit-scrollbar]:hidden" style={{ scrollbarWidth: 'none' }}>
-          <Select value={selectedBusiness || 'all'} onValueChange={(v) => setSelectedBusiness(v === 'all' ? null : v)}>
-            <SelectTrigger className="w-[150px] h-8 flex-shrink-0 text-xs">
-              <Building2 className="h-3.5 w-3.5 mr-1" />
-              <SelectValue placeholder="Biashara Zote" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Biashara Zote</SelectItem>
-              {businessOwners.map(u => (
-                <SelectItem key={u.id} value={u.id}>
-                  {u.business_name || u.full_name || u.email}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Popover open={businessSelectorOpen} onOpenChange={setBusinessSelectorOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                role="combobox"
+                aria-expanded={businessSelectorOpen}
+                className="w-[180px] h-8 flex-shrink-0 text-xs justify-between"
+              >
+                <span className="flex items-center gap-1 truncate">
+                  <Building2 className="h-3.5 w-3.5" />
+                  <span className="truncate">
+                    {selectedBusiness
+                      ? (businessOwners.find(b => b.id === selectedBusiness)?.business_name
+                          || businessOwners.find(b => b.id === selectedBusiness)?.full_name
+                          || 'Biashara')
+                      : 'Biashara Zote'}
+                  </span>
+                </span>
+                <ChevronsUpDown className="h-3 w-3 opacity-50 flex-shrink-0" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-[280px] p-0" align="start">
+              <Command shouldFilter={false}>
+                <CommandInput
+                  placeholder="Tafuta jina, email, simu..."
+                  value={businessSearch}
+                  onValueChange={setBusinessSearch}
+                  className="h-9"
+                />
+                <CommandList className="max-h-64">
+                  <CommandEmpty>Hakuna biashara iliyopatikana</CommandEmpty>
+                  <CommandGroup>
+                    <CommandItem
+                      onSelect={() => { setSelectedBusiness(null); setBusinessSelectorOpen(false); setBusinessSearch(''); }}
+                    >
+                      <Check className={cn('mr-2 h-4 w-4', !selectedBusiness ? 'opacity-100' : 'opacity-0')} />
+                      Biashara Zote
+                    </CommandItem>
+                    {businessOwners
+                      .filter(u => {
+                        const q = businessSearch.trim().toLowerCase();
+                        if (!q) return true;
+                        return (
+                          u.business_name?.toLowerCase().includes(q) ||
+                          u.full_name?.toLowerCase().includes(q) ||
+                          u.email?.toLowerCase().includes(q) ||
+                          u.phone?.toLowerCase().includes(q)
+                        );
+                      })
+                      .slice(0, 50)
+                      .map(u => (
+                        <CommandItem
+                          key={u.id}
+                          value={u.id}
+                          onSelect={() => { setSelectedBusiness(u.id); setBusinessSelectorOpen(false); setBusinessSearch(''); }}
+                        >
+                          <Check className={cn('mr-2 h-4 w-4', selectedBusiness === u.id ? 'opacity-100' : 'opacity-0')} />
+                          <div className="flex flex-col min-w-0">
+                            <span className="text-sm truncate">{u.business_name || u.full_name || u.email}</span>
+                            <span className="text-[10px] text-muted-foreground truncate">{u.email}</span>
+                          </div>
+                        </CommandItem>
+                      ))}
+                  </CommandGroup>
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
           <Button variant="outline" size="sm" className="relative h-8 px-2 flex-shrink-0" onClick={() => setNotificationsPanelOpen(true)}>
             <Bell className="h-3.5 w-3.5" />
             {unreadCount > 0 && (
@@ -1064,9 +1127,27 @@ export const SuperAdminDashboard = () => {
               Unaangalia biashara: {businessOwners.find(o => o.id === selectedBusiness)?.business_name || 'Unknown'}
             </span>
           </div>
-          <Button variant="outline" size="sm" className="rounded-xl" onClick={handleExitBusiness}>
-            Toka Biashara
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="destructive"
+              size="sm"
+              className="rounded-xl"
+              onClick={() => {
+                const o = businessOwners.find(b => b.id === selectedBusiness);
+                if (!o) return;
+                setDeletionDialog({
+                  ownerId: o.id,
+                  name: o.business_name || o.full_name || o.email,
+                });
+              }}
+            >
+              <Trash2 className="h-3.5 w-3.5 mr-1" />
+              Futa
+            </Button>
+            <Button variant="outline" size="sm" className="rounded-xl" onClick={handleExitBusiness}>
+              Toka Biashara
+            </Button>
+          </div>
         </div>
       )}
       
@@ -2384,6 +2465,16 @@ export const SuperAdminDashboard = () => {
         action={passwordDialog?.action || ''}
         description={passwordDialog?.description}
       />
+
+      {deletionDialog && (
+        <BusinessDeletionDialog
+          open={!!deletionDialog}
+          onOpenChange={(o) => { if (!o) setDeletionDialog(null); }}
+          ownerId={deletionDialog.ownerId}
+          expectedName={deletionDialog.name}
+          onDeleted={() => { setSelectedBusiness(null); fetchAllData(); }}
+        />
+      )}
     </div>
   );
 };
