@@ -1127,9 +1127,27 @@ export const SuperAdminDashboard = () => {
               Unaangalia biashara: {businessOwners.find(o => o.id === selectedBusiness)?.business_name || 'Unknown'}
             </span>
           </div>
-          <Button variant="outline" size="sm" className="rounded-xl" onClick={handleExitBusiness}>
-            Toka Biashara
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="destructive"
+              size="sm"
+              className="rounded-xl"
+              onClick={() => {
+                const o = businessOwners.find(b => b.id === selectedBusiness);
+                if (!o) return;
+                setDeletionDialog({
+                  ownerId: o.id,
+                  name: o.business_name || o.full_name || o.email,
+                });
+              }}
+            >
+              <Trash2 className="h-3.5 w-3.5 mr-1" />
+              Futa
+            </Button>
+            <Button variant="outline" size="sm" className="rounded-xl" onClick={handleExitBusiness}>
+              Toka Biashara
+            </Button>
+          </div>
         </div>
       )}
       
