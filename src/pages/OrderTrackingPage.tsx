@@ -45,6 +45,9 @@ export const OrderTrackingPage = () => {
   const [orders, setOrders] = useState<TrackedOrder[]>([]);
   const [notFound, setNotFound] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [autoRefresh, setAutoRefresh] = useState(true);
+  const [lastQuery, setLastQuery] = useState<{ code: string; phone: string } | null>(null);
 
   useEffect(() => {
     const codeParam = searchParams.get('code');
@@ -56,6 +59,21 @@ export const OrderTrackingPage = () => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
+
+  // Auto-refresh every 30s for active orders, pause when tab hidden
+  useEffect(() => {
+    if (!autoRefresh || !lastQuery || orders.length === 0) return;
+    const activeStatuses = ['new', 'confirmed', 'preparing', 'ready', 'shipped'];
+    const hasActive = orders.some(o => activeStatuses.includes(o.order_status));
+    if (!hasActive) return;
+    const id = setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        runSearch(lastQuery.code, lastQuery.phone, true);
+      }
+    }, 30000);
+    return () => clearInterval(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoRefresh, lastQuery, orders]);
 
   const fetchSellerRegions = async (data: any[]) => {
     const sellerIds = [...new Set(data.map(o => o.seller_id))];
@@ -78,20 +96,22 @@ export const OrderTrackingPage = () => {
     }));
   };
 
-  const runSearch = async (code: string, phoneValue: string) => {
+  const runSearch = async (code: string, phoneValue: string, silent = false) => {
     const normalizedPhone = normalizeTzPhoneDigits(phoneValue);
     if (!code || code.trim().length < 3) {
-      toast.error('Tafadhali jaza tracking code sahihi');
+      if (!silent) toast.error('Tafadhali jaza tracking code sahihi');
       return;
     }
     if (!normalizedPhone) {
-      toast.error('Namba ya simu si sahihi');
+      if (!silent) toast.error('Namba ya simu si sahihi');
       return;
     }
 
-    setLoading(true);
-    setNotFound(false);
-    setOrders([]);
+    if (!silent) {
+      setLoading(true);
+      setNotFound(false);
+      setOrders([]);
+    }
     setHasSearched(true);
 
     try {
@@ -112,15 +132,20 @@ export const OrderTrackingPage = () => {
       if (rows.length > 0) {
         const parsedOrders = await fetchSellerRegions(rows);
         setOrders(parsedOrders);
-      } else {
+        setLastUpdated(new Date());
+        setLastQuery({ code: code.trim(), phone: phoneValue });
+        if (silent) toast.success('Hali imesasishwa', { duration: 1500 });
+      } else if (!silent) {
         setNotFound(true);
       }
     } catch (error) {
       console.error('Error searching orders:', error);
-      toast.error('Imeshindwa kutafuta oda. Hakikisha tracking code na simu ni sahihi.');
-      setNotFound(true);
+      if (!silent) {
+        toast.error('Imeshindwa kutafuta oda. Hakikisha tracking code na simu ni sahihi.');
+        setNotFound(true);
+      }
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
@@ -130,6 +155,11 @@ export const OrderTrackingPage = () => {
       return;
     }
     runSearch(trackingCode, phone);
+  };
+
+  const handleManualRefresh = () => {
+    if (lastQuery) runSearch(lastQuery.code, lastQuery.phone, false);
+    else handleSearch();
   };
 
   const getStatusInfo = (status: string) => {
@@ -323,10 +353,34 @@ export const OrderTrackingPage = () => {
             {/* Orders List */}
             {orders.length > 0 && (
               <div className="space-y-3">
-                <h2 className="font-bold text-sm flex items-center gap-2">
-                  <CheckCircle className="h-4 w-4 text-green-600" />
-                  Oda {orders.length} zimepatikana
-                </h2>
+                <div className="flex items-center justify-between">
+                  <h2 className="font-bold text-sm flex items-center gap-2">
+                    <CheckCircle className="h-4 w-4 text-green-600" />
+                    Oda {orders.length} zimepatikana
+                  </h2>
+                  <div className="flex items-center gap-1">
+                    {lastUpdated && (
+                      <span className="text-[10px] text-muted-foreground">
+                        {lastUpdated.toLocaleTimeString('sw-TZ', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                      </span>
+                    )}
+                    <Button
+                      size="sm" variant="ghost" className="h-7 px-2 rounded-full"
+                      onClick={handleManualRefresh} disabled={loading}
+                      title="Sasisha hali"
+                    >
+                      <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
+                    </Button>
+                    <Button
+                      size="sm" variant="ghost"
+                      className={`h-7 px-2 rounded-full text-[10px] ${autoRefresh ? 'text-primary' : 'text-muted-foreground'}`}
+                      onClick={() => setAutoRefresh(v => !v)}
+                      title="Sasisha kiotomatiki kila sekunde 30"
+                    >
+                      Auto {autoRefresh ? 'ON' : 'OFF'}
+                    </Button>
+                  </div>
+                </div>
                 
                 {orders.map((order) => {
                   const statusInfo = getStatusInfo(order.order_status);
