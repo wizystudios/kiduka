@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -35,6 +35,22 @@ export const SokoniCustomerAuth = ({ open, onOpenChange, onSuccess }: SokoniCust
   const [confirmPin, setConfirmPin] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [lockedUntil, setLockedUntil] = useState<number | null>(null);
+  const [now, setNow] = useState(Date.now());
+
+  useEffect(() => {
+    if (!lockedUntil) return;
+    const t = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, [lockedUntil]);
+
+  const lockSecondsLeft = lockedUntil ? Math.max(0, Math.ceil((lockedUntil - now) / 1000)) : 0;
+  const isLocked = lockSecondsLeft > 0;
+  useEffect(() => { if (lockedUntil && lockSecondsLeft === 0) setLockedUntil(null); }, [lockSecondsLeft, lockedUntil]);
+  const fmtTime = (s: number) => {
+    const m = Math.floor(s / 60); const r = s % 60;
+    return `${m}:${r.toString().padStart(2, '0')}`;
+  };
 
   const formatPhone = (value: string) => {
     let cleaned = value.replace(/\D/g, '');
@@ -114,6 +130,13 @@ export const SokoniCustomerAuth = ({ open, onOpenChange, onSuccess }: SokoniCust
           if (result?.error === 'not_found') {
             toast.error('Nambari hii haijaandikishwa. Jisajili kwanza.');
             setMode('register');
+          } else if (result?.error === 'locked') {
+            const secs = Number(result?.retry_after_seconds || 0);
+            setLockedUntil(Date.now() + secs * 1000);
+            toast.error(`Akaunti imefungwa. Subiri ${fmtTime(secs)} kabla ya kujaribu tena.`);
+          } else if (result?.error === 'invalid_pin') {
+            const rem = result?.attempts_remaining;
+            toast.error(rem != null ? `Nywila si sahihi. Majaribio ${rem} yamebaki.` : 'Nywila si sahihi.');
           } else {
             toast.error('Nywila si sahihi. Tafadhali jaribu tena.');
           }
@@ -243,8 +266,16 @@ export const SokoniCustomerAuth = ({ open, onOpenChange, onSuccess }: SokoniCust
             </div>
           )}
 
-          <Button type="submit" className="w-full rounded-full h-11" disabled={loading}>
-            {loading ? 'Subiri...' : (mode === 'login' ? 'Ingia' : 'Jisajili')}
+          {isLocked && (
+            <div className="p-3 rounded-2xl bg-destructive/10 border border-destructive/30 text-center space-y-1">
+              <p className="text-xs font-medium text-destructive">Akaunti imefungwa kwa muda</p>
+              <p className="text-2xl font-bold tabular-nums text-destructive">{fmtTime(lockSecondsLeft)}</p>
+              <p className="text-[10px] text-muted-foreground">Subiri muda uishe kabla ya kujaribu tena</p>
+            </div>
+          )}
+
+          <Button type="submit" className="w-full rounded-full h-11" disabled={loading || isLocked}>
+            {loading ? 'Subiri...' : isLocked ? `Subiri ${fmtTime(lockSecondsLeft)}` : (mode === 'login' ? 'Ingia' : 'Jisajili')}
           </Button>
 
           <div className="text-center">
