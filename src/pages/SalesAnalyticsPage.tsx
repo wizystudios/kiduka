@@ -12,6 +12,7 @@ import { format, subDays, startOfDay } from 'date-fns';
 interface SalesData { date: string; revenue: number; sales_count: number; }
 interface TopProduct { name: string; quantity: number; revenue: number; }
 interface CategoryData { name: string; value: number; }
+interface LowStockItem { id: string; name: string; stock_quantity: number; low_stock_threshold: number; }
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82CA9D'];
 
@@ -21,6 +22,7 @@ export default function SalesAnalyticsPage() {
   const [salesTrend, setSalesTrend] = useState<SalesData[]>([]);
   const [topProducts, setTopProducts] = useState<TopProduct[]>([]);
   const [categoryData, setCategoryData] = useState<CategoryData[]>([]);
+  const [lowStock, setLowStock] = useState<LowStockItem[]>([]);
   const [stats, setStats] = useState({ totalRevenue: 0, totalSales: 0, avgOrderValue: 0, topProductName: '' });
 
   useEffect(() => { if (user) fetchAnalyticsData(); }, [user]);
@@ -72,6 +74,18 @@ export default function SalesAnalyticsPage() {
       const totalRevenue = salesData?.reduce((sum, s) => sum + Number(s.total_amount), 0) || 0;
       const totalSales = salesData?.length || 0;
       setStats({ totalRevenue, totalSales, avgOrderValue: totalSales > 0 ? totalRevenue / totalSales : 0, topProductName: topProds[0]?.name || 'Hakuna' });
+
+      // Low-stock products
+      const { data: lowStockData } = await supabase
+        .from('products')
+        .select('id, name, stock_quantity, low_stock_threshold, is_archived')
+        .eq('owner_id', user!.id)
+        .eq('is_archived', false);
+      const lows = (lowStockData || [])
+        .filter((p: any) => (p.stock_quantity ?? 0) <= (p.low_stock_threshold ?? 10))
+        .sort((a: any, b: any) => (a.stock_quantity ?? 0) - (b.stock_quantity ?? 0))
+        .slice(0, 10) as LowStockItem[];
+      setLowStock(lows);
     } catch (error: any) {
       console.error('Error fetching analytics:', error);
       toast.error('Hitilafu kupata takwimu');
@@ -82,10 +96,36 @@ export default function SalesAnalyticsPage() {
 
   return (
     <div className="p-4 space-y-4 pb-24">
-      <div>
-        <h2 className="text-lg font-bold text-foreground">Takwimu za Mauzo</h2>
-        <p className="text-xs text-muted-foreground">Siku 30 zilizopita</p>
+      <div className="flex items-start justify-between gap-2">
+        <div>
+          <h2 className="text-lg font-bold text-foreground">Takwimu za Mauzo</h2>
+          <p className="text-xs text-muted-foreground">Siku 30 zilizopita</p>
+        </div>
+        <button
+          onClick={fetchAnalyticsData}
+          disabled={loading}
+          className="text-xs px-3 py-1.5 rounded-full bg-primary/10 text-primary hover:bg-primary/20 disabled:opacity-50"
+        >
+          {loading ? 'Inasasisha…' : '↻ Sasisha'}
+        </button>
       </div>
+
+      {/* Low-stock alerts */}
+      {lowStock.length > 0 && (
+        <div className="p-3 rounded-2xl bg-destructive/5 border border-destructive/30 space-y-2">
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-semibold text-destructive">⚠️ Bidhaa zenye stock ndogo ({lowStock.length})</p>
+          </div>
+          <div className="space-y-1">
+            {lowStock.map(p => (
+              <div key={p.id} className="flex items-center justify-between text-xs py-1 border-b border-destructive/10 last:border-0">
+                <span className="truncate flex-1 pr-2">{p.name}</span>
+                <span className="font-mono font-bold text-destructive">{p.stock_quantity}/{p.low_stock_threshold}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Stats - flat row */}
       <div className="flex items-center justify-around py-3 border-y border-border/50">

@@ -140,20 +140,26 @@ export const BusinessDeletionDialog = ({ open, onOpenChange, ownerId, expectedNa
 
           <div className="space-y-1.5">
             <Label className="text-xs">
-              Andika jina sahihi la biashara/mtumiaji kuthibitisha:
+              Andika jina sahihi kuthibitisha (jina lenyewe ndio "nywila"):
             </Label>
-            <p className="text-xs text-muted-foreground">
-              Tarajiwa: <span className="font-mono font-semibold">{expectedName}</span>
-            </p>
+            <div className="p-2 rounded-xl bg-muted text-center">
+              <p className="text-[10px] text-muted-foreground mb-0.5">Andika hii hasa:</p>
+              <p className="font-mono text-sm font-bold select-all break-all">{expectedName}</p>
+            </div>
             <Input
               value={confirmation}
               onChange={(e) => setConfirmation(e.target.value)}
               placeholder={expectedName}
               className="rounded-2xl"
               autoComplete="off"
+              autoCapitalize="off"
+              spellCheck={false}
             />
             {confirmation && !nameMatches && (
-              <p className="text-xs text-destructive">Jina halilingani bado</p>
+              <p className="text-xs text-destructive">Jina halilingani bado — nakili hasa kutoka juu</p>
+            )}
+            {confirmation && nameMatches && (
+              <p className="text-xs text-green-600">✓ Jina linalingana</p>
             )}
           </div>
         </div>
