@@ -348,6 +348,33 @@ export const SuperAdminDashboard = () => {
     
     setSubscriptions(enriched);
   };
+
+  const fetchBusinessRelations = async () => {
+    const [membersRes, assistantRes] = await Promise.all([
+      supabase.from('business_members').select('business_id, user_id, role, is_active'),
+      supabase.from('assistant_permissions').select('owner_id, assistant_id'),
+    ]);
+    setBusinessMembers((membersRes.data as any[]) || []);
+    setAssistantLinks((assistantRes.data as any[]) || []);
+  };
+
+  const fetchBusinessAudit = async () => {
+    const ownerBusinessId = selectedBusiness
+      ? businessMembers.find((m: any) => m.user_id === selectedBusiness && m.role === 'owner')?.business_id
+      : null;
+    const [logsRes, ownershipRes] = await Promise.all([
+      (supabase.from('business_audit_logs' as any) as any)
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(80)
+        .then((res: any) => ownerBusinessId
+          ? { ...res, data: (res.data || []).filter((l: any) => l.business_id === ownerBusinessId) }
+          : res),
+      (supabase.rpc('admin_business_ownership_audit' as any, { p_business_id: ownerBusinessId } as any) as any),
+    ]);
+    setAuditLogs((logsRes.data as any[]) || []);
+    setOwnershipIssues((ownershipRes.data as any[]) || []);
+  };
   
   const handleApproveSubscription = async (subId: string, duration: string = '1_month') => {
     try {
