@@ -190,7 +190,6 @@ export const SuperAdminDashboard = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [businessMembers, setBusinessMembers] = useState<any[]>([]);
-  const [assistantLinks, setAssistantLinks] = useState<any[]>([]);
   const [auditLogs, setAuditLogs] = useState<BusinessAuditLog[]>([]);
   const [ownershipIssues, setOwnershipIssues] = useState<OwnershipIssue[]>([]);
   
@@ -355,7 +354,7 @@ export const SuperAdminDashboard = () => {
       supabase.from('assistant_permissions').select('owner_id, assistant_id'),
     ]);
     setBusinessMembers((membersRes.data as any[]) || []);
-    setAssistantLinks((assistantRes.data as any[]) || []);
+    if (assistantRes.error) console.warn('assistant permissions audit load failed', assistantRes.error);
   };
 
   const fetchBusinessAudit = async () => {
@@ -998,7 +997,7 @@ export const SuperAdminDashboard = () => {
 
   // Compute stats based on selected business filter
   const filteredStats = selectedBusiness ? {
-    totalUsers: users.filter(u => u.id === selectedBusiness || users.some(a => a.role === 'assistant')).length,
+    totalUsers: 1 + businessMembers.filter((m: any) => m.business_id === businessMembers.find((bm: any) => bm.user_id === selectedBusiness && bm.role === 'owner')?.business_id && m.user_id !== selectedBusiness && m.is_active).length,
     totalProducts: products.filter(p => p.owner_id === selectedBusiness).length,
     totalSales: sales.filter(s => s.owner_id === selectedBusiness).length,
     totalRevenue: sales.filter(s => s.owner_id === selectedBusiness).reduce((sum, s) => sum + (s.total_amount || 0), 0),
