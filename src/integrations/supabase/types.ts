@@ -298,6 +298,42 @@ export type Database = {
         }
         Relationships: []
       }
+      business_audit_logs: {
+        Row: {
+          action: string
+          actor_id: string | null
+          business_id: string | null
+          created_at: string
+          entity_id: string | null
+          entity_type: string
+          id: string
+          metadata: Json
+          summary: string
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          business_id?: string | null
+          created_at?: string
+          entity_id?: string | null
+          entity_type: string
+          id?: string
+          metadata?: Json
+          summary: string
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          business_id?: string | null
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string
+          id?: string
+          metadata?: Json
+          summary?: string
+        }
+        Relationships: []
+      }
       business_branches: {
         Row: {
           branch_name: string
@@ -456,6 +492,7 @@ export type Database = {
       }
       business_insights: {
         Row: {
+          business_id: string | null
           created_at: string
           generated_at: string
           id: string
@@ -464,6 +501,7 @@ export type Database = {
           owner_id: string
         }
         Insert: {
+          business_id?: string | null
           created_at?: string
           generated_at?: string
           id?: string
@@ -472,6 +510,7 @@ export type Database = {
           owner_id: string
         }
         Update: {
+          business_id?: string | null
           created_at?: string
           generated_at?: string
           id?: string
@@ -804,6 +843,7 @@ export type Database = {
         Row: {
           active: boolean | null
           applicable_products: Json | null
+          business_id: string | null
           created_at: string
           discount_type: string
           end_date: string | null
@@ -817,6 +857,7 @@ export type Database = {
         Insert: {
           active?: boolean | null
           applicable_products?: Json | null
+          business_id?: string | null
           created_at?: string
           discount_type: string
           end_date?: string | null
@@ -830,6 +871,7 @@ export type Database = {
         Update: {
           active?: boolean | null
           applicable_products?: Json | null
+          business_id?: string | null
           created_at?: string
           discount_type?: string
           end_date?: string | null
@@ -933,6 +975,7 @@ export type Database = {
         Row: {
           amount: number
           branch_id: string | null
+          business_id: string | null
           category: string
           created_at: string
           description: string | null
@@ -946,6 +989,7 @@ export type Database = {
         Insert: {
           amount: number
           branch_id?: string | null
+          business_id?: string | null
           category: string
           created_at?: string
           description?: string | null
@@ -959,6 +1003,7 @@ export type Database = {
         Update: {
           amount?: number
           branch_id?: string | null
+          business_id?: string | null
           category?: string
           created_at?: string
           description?: string | null
@@ -982,6 +1027,7 @@ export type Database = {
       income_records: {
         Row: {
           amount: number
+          business_id: string | null
           category: string
           created_at: string
           description: string | null
@@ -995,6 +1041,7 @@ export type Database = {
         }
         Insert: {
           amount: number
+          business_id?: string | null
           category?: string
           created_at?: string
           description?: string | null
@@ -1008,6 +1055,7 @@ export type Database = {
         }
         Update: {
           amount?: number
+          business_id?: string | null
           category?: string
           created_at?: string
           description?: string | null
@@ -1024,6 +1072,7 @@ export type Database = {
       inventory_movements: {
         Row: {
           branch_id: string | null
+          business_id: string | null
           created_at: string
           created_by: string | null
           id: string
@@ -1040,6 +1089,7 @@ export type Database = {
         }
         Insert: {
           branch_id?: string | null
+          business_id?: string | null
           created_at?: string
           created_by?: string | null
           id?: string
@@ -1056,6 +1106,7 @@ export type Database = {
         }
         Update: {
           branch_id?: string | null
+          business_id?: string | null
           created_at?: string
           created_by?: string | null
           id?: string
@@ -1096,6 +1147,7 @@ export type Database = {
       }
       inventory_snapshots: {
         Row: {
+          business_id: string | null
           created_at: string
           id: string
           notes: string | null
@@ -1106,6 +1158,7 @@ export type Database = {
           snapshot_type: string
         }
         Insert: {
+          business_id?: string | null
           created_at?: string
           id?: string
           notes?: string | null
@@ -1116,6 +1169,7 @@ export type Database = {
           snapshot_type: string
         }
         Update: {
+          business_id?: string | null
           created_at?: string
           id?: string
           notes?: string | null
@@ -1144,6 +1198,7 @@ export type Database = {
       }
       journal_entries: {
         Row: {
+          business_id: string | null
           created_at: string
           description: string
           entry_date: string
@@ -1156,6 +1211,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          business_id?: string | null
           created_at?: string
           description: string
           entry_date?: string
@@ -1168,6 +1224,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          business_id?: string | null
           created_at?: string
           description?: string
           entry_date?: string
@@ -2303,6 +2360,7 @@ export type Database = {
       }
       sokoni_orders: {
         Row: {
+          business_id: string | null
           created_at: string
           customer_email: string | null
           customer_name: string | null
@@ -2327,6 +2385,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          business_id?: string | null
           created_at?: string
           customer_email?: string | null
           customer_name?: string | null
@@ -2351,6 +2410,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          business_id?: string | null
           created_at?: string
           customer_email?: string | null
           customer_name?: string | null
@@ -2837,6 +2897,14 @@ export type Database = {
         }
         Returns: Json
       }
+      admin_business_ownership_audit: {
+        Args: { p_business_id?: string }
+        Returns: {
+          affected_count: number
+          area: string
+          issue: string
+        }[]
+      }
       admin_delete_business: {
         Args: {
           p_confirmation_name: string
@@ -2923,6 +2991,10 @@ export type Database = {
           msg_id: number
           read_ct: number
         }[]
+      }
+      resolve_business_id_from_owner: {
+        Args: { _owner_id: string }
+        Returns: string
       }
       sokoni_register_customer: {
         Args: { p_name?: string; p_phone: string; p_pin: string }
