@@ -137,6 +137,24 @@ interface Subscription {
   admin_fee_notes?: string;
 }
 
+interface BusinessAuditLog {
+  id: string;
+  business_id: string | null;
+  actor_id: string | null;
+  entity_type: string;
+  entity_id: string | null;
+  action: string;
+  summary: string;
+  metadata: any;
+  created_at: string;
+}
+
+interface OwnershipIssue {
+  area: string;
+  issue: string;
+  affected_count: number;
+}
+
 export const SuperAdminDashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -171,6 +189,10 @@ export const SuperAdminDashboard = () => {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
+  const [businessMembers, setBusinessMembers] = useState<any[]>([]);
+  const [assistantLinks, setAssistantLinks] = useState<any[]>([]);
+  const [auditLogs, setAuditLogs] = useState<BusinessAuditLog[]>([]);
+  const [ownershipIssues, setOwnershipIssues] = useState<OwnershipIssue[]>([]);
   
   // Dialogs
   const [viewDialog, setViewDialog] = useState<{type: string; data: any} | null>(null);
@@ -208,12 +230,17 @@ export const SuperAdminDashboard = () => {
         fetchCustomers(),
         fetchOrders(),
         fetchChartData(),
-        fetchSubscriptions()
+        fetchSubscriptions(),
+        fetchBusinessRelations()
       ]);
     } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (!loading) fetchBusinessAudit();
+  }, [selectedBusiness, businessMembers.length, loading]);
   
   const fetchChartData = async () => {
     try {
