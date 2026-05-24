@@ -137,6 +137,24 @@ interface Subscription {
   admin_fee_notes?: string;
 }
 
+interface BusinessAuditLog {
+  id: string;
+  business_id: string | null;
+  actor_id: string | null;
+  entity_type: string;
+  entity_id: string | null;
+  action: string;
+  summary: string;
+  metadata: any;
+  created_at: string;
+}
+
+interface OwnershipIssue {
+  area: string;
+  issue: string;
+  affected_count: number;
+}
+
 export const SuperAdminDashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -171,6 +189,9 @@ export const SuperAdminDashboard = () => {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
+  const [businessMembers, setBusinessMembers] = useState<any[]>([]);
+  const [auditLogs, setAuditLogs] = useState<BusinessAuditLog[]>([]);
+  const [ownershipIssues, setOwnershipIssues] = useState<OwnershipIssue[]>([]);
   
   // Dialogs
   const [viewDialog, setViewDialog] = useState<{type: string; data: any} | null>(null);
@@ -208,12 +229,17 @@ export const SuperAdminDashboard = () => {
         fetchCustomers(),
         fetchOrders(),
         fetchChartData(),
-        fetchSubscriptions()
+        fetchSubscriptions(),
+        fetchBusinessRelations()
       ]);
     } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (!loading) fetchBusinessAudit();
+  }, [selectedBusiness, businessMembers.length, loading]);
   
   const fetchChartData = async () => {
     try {
@@ -320,6 +346,33 @@ export const SuperAdminDashboard = () => {
     }));
     
     setSubscriptions(enriched);
+  };
+
+  const fetchBusinessRelations = async () => {
+    const [membersRes, assistantRes] = await Promise.all([
+      supabase.from('business_members').select('business_id, user_id, role, is_active'),
+      supabase.from('assistant_permissions').select('owner_id, assistant_id'),
+    ]);
+    setBusinessMembers((membersRes.data as any[]) || []);
+    if (assistantRes.error) console.warn('assistant permissions audit load failed', assistantRes.error);
+  };
+
+  const fetchBusinessAudit = async () => {
+    const ownerBusinessId = selectedBusiness
+      ? businessMembers.find((m: any) => m.user_id === selectedBusiness && m.role === 'owner')?.business_id
+      : null;
+    const [logsRes, ownershipRes] = await Promise.all([
+      (supabase.from('business_audit_logs' as any) as any)
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(80)
+        .then((res: any) => ownerBusinessId
+          ? { ...res, data: (res.data || []).filter((l: any) => l.business_id === ownerBusinessId) }
+          : res),
+      (supabase.rpc('admin_business_ownership_audit' as any, { p_business_id: ownerBusinessId } as any) as any),
+    ]);
+    setAuditLogs((logsRes.data as any[]) || []);
+    setOwnershipIssues((ownershipRes.data as any[]) || []);
   };
   
   const handleApproveSubscription = async (subId: string, duration: string = '1_month') => {
@@ -944,7 +997,7 @@ export const SuperAdminDashboard = () => {
 
   // Compute stats based on selected business filter
   const filteredStats = selectedBusiness ? {
-    totalUsers: users.filter(u => u.id === selectedBusiness || users.some(a => a.role === 'assistant')).length,
+    totalUsers: 1 + businessMembers.filter((m: any) => m.business_id === businessMembers.find((bm: any) => bm.user_id === selectedBusiness && bm.role === 'owner')?.business_id && m.user_id !== selectedBusiness && m.is_active).length,
     totalProducts: products.filter(p => p.owner_id === selectedBusiness).length,
     totalSales: sales.filter(s => s.owner_id === selectedBusiness).length,
     totalRevenue: sales.filter(s => s.owner_id === selectedBusiness).reduce((sum, s) => sum + (s.total_amount || 0), 0),

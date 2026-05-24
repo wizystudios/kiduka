@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter, SheetDescription } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -76,19 +76,20 @@ export const BusinessDeletionDialog = ({ open, onOpenChange, ownerId, expectedNa
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-destructive">
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent side="left" className="w-full max-w-md overflow-y-auto p-0 sm:max-w-md">
+        <div className="flex min-h-full flex-col">
+          <SheetHeader className="border-b border-border bg-destructive/5 p-5 text-left">
+          <SheetTitle className="flex items-center gap-2 text-destructive">
             <ShieldAlert className="h-5 w-5" />
-            Futa Data ya Biashara
-          </DialogTitle>
-          <DialogDescription>
+            Futa data
+          </SheetTitle>
+          <SheetDescription>
             Biashara: <span className="font-semibold text-foreground">{expectedName}</span>
-          </DialogDescription>
-        </DialogHeader>
+          </SheetDescription>
+        </SheetHeader>
 
-        <div className="space-y-3">
+        <div className="flex-1 space-y-4 p-5">
           <div className="flex gap-2">
             <Button
               type="button"
@@ -164,7 +165,7 @@ export const BusinessDeletionDialog = ({ open, onOpenChange, ownerId, expectedNa
           </div>
         </div>
 
-        <DialogFooter className="gap-2">
+        <SheetFooter className="border-t border-border p-5 sm:flex-row sm:justify-end gap-2">
           <Button variant="outline" className="rounded-full" onClick={() => onOpenChange(false)} disabled={submitting}>
             Ghairi
           </Button>
@@ -177,8 +178,9 @@ export const BusinessDeletionDialog = ({ open, onOpenChange, ownerId, expectedNa
             {submitting && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
             {mode === 'full' ? 'Futa Biashara Nzima' : `Futa Vilivyochaguliwa (${selectedCount})`}
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </SheetFooter>
+        </div>
+      </SheetContent>
+    </Sheet>
   );
 };
