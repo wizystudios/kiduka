@@ -70,7 +70,7 @@ export const LocationSetupGate = ({ children }: { children: React.ReactNode }) =
 
   // Open dialog when focus=location param is present (from any page)
   useEffect(() => {
-    if (searchParams.get('focus') === 'location' && user && userProfile && !userProfile.location_set) {
+    if (searchParams.get('focus') === 'location' && user && userProfile && userProfile.role !== 'assistant' && !userProfile.location_set) {
       setOpen(true);
       // Remove the focus param
       const next = new URLSearchParams(searchParams);
@@ -80,7 +80,7 @@ export const LocationSetupGate = ({ children }: { children: React.ReactNode }) =
   }, [searchParams, user, userProfile]);
 
   useEffect(() => {
-    if (user && userProfile && !userProfile.location_set && !skipped) {
+    if (user && userProfile && userProfile.role !== 'assistant' && !userProfile.location_set && !skipped) {
       const sessionSkipped = sessionStorage.getItem(`kiduka_location_skipped_${user.id}`);
       if (sessionSkipped) {
         setSkipped(true);
@@ -134,7 +134,7 @@ export const LocationSetupGate = ({ children }: { children: React.ReactNode }) =
     }
   };
 
-  if (userProfile?.role === 'super_admin') return <>{children}</>;
+  if (userProfile?.role === 'super_admin' || userProfile?.role === 'assistant') return <>{children}</>;
 
   return (
     <>
