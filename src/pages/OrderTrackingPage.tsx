@@ -512,6 +512,16 @@ export const OrderTrackingPage = () => {
                           </div>
                         )}
 
+                        {/* Receipt button - always available */}
+                        <Button
+                          variant="outline" size="sm"
+                          className="w-full rounded-full h-8 text-xs"
+                          onClick={() => navigate(`/risiti/${order.tracking_code}?phone=${encodeURIComponent(phone)}`)}
+                        >
+                          <Printer className="h-3 w-3 mr-1" />
+                          Pakua / Chapisha Risiti
+                        </Button>
+
                         {/* Review Form - show after delivery */}
                         {(order.order_status === 'delivered' || order.customer_received) && (
                           <OrderReviewForm
