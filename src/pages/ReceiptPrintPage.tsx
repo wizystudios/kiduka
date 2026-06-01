@@ -40,10 +40,10 @@ export default function ReceiptPrintPage() {
     (async () => {
       if (!trackingCode) return;
       try {
-        const { data, error } = await supabase.rpc('lookup_order_by_tracking', {
+        const { data, error } = await supabase.rpc('track_sokoni_order' as any, {
+          p_phone: phone || '',
           p_tracking_code: trackingCode,
-          p_phone: phone || null,
-        } as any);
+        });
         if (error) throw error;
         const rows = (data as any[]) || [];
         if (rows.length === 0) { setLoading(false); return; }
