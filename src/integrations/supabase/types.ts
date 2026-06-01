@@ -128,6 +128,48 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_password_attempts: {
+        Row: {
+          admin_id: string | null
+          attempted_at: string
+          id: string
+          success: boolean
+        }
+        Insert: {
+          admin_id?: string | null
+          attempted_at?: string
+          id?: string
+          success: boolean
+        }
+        Update: {
+          admin_id?: string | null
+          attempted_at?: string
+          id?: string
+          success?: boolean
+        }
+        Relationships: []
+      }
+      admin_secrets: {
+        Row: {
+          id: number
+          password_hash: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          id?: number
+          password_hash: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          id?: number
+          password_hash?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       ai_chat_sessions: {
         Row: {
           created_at: string
@@ -2943,6 +2985,7 @@ export type Database = {
       get_primary_business_id: { Args: { _user_id?: string }; Returns: string }
       get_user_business_ids: { Args: { _user_id?: string }; Returns: string[] }
       get_user_role: { Args: { _user_id: string }; Returns: string }
+      has_admin_password_set: { Args: never; Returns: boolean }
       has_business_role: {
         Args: {
           _business_id: string
@@ -2996,6 +3039,10 @@ export type Database = {
         Args: { _owner_id: string }
         Returns: string
       }
+      set_admin_password: {
+        Args: { p_current_password?: string; p_new_password: string }
+        Returns: Json
+      }
       sokoni_register_customer: {
         Args: { p_name?: string; p_phone: string; p_pin: string }
         Returns: Json
@@ -3025,6 +3072,7 @@ export type Database = {
         Args: { p_code: string; p_seller_ids: string[]; p_subtotal: number }
         Returns: Json
       }
+      verify_admin_password: { Args: { p_password: string }; Returns: Json }
     }
     Enums: {
       app_role: "owner" | "assistant" | "super_admin"

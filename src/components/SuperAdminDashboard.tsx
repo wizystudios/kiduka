@@ -33,6 +33,7 @@ import { AdminUserActivities } from './AdminUserActivities';
 import { AdminMarketplacePanel } from './AdminMarketplacePanel';
 import { AdminAdsPanel } from './AdminAdsPanel';
 import { BusinessDeletionDialog } from './BusinessDeletionDialog';
+import { BusinessAuditLogsPanel } from './BusinessAuditLogsPanel';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Check, ChevronsUpDown } from 'lucide-react';
@@ -1310,6 +1311,7 @@ export const SuperAdminDashboard = () => {
             <TabsTrigger value="ads" className="h-8 rounded-full border border-border bg-transparent px-3 text-[11px]">Matangazo</TabsTrigger>
             <TabsTrigger value="chat" className="h-8 rounded-full border border-border bg-transparent px-3 text-[11px]">Mazungumzo</TabsTrigger>
             <TabsTrigger value="emails" className="h-8 rounded-full border border-border bg-transparent px-3 text-[11px]">Barua</TabsTrigger>
+            <TabsTrigger value="logs" className="h-8 rounded-full border border-border bg-transparent px-3 text-[11px]">Logi</TabsTrigger>
             <TabsTrigger value="more" className="h-8 rounded-full border border-border bg-transparent px-3 text-[11px]">Zaidi</TabsTrigger>
           </TabsList>
         </div>
@@ -1903,6 +1905,16 @@ export const SuperAdminDashboard = () => {
         <TabsContent value="emails" className="space-y-4">
           <AdminEmailsPanel />
         </TabsContent>
+
+        <TabsContent value="logs" className="space-y-4">
+          <BusinessAuditLogsPanel businessId={
+            selectedBusiness
+              ? (businessMembers.find((m: any) => m.user_id === selectedBusiness && m.role === 'owner')?.business_id || null)
+              : null
+          } />
+        </TabsContent>
+
+
 
         {/* More Tab */}
         <TabsContent value="more" className="space-y-4">

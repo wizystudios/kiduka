@@ -1,82 +1,58 @@
-# Mpango wa Kazi — Awamu 5
+# Mpango wa Kazi
 
-Kazi yote itafanyika kwa mpangilio huu. Baada ya kila awamu nitakupa update fupi kabla ya kuendelea.
+## 1. Rekebisha Admin Password (siyo kuiondoa)
+- **Tatizo**: `AdminPasswordDialog.tsx` ina nenosiri lililo hardcoded (`5112Kharif@1`) na halifanyi kazi tena.
+- **Suluhisho**:
+  - Ondoa hardcoded string. Tumia Supabase RPC mpya `verify_admin_password(p_password)` ambayo huangalia hash iliyohifadhiwa kwenye jedwali jipya `admin_secrets` (super_admin pekee anaweza ku-set).
+  - Ikiwa admin (super_admin) hajaweka nenosiri bado, dialog itaonyesha "Weka nenosiri jipya" badala ya kuomba la zamani (first-time setup).
+  - Onyesha "Sahau nenosiri?" link inayowezesha super_admin kureset kupitia email OTP.
+  - Andika rekodi kwenye `admin_audit_log` kila jaribio (mafanikio/kushindwa) ili kuzuia brute-force (lockout baada ya majaribio 5 kwa dakika 15).
+- **Mahali pa kutumia**: Mahali pote ambapo `AdminPasswordDialog` huitwa sasa hivi (kufuta user/biashara, vitendo nyeti vya super-admin).
 
-## Awamu 1 — Zana za Super Admin (kipaumbele cha kwanza)
+## 2. Popups zote ziwe Sheet ya kulia (kufanana na Deletion)
+- **Lengo**: Kila modal/dialog katika app iwe `Sheet side="right"` badala ya centered `Dialog`.
+- **Mtindo wa kawaida**:
+  - `w-full sm:max-w-md`, `rounded-l-3xl`, header yenye border, footer yenye action buttons.
+- **Files za kubadilisha** (zenye `<Dialog>` au `<AlertDialog>` zinazotumika kama fomu/uthibitisho):
+  - `AdminPasswordDialog.tsx`
+  - `BusinessDeletionDialog.tsx` (tayari iko sawa)
+  - Dialogs nyingine zote zinazotumika ndani ya `src/components/` na `src/pages/` (nitafanya scan na kubadilisha zote zinazotumika kama panel za vitendo). Toast notifications na inline confirmations hazitabadilishwa.
+- **Isipokuwa**: Onboarding modal (tayari ni centered backdrop kwa design system) na top alert banners hazibadiliki.
 
-**Lengo:** Admin aweze kutafuta biashara, kuchagua sehemu za kufuta, au kufuta biashara nzima kwa uthibitisho wa kuandika jina halisi.
+## 3. Maliza kazi zilizosalia (kwa mpangilio)
 
-- **Search box** kwenye `SuperAdminDashboard` (component ya kuchagua biashara) — search kwa: jina la biashara, jina la mmiliki, email, simu. Debounce 300ms (hakuna kitufe).
-- **Modal mpya `BusinessDeletionDialog`** ikiwa na sehemu mbili:
-  1. **Futa kipande kipande** — checkboxes: Bidhaa, Mauzo, Wateja, Oda za Sokoni, Madeni, Wafanyakazi, Matawi, Ada/Subscription, Logs.
-  2. **Futa biashara nzima** — kitufe chekundu kinachofungua hatua ya uthibitisho.
-- **Uthibitisho wa kufuta:** Mtumiaji aandike **jina kamili sahihi la biashara** (au la mtumiaji ikiwa anafuta user). Input ikilinganishwa case-insensitive. Hakuna nenosiri tofauti — jina lenyewe ndio nenosiri (ulivyochagua).
-- **DB:** RPC mpya `admin_delete_business(business_id, confirmation_name, scope)` — `SECURITY DEFINER`, inathibitisha `super_admin`, inalinganisha jina, kisha inafuta kwa mpangilio sahihi wa FK (sales_items → sales → products → customers → loans → orders → branches → members → business).
-- **Audit log:** Kila kitendo cha kufuta kinahifadhiwa kwenye `admin_notifications` na sababu/scope.
+### 3a. PDF/Printable Receipt (Awamu 2)
+- Route mpya `/risiti/:trackingCode` (`ReceiptPrintPage.tsx`) yenye:
+  - Layout yenye logo, jina la biashara, items, jumla, QR code ya tracking.
+  - Print button (`window.print()`) + "Pakua PDF" button kupitia `html2canvas` + `jspdf`.
+- Link kutoka ukurasa wa checkout success na OrderTrackingPage.
 
-## Awamu 2 — Risiti ya Oda (Customer-facing)
+### 3b. OrderTrackingPage refresh polish
+- Tayari ina auto-refresh; ongeza:
+  - Visual countdown ya next refresh (mfano "Inasasishwa kwa 24s").
+  - Exponential backoff retry ikiwa fetch inashindwa (1s → 2s → 4s, max 30s) na toast ya kosa baada ya majaribio 3.
 
-**Lengo:** Baada ya checkout au kufuatilia oda, mteja apate risiti inayoweza kupakuliwa/kuchapishwa, ikifungwa na tracking code.
+### 3c. Super Admin "Logi" tab UI (Awamu 6 sehemu)
+- Tab mpya katika `SuperAdminDashboard` "Logi za Biashara":
+  - Inaonyesha `business_audit_logs` per biashara iliyochaguliwa.
+  - Filters: table_name, action (INSERT/UPDATE/DELETE), date range.
+  - Export to CSV button.
+- Real-time subscription kwa logs mpya.
 
-- Ukurasa mpya `/risiti/:trackingCode` (`OrderReceiptPage.tsx`) — unatumia `track_sokoni_order` RPC (inahitaji simu + code) au public view salama.
-- Risiti inaonyesha: logo ya Kiduka, jina la duka, code ya SKN, bidhaa, jumla, hali ya malipo, QR code, tarehe.
-- Button mbili: **Pakua PDF** (kutumia `jspdf` + `html2canvas` — tayari iko kwenye project? nitakagua), na **Chapisha** (window.print na print-stylesheet).
-- Link ya risiti inaongezwa kwenye: ukurasa wa checkout success, `OrderTrackingPage`, na WhatsApp confirmation message.
+### 3d. Per-business view kwa kila tab ya admin (Watumiaji/Usajili/Bidhaa, n.k.)
+- Wakati biashara imechaguliwa kwenye Combobox, kila tab ndani ya `SuperAdminDashboard` itaonyesha data ya biashara hiyo tu (sio global).
+- Kuwa na toggle "Biashara hii tu / Mfumo mzima" juu ya kila tab.
 
-## Awamu 3 — OrderTracking Manual Refresh + Auto-retry
+## Technical Details
+- Migration mpya: `admin_secrets(id, password_hash, updated_by, updated_at)`, `admin_password_attempts(id, admin_id, success, attempted_at, ip)`, RPC `verify_admin_password`, `set_admin_password`, `reset_admin_password_request`.
+- Bcrypt hashing kupitia `pgcrypto` (`crypt`, `gen_salt('bf')`).
+- Dependencies mpya: `jspdf`, `html2canvas` kwa PDF generation.
+- Hakuna mabadiliko kwenye RLS za biashara — admin password ni layer ya ziada juu ya super_admin role check.
 
-**Lengo:** Mteja aweze kupata hali mpya bila kuandika tena code/simu.
-
-- **State persistence:** Baada ya search ya kwanza ya mafanikio, hifadhi `{phone, code}` kwenye `sessionStorage` ya tab hiyo.
-- **Manual refresh button** (icon ya RotateCw) — inaita RPC tena na badge ya "Imesasishwa sasa hivi".
-- **Auto-retry polling:** Polling kila sekunde 30 ikiwa oda iko kwenye hali tendaji (`new`, `confirmed`, `out_for_delivery`). Inasimama ikifika `delivered` au `cancelled`.
-- **Exponential backoff** kwa makosa ya mtandao: 5s → 10s → 20s → 60s, max retries 5.
-- **Visibility API:** Polling inasimama tab inapokuwa hidden, na kuanza tena ikirudi.
-
-## Awamu 4 — Rate Limit + Lockout kwa `sokoni_verify_pin`
-
-**Tahadhari:** Backend yetu haina primitives za rate limiting bado, kwa hivyo implementation ni ad-hoc kupitia jedwali. Nimethibitisha umeomba waziwazi.
-
-- Jedwali jipya `sokoni_pin_attempts` (phone, attempt_count, last_attempt_at, locked_until). RLS: `false` kwa wote (service role tu).
-- Logic ndani ya `sokoni_verify_pin` RPC:
-  - Kabla ya kuthibitisha: kagua kama `locked_until > now()` → rudisha `{success: false, error: 'locked', retry_after}`.
-  - PIN ikiwa sahihi: futa rekodi ya jaribio.
-  - PIN ikiwa mbaya: ongeza `attempt_count`. Baada ya **5 fails ndani ya dakika 15** → lock kwa **dakika 30**.
-- Frontend (`SokoniCustomerAuth`) inaonyesha countdown timer ikiwa imefungwa.
-
-## Awamu 5 — Dashibodi ya Takwimu za Mauzo na Bidhaa
-
-**Lengo:** Mmiliki aone afya ya biashara haraka.
-
-- Ukurasa mpya `SalesInventoryAnalyticsPage` (au upanue `SalesAnalyticsPage` iliyopo). Inatumia `business_id` (sio `owner_id`) kupitia hook ya `useBusinessContext`.
-- **Chart 1 — Mauzo ya kila siku** (Line chart, siku 30 zilizopita) — Recharts.
-- **Chart 2 — Bidhaa bora 10** (Bar chart, idadi + mapato).
-- **Widget 3 — Tahadhari za stock ndogo** (orodha ya bidhaa zenye `stock_quantity <= low_stock_threshold`, na CTA ya kwenda kuongeza stock).
-- **Realtime refresh** kupitia Supabase Realtime channel kwenye `sales` na `products`.
-
-## Awamu 6 — Uthibitisho wa Business Ownership
-
-Baada ya awamu zote, nitafanya ukaguzi:
-- Kuhakikisha queries zote mpya nilizoongeza zinatumia `business_id` (sio `owner_id`).
-- Kuongeza `business_id` filter kwenye dashibodi mpya.
-- Kukagua kuwa RLS mpya hairuhusu mtumiaji wa biashara A kuona data ya biashara B.
-
----
-
-## Maelezo ya kiufundi muhimu
-
-- **Migrations:** Awamu 1, 4 zinahitaji migration mpya za DB.
-- **Edge functions:** Hakuna edge function mpya — `sokoni_verify_pin` ni RPC ya DB tayari.
-- **Files mpya:** ~6 components, 1 page, 2 migrations, 0 edge functions.
-- **Files zinazohaririwa:** `SuperAdminDashboard`, `OrderTrackingPage`, `SokoniCustomerAuth`, navigation config.
-- **Hakuna mabadiliko ya schema kwa tables zinazomilikiwa na mteja** — backfill ya `business_id` ilikamilika tayari.
-
-## Vitu visivyofanyika
-
-- Sitabadilisha logic ya auth ya watumiaji wa kawaida (signup/login).
-- Sitaongeza receipt PDF kwa POS sales za ndani — tu kwa Sokoni orders (ulivyoomba).
-- Sitatengeneza dashibodi mpya ya BI nzima — nitapanua `SalesAnalyticsPage` iliyopo kuepuka duplication.
-
----
-
-**Ukikubali, nitaanza Awamu 1 mara moja na nitakupa update fupi kila awamu inapokamilika.**
+## Mpangilio wa utekelezaji
+1. Migration ya admin_secrets + RPCs
+2. Rewrite `AdminPasswordDialog` kuwa Sheet ya kulia + first-time setup flow
+3. Convert dialogs nyingine za vitendo kuwa Sheet ya kulia
+4. PDF Receipt page + route
+5. OrderTracking countdown + backoff
+6. Super Admin Logi tab + per-business filtering kwa tabs zote
