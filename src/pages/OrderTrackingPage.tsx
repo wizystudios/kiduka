@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 
 import { 
   Search, Package, Truck, CheckCircle, Clock, XCircle,
-  Phone, Store, RefreshCw, CreditCard, ArrowUpRight, Sparkles, MapPin, Navigation, Hash
+  Phone, Store, RefreshCw, CreditCard, ArrowUpRight, Sparkles, MapPin, Navigation, Hash, Printer
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -48,6 +48,8 @@ export const OrderTrackingPage = () => {
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [lastQuery, setLastQuery] = useState<{ code: string; phone: string } | null>(null);
+  const [nextRefreshIn, setNextRefreshIn] = useState(30);
+  const [retryCount, setRetryCount] = useState(0);
 
   useEffect(() => {
     const codeParam = searchParams.get('code');
@@ -60,18 +62,28 @@ export const OrderTrackingPage = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
-  // Auto-refresh every 30s for active orders, pause when tab hidden
+  // Auto-refresh + visible countdown
   useEffect(() => {
-    if (!autoRefresh || !lastQuery || orders.length === 0) return;
+    if (!autoRefresh || !lastQuery || orders.length === 0) {
+      setNextRefreshIn(30);
+      return;
+    }
     const activeStatuses = ['new', 'confirmed', 'preparing', 'ready', 'shipped'];
     const hasActive = orders.some(o => activeStatuses.includes(o.order_status));
     if (!hasActive) return;
-    const id = setInterval(() => {
-      if (document.visibilityState === 'visible') {
-        runSearch(lastQuery.code, lastQuery.phone, true);
-      }
-    }, 30000);
-    return () => clearInterval(id);
+    setNextRefreshIn(30);
+    const tick = setInterval(() => {
+      setNextRefreshIn(prev => {
+        if (prev <= 1) {
+          if (document.visibilityState === 'visible') {
+            runSearch(lastQuery.code, lastQuery.phone, true);
+          }
+          return 30;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(tick);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [autoRefresh, lastQuery, orders]);
 
