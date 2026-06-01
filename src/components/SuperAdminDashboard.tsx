@@ -1906,6 +1906,16 @@ export const SuperAdminDashboard = () => {
           <AdminEmailsPanel />
         </TabsContent>
 
+        <TabsContent value="logs" className="space-y-4">
+          <BusinessAuditLogsPanel businessId={
+            selectedBusiness
+              ? (businessMembers.find((m: any) => m.user_id === selectedBusiness && m.role === 'owner')?.business_id || null)
+              : null
+          } />
+        </TabsContent>
+
+
+
         {/* More Tab */}
         <TabsContent value="more" className="space-y-4">
           <Tabs defaultValue="customers">
