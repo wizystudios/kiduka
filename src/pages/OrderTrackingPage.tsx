@@ -389,7 +389,7 @@ export const OrderTrackingPage = () => {
                       onClick={() => setAutoRefresh(v => !v)}
                       title="Sasisha kiotomatiki kila sekunde 30"
                     >
-                      Auto {autoRefresh ? 'ON' : 'OFF'}
+                      Auto {autoRefresh ? `ON · ${nextRefreshIn}s` : 'OFF'}
                     </Button>
                   </div>
                 </div>
