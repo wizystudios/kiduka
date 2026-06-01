@@ -69,6 +69,7 @@ import { SokoniMarketplace } from '@/components/SokoniMarketplace';
 import SokoniOrdersPage from '@/pages/SokoniOrdersPage';
 import NotificationsPage from '@/pages/NotificationsPage';
 import OrderTrackingPage from '@/pages/OrderTrackingPage';
+import ReceiptPrintPage from '@/pages/ReceiptPrintPage';
 import WishlistPage from '@/pages/WishlistPage';
 import CustomerPaymentPage from '@/pages/CustomerPaymentPage';
 import { ForgotPasswordPage } from '@/pages/ForgotPasswordPage';
@@ -418,6 +419,9 @@ export default function App() {
               
               {/* Order Tracking - Public access */}
               <Route path="/track-order" element={<OrderTrackingPage />} />
+
+              {/* Printable / PDF Receipt - Public access */}
+              <Route path="/risiti/:trackingCode" element={<ReceiptPrintPage />} />
               
               {/* Online Storefront - Public access */}
               <Route path="/duka/:slug" element={<StorefrontPage />} />
