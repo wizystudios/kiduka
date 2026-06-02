@@ -679,12 +679,15 @@ export const SuperAdminDashboard = () => {
       
       switch(type) {
         case 'user':
+          await supabase.from('user_roles').delete().eq('user_id', id);
+          await supabase.from('assistant_permissions').delete().or(`assistant_id.eq.${id},owner_id.eq.${id}`);
           ({ error } = await supabase.from('profiles').delete().eq('id', id));
           break;
         case 'product':
           ({ error } = await supabase.from('products').delete().eq('id', id));
           break;
         case 'sale':
+          await supabase.from('sales_items').delete().eq('sale_id', id);
           ({ error } = await supabase.from('sales').delete().eq('id', id));
           break;
         case 'expense':
@@ -984,6 +987,12 @@ export const SuperAdminDashboard = () => {
   
   const formatCurrency = (amount: number) => `TSh ${amount.toLocaleString()}`;
   const formatDate = (date: string) => new Date(date).toLocaleDateString('sw-TZ');
+  const selectedBusinessId = selectedBusiness
+    ? businessMembers.find((m: any) => m.user_id === selectedBusiness && m.role === 'owner')?.business_id || null
+    : null;
+  const selectedBusinessMemberIds = selectedBusinessId
+    ? new Set([selectedBusiness, ...businessMembers.filter((m: any) => m.business_id === selectedBusinessId && m.is_active).map((m: any) => m.user_id)].filter(Boolean))
+    : null;
   
   const getRoleBadge = (role: string) => {
     const colors: Record<string, string> = {
