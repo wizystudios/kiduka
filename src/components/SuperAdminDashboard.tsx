@@ -1025,6 +1025,9 @@ export const SuperAdminDashboard = () => {
   const filteredProducts = selectedBusiness 
     ? products.filter(p => p.owner_id === selectedBusiness)
     : products;
+  const filteredUsers = selectedBusinessMemberIds
+    ? users.filter(u => selectedBusinessMemberIds.has(u.id))
+    : users;
   const filteredSales = selectedBusiness 
     ? sales.filter(s => s.owner_id === selectedBusiness)
     : sales;
@@ -1037,6 +1040,9 @@ export const SuperAdminDashboard = () => {
   const filteredExpenses = selectedBusiness 
     ? expenses.filter(e => e.owner_id === selectedBusiness)
     : expenses;
+  const filteredSubscriptions = selectedBusiness
+    ? subscriptions.filter(s => s.user_id === selectedBusiness)
+    : subscriptions;
   
   if (loading) {
     return (
