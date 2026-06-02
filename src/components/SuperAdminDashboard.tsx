@@ -491,7 +491,7 @@ export const SuperAdminDashboard = () => {
       { header: 'Role', key: 'role' },
       { header: 'Tarehe', key: 'created_at', formatter: (v: string) => new Date(v).toLocaleDateString('sw-TZ') }
     ];
-    exportToExcel(users, columns, 'Watumiaji_Kiduka');
+    exportToExcel(filteredUsers, columns, selectedBusiness ? 'Watumiaji_Biashara_Kiduka' : 'Watumiaji_Kiduka');
     toast.success('Imehifadhiwa kama Excel');
   };
   
@@ -503,7 +503,7 @@ export const SuperAdminDashboard = () => {
       { header: 'Malipo', key: 'payment_method' },
       { header: 'Hali', key: 'payment_status' }
     ];
-    exportToExcel(sales, columns, 'Mauzo_Kiduka');
+    exportToExcel(filteredSales, columns, selectedBusiness ? 'Mauzo_Biashara_Kiduka' : 'Mauzo_Kiduka');
     toast.success('Imehifadhiwa kama Excel');
   };
   
@@ -519,16 +519,16 @@ export const SuperAdminDashboard = () => {
           { header: 'Email', key: 'email' },
           { header: 'Role', key: 'role' }
         ];
-        data = users;
+        data = filteredUsers;
         title = 'Watumiaji';
         break;
       case 'summary':
         const summaryHtml = `
           <div class="stats">
-            <div class="stat-card"><strong>${stats.totalUsers}</strong><br/>Watumiaji</div>
-            <div class="stat-card"><strong>${stats.totalProducts}</strong><br/>Bidhaa</div>
-            <div class="stat-card"><strong>${stats.totalSales}</strong><br/>Mauzo</div>
-            <div class="stat-card"><strong>TSh ${stats.totalRevenue.toLocaleString()}</strong><br/>Mapato</div>
+            <div class="stat-card"><strong>${filteredStats.totalUsers}</strong><br/>Watumiaji</div>
+            <div class="stat-card"><strong>${filteredStats.totalProducts}</strong><br/>Bidhaa</div>
+            <div class="stat-card"><strong>${filteredStats.totalSales}</strong><br/>Mauzo</div>
+            <div class="stat-card"><strong>TSh ${filteredStats.totalRevenue.toLocaleString()}</strong><br/>Mapato</div>
           </div>
         `;
         exportToPDF('Muhtasari wa Biashara', summaryHtml);
