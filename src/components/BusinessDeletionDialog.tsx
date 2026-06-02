@@ -77,7 +77,7 @@ export const BusinessDeletionDialog = ({ open, onOpenChange, ownerId, expectedNa
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="left" className="w-full max-w-md overflow-y-auto p-0 sm:max-w-md">
+      <SheetContent side="right" className="w-full max-w-md overflow-y-auto p-0 sm:max-w-md">
         <div className="flex min-h-full flex-col">
           <SheetHeader className="border-b border-border bg-destructive/5 p-5 text-left">
           <SheetTitle className="flex items-center gap-2 text-destructive">
@@ -139,7 +139,7 @@ export const BusinessDeletionDialog = ({ open, onOpenChange, ownerId, expectedNa
 
           <Separator />
 
-          <div className="space-y-1.5">
+          <div className="space-y-1.5 rounded-3xl border border-destructive/20 bg-destructive/5 p-4 text-center">
             <Label className="text-xs">
               Andika jina sahihi kuthibitisha (jina lenyewe ndio "nywila"):
             </Label>
