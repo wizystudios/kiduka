@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { NurathDiagnosticsPanel } from '@/components/NurathDiagnosticsPanel';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from '@/components/ui/sheet';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -198,7 +199,9 @@ export const SuperAdminDashboard = () => {
   const [viewDialog, setViewDialog] = useState<{type: string; data: any} | null>(null);
   const [editDialog, setEditDialog] = useState<{type: string; data: any} | null>(null);
   const [deleteDialog, setDeleteDialog] = useState<{type: string; id: string; name: string} | null>(null);
+  const [deleteConfirmation, setDeleteConfirmation] = useState('');
   const [passwordDialog, setPasswordDialog] = useState<{action: string; callback: () => void; description?: string} | null>(null);
+  const [adminVerified, setAdminVerified] = useState(false);
   const [selectedBusiness, setSelectedBusiness] = useState<string | null>(null);
   const [businessSelectorOpen, setBusinessSelectorOpen] = useState(false);
   const [businessSearch, setBusinessSearch] = useState('');
@@ -489,7 +492,7 @@ export const SuperAdminDashboard = () => {
       { header: 'Role', key: 'role' },
       { header: 'Tarehe', key: 'created_at', formatter: (v: string) => new Date(v).toLocaleDateString('sw-TZ') }
     ];
-    exportToExcel(users, columns, 'Watumiaji_Kiduka');
+    exportToExcel(filteredUsers, columns, selectedBusiness ? 'Watumiaji_Biashara_Kiduka' : 'Watumiaji_Kiduka');
     toast.success('Imehifadhiwa kama Excel');
   };
   
@@ -501,7 +504,7 @@ export const SuperAdminDashboard = () => {
       { header: 'Malipo', key: 'payment_method' },
       { header: 'Hali', key: 'payment_status' }
     ];
-    exportToExcel(sales, columns, 'Mauzo_Kiduka');
+    exportToExcel(filteredSales, columns, selectedBusiness ? 'Mauzo_Biashara_Kiduka' : 'Mauzo_Kiduka');
     toast.success('Imehifadhiwa kama Excel');
   };
   
@@ -517,16 +520,16 @@ export const SuperAdminDashboard = () => {
           { header: 'Email', key: 'email' },
           { header: 'Role', key: 'role' }
         ];
-        data = users;
+        data = filteredUsers;
         title = 'Watumiaji';
         break;
       case 'summary':
         const summaryHtml = `
           <div class="stats">
-            <div class="stat-card"><strong>${stats.totalUsers}</strong><br/>Watumiaji</div>
-            <div class="stat-card"><strong>${stats.totalProducts}</strong><br/>Bidhaa</div>
-            <div class="stat-card"><strong>${stats.totalSales}</strong><br/>Mauzo</div>
-            <div class="stat-card"><strong>TSh ${stats.totalRevenue.toLocaleString()}</strong><br/>Mapato</div>
+            <div class="stat-card"><strong>${filteredStats.totalUsers}</strong><br/>Watumiaji</div>
+            <div class="stat-card"><strong>${filteredStats.totalProducts}</strong><br/>Bidhaa</div>
+            <div class="stat-card"><strong>${filteredStats.totalSales}</strong><br/>Mauzo</div>
+            <div class="stat-card"><strong>TSh ${filteredStats.totalRevenue.toLocaleString()}</strong><br/>Mapato</div>
           </div>
         `;
         exportToPDF('Muhtasari wa Biashara', summaryHtml);
@@ -677,12 +680,15 @@ export const SuperAdminDashboard = () => {
       
       switch(type) {
         case 'user':
+          await supabase.from('user_roles').delete().eq('user_id', id);
+          await supabase.from('assistant_permissions').delete().or(`assistant_id.eq.${id},owner_id.eq.${id}`);
           ({ error } = await supabase.from('profiles').delete().eq('id', id));
           break;
         case 'product':
           ({ error } = await supabase.from('products').delete().eq('id', id));
           break;
         case 'sale':
+          await supabase.from('sales_items').delete().eq('sale_id', id);
           ({ error } = await supabase.from('sales').delete().eq('id', id));
           break;
         case 'expense':
@@ -709,55 +715,33 @@ export const SuperAdminDashboard = () => {
       setDeleteDialog(null);
     }
   };
-  
-  const handleDelete = (type: string, id: string, name: string) => {
-    const dialogData = { type, id, name };
-    setDeleteDialog(dialogData);
-    setPasswordDialog({
-      action: `Kufuta ${type}: ${name}`,
-      description: 'Hatua hii haiwezi kurejeshwa. Toa nenosiri la admin ili kuendelea.',
-      callback: async () => {
-        setPasswordDialog(null);
-        // Execute delete directly
-        try {
-          let error = null;
-          switch(dialogData.type) {
-            case 'user':
-              // Delete user roles first, then profile
-              await supabase.from('user_roles').delete().eq('user_id', dialogData.id);
-              await supabase.from('assistant_permissions').delete().eq('assistant_id', dialogData.id);
-              ({ error } = await supabase.from('profiles').delete().eq('id', dialogData.id));
-              break;
-            case 'product':
-              ({ error } = await supabase.from('products').delete().eq('id', dialogData.id));
-              break;
-            case 'sale':
-              await supabase.from('sales_items').delete().eq('sale_id', dialogData.id);
-              ({ error } = await supabase.from('sales').delete().eq('id', dialogData.id));
-              break;
-            case 'expense':
-              ({ error } = await supabase.from('expenses').delete().eq('id', dialogData.id));
-              break;
-            case 'customer':
-              ({ error } = await supabase.from('customers').delete().eq('id', dialogData.id));
-              break;
-            case 'order':
-              ({ error } = await supabase.from('sokoni_orders').delete().eq('id', dialogData.id));
-              break;
-          }
-          if (error) throw error;
-          toast.success(`${dialogData.type} imefutwa kikamilifu`);
-          fetchAllData();
-        } catch (err: any) {
-          console.error('Delete error:', err);
-          toast.error(`Imeshindwa kufuta: ${err.message}`);
-        } finally {
-          setDeleteDialog(null);
-        }
-      }
-    });
+
+  const runSensitiveAction = (action: string, callback: () => void, description?: string) => {
+    if (adminVerified) {
+      callback();
+      return;
+    }
+    setPasswordDialog({ action, description, callback });
   };
   
+  const handleDelete = (type: string, id: string, name: string) => {
+    setDeleteConfirmation('');
+    setDeleteDialog({ type, id, name });
+  };
+
+  const confirmDeleteDialog = () => {
+    if (!deleteDialog) return;
+    if (deleteConfirmation.trim().toLowerCase() !== deleteDialog.name.trim().toLowerCase()) {
+      toast.error('Jina halijalingana');
+      return;
+    }
+    runSensitiveAction(
+      `Kufuta ${deleteDialog.type}: ${deleteDialog.name}`,
+      executeDelete,
+      'Hatua hii haiwezi kurejeshwa. Uthibitisho huu utatumika hadi page i-refresh.'
+    );
+  };
+
   const executeEdit = async () => {
     if (!editDialog) return;
     
@@ -808,22 +792,13 @@ export const SuperAdminDashboard = () => {
   };
   
   const handleEditSave = () => {
-    setPasswordDialog({
-      action: `Kuhariri ${editDialog?.type}`,
-      description: 'Toa nenosiri la admin ili kuhifadhi mabadiliko.',
-      callback: () => {
-        setPasswordDialog(null);
-        executeEdit();
-      }
-    });
+    runSensitiveAction(`Kuhariri ${editDialog?.type}`, executeEdit, 'Uthibitisho wa admin utatumika hadi page i-refresh.');
   };
   
   const handleUpdateRole = async (userId: string, newRole: 'owner' | 'assistant' | 'super_admin') => {
-    setPasswordDialog({
-      action: `Kubadilisha role kuwa ${newRole}`,
-      description: 'Kitendo hiki kitabadilisha ruhusa za mtumiaji.',
-      callback: async () => {
-        setPasswordDialog(null);
+    runSensitiveAction(
+      `Kubadilisha role kuwa ${newRole}`,
+      async () => {
         try {
           const { data: existing } = await supabase
             .from('user_roles')
@@ -850,16 +825,15 @@ export const SuperAdminDashboard = () => {
           console.error('Role update error:', error);
           toast.error(`Imeshindwa: ${error.message}`);
         }
-      }
-    });
+      },
+      'Kitendo hiki kitabadilisha ruhusa za mtumiaji.'
+    );
   };
   
   const handleEnterBusiness = async (ownerId: string, businessName: string) => {
-    setPasswordDialog({
-      action: `Kuingia biashara: ${businessName}`,
-      description: 'Utaingia kwenye akaunti ya biashara hii kama admin.',
-      callback: async () => {
-        setPasswordDialog(null);
+    runSensitiveAction(
+      `Kuingia biashara: ${businessName}`,
+      async () => {
         try {
           // End any existing active sessions first
           await supabase
@@ -881,8 +855,9 @@ export const SuperAdminDashboard = () => {
         } catch (err: any) {
           toast.error(`Imeshindwa: ${err.message}`);
         }
-      }
-    });
+      },
+      'Utaingia kwenye akaunti ya biashara hii kama admin.'
+    );
   };
 
   const handleExitBusiness = async () => {
@@ -919,11 +894,9 @@ export const SuperAdminDashboard = () => {
 
   const executePasswordChange = async () => {
     if (!userPasswordChange || !userPasswordChange.newPassword) return;
-    setPasswordDialog({
-      action: `Kubadilisha nenosiri la ${userPasswordChange.userName}`,
-      description: 'Toa nenosiri la admin ili kuendelea.',
-      callback: async () => {
-        setPasswordDialog(null);
+    runSensitiveAction(
+      `Kubadilisha nenosiri la ${userPasswordChange.userName}`,
+      async () => {
         try {
           await callAdminManageUser('change_password', userPasswordChange.userId, {
             new_password: userPasswordChange.newPassword,
@@ -933,8 +906,9 @@ export const SuperAdminDashboard = () => {
         } catch (err: any) {
           toast.error(`Imeshindwa: ${err.message}`);
         }
-      }
-    });
+      },
+      'Uthibitisho wa admin utatumika hadi page i-refresh.'
+    );
   };
 
   const handleBanUser = (userId: string, userName: string) => {
@@ -943,11 +917,9 @@ export const SuperAdminDashboard = () => {
 
   const executeBanUser = async () => {
     if (!banDialog) return;
-    setPasswordDialog({
-      action: `Kuzuia mtumiaji: ${banDialog.userName}`,
-      description: 'Mtumiaji hataweza kuingia. Toa nenosiri la admin.',
-      callback: async () => {
-        setPasswordDialog(null);
+    runSensitiveAction(
+      `Kuzuia mtumiaji: ${banDialog.userName}`,
+      async () => {
         try {
           await callAdminManageUser('ban_user', banDialog.userId, {
             ban_duration: banDialog.duration,
@@ -958,16 +930,15 @@ export const SuperAdminDashboard = () => {
         } catch (err: any) {
           toast.error(`Imeshindwa: ${err.message}`);
         }
-      }
-    });
+      },
+      'Mtumiaji hataweza kuingia. Uthibitisho wa admin utatumika hadi page i-refresh.'
+    );
   };
 
   const handleUnbanUser = (userId: string, userName: string) => {
-    setPasswordDialog({
-      action: `Kurudisha mtumiaji: ${userName}`,
-      description: 'Mtumiaji ataweza kuingia tena.',
-      callback: async () => {
-        setPasswordDialog(null);
+    runSensitiveAction(
+      `Kurudisha mtumiaji: ${userName}`,
+      async () => {
         try {
           await callAdminManageUser('unban_user', userId);
           toast.success(`${userName} amerudishwa!`);
@@ -975,16 +946,15 @@ export const SuperAdminDashboard = () => {
         } catch (err: any) {
           toast.error(`Imeshindwa: ${err.message}`);
         }
-      }
-    });
+      },
+      'Mtumiaji ataweza kuingia tena.'
+    );
   };
 
   const handleDeleteUserFull = (userId: string, userName: string) => {
-    setPasswordDialog({
-      action: `Kufuta mtumiaji kabisa: ${userName}`,
-      description: 'Hatua hii haiwezi kurejeshwa. Mtumiaji, data yake yote, na akaunti yake itafutwa.',
-      callback: async () => {
-        setPasswordDialog(null);
+    runSensitiveAction(
+      `Kufuta mtumiaji kabisa: ${userName}`,
+      async () => {
         try {
           await callAdminManageUser('delete_user', userId);
           toast.success(`${userName} amefutwa kabisa`);
@@ -992,8 +962,9 @@ export const SuperAdminDashboard = () => {
         } catch (err: any) {
           toast.error(`Imeshindwa: ${err.message}`);
         }
-      }
-    });
+      },
+      'Hatua hii haiwezi kurejeshwa. Mtumiaji, data yake yote, na akaunti yake itafutwa.'
+    );
   };
 
   // Compute stats based on selected business filter
@@ -1022,6 +993,12 @@ export const SuperAdminDashboard = () => {
   
   const formatCurrency = (amount: number) => `TSh ${amount.toLocaleString()}`;
   const formatDate = (date: string) => new Date(date).toLocaleDateString('sw-TZ');
+  const selectedBusinessId = selectedBusiness
+    ? businessMembers.find((m: any) => m.user_id === selectedBusiness && m.role === 'owner')?.business_id || null
+    : null;
+  const selectedBusinessMemberIds = selectedBusinessId
+    ? new Set([selectedBusiness, ...businessMembers.filter((m: any) => m.business_id === selectedBusinessId && m.is_active).map((m: any) => m.user_id)].filter(Boolean))
+    : null;
   
   const getRoleBadge = (role: string) => {
     const colors: Record<string, string> = {
@@ -1048,6 +1025,9 @@ export const SuperAdminDashboard = () => {
   const filteredProducts = selectedBusiness 
     ? products.filter(p => p.owner_id === selectedBusiness)
     : products;
+  const filteredUsers = selectedBusinessMemberIds
+    ? users.filter(u => selectedBusinessMemberIds.has(u.id))
+    : users;
   const filteredSales = selectedBusiness 
     ? sales.filter(s => s.owner_id === selectedBusiness)
     : sales;
@@ -1060,6 +1040,9 @@ export const SuperAdminDashboard = () => {
   const filteredExpenses = selectedBusiness 
     ? expenses.filter(e => e.owner_id === selectedBusiness)
     : expenses;
+  const filteredSubscriptions = selectedBusiness
+    ? subscriptions.filter(s => s.user_id === selectedBusiness)
+    : subscriptions;
   
   if (loading) {
     return (
@@ -1340,11 +1323,11 @@ export const SuperAdminDashboard = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {subscriptions.filter(s => s.status === 'pending_approval').length === 0 ? (
+              {filteredSubscriptions.filter(s => s.status === 'pending_approval').length === 0 ? (
                 <p className="text-muted-foreground text-center py-4 text-sm">Hakuna maombi</p>
               ) : (
                 <div className="space-y-3">
-                  {subscriptions.filter(s => s.status === 'pending_approval').map(sub => (
+                  {filteredSubscriptions.filter(s => s.status === 'pending_approval').map(sub => (
                     <Card key={sub.id} className="border-orange-200 bg-orange-50/50 dark:bg-orange-900/10">
                       <CardContent className="p-3">
                         <div className="flex items-center justify-between gap-3 flex-wrap">
@@ -1374,12 +1357,12 @@ export const SuperAdminDashboard = () => {
             <CardHeader>
               <CardTitle className="text-sm flex items-center gap-2">
                 <CreditCard className="h-4 w-4" />
-                Usajili Wote ({subscriptions.length})
+                Usajili Wote ({filteredSubscriptions.length})
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
-                {subscriptions.map(sub => (
+                {filteredSubscriptions.map(sub => (
                   <div key={sub.id} className="flex items-center justify-between gap-3 p-3 rounded-2xl border hover:bg-muted/50 flex-wrap">
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-sm truncate">{sub.user_name || sub.user_email}</p>
@@ -1564,7 +1547,7 @@ export const SuperAdminDashboard = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                {users.slice(0, 5).map(u => (
+                {filteredUsers.slice(0, 5).map(u => (
                   <div key={u.id} className="flex items-center justify-between py-2 border-b last:border-0">
                     <div>
                       <p className="font-medium text-sm">{u.full_name || u.email}</p>
@@ -1600,7 +1583,7 @@ export const SuperAdminDashboard = () => {
         {/* Users Tab */}
         <TabsContent value="users" className="space-y-3">
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
-            {users
+            {filteredUsers
               .filter(u => 
                 u.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
                 u.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -2512,6 +2495,49 @@ export const SuperAdminDashboard = () => {
         </DialogContent>
       </Dialog>
 
+      <Sheet open={!!deleteDialog} onOpenChange={(open) => { if (!open) setDeleteDialog(null); }}>
+        <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto p-0">
+          <div className="flex min-h-full flex-col">
+            <SheetHeader className="border-b border-border bg-destructive/5 p-5 text-left">
+              <SheetTitle className="flex items-center gap-2 text-destructive">
+                <Trash2 className="h-5 w-5" /> Futa {deleteDialog?.type}
+              </SheetTitle>
+              <SheetDescription>{deleteDialog?.name}</SheetDescription>
+            </SheetHeader>
+            <div className="flex-1 p-5">
+              <div className="mx-auto mt-8 max-w-sm space-y-4 rounded-3xl border border-destructive/20 bg-destructive/5 p-5 text-center">
+                <AlertTriangle className="mx-auto h-10 w-10 text-destructive" />
+                <div>
+                  <p className="text-sm font-semibold">Thibitisha ufutaji</p>
+                  <p className="mt-1 text-xs text-muted-foreground">Andika jina hili hasa ili kuendelea. Ukishathibitisha admin mara moja, hutaulizwa tena hadi u-refresh page.</p>
+                </div>
+                <div className="rounded-2xl bg-background p-3">
+                  <p className="text-[10px] text-muted-foreground">Andika hii:</p>
+                  <p className="break-all font-mono text-sm font-bold">{deleteDialog?.name}</p>
+                </div>
+                <Input
+                  value={deleteConfirmation}
+                  onChange={(e) => setDeleteConfirmation(e.target.value)}
+                  placeholder={deleteDialog?.name}
+                  className="rounded-2xl text-center"
+                />
+              </div>
+            </div>
+            <SheetFooter className="border-t border-border p-5 sm:flex-row gap-2">
+              <Button variant="outline" className="rounded-full flex-1" onClick={() => setDeleteDialog(null)}>Ghairi</Button>
+              <Button
+                variant="destructive"
+                className="rounded-full flex-1"
+                onClick={confirmDeleteDialog}
+                disabled={!deleteDialog || deleteConfirmation.trim().toLowerCase() !== deleteDialog.name.trim().toLowerCase()}
+              >
+                <Trash2 className="mr-1 h-4 w-4" /> Futa
+              </Button>
+            </SheetFooter>
+          </div>
+        </SheetContent>
+      </Sheet>
+
       {/* Admin Password Dialog */}
       <AdminPasswordDialog
         open={!!passwordDialog}
@@ -2520,6 +2546,7 @@ export const SuperAdminDashboard = () => {
           setDeleteDialog(null);
         }}
         onConfirm={() => {
+          setAdminVerified(true);
           setPasswordDialog(null);
           if (deleteDialog) {
             executeDelete();
