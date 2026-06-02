@@ -1323,11 +1323,11 @@ export const SuperAdminDashboard = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {subscriptions.filter(s => s.status === 'pending_approval').length === 0 ? (
+              {filteredSubscriptions.filter(s => s.status === 'pending_approval').length === 0 ? (
                 <p className="text-muted-foreground text-center py-4 text-sm">Hakuna maombi</p>
               ) : (
                 <div className="space-y-3">
-                  {subscriptions.filter(s => s.status === 'pending_approval').map(sub => (
+                  {filteredSubscriptions.filter(s => s.status === 'pending_approval').map(sub => (
                     <Card key={sub.id} className="border-orange-200 bg-orange-50/50 dark:bg-orange-900/10">
                       <CardContent className="p-3">
                         <div className="flex items-center justify-between gap-3 flex-wrap">
@@ -1357,12 +1357,12 @@ export const SuperAdminDashboard = () => {
             <CardHeader>
               <CardTitle className="text-sm flex items-center gap-2">
                 <CreditCard className="h-4 w-4" />
-                Usajili Wote ({subscriptions.length})
+                Usajili Wote ({filteredSubscriptions.length})
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
-                {subscriptions.map(sub => (
+                {filteredSubscriptions.map(sub => (
                   <div key={sub.id} className="flex items-center justify-between gap-3 p-3 rounded-2xl border hover:bg-muted/50 flex-wrap">
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-sm truncate">{sub.user_name || sub.user_email}</p>
@@ -1547,7 +1547,7 @@ export const SuperAdminDashboard = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                {users.slice(0, 5).map(u => (
+                {filteredUsers.slice(0, 5).map(u => (
                   <div key={u.id} className="flex items-center justify-between py-2 border-b last:border-0">
                     <div>
                       <p className="font-medium text-sm">{u.full_name || u.email}</p>
@@ -1583,7 +1583,7 @@ export const SuperAdminDashboard = () => {
         {/* Users Tab */}
         <TabsContent value="users" className="space-y-3">
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
-            {users
+            {filteredUsers
               .filter(u => 
                 u.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
                 u.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
