@@ -2495,6 +2495,49 @@ export const SuperAdminDashboard = () => {
         </DialogContent>
       </Dialog>
 
+      <Sheet open={!!deleteDialog} onOpenChange={(open) => { if (!open) setDeleteDialog(null); }}>
+        <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto p-0">
+          <div className="flex min-h-full flex-col">
+            <SheetHeader className="border-b border-border bg-destructive/5 p-5 text-left">
+              <SheetTitle className="flex items-center gap-2 text-destructive">
+                <Trash2 className="h-5 w-5" /> Futa {deleteDialog?.type}
+              </SheetTitle>
+              <SheetDescription>{deleteDialog?.name}</SheetDescription>
+            </SheetHeader>
+            <div className="flex-1 p-5">
+              <div className="mx-auto mt-8 max-w-sm space-y-4 rounded-3xl border border-destructive/20 bg-destructive/5 p-5 text-center">
+                <AlertTriangle className="mx-auto h-10 w-10 text-destructive" />
+                <div>
+                  <p className="text-sm font-semibold">Thibitisha ufutaji</p>
+                  <p className="mt-1 text-xs text-muted-foreground">Andika jina hili hasa ili kuendelea. Ukishathibitisha admin mara moja, hutaulizwa tena hadi u-refresh page.</p>
+                </div>
+                <div className="rounded-2xl bg-background p-3">
+                  <p className="text-[10px] text-muted-foreground">Andika hii:</p>
+                  <p className="break-all font-mono text-sm font-bold">{deleteDialog?.name}</p>
+                </div>
+                <Input
+                  value={deleteConfirmation}
+                  onChange={(e) => setDeleteConfirmation(e.target.value)}
+                  placeholder={deleteDialog?.name}
+                  className="rounded-2xl text-center"
+                />
+              </div>
+            </div>
+            <SheetFooter className="border-t border-border p-5 sm:flex-row gap-2">
+              <Button variant="outline" className="rounded-full flex-1" onClick={() => setDeleteDialog(null)}>Ghairi</Button>
+              <Button
+                variant="destructive"
+                className="rounded-full flex-1"
+                onClick={confirmDeleteDialog}
+                disabled={!deleteDialog || deleteConfirmation.trim().toLowerCase() !== deleteDialog.name.trim().toLowerCase()}
+              >
+                <Trash2 className="mr-1 h-4 w-4" /> Futa
+              </Button>
+            </SheetFooter>
+          </div>
+        </SheetContent>
+      </Sheet>
+
       {/* Admin Password Dialog */}
       <AdminPasswordDialog
         open={!!passwordDialog}
@@ -2503,6 +2546,7 @@ export const SuperAdminDashboard = () => {
           setDeleteDialog(null);
         }}
         onConfirm={() => {
+          setAdminVerified(true);
           setPasswordDialog(null);
           if (deleteDialog) {
             executeDelete();
