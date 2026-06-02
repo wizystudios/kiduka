@@ -869,11 +869,9 @@ export const SuperAdminDashboard = () => {
   };
   
   const handleEnterBusiness = async (ownerId: string, businessName: string) => {
-    setPasswordDialog({
-      action: `Kuingia biashara: ${businessName}`,
-      description: 'Utaingia kwenye akaunti ya biashara hii kama admin.',
-      callback: async () => {
-        setPasswordDialog(null);
+    runSensitiveAction(
+      `Kuingia biashara: ${businessName}`,
+      async () => {
         try {
           // End any existing active sessions first
           await supabase
@@ -895,8 +893,9 @@ export const SuperAdminDashboard = () => {
         } catch (err: any) {
           toast.error(`Imeshindwa: ${err.message}`);
         }
-      }
-    });
+      },
+      'Utaingia kwenye akaunti ya biashara hii kama admin.'
+    );
   };
 
   const handleExitBusiness = async () => {
@@ -933,11 +932,9 @@ export const SuperAdminDashboard = () => {
 
   const executePasswordChange = async () => {
     if (!userPasswordChange || !userPasswordChange.newPassword) return;
-    setPasswordDialog({
-      action: `Kubadilisha nenosiri la ${userPasswordChange.userName}`,
-      description: 'Toa nenosiri la admin ili kuendelea.',
-      callback: async () => {
-        setPasswordDialog(null);
+    runSensitiveAction(
+      `Kubadilisha nenosiri la ${userPasswordChange.userName}`,
+      async () => {
         try {
           await callAdminManageUser('change_password', userPasswordChange.userId, {
             new_password: userPasswordChange.newPassword,
@@ -947,8 +944,9 @@ export const SuperAdminDashboard = () => {
         } catch (err: any) {
           toast.error(`Imeshindwa: ${err.message}`);
         }
-      }
-    });
+      },
+      'Uthibitisho wa admin utatumika hadi page i-refresh.'
+    );
   };
 
   const handleBanUser = (userId: string, userName: string) => {
