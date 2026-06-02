@@ -733,53 +733,6 @@ export const SuperAdminDashboard = () => {
     );
   };
 
-  const legacyDeleteWithPassword = (type: string, id: string, name: string) => {
-    const dialogData = { type, id, name };
-    runSensitiveAction(
-      `Kufuta ${type}: ${name}`,
-      async () => {
-        setPasswordDialog(null);
-        // Execute delete directly
-        try {
-          let error = null;
-          switch(dialogData.type) {
-            case 'user':
-              // Delete user roles first, then profile
-              await supabase.from('user_roles').delete().eq('user_id', dialogData.id);
-              await supabase.from('assistant_permissions').delete().eq('assistant_id', dialogData.id);
-              ({ error } = await supabase.from('profiles').delete().eq('id', dialogData.id));
-              break;
-            case 'product':
-              ({ error } = await supabase.from('products').delete().eq('id', dialogData.id));
-              break;
-            case 'sale':
-              await supabase.from('sales_items').delete().eq('sale_id', dialogData.id);
-              ({ error } = await supabase.from('sales').delete().eq('id', dialogData.id));
-              break;
-            case 'expense':
-              ({ error } = await supabase.from('expenses').delete().eq('id', dialogData.id));
-              break;
-            case 'customer':
-              ({ error } = await supabase.from('customers').delete().eq('id', dialogData.id));
-              break;
-            case 'order':
-              ({ error } = await supabase.from('sokoni_orders').delete().eq('id', dialogData.id));
-              break;
-          }
-          if (error) throw error;
-          toast.success(`${dialogData.type} imefutwa kikamilifu`);
-          fetchAllData();
-        } catch (err: any) {
-          console.error('Delete error:', err);
-          toast.error(`Imeshindwa kufuta: ${err.message}`);
-        } finally {
-          setDeleteDialog(null);
-        }
-      },
-      'Hatua hii haiwezi kurejeshwa. Toa nenosiri la admin ili kuendelea.'
-    );
-  };
-  
   const executeEdit = async () => {
     if (!editDialog) return;
     
