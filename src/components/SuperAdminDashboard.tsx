@@ -736,9 +736,8 @@ export const SuperAdminDashboard = () => {
   const legacyDeleteWithPassword = (type: string, id: string, name: string) => {
     const dialogData = { type, id, name };
     runSensitiveAction(
-      action: `Kufuta ${type}: ${name}`,
-      description: 'Hatua hii haiwezi kurejeshwa. Toa nenosiri la admin ili kuendelea.',
-      callback: async () => {
+      `Kufuta ${type}: ${name}`,
+      async () => {
         setPasswordDialog(null);
         // Execute delete directly
         try {
@@ -776,8 +775,9 @@ export const SuperAdminDashboard = () => {
         } finally {
           setDeleteDialog(null);
         }
-      }
-    });
+      },
+      'Hatua hii haiwezi kurejeshwa. Toa nenosiri la admin ili kuendelea.'
+    );
   };
   
   const executeEdit = async () => {
