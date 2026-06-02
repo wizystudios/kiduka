@@ -199,6 +199,7 @@ export const SuperAdminDashboard = () => {
   const [viewDialog, setViewDialog] = useState<{type: string; data: any} | null>(null);
   const [editDialog, setEditDialog] = useState<{type: string; data: any} | null>(null);
   const [deleteDialog, setDeleteDialog] = useState<{type: string; id: string; name: string} | null>(null);
+  const [deleteConfirmation, setDeleteConfirmation] = useState('');
   const [passwordDialog, setPasswordDialog] = useState<{action: string; callback: () => void; description?: string} | null>(null);
   const [adminVerified, setAdminVerified] = useState(false);
   const [selectedBusiness, setSelectedBusiness] = useState<string | null>(null);
@@ -724,11 +725,16 @@ export const SuperAdminDashboard = () => {
   };
   
   const handleDelete = (type: string, id: string, name: string) => {
+    setDeleteConfirmation('');
     setDeleteDialog({ type, id, name });
   };
 
   const confirmDeleteDialog = () => {
     if (!deleteDialog) return;
+    if (deleteConfirmation.trim().toLowerCase() !== deleteDialog.name.trim().toLowerCase()) {
+      toast.error('Jina halijalingana');
+      return;
+    }
     runSensitiveAction(
       `Kufuta ${deleteDialog.type}: ${deleteDialog.name}`,
       executeDelete,
