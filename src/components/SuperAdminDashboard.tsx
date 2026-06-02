@@ -955,11 +955,9 @@ export const SuperAdminDashboard = () => {
 
   const executeBanUser = async () => {
     if (!banDialog) return;
-    setPasswordDialog({
-      action: `Kuzuia mtumiaji: ${banDialog.userName}`,
-      description: 'Mtumiaji hataweza kuingia. Toa nenosiri la admin.',
-      callback: async () => {
-        setPasswordDialog(null);
+    runSensitiveAction(
+      `Kuzuia mtumiaji: ${banDialog.userName}`,
+      async () => {
         try {
           await callAdminManageUser('ban_user', banDialog.userId, {
             ban_duration: banDialog.duration,
@@ -970,16 +968,15 @@ export const SuperAdminDashboard = () => {
         } catch (err: any) {
           toast.error(`Imeshindwa: ${err.message}`);
         }
-      }
-    });
+      },
+      'Mtumiaji hataweza kuingia. Uthibitisho wa admin utatumika hadi page i-refresh.'
+    );
   };
 
   const handleUnbanUser = (userId: string, userName: string) => {
-    setPasswordDialog({
-      action: `Kurudisha mtumiaji: ${userName}`,
-      description: 'Mtumiaji ataweza kuingia tena.',
-      callback: async () => {
-        setPasswordDialog(null);
+    runSensitiveAction(
+      `Kurudisha mtumiaji: ${userName}`,
+      async () => {
         try {
           await callAdminManageUser('unban_user', userId);
           toast.success(`${userName} amerudishwa!`);
@@ -987,16 +984,15 @@ export const SuperAdminDashboard = () => {
         } catch (err: any) {
           toast.error(`Imeshindwa: ${err.message}`);
         }
-      }
-    });
+      },
+      'Mtumiaji ataweza kuingia tena.'
+    );
   };
 
   const handleDeleteUserFull = (userId: string, userName: string) => {
-    setPasswordDialog({
-      action: `Kufuta mtumiaji kabisa: ${userName}`,
-      description: 'Hatua hii haiwezi kurejeshwa. Mtumiaji, data yake yote, na akaunti yake itafutwa.',
-      callback: async () => {
-        setPasswordDialog(null);
+    runSensitiveAction(
+      `Kufuta mtumiaji kabisa: ${userName}`,
+      async () => {
         try {
           await callAdminManageUser('delete_user', userId);
           toast.success(`${userName} amefutwa kabisa`);
@@ -1004,8 +1000,9 @@ export const SuperAdminDashboard = () => {
         } catch (err: any) {
           toast.error(`Imeshindwa: ${err.message}`);
         }
-      }
-    });
+      },
+      'Hatua hii haiwezi kurejeshwa. Mtumiaji, data yake yote, na akaunti yake itafutwa.'
+    );
   };
 
   // Compute stats based on selected business filter
