@@ -711,11 +711,31 @@ export const SuperAdminDashboard = () => {
       setDeleteDialog(null);
     }
   };
+
+  const runSensitiveAction = (action: string, callback: () => void, description?: string) => {
+    if (adminVerified) {
+      callback();
+      return;
+    }
+    setPasswordDialog({ action, description, callback });
+  };
   
   const handleDelete = (type: string, id: string, name: string) => {
+    setDeleteDialog({ type, id, name });
+  };
+
+  const confirmDeleteDialog = () => {
+    if (!deleteDialog) return;
+    runSensitiveAction(
+      `Kufuta ${deleteDialog.type}: ${deleteDialog.name}`,
+      executeDelete,
+      'Hatua hii haiwezi kurejeshwa. Uthibitisho huu utatumika hadi page i-refresh.'
+    );
+  };
+
+  const legacyDeleteWithPassword = (type: string, id: string, name: string) => {
     const dialogData = { type, id, name };
-    setDeleteDialog(dialogData);
-    setPasswordDialog({
+    runSensitiveAction(
       action: `Kufuta ${type}: ${name}`,
       description: 'Hatua hii haiwezi kurejeshwa. Toa nenosiri la admin ili kuendelea.',
       callback: async () => {
