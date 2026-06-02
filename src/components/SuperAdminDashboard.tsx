@@ -830,22 +830,13 @@ export const SuperAdminDashboard = () => {
   };
   
   const handleEditSave = () => {
-    setPasswordDialog({
-      action: `Kuhariri ${editDialog?.type}`,
-      description: 'Toa nenosiri la admin ili kuhifadhi mabadiliko.',
-      callback: () => {
-        setPasswordDialog(null);
-        executeEdit();
-      }
-    });
+    runSensitiveAction(`Kuhariri ${editDialog?.type}`, executeEdit, 'Uthibitisho wa admin utatumika hadi page i-refresh.');
   };
   
   const handleUpdateRole = async (userId: string, newRole: 'owner' | 'assistant' | 'super_admin') => {
-    setPasswordDialog({
-      action: `Kubadilisha role kuwa ${newRole}`,
-      description: 'Kitendo hiki kitabadilisha ruhusa za mtumiaji.',
-      callback: async () => {
-        setPasswordDialog(null);
+    runSensitiveAction(
+      `Kubadilisha role kuwa ${newRole}`,
+      async () => {
         try {
           const { data: existing } = await supabase
             .from('user_roles')
@@ -872,8 +863,9 @@ export const SuperAdminDashboard = () => {
           console.error('Role update error:', error);
           toast.error(`Imeshindwa: ${error.message}`);
         }
-      }
-    });
+      },
+      'Kitendo hiki kitabadilisha ruhusa za mtumiaji.'
+    );
   };
   
   const handleEnterBusiness = async (ownerId: string, businessName: string) => {
