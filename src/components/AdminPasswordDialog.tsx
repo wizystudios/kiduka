@@ -87,12 +87,12 @@ export const AdminPasswordDialog = ({ open, onClose, onConfirm, action, descript
     try {
       const { data, error: e } = await supabase.rpc('set_admin_password', {
         p_new_password: newPassword,
-        p_current_password: mode === 'change' ? password : null,
+        p_current_password: null,
       });
       if (e) throw e;
       const res = data as any;
       if (res?.success) {
-        toast.success(mode === 'setup' ? 'Nenosiri jipya limewekwa' : 'Nenosiri limebadilishwa');
+        toast.success(mode === 'setup' ? 'Nenosiri jipya limewekwa' : 'Nenosiri jipya limehifadhiwa');
         onConfirm();
         onClose();
       } else if (res?.error === 'current_password_invalid') {
@@ -113,7 +113,7 @@ export const AdminPasswordDialog = ({ open, onClose, onConfirm, action, descript
 
   const title =
     mode === 'setup' ? 'Weka Nenosiri la Admin'
-    : mode === 'change' ? 'Badilisha Nenosiri'
+    : mode === 'change' ? 'Weka Nenosiri Jipya'
     : 'Uthibitisho wa Admin';
 
   return (
@@ -167,7 +167,7 @@ export const AdminPasswordDialog = ({ open, onClose, onConfirm, action, descript
                 </div>
                 <button type="button" className="text-xs text-primary hover:underline"
                   onClick={() => setMode('change')}>
-                  Badilisha nenosiri
+                  Weka/reset nenosiri jipya
                 </button>
               </div>
             )}
@@ -175,12 +175,12 @@ export const AdminPasswordDialog = ({ open, onClose, onConfirm, action, descript
             {(mode === 'setup' || mode === 'change') && (
               <div className="space-y-3">
                 {mode === 'change' && (
-                  <div className="space-y-1.5">
-                    <Label className="text-xs">Nenosiri la sasa</Label>
-                    <Input type="password" value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      placeholder="Nenosiri la sasa" />
-                  </div>
+                  <Alert>
+                    <KeyRound className="h-4 w-4" />
+                    <AlertDescription className="text-xs">
+                      Weka nenosiri jipya la admin. Huhitaji password ya zamani; ruhusa yako ya Super Admin ndiyo inathibitishwa.
+                    </AlertDescription>
+                  </Alert>
                 )}
                 <div className="space-y-1.5">
                   <Label className="text-xs">Nenosiri jipya</Label>
