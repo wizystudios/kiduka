@@ -2955,6 +2955,14 @@ export type Database = {
         }
         Returns: Json
       }
+      admin_delete_entity: {
+        Args: {
+          p_confirmation_name: string
+          p_entity_id: string
+          p_entity_type: string
+        }
+        Returns: Json
+      }
       approve_user_subscription: {
         Args: {
           p_admin_id: string
