@@ -1654,12 +1654,7 @@ export const SuperAdminDashboard = () => {
         {/* Users Tab */}
         <TabsContent value="users" className="space-y-3">
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
-            {filteredUsers
-              .filter(u => 
-                u.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                u.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                u.business_name?.toLowerCase().includes(searchQuery.toLowerCase())
-              )
+            {searchedUsers
               .map(u => (
                 <Card key={u.id}>
                   <CardContent className="p-4">
@@ -1779,8 +1774,7 @@ export const SuperAdminDashboard = () => {
         {/* Products Tab */}
         <TabsContent value="products" className="space-y-3">
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
-            {filteredProducts
-              .filter(p => p.name?.toLowerCase().includes(searchQuery.toLowerCase()))
+            {searchedProducts
               .map(p => (
                 <Card key={p.id}>
                   <CardContent className="p-4">
@@ -1835,8 +1829,7 @@ export const SuperAdminDashboard = () => {
         {/* Sales Tab */}
         <TabsContent value="sales" className="space-y-3">
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
-            {filteredSales
-              .filter(s => s.id.toLowerCase().includes(searchQuery.toLowerCase()))
+            {searchedSales
               .map(s => (
                 <Card key={s.id}>
                   <CardContent className="p-4">
@@ -1885,11 +1878,7 @@ export const SuperAdminDashboard = () => {
         {/* Orders Tab */}
         <TabsContent value="orders" className="space-y-3">
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
-            {filteredOrders
-              .filter(o => 
-                o.tracking_code?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                o.customer_phone?.includes(searchQuery)
-              )
+            {searchedOrders
               .map(o => (
                 <Card key={o.id}>
                   <CardContent className="p-4">
