@@ -504,8 +504,8 @@ export const SuperAdminDashboard = () => {
       { header: 'Role', key: 'role' },
       { header: 'Tarehe', key: 'created_at', formatter: (v: string) => new Date(v).toLocaleDateString('sw-TZ') }
     ];
-    exportToExcel(filteredUsers, columns, selectedBusiness ? 'Watumiaji_Biashara_Kiduka' : 'Watumiaji_Kiduka');
-    toast.success('Imehifadhiwa kama Excel');
+    exportToCSV(searchedUsers, columns, `Watumiaji_${scopeSuffix}`);
+    toast.success('CSV imepakuliwa');
   };
   
   const handleExportSales = () => {
@@ -516,8 +516,36 @@ export const SuperAdminDashboard = () => {
       { header: 'Malipo', key: 'payment_method' },
       { header: 'Hali', key: 'payment_status' }
     ];
-    exportToExcel(filteredSales, columns, selectedBusiness ? 'Mauzo_Biashara_Kiduka' : 'Mauzo_Kiduka');
-    toast.success('Imehifadhiwa kama Excel');
+    exportToCSV(searchedSales, columns, `Mauzo_${scopeSuffix}`);
+    toast.success('CSV imepakuliwa');
+  };
+
+  const handleExportActiveCsv = () => {
+    const commonDate = { header: 'Tarehe', key: 'created_at', formatter: (v: string) => v ? new Date(v).toLocaleString('sw-TZ') : '' };
+    const configs: Record<string, { data: any[]; columns: any[]; name: string }> = {
+      users: { data: searchedUsers, name: 'Watumiaji', columns: [
+        { header: 'Jina', key: 'full_name' }, { header: 'Email', key: 'email' }, { header: 'Biashara', key: 'business_name' }, { header: 'Role', key: 'role' }, commonDate
+      ] },
+      products: { data: searchedProducts, name: 'Bidhaa', columns: [
+        { header: 'Jina', key: 'name' }, { header: 'Biashara', key: 'business_name' }, { header: 'Bei', key: 'price' }, { header: 'Stock', key: 'stock_quantity' }, { header: 'Category', key: 'category' }, commonDate
+      ] },
+      sales: { data: searchedSales, name: 'Mauzo', columns: [
+        commonDate, { header: 'Biashara', key: 'business_name' }, { header: 'Kiasi', key: 'total_amount' }, { header: 'Malipo', key: 'payment_method' }, { header: 'Hali', key: 'payment_status' }
+      ] },
+      orders: { data: searchedOrders, name: 'Oda', columns: [
+        { header: 'Tracking', key: 'tracking_code' }, { header: 'Biashara', key: 'business_name' }, { header: 'Simu', key: 'customer_phone' }, { header: 'Kiasi', key: 'total_amount' }, { header: 'Oda', key: 'order_status' }, { header: 'Malipo', key: 'payment_status' }, commonDate
+      ] },
+      subscriptions: { data: filteredSubscriptions, name: 'Usajili', columns: [
+        { header: 'Jina', key: 'user_name' }, { header: 'Email', key: 'user_email' }, { header: 'Status', key: 'status' }, { header: 'Ada', key: 'payment_amount' }, commonDate
+      ] },
+      more: { data: [...searchedCustomers, ...searchedExpenses], name: 'Zaidi', columns: [
+        { header: 'Jina/Kategoria', key: 'name' }, { header: 'Biashara', key: 'business_name' }, { header: 'Kiasi/Deni', key: 'amount' }, { header: 'Simu', key: 'phone' }
+      ] },
+    };
+    const cfg = configs[activeTab] || configs.sales;
+    if (!cfg.data.length) { toast.error('Hakuna data ya ku-export'); return; }
+    exportToCSV(cfg.data, cfg.columns, `${cfg.name}_${scopeSuffix}`);
+    toast.success('CSV imepakuliwa');
   };
   
   const handleExportPDF = (type: string) => {
