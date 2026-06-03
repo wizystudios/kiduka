@@ -224,6 +224,18 @@ export const SuperAdminDashboard = () => {
   }, []);
 
   useEffect(() => {
+    const channel = supabase
+      .channel('super-admin-live-data')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, fetchAllData)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, fetchAllData)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'sales' }, fetchAllData)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'sokoni_orders' }, fetchAllData)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'business_audit_logs' }, fetchBusinessAudit)
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [selectedBusiness, businessMembers.length]);
+
+  useEffect(() => {
     const timer = setInterval(() => setSessionNow(Date.now()), 1000);
     return () => clearInterval(timer);
   }, []);
