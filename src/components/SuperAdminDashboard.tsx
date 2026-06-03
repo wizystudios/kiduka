@@ -603,7 +603,7 @@ export const SuperAdminDashboard = () => {
       .from('products')
       .select('*')
       .order('created_at', { ascending: false })
-      .limit(100);
+      .limit(1000);
     
     // Enrich with owner info
     const ownerIds = [...new Set((data || []).map(p => p.owner_id))];
@@ -626,7 +626,7 @@ export const SuperAdminDashboard = () => {
       .from('sales')
       .select('*')
       .order('created_at', { ascending: false })
-      .limit(100);
+      .limit(1000);
     
     // Enrich with owner info
     const ownerIds = [...new Set((data || []).map(s => s.owner_id))];
@@ -649,7 +649,7 @@ export const SuperAdminDashboard = () => {
       .from('expenses')
       .select('*')
       .order('expense_date', { ascending: false })
-      .limit(100);
+      .limit(1000);
     
     const ownerIds = [...new Set((data || []).map(e => e.owner_id))];
     const { data: profiles } = await supabase
@@ -671,7 +671,7 @@ export const SuperAdminDashboard = () => {
       .from('customers')
       .select('*')
       .order('created_at', { ascending: false })
-      .limit(100);
+      .limit(1000);
     
     const ownerIds = [...new Set((data || []).map(c => c.owner_id))];
     const { data: profiles } = await supabase
@@ -693,7 +693,7 @@ export const SuperAdminDashboard = () => {
       .from('sokoni_orders')
       .select('*')
       .order('created_at', { ascending: false })
-      .limit(100);
+      .limit(1000);
     
     const sellerIds = [...new Set((data || []).map(o => o.seller_id))];
     const { data: profiles } = await supabase
