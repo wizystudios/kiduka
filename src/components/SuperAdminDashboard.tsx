@@ -25,7 +25,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import { useAdminNotifications } from '@/hooks/useAdminNotifications';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
-import { exportToExcel, exportToCSV, exportToPDF, createPrintableTable } from '@/utils/exportUtils';
+import { exportToCSV, exportToPDF, createPrintableTable } from '@/utils/exportUtils';
 import { AdminPasswordDialog } from './AdminPasswordDialog';
 import { AdminChatPanel } from './AdminChatPanel';
 import { AdminCompliancePanel } from './AdminCompliancePanel';
