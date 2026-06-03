@@ -202,6 +202,8 @@ export const SuperAdminDashboard = () => {
   const [deleteConfirmation, setDeleteConfirmation] = useState('');
   const [passwordDialog, setPasswordDialog] = useState<{action: string; callback: () => void; description?: string} | null>(null);
   const [adminVerified, setAdminVerified] = useState(false);
+  const [adminVerifiedAt, setAdminVerifiedAt] = useState<Date | null>(null);
+  const [sessionNow, setSessionNow] = useState(Date.now());
   const [selectedBusiness, setSelectedBusiness] = useState<string | null>(null);
   const [businessSelectorOpen, setBusinessSelectorOpen] = useState(false);
   const [businessSearch, setBusinessSearch] = useState('');
@@ -214,6 +216,11 @@ export const SuperAdminDashboard = () => {
   
   useEffect(() => {
     fetchAllData();
+  }, []);
+
+  useEffect(() => {
+    const timer = setInterval(() => setSessionNow(Date.now()), 1000);
+    return () => clearInterval(timer);
   }, []);
 
   // Re-compute filtered stats when business changes
