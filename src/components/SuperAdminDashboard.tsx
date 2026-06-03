@@ -979,17 +979,40 @@ export const SuperAdminDashboard = () => {
     );
   };
 
+  const selectedBusinessId = selectedBusiness
+    ? businessMembers.find((m: any) => m.user_id === selectedBusiness && m.role === 'owner')?.business_id || null
+    : null;
+  const selectedBusinessMemberIds = selectedBusinessId
+    ? new Set([selectedBusiness, ...businessMembers.filter((m: any) => m.business_id === selectedBusinessId && m.is_active).map((m: any) => m.user_id)].filter(Boolean))
+    : null;
+  const belongsToSelectedBusiness = (row: { owner_id?: string; seller_id?: string; user_id?: string; business_id?: string | null }) => {
+    if (!selectedBusiness) return true;
+    if (row.business_id && selectedBusinessId && row.business_id === selectedBusinessId) return true;
+    const personId = row.owner_id || row.seller_id || row.user_id;
+    return !!personId && !!selectedBusinessMemberIds?.has(personId);
+  };
+
+  const filteredProducts = products.filter(belongsToSelectedBusiness);
+  const filteredUsers = selectedBusinessMemberIds ? users.filter(u => selectedBusinessMemberIds.has(u.id)) : users;
+  const filteredSales = sales.filter(belongsToSelectedBusiness);
+  const filteredCustomers = customers.filter(belongsToSelectedBusiness);
+  const filteredOrders = orders.filter(belongsToSelectedBusiness);
+  const filteredExpenses = expenses.filter(belongsToSelectedBusiness);
+  const filteredSubscriptions = selectedBusinessMemberIds
+    ? subscriptions.filter(s => selectedBusinessMemberIds.has(s.user_id))
+    : subscriptions;
+
   // Compute stats based on selected business filter
   const filteredStats = selectedBusiness ? {
-    totalUsers: 1 + businessMembers.filter((m: any) => m.business_id === businessMembers.find((bm: any) => bm.user_id === selectedBusiness && bm.role === 'owner')?.business_id && m.user_id !== selectedBusiness && m.is_active).length,
-    totalProducts: products.filter(p => p.owner_id === selectedBusiness).length,
-    totalSales: sales.filter(s => s.owner_id === selectedBusiness).length,
-    totalRevenue: sales.filter(s => s.owner_id === selectedBusiness).reduce((sum, s) => sum + (s.total_amount || 0), 0),
-    totalOrders: orders.filter(o => o.seller_id === selectedBusiness).length,
-    totalExpenses: expenses.filter(e => e.owner_id === selectedBusiness).reduce((sum, e) => sum + (e.amount || 0), 0),
-    totalCustomers: customers.filter(c => c.owner_id === selectedBusiness).length,
+    totalUsers: filteredUsers.length,
+    totalProducts: filteredProducts.length,
+    totalSales: filteredSales.length,
+    totalRevenue: filteredSales.reduce((sum, s) => sum + (s.total_amount || 0), 0),
+    totalOrders: filteredOrders.length,
+    totalExpenses: filteredExpenses.reduce((sum, e) => sum + (e.amount || 0), 0),
+    totalCustomers: filteredCustomers.length,
     activeLoans: stats.activeLoans,
-    pendingSubscriptions: stats.pendingSubscriptions
+    pendingSubscriptions: filteredSubscriptions.filter(s => s.status === 'pending_approval').length
   } : stats;
 
   const statCards: { title: string; value: number; icon: JSX.Element; color: string; tab?: string }[] = [
@@ -1005,12 +1028,9 @@ export const SuperAdminDashboard = () => {
   
   const formatCurrency = (amount: number) => `TSh ${amount.toLocaleString()}`;
   const formatDate = (date: string) => new Date(date).toLocaleDateString('sw-TZ');
-  const selectedBusinessId = selectedBusiness
-    ? businessMembers.find((m: any) => m.user_id === selectedBusiness && m.role === 'owner')?.business_id || null
-    : null;
-  const selectedBusinessMemberIds = selectedBusinessId
-    ? new Set([selectedBusiness, ...businessMembers.filter((m: any) => m.business_id === selectedBusinessId && m.is_active).map((m: any) => m.user_id)].filter(Boolean))
-    : null;
+  const selectedBusinessLabel = selectedBusiness
+    ? (users.find(u => u.id === selectedBusiness)?.business_name || users.find(u => u.id === selectedBusiness)?.full_name || 'Biashara')
+    : 'Mfumo mzima';
   
   const getRoleBadge = (role: string) => {
     const colors: Record<string, string> = {
@@ -1033,28 +1053,10 @@ export const SuperAdminDashboard = () => {
     return <Badge className={colors[status] || 'bg-gray-100'}>{status}</Badge>;
   };
   
-  // Filter by selected business
-  const filteredProducts = selectedBusiness 
-    ? products.filter(p => p.owner_id === selectedBusiness)
-    : products;
-  const filteredUsers = selectedBusinessMemberIds
-    ? users.filter(u => selectedBusinessMemberIds.has(u.id))
-    : users;
-  const filteredSales = selectedBusiness 
-    ? sales.filter(s => s.owner_id === selectedBusiness)
-    : sales;
-  const filteredCustomers = selectedBusiness 
-    ? customers.filter(c => c.owner_id === selectedBusiness)
-    : customers;
-  const filteredOrders = selectedBusiness 
-    ? orders.filter(o => o.seller_id === selectedBusiness)
-    : orders;
-  const filteredExpenses = selectedBusiness 
-    ? expenses.filter(e => e.owner_id === selectedBusiness)
-    : expenses;
-  const filteredSubscriptions = selectedBusiness
-    ? subscriptions.filter(s => s.user_id === selectedBusiness)
-    : subscriptions;
+  const sessionDuration = adminVerifiedAt
+    ? Math.max(0, Math.floor((sessionNow - adminVerifiedAt.getTime()) / 1000))
+    : 0;
+  const sessionLabel = `${Math.floor(sessionDuration / 60)}m ${String(sessionDuration % 60).padStart(2, '0')}s`;
   
   if (loading) {
     return (
