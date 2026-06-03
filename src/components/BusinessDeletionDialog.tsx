@@ -16,6 +16,7 @@ interface Props {
   ownerId: string;
   expectedName: string; // business_name OR full_name OR email
   onDeleted?: () => void;
+  requireAdminVerification?: (callback: () => void) => void;
 }
 
 const SCOPE_OPTIONS = [
@@ -29,7 +30,7 @@ const SCOPE_OPTIONS = [
   { key: 'finance', label: 'Mapato/Matumizi/Bookkeeping' },
 ] as const;
 
-export const BusinessDeletionDialog = ({ open, onOpenChange, ownerId, expectedName, onDeleted }: Props) => {
+export const BusinessDeletionDialog = ({ open, onOpenChange, ownerId, expectedName, onDeleted, requireAdminVerification }: Props) => {
   const [mode, setMode] = useState<'selective' | 'full'>('selective');
   const [confirmation, setConfirmation] = useState('');
   const [scope, setScope] = useState<Record<string, boolean>>({});
@@ -47,8 +48,7 @@ export const BusinessDeletionDialog = ({ open, onOpenChange, ownerId, expectedNa
   const nameMatches = confirmation.trim().toLowerCase() === expectedName.trim().toLowerCase();
   const canSubmit = nameMatches && (mode === 'full' || selectedCount > 0) && !submitting;
 
-  const handleSubmit = async () => {
-    if (!canSubmit) return;
+  const executeDeletion = async () => {
     setSubmitting(true);
     try {
       const payload = mode === 'full' ? { all: true } : scope;
@@ -73,6 +73,15 @@ export const BusinessDeletionDialog = ({ open, onOpenChange, ownerId, expectedNa
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const handleSubmit = async () => {
+    if (!canSubmit) return;
+    if (requireAdminVerification) {
+      requireAdminVerification(executeDeletion);
+      return;
+    }
+    executeDeletion();
   };
 
   return (

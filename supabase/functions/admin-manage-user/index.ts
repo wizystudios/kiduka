@@ -100,6 +100,23 @@ Deno.serve(async (req) => {
       }
 
       case "delete_user": {
+        const [{ data: targetProfile }, { data: membershipRows }] = await Promise.all([
+          adminClient.from("profiles").select("id, full_name, email, business_name").eq("id", user_id).maybeSingle(),
+          adminClient.from("business_members").select("business_id, role").eq("user_id", user_id).limit(1),
+        ]);
+        const businessId = membershipRows?.[0]?.business_id ?? null;
+        const targetName = targetProfile?.business_name || targetProfile?.full_name || targetProfile?.email || user_id;
+
+        await adminClient.from("business_audit_logs").insert({
+          business_id: businessId,
+          actor_id: caller.id,
+          entity_type: "user",
+          entity_id: user_id,
+          action: "DELETE",
+          summary: `Mtumiaji amefutwa: ${targetName}`,
+          metadata: { user_id, name: targetName, admin_id: caller.id, timestamp: new Date().toISOString() },
+        });
+
         // Delete related data first - handle errors gracefully
         const tables = [
           { table: "whatsapp_messages", column: "owner_id" },

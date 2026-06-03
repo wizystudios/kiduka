@@ -25,7 +25,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import { useAdminNotifications } from '@/hooks/useAdminNotifications';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
-import { exportToExcel, exportToPDF, createPrintableTable } from '@/utils/exportUtils';
+import { exportToCSV, exportToPDF, createPrintableTable } from '@/utils/exportUtils';
 import { AdminPasswordDialog } from './AdminPasswordDialog';
 import { AdminChatPanel } from './AdminChatPanel';
 import { AdminCompliancePanel } from './AdminCompliancePanel';
@@ -57,6 +57,7 @@ interface Product {
   cost_price?: number;
   stock_quantity: number;
   owner_id: string;
+  business_id?: string | null;
   category: string;
   created_at: string;
   owner_name?: string;
@@ -70,6 +71,7 @@ interface Sale {
   payment_method: string;
   created_at: string;
   owner_id: string;
+  business_id?: string | null;
   owner_name?: string;
   business_name?: string;
 }
@@ -81,6 +83,7 @@ interface Expense {
   description: string;
   expense_date: string;
   owner_id: string;
+  business_id?: string | null;
   owner_name?: string;
   business_name?: string;
 }
@@ -92,6 +95,7 @@ interface Customer {
   phone: string;
   outstanding_balance: number;
   owner_id: string;
+  business_id?: string | null;
   created_at: string;
   owner_name?: string;
   business_name?: string;
@@ -106,6 +110,7 @@ interface Order {
   tracking_code: string;
   created_at: string;
   seller_id: string;
+  business_id?: string | null;
   seller_name?: string;
   business_name?: string;
   items?: any;
@@ -202,6 +207,8 @@ export const SuperAdminDashboard = () => {
   const [deleteConfirmation, setDeleteConfirmation] = useState('');
   const [passwordDialog, setPasswordDialog] = useState<{action: string; callback: () => void; description?: string} | null>(null);
   const [adminVerified, setAdminVerified] = useState(false);
+  const [adminVerifiedAt, setAdminVerifiedAt] = useState<Date | null>(null);
+  const [sessionNow, setSessionNow] = useState(Date.now());
   const [selectedBusiness, setSelectedBusiness] = useState<string | null>(null);
   const [businessSelectorOpen, setBusinessSelectorOpen] = useState(false);
   const [businessSearch, setBusinessSearch] = useState('');
@@ -214,6 +221,23 @@ export const SuperAdminDashboard = () => {
   
   useEffect(() => {
     fetchAllData();
+  }, []);
+
+  useEffect(() => {
+    const channel = supabase
+      .channel('super-admin-live-data')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, fetchAllData)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, fetchAllData)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'sales' }, fetchAllData)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'sokoni_orders' }, fetchAllData)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'business_audit_logs' }, fetchBusinessAudit)
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [selectedBusiness, businessMembers.length]);
+
+  useEffect(() => {
+    const timer = setInterval(() => setSessionNow(Date.now()), 1000);
+    return () => clearInterval(timer);
   }, []);
 
   // Re-compute filtered stats when business changes
@@ -492,8 +516,8 @@ export const SuperAdminDashboard = () => {
       { header: 'Role', key: 'role' },
       { header: 'Tarehe', key: 'created_at', formatter: (v: string) => new Date(v).toLocaleDateString('sw-TZ') }
     ];
-    exportToExcel(filteredUsers, columns, selectedBusiness ? 'Watumiaji_Biashara_Kiduka' : 'Watumiaji_Kiduka');
-    toast.success('Imehifadhiwa kama Excel');
+    exportToCSV(searchedUsers, columns, `Watumiaji_${scopeSuffix}`);
+    toast.success('CSV imepakuliwa');
   };
   
   const handleExportSales = () => {
@@ -504,8 +528,36 @@ export const SuperAdminDashboard = () => {
       { header: 'Malipo', key: 'payment_method' },
       { header: 'Hali', key: 'payment_status' }
     ];
-    exportToExcel(filteredSales, columns, selectedBusiness ? 'Mauzo_Biashara_Kiduka' : 'Mauzo_Kiduka');
-    toast.success('Imehifadhiwa kama Excel');
+    exportToCSV(searchedSales, columns, `Mauzo_${scopeSuffix}`);
+    toast.success('CSV imepakuliwa');
+  };
+
+  const handleExportActiveCsv = () => {
+    const commonDate = { header: 'Tarehe', key: 'created_at', formatter: (v: string) => v ? new Date(v).toLocaleString('sw-TZ') : '' };
+    const configs: Record<string, { data: any[]; columns: any[]; name: string }> = {
+      users: { data: searchedUsers, name: 'Watumiaji', columns: [
+        { header: 'Jina', key: 'full_name' }, { header: 'Email', key: 'email' }, { header: 'Biashara', key: 'business_name' }, { header: 'Role', key: 'role' }, commonDate
+      ] },
+      products: { data: searchedProducts, name: 'Bidhaa', columns: [
+        { header: 'Jina', key: 'name' }, { header: 'Biashara', key: 'business_name' }, { header: 'Bei', key: 'price' }, { header: 'Stock', key: 'stock_quantity' }, { header: 'Category', key: 'category' }, commonDate
+      ] },
+      sales: { data: searchedSales, name: 'Mauzo', columns: [
+        commonDate, { header: 'Biashara', key: 'business_name' }, { header: 'Kiasi', key: 'total_amount' }, { header: 'Malipo', key: 'payment_method' }, { header: 'Hali', key: 'payment_status' }
+      ] },
+      orders: { data: searchedOrders, name: 'Oda', columns: [
+        { header: 'Tracking', key: 'tracking_code' }, { header: 'Biashara', key: 'business_name' }, { header: 'Simu', key: 'customer_phone' }, { header: 'Kiasi', key: 'total_amount' }, { header: 'Oda', key: 'order_status' }, { header: 'Malipo', key: 'payment_status' }, commonDate
+      ] },
+      subscriptions: { data: filteredSubscriptions, name: 'Usajili', columns: [
+        { header: 'Jina', key: 'user_name' }, { header: 'Email', key: 'user_email' }, { header: 'Status', key: 'status' }, { header: 'Ada', key: 'payment_amount' }, commonDate
+      ] },
+      more: { data: [...searchedCustomers, ...searchedExpenses], name: 'Zaidi', columns: [
+        { header: 'Jina/Kategoria', key: 'name' }, { header: 'Biashara', key: 'business_name' }, { header: 'Kiasi/Deni', key: 'amount' }, { header: 'Simu', key: 'phone' }
+      ] },
+    };
+    const cfg = configs[activeTab] || configs.sales;
+    if (!cfg.data.length) { toast.error('Hakuna data ya ku-export'); return; }
+    exportToCSV(cfg.data, cfg.columns, `${cfg.name}_${scopeSuffix}`);
+    toast.success('CSV imepakuliwa');
   };
   
   const handleExportPDF = (type: string) => {
@@ -563,7 +615,7 @@ export const SuperAdminDashboard = () => {
       .from('products')
       .select('*')
       .order('created_at', { ascending: false })
-      .limit(100);
+      .limit(1000);
     
     // Enrich with owner info
     const ownerIds = [...new Set((data || []).map(p => p.owner_id))];
@@ -586,7 +638,7 @@ export const SuperAdminDashboard = () => {
       .from('sales')
       .select('*')
       .order('created_at', { ascending: false })
-      .limit(100);
+      .limit(1000);
     
     // Enrich with owner info
     const ownerIds = [...new Set((data || []).map(s => s.owner_id))];
@@ -609,7 +661,7 @@ export const SuperAdminDashboard = () => {
       .from('expenses')
       .select('*')
       .order('expense_date', { ascending: false })
-      .limit(100);
+      .limit(1000);
     
     const ownerIds = [...new Set((data || []).map(e => e.owner_id))];
     const { data: profiles } = await supabase
@@ -631,7 +683,7 @@ export const SuperAdminDashboard = () => {
       .from('customers')
       .select('*')
       .order('created_at', { ascending: false })
-      .limit(100);
+      .limit(1000);
     
     const ownerIds = [...new Set((data || []).map(c => c.owner_id))];
     const { data: profiles } = await supabase
@@ -653,7 +705,7 @@ export const SuperAdminDashboard = () => {
       .from('sokoni_orders')
       .select('*')
       .order('created_at', { ascending: false })
-      .limit(100);
+      .limit(1000);
     
     const sellerIds = [...new Set((data || []).map(o => o.seller_id))];
     const { data: profiles } = await supabase
@@ -676,36 +728,20 @@ export const SuperAdminDashboard = () => {
     const { type, id } = deleteDialog;
     
     try {
-      let error = null;
-      
-      switch(type) {
-        case 'user':
-          await supabase.from('user_roles').delete().eq('user_id', id);
-          await supabase.from('assistant_permissions').delete().or(`assistant_id.eq.${id},owner_id.eq.${id}`);
-          ({ error } = await supabase.from('profiles').delete().eq('id', id));
-          break;
-        case 'product':
-          ({ error } = await supabase.from('products').delete().eq('id', id));
-          break;
-        case 'sale':
-          await supabase.from('sales_items').delete().eq('sale_id', id);
-          ({ error } = await supabase.from('sales').delete().eq('id', id));
-          break;
-        case 'expense':
-          ({ error } = await supabase.from('expenses').delete().eq('id', id));
-          break;
-        case 'customer':
-          ({ error } = await supabase.from('customers').delete().eq('id', id));
-          break;
-        case 'order':
-          ({ error } = await supabase.from('sokoni_orders').delete().eq('id', id));
-          break;
-        default: 
-          return;
+      if (type === 'user') {
+        await callAdminManageUser('delete_user', id);
+      } else {
+        const { data, error } = await (supabase.rpc('admin_delete_entity' as any, {
+          p_entity_type: type,
+          p_entity_id: id,
+          p_confirmation_name: deleteConfirmation,
+        } as any) as any);
+        if (error) throw error;
+        const result = data as any;
+        if (!result?.success) {
+          throw new Error(result?.error === 'name_mismatch' ? 'Jina halilingani' : result?.error || 'delete_failed');
+        }
       }
-      
-      if (error) throw error;
-      
       toast.success(`${type} imefutwa`);
       fetchAllData();
     } catch (error: any) {
@@ -952,32 +988,43 @@ export const SuperAdminDashboard = () => {
   };
 
   const handleDeleteUserFull = (userId: string, userName: string) => {
-    runSensitiveAction(
-      `Kufuta mtumiaji kabisa: ${userName}`,
-      async () => {
-        try {
-          await callAdminManageUser('delete_user', userId);
-          toast.success(`${userName} amefutwa kabisa`);
-          fetchAllData();
-        } catch (err: any) {
-          toast.error(`Imeshindwa: ${err.message}`);
-        }
-      },
-      'Hatua hii haiwezi kurejeshwa. Mtumiaji, data yake yote, na akaunti yake itafutwa.'
-    );
+    handleDelete('user', userId, userName);
   };
+
+  const selectedBusinessId = selectedBusiness
+    ? businessMembers.find((m: any) => m.user_id === selectedBusiness && m.role === 'owner')?.business_id || null
+    : null;
+  const selectedBusinessMemberIds = selectedBusinessId
+    ? new Set([selectedBusiness, ...businessMembers.filter((m: any) => m.business_id === selectedBusinessId && m.is_active).map((m: any) => m.user_id)].filter(Boolean))
+    : null;
+  const belongsToSelectedBusiness = (row: { owner_id?: string; seller_id?: string; user_id?: string; business_id?: string | null }) => {
+    if (!selectedBusiness) return true;
+    if (row.business_id && selectedBusinessId && row.business_id === selectedBusinessId) return true;
+    const personId = row.owner_id || row.seller_id || row.user_id;
+    return !!personId && !!selectedBusinessMemberIds?.has(personId);
+  };
+
+  const filteredProducts = products.filter(belongsToSelectedBusiness);
+  const filteredUsers = selectedBusinessMemberIds ? users.filter(u => selectedBusinessMemberIds.has(u.id)) : users;
+  const filteredSales = sales.filter(belongsToSelectedBusiness);
+  const filteredCustomers = customers.filter(belongsToSelectedBusiness);
+  const filteredOrders = orders.filter(belongsToSelectedBusiness);
+  const filteredExpenses = expenses.filter(belongsToSelectedBusiness);
+  const filteredSubscriptions = selectedBusinessMemberIds
+    ? subscriptions.filter(s => selectedBusinessMemberIds.has(s.user_id))
+    : subscriptions;
 
   // Compute stats based on selected business filter
   const filteredStats = selectedBusiness ? {
-    totalUsers: 1 + businessMembers.filter((m: any) => m.business_id === businessMembers.find((bm: any) => bm.user_id === selectedBusiness && bm.role === 'owner')?.business_id && m.user_id !== selectedBusiness && m.is_active).length,
-    totalProducts: products.filter(p => p.owner_id === selectedBusiness).length,
-    totalSales: sales.filter(s => s.owner_id === selectedBusiness).length,
-    totalRevenue: sales.filter(s => s.owner_id === selectedBusiness).reduce((sum, s) => sum + (s.total_amount || 0), 0),
-    totalOrders: orders.filter(o => o.seller_id === selectedBusiness).length,
-    totalExpenses: expenses.filter(e => e.owner_id === selectedBusiness).reduce((sum, e) => sum + (e.amount || 0), 0),
-    totalCustomers: customers.filter(c => c.owner_id === selectedBusiness).length,
+    totalUsers: filteredUsers.length,
+    totalProducts: filteredProducts.length,
+    totalSales: filteredSales.length,
+    totalRevenue: filteredSales.reduce((sum, s) => sum + (s.total_amount || 0), 0),
+    totalOrders: filteredOrders.length,
+    totalExpenses: filteredExpenses.reduce((sum, e) => sum + (e.amount || 0), 0),
+    totalCustomers: filteredCustomers.length,
     activeLoans: stats.activeLoans,
-    pendingSubscriptions: stats.pendingSubscriptions
+    pendingSubscriptions: filteredSubscriptions.filter(s => s.status === 'pending_approval').length
   } : stats;
 
   const statCards: { title: string; value: number; icon: JSX.Element; color: string; tab?: string }[] = [
@@ -993,12 +1040,9 @@ export const SuperAdminDashboard = () => {
   
   const formatCurrency = (amount: number) => `TSh ${amount.toLocaleString()}`;
   const formatDate = (date: string) => new Date(date).toLocaleDateString('sw-TZ');
-  const selectedBusinessId = selectedBusiness
-    ? businessMembers.find((m: any) => m.user_id === selectedBusiness && m.role === 'owner')?.business_id || null
-    : null;
-  const selectedBusinessMemberIds = selectedBusinessId
-    ? new Set([selectedBusiness, ...businessMembers.filter((m: any) => m.business_id === selectedBusinessId && m.is_active).map((m: any) => m.user_id)].filter(Boolean))
-    : null;
+  const selectedBusinessLabel = selectedBusiness
+    ? (users.find(u => u.id === selectedBusiness)?.business_name || users.find(u => u.id === selectedBusiness)?.full_name || 'Biashara')
+    : 'Mfumo mzima';
   
   const getRoleBadge = (role: string) => {
     const colors: Record<string, string> = {
@@ -1021,28 +1065,38 @@ export const SuperAdminDashboard = () => {
     return <Badge className={colors[status] || 'bg-gray-100'}>{status}</Badge>;
   };
   
-  // Filter by selected business
-  const filteredProducts = selectedBusiness 
-    ? products.filter(p => p.owner_id === selectedBusiness)
-    : products;
-  const filteredUsers = selectedBusinessMemberIds
-    ? users.filter(u => selectedBusinessMemberIds.has(u.id))
-    : users;
-  const filteredSales = selectedBusiness 
-    ? sales.filter(s => s.owner_id === selectedBusiness)
-    : sales;
-  const filteredCustomers = selectedBusiness 
-    ? customers.filter(c => c.owner_id === selectedBusiness)
-    : customers;
-  const filteredOrders = selectedBusiness 
-    ? orders.filter(o => o.seller_id === selectedBusiness)
-    : orders;
-  const filteredExpenses = selectedBusiness 
-    ? expenses.filter(e => e.owner_id === selectedBusiness)
-    : expenses;
-  const filteredSubscriptions = selectedBusiness
-    ? subscriptions.filter(s => s.user_id === selectedBusiness)
-    : subscriptions;
+  const sessionDuration = adminVerifiedAt
+    ? Math.max(0, Math.floor((sessionNow - adminVerifiedAt.getTime()) / 1000))
+    : 0;
+  const sessionLabel = `${Math.floor(sessionDuration / 60)}m ${String(sessionDuration % 60).padStart(2, '0')}s`;
+  const q = searchQuery.trim().toLowerCase();
+  const searchedUsers = filteredUsers.filter(u => !q || u.email?.toLowerCase().includes(q) || u.full_name?.toLowerCase().includes(q) || u.business_name?.toLowerCase().includes(q));
+  const searchedProducts = filteredProducts.filter(p => !q || p.name?.toLowerCase().includes(q) || p.category?.toLowerCase().includes(q) || p.business_name?.toLowerCase().includes(q));
+  const searchedSales = filteredSales.filter(s => !q || s.id.toLowerCase().includes(q) || s.business_name?.toLowerCase().includes(q) || s.payment_method?.toLowerCase().includes(q));
+  const searchedOrders = filteredOrders.filter(o => !q || o.tracking_code?.toLowerCase().includes(q) || o.customer_phone?.includes(searchQuery) || o.business_name?.toLowerCase().includes(q));
+  const searchedCustomers = filteredCustomers.filter(c => !q || c.name?.toLowerCase().includes(q) || c.phone?.includes(searchQuery) || c.email?.toLowerCase().includes(q) || c.business_name?.toLowerCase().includes(q));
+  const searchedExpenses = filteredExpenses.filter(e => !q || e.category?.toLowerCase().includes(q) || e.description?.toLowerCase().includes(q) || e.business_name?.toLowerCase().includes(q));
+  const scopeSuffix = selectedBusiness ? selectedBusinessLabel.replace(/[^a-zA-Z0-9_-]+/g, '_') : 'Mfumo_Mzima';
+  const dailyRevenueData = Array.from(filteredSales.reduce((map, sale) => {
+    const date = new Date(sale.created_at).toLocaleDateString('sw-TZ', { day: '2-digit', month: 'short' });
+    const item = map.get(date) || { date, revenue: 0, sales: 0 };
+    item.revenue += sale.total_amount || 0;
+    item.sales += 1;
+    map.set(date, item);
+    return map;
+  }, new Map<string, { date: string; revenue: number; sales: number }>()).values()).slice(-14);
+  const systemBarData = [
+    { name: 'Users', value: filteredStats.totalUsers },
+    { name: 'Bidhaa', value: filteredStats.totalProducts },
+    { name: 'Sales', value: filteredStats.totalSales },
+    { name: 'Orders', value: filteredStats.totalOrders },
+    { name: 'Wateja', value: filteredStats.totalCustomers },
+  ];
+  const topProductData = [...filteredProducts]
+    .sort((a, b) => (b.stock_quantity || 0) - (a.stock_quantity || 0))
+    .slice(0, 8)
+    .map(p => ({ name: p.name.length > 12 ? `${p.name.slice(0, 12)}…` : p.name, stock: p.stock_quantity || 0 }));
+  const lowStockProducts = filteredProducts.filter(p => (p.stock_quantity || 0) <= 5).slice(0, 8);
   
   if (loading) {
     return (
@@ -1147,7 +1201,11 @@ export const SuperAdminDashboard = () => {
             <FileText className="h-3.5 w-3.5 mr-1" />PDF
           </Button>
           <Button variant="outline" size="sm" className="h-8 px-2 flex-shrink-0 text-xs" onClick={handleExportSales}>
-            <FileSpreadsheet className="h-3.5 w-3.5 mr-1" />Excel
+            <FileSpreadsheet className="h-3.5 w-3.5 mr-1" />CSV
+          </Button>
+          <Button variant={adminVerified ? 'default' : 'outline'} size="sm" className="h-8 px-2 flex-shrink-0 text-xs rounded-full">
+            <ShieldCheck className="h-3.5 w-3.5 mr-1" />
+            {adminVerified ? `Admin ${sessionLabel}` : 'Admin haja-thibitishwa'}
           </Button>
           <Button onClick={fetchAllData} variant="outline" size="sm" className="h-8 px-2 flex-shrink-0 text-xs">
             <RefreshCw className="h-3.5 w-3.5 mr-1" />Refresh
@@ -1300,17 +1358,20 @@ export const SuperAdminDashboard = () => {
         </div>
 
         {/* Search */}
-        {activeTab !== 'overview' && activeTab !== 'analytics' && activeTab !== 'subscriptions' && (
-          <div className="relative mb-4">
+        <div className="mb-4 flex flex-col gap-2 rounded-3xl border border-border bg-card p-3 sm:flex-row sm:items-center">
+          <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input 
-              placeholder="Tafuta..." 
-              className="pl-10"
+            <Input
+              placeholder={`Tafuta ndani ya ${selectedBusinessLabel}...`}
+              className="pl-10 rounded-2xl"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
-        )}
+          <Button variant="outline" className="rounded-full" onClick={handleExportActiveCsv}>
+            <FileSpreadsheet className="h-4 w-4 mr-1" /> Export CSV
+          </Button>
+        </div>
         
         {/* Subscriptions Tab */}
         <TabsContent value="subscriptions" className="space-y-4">
@@ -1543,36 +1604,58 @@ export const SuperAdminDashboard = () => {
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm flex items-center gap-2">
-                  <Users className="h-4 w-4" /> Watumiaji Wapya
+                  <TrendingUp className="h-4 w-4 text-primary" /> Mauzo/Mapato Real-time
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                {filteredUsers.slice(0, 5).map(u => (
-                  <div key={u.id} className="flex items-center justify-between py-2 border-b last:border-0">
-                    <div>
-                      <p className="font-medium text-sm">{u.full_name || u.email}</p>
-                      <p className="text-xs text-muted-foreground">{u.business_name}</p>
-                    </div>
-                    {getRoleBadge(u.role)}
-                  </div>
-                ))}
+                <div className="h-[220px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={dailyRevenueData.length ? dailyRevenueData : revenueChartData}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                      <XAxis dataKey="date" tick={{ fontSize: 10 }} />
+                      <YAxis tick={{ fontSize: 10 }} tickFormatter={(v) => `${Number(v) / 1000}k`} />
+                      <Tooltip formatter={(value: number, name: string) => [name === 'revenue' ? formatCurrency(value) : value, name === 'revenue' ? 'Mapato' : 'Mauzo']} />
+                      <Line type="monotone" dataKey="revenue" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} />
+                      <Line type="monotone" dataKey="sales" stroke="hsl(var(--success))" strokeWidth={2} dot={false} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
               </CardContent>
             </Card>
             
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm flex items-center gap-2">
-                  <ShoppingCart className="h-4 w-4" /> Mauzo ya Hivi Karibuni
+                  <BarChart3 className="h-4 w-4 text-success" /> System Overview Charts
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                {filteredSales.slice(0, 5).map(s => (
-                  <div key={s.id} className="flex items-center justify-between py-2 border-b last:border-0">
-                    <div>
-                      <p className="font-medium text-sm">{formatCurrency(s.total_amount)}</p>
-                      <p className="text-xs text-muted-foreground">{s.business_name} • {formatDate(s.created_at)}</p>
-                    </div>
-                    {getStatusBadge(s.payment_status || 'completed')}
+                <div className="h-[220px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={systemBarData}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                      <XAxis dataKey="name" tick={{ fontSize: 10 }} />
+                      <YAxis tick={{ fontSize: 10 }} />
+                      <Tooltip />
+                      <Bar dataKey="value" fill="hsl(var(--primary))" radius={[8, 8, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+          <div className="grid md:grid-cols-2 gap-4">
+            <Card>
+              <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><Package className="h-4 w-4" /> Bidhaa na Stock</CardTitle></CardHeader>
+              <CardContent><div className="h-[220px]"><ResponsiveContainer width="100%" height="100%"><BarChart data={topProductData}><CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" /><XAxis dataKey="name" tick={{ fontSize: 10 }} /><YAxis tick={{ fontSize: 10 }} /><Tooltip /><Bar dataKey="stock" fill="hsl(var(--success))" radius={[8, 8, 0, 0]} /></BarChart></ResponsiveContainer></div></CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><AlertTriangle className="h-4 w-4 text-destructive" /> Low Stock ({lowStockProducts.length})</CardTitle></CardHeader>
+              <CardContent className="space-y-2">
+                {lowStockProducts.length === 0 ? <p className="py-8 text-center text-sm text-muted-foreground">Hakuna low-stock</p> : lowStockProducts.map(p => (
+                  <div key={p.id} className="flex items-center justify-between rounded-2xl bg-muted/40 px-3 py-2">
+                    <div className="min-w-0"><p className="truncate text-sm font-medium">{p.name}</p><p className="truncate text-xs text-muted-foreground">{p.business_name}</p></div>
+                    <Badge variant="destructive">{p.stock_quantity}</Badge>
                   </div>
                 ))}
               </CardContent>
@@ -1583,12 +1666,7 @@ export const SuperAdminDashboard = () => {
         {/* Users Tab */}
         <TabsContent value="users" className="space-y-3">
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
-            {filteredUsers
-              .filter(u => 
-                u.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                u.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                u.business_name?.toLowerCase().includes(searchQuery.toLowerCase())
-              )
+            {searchedUsers
               .map(u => (
                 <Card key={u.id}>
                   <CardContent className="p-4">
@@ -1708,8 +1786,7 @@ export const SuperAdminDashboard = () => {
         {/* Products Tab */}
         <TabsContent value="products" className="space-y-3">
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
-            {filteredProducts
-              .filter(p => p.name?.toLowerCase().includes(searchQuery.toLowerCase()))
+            {searchedProducts
               .map(p => (
                 <Card key={p.id}>
                   <CardContent className="p-4">
@@ -1764,8 +1841,7 @@ export const SuperAdminDashboard = () => {
         {/* Sales Tab */}
         <TabsContent value="sales" className="space-y-3">
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
-            {filteredSales
-              .filter(s => s.id.toLowerCase().includes(searchQuery.toLowerCase()))
+            {searchedSales
               .map(s => (
                 <Card key={s.id}>
                   <CardContent className="p-4">
@@ -1814,11 +1890,7 @@ export const SuperAdminDashboard = () => {
         {/* Orders Tab */}
         <TabsContent value="orders" className="space-y-3">
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
-            {filteredOrders
-              .filter(o => 
-                o.tracking_code?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                o.customer_phone?.includes(searchQuery)
-              )
+            {searchedOrders
               .map(o => (
                 <Card key={o.id}>
                   <CardContent className="p-4">
@@ -1911,8 +1983,7 @@ export const SuperAdminDashboard = () => {
             
             <TabsContent value="customers" className="space-y-3 mt-4">
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
-                {filteredCustomers
-                  .filter(c => c.name?.toLowerCase().includes(searchQuery.toLowerCase()))
+                {searchedCustomers
                   .map(c => (
                     <Card key={c.id}>
                       <CardContent className="p-4">
@@ -1961,8 +2032,7 @@ export const SuperAdminDashboard = () => {
             
             <TabsContent value="expenses" className="space-y-3 mt-4">
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
-                {filteredExpenses
-                  .filter(e => e.category?.toLowerCase().includes(searchQuery.toLowerCase()))
+                {searchedExpenses
                   .map(e => (
                     <Card key={e.id}>
                       <CardContent className="p-4">
@@ -2547,6 +2617,7 @@ export const SuperAdminDashboard = () => {
         }}
         onConfirm={() => {
           setAdminVerified(true);
+          setAdminVerifiedAt(new Date());
           setPasswordDialog(null);
           if (deleteDialog) {
             executeDelete();
@@ -2564,6 +2635,7 @@ export const SuperAdminDashboard = () => {
           onOpenChange={(o) => { if (!o) setDeletionDialog(null); }}
           ownerId={deletionDialog.ownerId}
           expectedName={deletionDialog.name}
+          requireAdminVerification={(callback) => runSensitiveAction('Kufuta biashara', callback, 'Uthibitisho huu utatumika hadi page i-refresh.')}
           onDeleted={() => { setSelectedBusiness(null); fetchAllData(); }}
         />
       )}
