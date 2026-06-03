@@ -1189,7 +1189,11 @@ export const SuperAdminDashboard = () => {
             <FileText className="h-3.5 w-3.5 mr-1" />PDF
           </Button>
           <Button variant="outline" size="sm" className="h-8 px-2 flex-shrink-0 text-xs" onClick={handleExportSales}>
-            <FileSpreadsheet className="h-3.5 w-3.5 mr-1" />Excel
+            <FileSpreadsheet className="h-3.5 w-3.5 mr-1" />CSV
+          </Button>
+          <Button variant={adminVerified ? 'default' : 'outline'} size="sm" className="h-8 px-2 flex-shrink-0 text-xs rounded-full">
+            <ShieldCheck className="h-3.5 w-3.5 mr-1" />
+            {adminVerified ? `Admin ${sessionLabel}` : 'Admin haja-thibitishwa'}
           </Button>
           <Button onClick={fetchAllData} variant="outline" size="sm" className="h-8 px-2 flex-shrink-0 text-xs">
             <RefreshCw className="h-3.5 w-3.5 mr-1" />Refresh
@@ -1342,17 +1346,20 @@ export const SuperAdminDashboard = () => {
         </div>
 
         {/* Search */}
-        {activeTab !== 'overview' && activeTab !== 'analytics' && activeTab !== 'subscriptions' && (
-          <div className="relative mb-4">
+        <div className="mb-4 flex flex-col gap-2 rounded-3xl border border-border bg-card p-3 sm:flex-row sm:items-center">
+          <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input 
-              placeholder="Tafuta..." 
-              className="pl-10"
+            <Input
+              placeholder={`Tafuta ndani ya ${selectedBusinessLabel}...`}
+              className="pl-10 rounded-2xl"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
-        )}
+          <Button variant="outline" className="rounded-full" onClick={handleExportActiveCsv}>
+            <FileSpreadsheet className="h-4 w-4 mr-1" /> Export CSV
+          </Button>
+        </div>
         
         {/* Subscriptions Tab */}
         <TabsContent value="subscriptions" className="space-y-4">
