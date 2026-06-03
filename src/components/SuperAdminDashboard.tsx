@@ -1592,36 +1592,58 @@ export const SuperAdminDashboard = () => {
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm flex items-center gap-2">
-                  <Users className="h-4 w-4" /> Watumiaji Wapya
+                  <TrendingUp className="h-4 w-4 text-primary" /> Mauzo/Mapato Real-time
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                {filteredUsers.slice(0, 5).map(u => (
-                  <div key={u.id} className="flex items-center justify-between py-2 border-b last:border-0">
-                    <div>
-                      <p className="font-medium text-sm">{u.full_name || u.email}</p>
-                      <p className="text-xs text-muted-foreground">{u.business_name}</p>
-                    </div>
-                    {getRoleBadge(u.role)}
-                  </div>
-                ))}
+                <div className="h-[220px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={dailyRevenueData.length ? dailyRevenueData : revenueChartData}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                      <XAxis dataKey="date" tick={{ fontSize: 10 }} />
+                      <YAxis tick={{ fontSize: 10 }} tickFormatter={(v) => `${Number(v) / 1000}k`} />
+                      <Tooltip formatter={(value: number, name: string) => [name === 'revenue' ? formatCurrency(value) : value, name === 'revenue' ? 'Mapato' : 'Mauzo']} />
+                      <Line type="monotone" dataKey="revenue" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} />
+                      <Line type="monotone" dataKey="sales" stroke="hsl(var(--success))" strokeWidth={2} dot={false} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
               </CardContent>
             </Card>
             
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm flex items-center gap-2">
-                  <ShoppingCart className="h-4 w-4" /> Mauzo ya Hivi Karibuni
+                  <BarChart3 className="h-4 w-4 text-success" /> System Overview Charts
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                {filteredSales.slice(0, 5).map(s => (
-                  <div key={s.id} className="flex items-center justify-between py-2 border-b last:border-0">
-                    <div>
-                      <p className="font-medium text-sm">{formatCurrency(s.total_amount)}</p>
-                      <p className="text-xs text-muted-foreground">{s.business_name} • {formatDate(s.created_at)}</p>
-                    </div>
-                    {getStatusBadge(s.payment_status || 'completed')}
+                <div className="h-[220px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={systemBarData}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                      <XAxis dataKey="name" tick={{ fontSize: 10 }} />
+                      <YAxis tick={{ fontSize: 10 }} />
+                      <Tooltip />
+                      <Bar dataKey="value" fill="hsl(var(--primary))" radius={[8, 8, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+          <div className="grid md:grid-cols-2 gap-4">
+            <Card>
+              <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><Package className="h-4 w-4" /> Bidhaa na Stock</CardTitle></CardHeader>
+              <CardContent><div className="h-[220px]"><ResponsiveContainer width="100%" height="100%"><BarChart data={topProductData}><CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" /><XAxis dataKey="name" tick={{ fontSize: 10 }} /><YAxis tick={{ fontSize: 10 }} /><Tooltip /><Bar dataKey="stock" fill="hsl(var(--success))" radius={[8, 8, 0, 0]} /></BarChart></ResponsiveContainer></div></CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><AlertTriangle className="h-4 w-4 text-destructive" /> Low Stock ({lowStockProducts.length})</CardTitle></CardHeader>
+              <CardContent className="space-y-2">
+                {lowStockProducts.length === 0 ? <p className="py-8 text-center text-sm text-muted-foreground">Hakuna low-stock</p> : lowStockProducts.map(p => (
+                  <div key={p.id} className="flex items-center justify-between rounded-2xl bg-muted/40 px-3 py-2">
+                    <div className="min-w-0"><p className="truncate text-sm font-medium">{p.name}</p><p className="truncate text-xs text-muted-foreground">{p.business_name}</p></div>
+                    <Badge variant="destructive">{p.stock_quantity}</Badge>
                   </div>
                 ))}
               </CardContent>
