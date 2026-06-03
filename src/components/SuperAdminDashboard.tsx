@@ -716,36 +716,20 @@ export const SuperAdminDashboard = () => {
     const { type, id } = deleteDialog;
     
     try {
-      let error = null;
-      
-      switch(type) {
-        case 'user':
-          await supabase.from('user_roles').delete().eq('user_id', id);
-          await supabase.from('assistant_permissions').delete().or(`assistant_id.eq.${id},owner_id.eq.${id}`);
-          ({ error } = await supabase.from('profiles').delete().eq('id', id));
-          break;
-        case 'product':
-          ({ error } = await supabase.from('products').delete().eq('id', id));
-          break;
-        case 'sale':
-          await supabase.from('sales_items').delete().eq('sale_id', id);
-          ({ error } = await supabase.from('sales').delete().eq('id', id));
-          break;
-        case 'expense':
-          ({ error } = await supabase.from('expenses').delete().eq('id', id));
-          break;
-        case 'customer':
-          ({ error } = await supabase.from('customers').delete().eq('id', id));
-          break;
-        case 'order':
-          ({ error } = await supabase.from('sokoni_orders').delete().eq('id', id));
-          break;
-        default: 
-          return;
+      if (type === 'user') {
+        await callAdminManageUser('delete_user', id);
+      } else {
+        const { data, error } = await (supabase.rpc('admin_delete_entity' as any, {
+          p_entity_type: type,
+          p_entity_id: id,
+          p_confirmation_name: deleteConfirmation,
+        } as any) as any);
+        if (error) throw error;
+        const result = data as any;
+        if (!result?.success) {
+          throw new Error(result?.error === 'name_mismatch' ? 'Jina halilingani' : result?.error || 'delete_failed');
+        }
       }
-      
-      if (error) throw error;
-      
       toast.success(`${type} imefutwa`);
       fetchAllData();
     } catch (error: any) {
@@ -992,19 +976,7 @@ export const SuperAdminDashboard = () => {
   };
 
   const handleDeleteUserFull = (userId: string, userName: string) => {
-    runSensitiveAction(
-      `Kufuta mtumiaji kabisa: ${userName}`,
-      async () => {
-        try {
-          await callAdminManageUser('delete_user', userId);
-          toast.success(`${userName} amefutwa kabisa`);
-          fetchAllData();
-        } catch (err: any) {
-          toast.error(`Imeshindwa: ${err.message}`);
-        }
-      },
-      'Hatua hii haiwezi kurejeshwa. Mtumiaji, data yake yote, na akaunti yake itafutwa.'
-    );
+    handleDelete('user', userId, userName);
   };
 
   const selectedBusinessId = selectedBusiness
