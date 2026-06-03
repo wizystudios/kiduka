@@ -57,6 +57,7 @@ interface Product {
   cost_price?: number;
   stock_quantity: number;
   owner_id: string;
+  business_id?: string | null;
   category: string;
   created_at: string;
   owner_name?: string;
@@ -70,6 +71,7 @@ interface Sale {
   payment_method: string;
   created_at: string;
   owner_id: string;
+  business_id?: string | null;
   owner_name?: string;
   business_name?: string;
 }
@@ -81,6 +83,7 @@ interface Expense {
   description: string;
   expense_date: string;
   owner_id: string;
+  business_id?: string | null;
   owner_name?: string;
   business_name?: string;
 }
@@ -92,6 +95,7 @@ interface Customer {
   phone: string;
   outstanding_balance: number;
   owner_id: string;
+  business_id?: string | null;
   created_at: string;
   owner_name?: string;
   business_name?: string;
@@ -106,6 +110,7 @@ interface Order {
   tracking_code: string;
   created_at: string;
   seller_id: string;
+  business_id?: string | null;
   seller_name?: string;
   business_name?: string;
   items?: any;
