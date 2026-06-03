@@ -1057,6 +1057,34 @@ export const SuperAdminDashboard = () => {
     ? Math.max(0, Math.floor((sessionNow - adminVerifiedAt.getTime()) / 1000))
     : 0;
   const sessionLabel = `${Math.floor(sessionDuration / 60)}m ${String(sessionDuration % 60).padStart(2, '0')}s`;
+  const q = searchQuery.trim().toLowerCase();
+  const searchedUsers = filteredUsers.filter(u => !q || u.email?.toLowerCase().includes(q) || u.full_name?.toLowerCase().includes(q) || u.business_name?.toLowerCase().includes(q));
+  const searchedProducts = filteredProducts.filter(p => !q || p.name?.toLowerCase().includes(q) || p.category?.toLowerCase().includes(q) || p.business_name?.toLowerCase().includes(q));
+  const searchedSales = filteredSales.filter(s => !q || s.id.toLowerCase().includes(q) || s.business_name?.toLowerCase().includes(q) || s.payment_method?.toLowerCase().includes(q));
+  const searchedOrders = filteredOrders.filter(o => !q || o.tracking_code?.toLowerCase().includes(q) || o.customer_phone?.includes(searchQuery) || o.business_name?.toLowerCase().includes(q));
+  const searchedCustomers = filteredCustomers.filter(c => !q || c.name?.toLowerCase().includes(q) || c.phone?.includes(searchQuery) || c.email?.toLowerCase().includes(q) || c.business_name?.toLowerCase().includes(q));
+  const searchedExpenses = filteredExpenses.filter(e => !q || e.category?.toLowerCase().includes(q) || e.description?.toLowerCase().includes(q) || e.business_name?.toLowerCase().includes(q));
+  const scopeSuffix = selectedBusiness ? selectedBusinessLabel.replace(/[^a-zA-Z0-9_-]+/g, '_') : 'Mfumo_Mzima';
+  const dailyRevenueData = Array.from(filteredSales.reduce((map, sale) => {
+    const date = new Date(sale.created_at).toLocaleDateString('sw-TZ', { day: '2-digit', month: 'short' });
+    const item = map.get(date) || { date, revenue: 0, sales: 0 };
+    item.revenue += sale.total_amount || 0;
+    item.sales += 1;
+    map.set(date, item);
+    return map;
+  }, new Map<string, { date: string; revenue: number; sales: number }>()).values()).slice(-14);
+  const systemBarData = [
+    { name: 'Users', value: filteredStats.totalUsers },
+    { name: 'Bidhaa', value: filteredStats.totalProducts },
+    { name: 'Sales', value: filteredStats.totalSales },
+    { name: 'Orders', value: filteredStats.totalOrders },
+    { name: 'Wateja', value: filteredStats.totalCustomers },
+  ];
+  const topProductData = [...filteredProducts]
+    .sort((a, b) => (b.stock_quantity || 0) - (a.stock_quantity || 0))
+    .slice(0, 8)
+    .map(p => ({ name: p.name.length > 12 ? `${p.name.slice(0, 12)}…` : p.name, stock: p.stock_quantity || 0 }));
+  const lowStockProducts = filteredProducts.filter(p => (p.stock_quantity || 0) <= 5).slice(0, 8);
   
   if (loading) {
     return (
