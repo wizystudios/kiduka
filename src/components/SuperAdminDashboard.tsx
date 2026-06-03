@@ -2605,6 +2605,7 @@ export const SuperAdminDashboard = () => {
         }}
         onConfirm={() => {
           setAdminVerified(true);
+          setAdminVerifiedAt(new Date());
           setPasswordDialog(null);
           if (deleteDialog) {
             executeDelete();
@@ -2622,6 +2623,7 @@ export const SuperAdminDashboard = () => {
           onOpenChange={(o) => { if (!o) setDeletionDialog(null); }}
           ownerId={deletionDialog.ownerId}
           expectedName={deletionDialog.name}
+          requireAdminVerification={(callback) => runSensitiveAction('Kufuta biashara', callback, 'Uthibitisho huu utatumika hadi page i-refresh.')}
           onDeleted={() => { setSelectedBusiness(null); fetchAllData(); }}
         />
       )}
