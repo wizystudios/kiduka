@@ -1971,8 +1971,7 @@ export const SuperAdminDashboard = () => {
             
             <TabsContent value="customers" className="space-y-3 mt-4">
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
-                {filteredCustomers
-                  .filter(c => c.name?.toLowerCase().includes(searchQuery.toLowerCase()))
+                {searchedCustomers
                   .map(c => (
                     <Card key={c.id}>
                       <CardContent className="p-4">
@@ -2021,8 +2020,7 @@ export const SuperAdminDashboard = () => {
             
             <TabsContent value="expenses" className="space-y-3 mt-4">
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
-                {filteredExpenses
-                  .filter(e => e.category?.toLowerCase().includes(searchQuery.toLowerCase()))
+                {searchedExpenses
                   .map(e => (
                     <Card key={e.id}>
                       <CardContent className="p-4">
