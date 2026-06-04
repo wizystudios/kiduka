@@ -3031,6 +3031,23 @@ export type Database = {
         }
         Returns: undefined
       }
+      owner_assign_branch_staff: {
+        Args: {
+          p_branch_id: string
+          p_notes?: string
+          p_role?: string
+          p_user_id: string
+        }
+        Returns: Json
+      }
+      owner_delete_entity: {
+        Args: {
+          p_confirmation_name: string
+          p_entity_id: string
+          p_entity_type: string
+        }
+        Returns: Json
+      }
       process_sokoni_order_to_sale: {
         Args: { order_id: string }
         Returns: string
