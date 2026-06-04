@@ -535,7 +535,7 @@ export const BranchManager = () => {
                         <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleToggleStaffActive(s)}>
                           <Shield className={`h-3 w-3 ${s.is_active ? 'text-green-600' : 'text-muted-foreground'}`} />
                         </Button>
-                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleRemoveStaff(s.id)}>
+                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleRemoveStaff(s)}>
                           <X className="h-3 w-3 text-destructive" />
                         </Button>
                       </div>
@@ -886,7 +886,7 @@ export const BranchManager = () => {
                     <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(b)}>
                       <Edit2 className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => deleteBranch(b.id)}>
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => deleteBranch(b)}>
                       <Trash2 className="h-4 w-4 text-destructive" />
                     </Button>
                   </div>
@@ -896,6 +896,17 @@ export const BranchManager = () => {
           ))}
         </div>
       )}
+      <UnifiedDeleteSheet
+        open={!!deleteTarget}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+        title={deleteTarget?.type === 'branch' ? 'Futa tawi' : 'Ondoa mfanyakazi'}
+        itemName={deleteTarget?.name || ''}
+        description={deleteTarget?.type === 'branch'
+          ? 'Tawi litaondolewa na data zilizokuwa ndani yake zitaachwa salama bila kuvunja database.'
+          : 'Mfanyakazi ataondolewa kwenye tawi hili bila kufuta akaunti yake.'}
+        confirmLabel={deleteTarget?.type === 'branch' ? 'Futa Tawi' : 'Ondoa'}
+        onConfirm={executeDeleteTarget}
+      />
     </div>
   );
 };
