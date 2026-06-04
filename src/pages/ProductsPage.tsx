@@ -11,6 +11,7 @@ import { toast } from 'sonner';
 import { logActivity } from '@/hooks/useActivityLogger';
 import * as XLSX from 'xlsx';
 import { WeightQuantitySelector } from '@/components/WeightQuantitySelector';
+import { UnifiedDeleteSheet } from '@/components/UnifiedDeleteSheet';
 
 import {
   Collapsible,
@@ -52,6 +53,7 @@ export const ProductsPage = () => {
 
   const [refreshing, setRefreshing] = useState(false);
   const [archiving, setArchiving] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<ProductLocal | null>(null);
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -64,17 +66,18 @@ export const ProductsPage = () => {
     navigate('/products/add');
   };
 
-  const handleDeleteProduct = async (id: string, productName: string) => {
-    if (!confirm(`Je, una uhakika unataka kufuta bidhaa "${productName}" kabisa? Rekodi za mauzo zitabaki salama.`)) return;
-
+  const executeDeleteProduct = async () => {
+    if (!deleteTarget) return;
     if (!dataOwnerId) {
       toast.error('Hakuna data ya biashara.');
       return;
     }
 
-    // Use the offline-first delete
-    await deleteProduct(id);
-    logActivity('product_delete', `Bidhaa "${productName}" imefutwa`, { product_name: productName });
+    const deleted = await deleteProduct(deleteTarget.id);
+    if (deleted) {
+      logActivity('product_delete', `Bidhaa "${deleteTarget.name}" imefutwa`, { product_name: deleteTarget.name });
+      setDeleteTarget(null);
+    }
   };
 
   const handleArchiveProduct = async (id: string, productName: string, currentArchived: boolean) => {
@@ -407,7 +410,7 @@ export const ProductsPage = () => {
                           variant="outline"
                           onClick={(e) => {
                             e.stopPropagation();
-                            handleDeleteProduct(product.id, product.name);
+                            setDeleteTarget(product);
                           }}
                           className="h-6 text-xs px-2 text-red-600 hover:text-red-700 hover:bg-red-50"
                         >
@@ -482,6 +485,15 @@ export const ProductsPage = () => {
           onAddToCart={handleAddToCart}
         />
       )}
+      <UnifiedDeleteSheet
+        open={!!deleteTarget}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+        title="Futa bidhaa"
+        itemName={deleteTarget?.name || ''}
+        description="Bidhaa itafutwa, lakini historia ya mauzo na stock itaachwa salama bila kuvunja database."
+        confirmLabel="Futa Bidhaa"
+        onConfirm={executeDeleteProduct}
+      />
     </div>
   );
 };

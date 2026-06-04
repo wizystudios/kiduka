@@ -16,6 +16,7 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
+import { UnifiedDeleteSheet } from '@/components/UnifiedDeleteSheet';
 
 interface Branch {
   id: string;
@@ -90,6 +91,7 @@ export const BranchManager = () => {
   const [statsLoading, setStatsLoading] = useState(false);
   const [branchProducts, setBranchProducts] = useState<any[]>([]);
   const [showPassword, setShowPassword] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<{ type: 'branch' | 'branch_staff'; id: string; name: string } | null>(null);
 
   const [staffForm, setStaffForm] = useState({ 
     full_name: '', email: '', phone: '', password: '', role: 'staff', notes: '',
@@ -221,14 +223,28 @@ export const BranchManager = () => {
     } finally { setSaving(false); }
   };
 
-  const deleteBranch = async (id: string) => {
-    if (!confirm('Una uhakika unataka kufuta tawi hili? Wafanyakazi wote watatolewa.')) return;
-    const { error } = await supabase.from('business_branches').delete().eq('id', id);
-    if (!error) { 
-      toast.success('Tawi limefutwa'); 
-      if (selectedBranch?.id === id) setSelectedBranch(null);
-      fetchBranches(); 
+  const deleteBranch = (branch: Branch) => {
+    setDeleteTarget({ type: 'branch', id: branch.id, name: branch.branch_name });
+  };
+
+  const executeDeleteTarget = async () => {
+    if (!deleteTarget) return;
+    const { data, error } = await (supabase.rpc('owner_delete_entity' as any, {
+      p_entity_type: deleteTarget.type,
+      p_entity_id: deleteTarget.id,
+      p_confirmation_name: deleteTarget.name,
+    } as any) as any);
+    if (error) throw error;
+    if (!data?.success) throw new Error(data?.error || 'delete_failed');
+
+    toast.success(deleteTarget.type === 'branch' ? 'Tawi limefutwa' : 'Mfanyakazi ameondolewa');
+    if (deleteTarget.type === 'branch') {
+      if (selectedBranch?.id === deleteTarget.id) setSelectedBranch(null);
+      await fetchBranches();
+    } else if (selectedBranch) {
+      await fetchBranchStaff(selectedBranch.id);
     }
+    setDeleteTarget(null);
   };
 
   const openEdit = (b: Branch) => {
@@ -307,15 +323,15 @@ export const BranchManager = () => {
           p_business_name: null,
         });
 
-        // Add to branch staff
-        const { error: staffErr } = await supabase.from('branch_staff').insert({
-          branch_id: selectedBranch.id,
-          user_id: newUserId,
-          role: staffForm.role,
-          assigned_by: user.id,
-          notes: staffForm.notes || null,
-        });
+        // Add to branch staff and business membership together
+        const { data: staffResult, error: staffErr } = await (supabase.rpc('owner_assign_branch_staff' as any, {
+          p_branch_id: selectedBranch.id,
+          p_user_id: newUserId,
+          p_role: staffForm.role,
+          p_notes: staffForm.notes || null,
+        } as any) as any);
         if (staffErr) throw staffErr;
+        if (!staffResult?.success) throw new Error(staffResult?.error || 'branch_staff_failed');
 
         toast.success(`${staffForm.full_name} ameundwa na kuongezwa kwenye tawi!`);
       } else {
@@ -332,17 +348,18 @@ export const BranchManager = () => {
           setSaving(false);
           return;
         }
-        const { error } = await supabase.from('branch_staff').insert({
-          branch_id: selectedBranch.id,
-          user_id: profile.id,
-          role: staffForm.role,
-          assigned_by: user.id,
-          notes: staffForm.notes || null,
-        });
+        const { data: staffResult, error } = await (supabase.rpc('owner_assign_branch_staff' as any, {
+          p_branch_id: selectedBranch.id,
+          p_user_id: profile.id,
+          p_role: staffForm.role,
+          p_notes: staffForm.notes || null,
+        } as any) as any);
         if (error?.code === '23505') {
           toast.error('Mtumiaji huyu tayari yuko kwenye tawi hili');
         } else if (error) {
           throw error;
+        } else if (!staffResult?.success) {
+          throw new Error(staffResult?.error || 'branch_staff_failed');
         } else {
           toast.success('Mfanyakazi ameongezwa kwenye tawi!');
         }
@@ -356,13 +373,8 @@ export const BranchManager = () => {
     } finally { setSaving(false); }
   };
 
-  const handleRemoveStaff = async (staffId: string) => {
-    if (!confirm('Ondoa mfanyakazi kutoka tawi hili?')) return;
-    const { error } = await supabase.from('branch_staff').delete().eq('id', staffId);
-    if (!error && selectedBranch) {
-      toast.success('Mfanyakazi ameondolewa');
-      fetchBranchStaff(selectedBranch.id);
-    }
+  const handleRemoveStaff = (staff: BranchStaff) => {
+    setDeleteTarget({ type: 'branch_staff', id: staff.id, name: staff.full_name || staff.email || staff.user_id });
   };
 
   const handleToggleStaffActive = async (staff: BranchStaff) => {
@@ -523,7 +535,7 @@ export const BranchManager = () => {
                         <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleToggleStaffActive(s)}>
                           <Shield className={`h-3 w-3 ${s.is_active ? 'text-green-600' : 'text-muted-foreground'}`} />
                         </Button>
-                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleRemoveStaff(s.id)}>
+                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleRemoveStaff(s)}>
                           <X className="h-3 w-3 text-destructive" />
                         </Button>
                       </div>
@@ -874,7 +886,7 @@ export const BranchManager = () => {
                     <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(b)}>
                       <Edit2 className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => deleteBranch(b.id)}>
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => deleteBranch(b)}>
                       <Trash2 className="h-4 w-4 text-destructive" />
                     </Button>
                   </div>
@@ -884,6 +896,17 @@ export const BranchManager = () => {
           ))}
         </div>
       )}
+      <UnifiedDeleteSheet
+        open={!!deleteTarget}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+        title={deleteTarget?.type === 'branch' ? 'Futa tawi' : 'Ondoa mfanyakazi'}
+        itemName={deleteTarget?.name || ''}
+        description={deleteTarget?.type === 'branch'
+          ? 'Tawi litaondolewa na data zilizokuwa ndani yake zitaachwa salama bila kuvunja database.'
+          : 'Mfanyakazi ataondolewa kwenye tawi hili bila kufuta akaunti yake.'}
+        confirmLabel={deleteTarget?.type === 'branch' ? 'Futa Tawi' : 'Ondoa'}
+        onConfirm={executeDeleteTarget}
+      />
     </div>
   );
 };
