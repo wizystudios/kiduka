@@ -323,15 +323,15 @@ export const BranchManager = () => {
           p_business_name: null,
         });
 
-        // Add to branch staff
-        const { error: staffErr } = await supabase.from('branch_staff').insert({
-          branch_id: selectedBranch.id,
-          user_id: newUserId,
-          role: staffForm.role,
-          assigned_by: user.id,
-          notes: staffForm.notes || null,
-        });
+        // Add to branch staff and business membership together
+        const { data: staffResult, error: staffErr } = await (supabase.rpc('owner_assign_branch_staff' as any, {
+          p_branch_id: selectedBranch.id,
+          p_user_id: newUserId,
+          p_role: staffForm.role,
+          p_notes: staffForm.notes || null,
+        } as any) as any);
         if (staffErr) throw staffErr;
+        if (!staffResult?.success) throw new Error(staffResult?.error || 'branch_staff_failed');
 
         toast.success(`${staffForm.full_name} ameundwa na kuongezwa kwenye tawi!`);
       } else {
@@ -348,17 +348,18 @@ export const BranchManager = () => {
           setSaving(false);
           return;
         }
-        const { error } = await supabase.from('branch_staff').insert({
-          branch_id: selectedBranch.id,
-          user_id: profile.id,
-          role: staffForm.role,
-          assigned_by: user.id,
-          notes: staffForm.notes || null,
-        });
+        const { data: staffResult, error } = await (supabase.rpc('owner_assign_branch_staff' as any, {
+          p_branch_id: selectedBranch.id,
+          p_user_id: profile.id,
+          p_role: staffForm.role,
+          p_notes: staffForm.notes || null,
+        } as any) as any);
         if (error?.code === '23505') {
           toast.error('Mtumiaji huyu tayari yuko kwenye tawi hili');
         } else if (error) {
           throw error;
+        } else if (!staffResult?.success) {
+          throw new Error(staffResult?.error || 'branch_staff_failed');
         } else {
           toast.success('Mfanyakazi ameongezwa kwenye tawi!');
         }
@@ -372,13 +373,8 @@ export const BranchManager = () => {
     } finally { setSaving(false); }
   };
 
-  const handleRemoveStaff = async (staffId: string) => {
-    if (!confirm('Ondoa mfanyakazi kutoka tawi hili?')) return;
-    const { error } = await supabase.from('branch_staff').delete().eq('id', staffId);
-    if (!error && selectedBranch) {
-      toast.success('Mfanyakazi ameondolewa');
-      fetchBranchStaff(selectedBranch.id);
-    }
+  const handleRemoveStaff = (staff: BranchStaff) => {
+    setDeleteTarget({ type: 'branch_staff', id: staff.id, name: staff.full_name || staff.email || staff.user_id });
   };
 
   const handleToggleStaffActive = async (staff: BranchStaff) => {
