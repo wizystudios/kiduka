@@ -16,6 +16,7 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
+import { UnifiedDeleteSheet } from '@/components/UnifiedDeleteSheet';
 
 interface Branch {
   id: string;
@@ -90,6 +91,7 @@ export const BranchManager = () => {
   const [statsLoading, setStatsLoading] = useState(false);
   const [branchProducts, setBranchProducts] = useState<any[]>([]);
   const [showPassword, setShowPassword] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<{ type: 'branch' | 'branch_staff'; id: string; name: string } | null>(null);
 
   const [staffForm, setStaffForm] = useState({ 
     full_name: '', email: '', phone: '', password: '', role: 'staff', notes: '',
@@ -221,14 +223,28 @@ export const BranchManager = () => {
     } finally { setSaving(false); }
   };
 
-  const deleteBranch = async (id: string) => {
-    if (!confirm('Una uhakika unataka kufuta tawi hili? Wafanyakazi wote watatolewa.')) return;
-    const { error } = await supabase.from('business_branches').delete().eq('id', id);
-    if (!error) { 
-      toast.success('Tawi limefutwa'); 
-      if (selectedBranch?.id === id) setSelectedBranch(null);
-      fetchBranches(); 
+  const deleteBranch = (branch: Branch) => {
+    setDeleteTarget({ type: 'branch', id: branch.id, name: branch.branch_name });
+  };
+
+  const executeDeleteTarget = async () => {
+    if (!deleteTarget) return;
+    const { data, error } = await (supabase.rpc('owner_delete_entity' as any, {
+      p_entity_type: deleteTarget.type,
+      p_entity_id: deleteTarget.id,
+      p_confirmation_name: deleteTarget.name,
+    } as any) as any);
+    if (error) throw error;
+    if (!data?.success) throw new Error(data?.error || 'delete_failed');
+
+    toast.success(deleteTarget.type === 'branch' ? 'Tawi limefutwa' : 'Mfanyakazi ameondolewa');
+    if (deleteTarget.type === 'branch') {
+      if (selectedBranch?.id === deleteTarget.id) setSelectedBranch(null);
+      await fetchBranches();
+    } else if (selectedBranch) {
+      await fetchBranchStaff(selectedBranch.id);
     }
+    setDeleteTarget(null);
   };
 
   const openEdit = (b: Branch) => {
