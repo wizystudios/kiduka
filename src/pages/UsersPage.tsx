@@ -14,6 +14,7 @@ import { toast } from 'sonner';
 import { logActivity } from '@/hooks/useActivityLogger';
 import { AssistantPermissionsManager } from '@/components/AssistantPermissionsManager';
 import { AssistantHarakaManager } from '@/components/AssistantHarakaManager';
+import { UnifiedDeleteSheet } from '@/components/UnifiedDeleteSheet';
 
 interface Assistant {
   id: string;
@@ -35,6 +36,7 @@ export const UsersPage = () => {
   const [linkDialogOpen, setLinkDialogOpen] = useState(false);
   const [creating, setCreating] = useState(false);
   const [linking, setLinking] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<Assistant | null>(null);
   const { user, userProfile, session } = useAuth();
   
   const [newUser, setNewUser] = useState({
@@ -228,24 +230,26 @@ export const UsersPage = () => {
     }
   };
 
-  const handleDeleteAssistant = async (assistantId: string, assistantName: string) => {
-    if (!confirm(`Je, una uhakika unataka kumfuta msaidizi "${assistantName}"?`)) return;
-
+  const executeDeleteAssistant = async () => {
+    if (!deleteTarget) return;
+    const assistantName = deleteTarget.profile?.full_name || deleteTarget.profile?.email || deleteTarget.assistant_id;
     try {
-      const { error: permError } = await supabase
-        .from('assistant_permissions')
-        .delete()
-        .eq('assistant_id', assistantId)
-        .eq('owner_id', user?.id);
+      const { data, error: permError } = await (supabase.rpc('owner_delete_entity' as any, {
+        p_entity_type: 'assistant',
+        p_entity_id: deleteTarget.assistant_id,
+        p_confirmation_name: assistantName,
+      } as any) as any);
 
       if (permError) throw permError;
+      if (!data?.success) throw new Error(data?.error || 'delete_failed');
 
-      setAssistants(assistants.filter(a => a.assistant_id !== assistantId));
-      logActivity('assistant_remove', `Msaidizi "${assistantName}" amefutwa`, { assistant_id: assistantId });
+      setAssistants(assistants.filter(a => a.assistant_id !== deleteTarget.assistant_id));
+      logActivity('assistant_remove', `Msaidizi "${assistantName}" amefutwa`, { assistant_id: deleteTarget.assistant_id });
       toast.success('Msaidizi amefutwa');
-    } catch (error) {
+      setDeleteTarget(null);
+    } catch (error: any) {
       console.error('Error deleting assistant:', error);
-      toast.error('Imeshindwa kumfuta msaidizi');
+      toast.error(`Imeshindwa kumfuta msaidizi: ${error.message || 'kosa la mfumo'}`);
     }
   };
 
@@ -473,7 +477,7 @@ export const UsersPage = () => {
                       variant="ghost" 
                       size="icon"
                       className="h-8 w-8 text-destructive hover:text-destructive"
-                      onClick={() => handleDeleteAssistant(assistant.assistant_id, assistant.profile?.full_name || '')}
+                      onClick={() => setDeleteTarget(assistant)}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
@@ -513,6 +517,15 @@ export const UsersPage = () => {
         </TabsContent>
 
       </Tabs>
+      <UnifiedDeleteSheet
+        open={!!deleteTarget}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+        title="Futa msaidizi"
+        itemName={deleteTarget?.profile?.full_name || deleteTarget?.profile?.email || deleteTarget?.assistant_id || ''}
+        description="Msaidizi ataondolewa kwenye biashara na matawi yake bila kufuta historia ya biashara."
+        confirmLabel="Futa Msaidizi"
+        onConfirm={executeDeleteAssistant}
+      />
     </div>
   );
 };
