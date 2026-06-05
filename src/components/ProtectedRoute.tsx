@@ -2,6 +2,9 @@
 import { useAuth } from '@/hooks/useAuth';
 import { Navigate } from 'react-router-dom';
 import { LoadingScreen } from './LoadingScreen';
+import { useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -11,6 +14,13 @@ interface ProtectedRouteProps {
 
 export const ProtectedRoute = ({ children, requiredRole, allowedRoles }: ProtectedRouteProps) => {
   const { user, userProfile, loading } = useAuth();
+
+  useEffect(() => {
+    if (user && userProfile?.is_active === false) {
+      toast.error(userProfile.deactivation_reason || 'Akaunti yako imezimwa. Huwezi kutumia mfumo.');
+      supabase.auth.signOut({ scope: 'global' });
+    }
+  }, [user, userProfile?.is_active, userProfile?.deactivation_reason]);
 
   if (loading) {
     return (
@@ -24,6 +34,10 @@ export const ProtectedRoute = ({ children, requiredRole, allowedRoles }: Protect
   }
 
   if (!user) {
+    return <Navigate to="/auth" replace />;
+  }
+
+  if (userProfile?.is_active === false) {
     return <Navigate to="/auth" replace />;
   }
 

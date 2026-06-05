@@ -250,26 +250,11 @@ export const useOfflineProducts = (ownerId: string | null): UseOfflineProductsRe
           p_confirmation_name: existingProduct.name,
         } as any) as any);
 
-        if (error) {
-          console.error('Delete product error:', error);
-          
-          // Check for foreign key constraint errors
-          if (error.code === '23503' || error.message?.includes('violates foreign key constraint')) {
-            toast.error('Bidhaa hii haiwezi kufutwa kwa sababu imeshauzwa au ina historia ya mabadiliko ya stock. Badala yake, weka stock = 0.');
-            return false;
-          }
-          
-          // Check for RLS policy errors
-          if (error.code === '42501' || error.message?.includes('row-level security')) {
-            toast.error('Huna ruhusa ya kufuta bidhaa hii');
-            return false;
-          }
-          
-          throw error;
-        }
+        if (error) throw error;
 
         if (!data?.success) {
-          throw new Error(data?.error || 'delete_failed');
+          const message = data?.details?.friendly || data?.message || data?.error || 'delete_failed';
+          throw Object.assign(new Error(message), { details: data?.details, code: data?.error });
         }
 
         // Update local state and cache
@@ -298,7 +283,7 @@ export const useOfflineProducts = (ownerId: string | null): UseOfflineProductsRe
     } catch (error: any) {
       console.error('Error deleting product:', error);
       toast.error(`Imeshindwa kufuta bidhaa: ${error.message || 'Kosa lisilojulikana'}`);
-      return false;
+      throw error;
     }
   }, [products]);
 
