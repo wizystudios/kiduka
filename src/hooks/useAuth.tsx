@@ -280,10 +280,11 @@ export const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
         .eq('id', data.user.id)
         .maybeSingle();
 
-      if (!activeError && activeProfile?.is_active === false) {
+      const activeProfileAny = activeProfile as any;
+      if (!activeError && activeProfileAny?.is_active === false) {
         await supabase.auth.signOut({ scope: 'global' });
         cleanupAuthState();
-        throw new Error(activeProfile.deactivation_reason || 'Akaunti yako imezimwa. Wasiliana na msimamizi.');
+        throw new Error(activeProfileAny.deactivation_reason || 'Akaunti yako imezimwa. Wasiliana na msimamizi.');
       }
 
       // Log login activity
