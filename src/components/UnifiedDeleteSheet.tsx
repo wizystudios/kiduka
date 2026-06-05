@@ -3,6 +3,7 @@ import { AlertTriangle, Loader2, Trash2 } from 'lucide-react';
 import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { toast } from 'sonner';
 
 interface UnifiedDeleteSheetProps {
   open: boolean;
@@ -25,9 +26,13 @@ export const UnifiedDeleteSheet = ({
 }: UnifiedDeleteSheetProps) => {
   const [confirmation, setConfirmation] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [backendError, setBackendError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (open) setConfirmation('');
+    if (open) {
+      setConfirmation('');
+      setBackendError(null);
+    }
   }, [open]);
 
   const nameMatches = confirmation.trim().toLowerCase() === itemName.trim().toLowerCase();
@@ -35,9 +40,17 @@ export const UnifiedDeleteSheet = ({
   const handleConfirm = async () => {
     if (!nameMatches || submitting) return;
     setSubmitting(true);
+    setBackendError(null);
     try {
       await onConfirm();
       onOpenChange(false);
+    } catch (error: any) {
+      console.error('Unified delete failed:', error);
+      const message = error?.details?.friendly || error?.message || error?.error || 'Deletion imeshindikana backend.';
+      const code = error?.details?.code || error?.code || error?.error;
+      const visibleMessage = code ? `${message} (${code})` : message;
+      setBackendError(visibleMessage);
+      toast.error(visibleMessage);
     } finally {
       setSubmitting(false);
     }
@@ -78,6 +91,12 @@ export const UnifiedDeleteSheet = ({
               />
               {confirmation && !nameMatches && (
                 <p className="text-xs text-destructive">Jina halilingani bado</p>
+              )}
+              {backendError && (
+                <div className="rounded-2xl border border-destructive/30 bg-background p-3 text-left">
+                  <p className="text-xs font-semibold text-destructive">Backend/RLS error</p>
+                  <p className="mt-1 break-words text-[11px] text-muted-foreground">{backendError}</p>
+                </div>
               )}
             </div>
           </div>
