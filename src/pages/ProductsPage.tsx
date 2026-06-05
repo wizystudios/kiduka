@@ -74,10 +74,9 @@ export const ProductsPage = () => {
     }
 
     const deleted = await deleteProduct(deleteTarget.id);
-    if (deleted) {
-      logActivity('product_delete', `Bidhaa "${deleteTarget.name}" imefutwa`, { product_name: deleteTarget.name });
-      setDeleteTarget(null);
-    }
+    if (!deleted) throw new Error('Backend haikuthibitisha ufutaji');
+    logActivity('product_delete', `Bidhaa "${deleteTarget.name}" imehifadhiwa/futwa`, { product_name: deleteTarget.name });
+    setDeleteTarget(null);
   };
 
   const handleArchiveProduct = async (id: string, productName: string, currentArchived: boolean) => {
