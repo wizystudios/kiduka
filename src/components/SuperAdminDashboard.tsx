@@ -48,6 +48,8 @@ interface User {
   role: string;
   created_at: string;
   phone?: string;
+  is_active?: boolean;
+  deactivated_at?: string | null;
 }
 
 interface Product {
@@ -728,21 +730,18 @@ export const SuperAdminDashboard = () => {
     const { type, id } = deleteDialog;
     
     try {
-      if (type === 'user') {
-        await callAdminManageUser('delete_user', id);
-      } else {
-        const { data, error } = await (supabase.rpc('admin_delete_entity' as any, {
-          p_entity_type: type,
-          p_entity_id: id,
-          p_confirmation_name: deleteConfirmation,
-        } as any) as any);
-        if (error) throw error;
-        const result = data as any;
-        if (!result?.success) {
-          throw new Error(result?.error === 'name_mismatch' ? 'Jina halilingani' : result?.error || 'delete_failed');
-        }
+      const { data, error } = await (supabase.rpc('admin_delete_entity' as any, {
+        p_entity_type: type,
+        p_entity_id: id,
+        p_confirmation_name: deleteConfirmation,
+      } as any) as any);
+      if (error) throw error;
+      const result = data as any;
+      if (!result?.success) {
+        const message = result?.details?.friendly || result?.message || result?.error || 'delete_failed';
+        throw Object.assign(new Error(result?.error === 'name_mismatch' ? 'Jina halilingani' : message), { details: result?.details, code: result?.error });
       }
-      toast.success(`${type} imefutwa`);
+      toast.success(type === 'user' ? 'Mtumiaji amezimwa' : `${type} imefutwa/imehifadhiwa`);
       fetchAllData();
     } catch (error: any) {
       console.error('Delete error:', error);

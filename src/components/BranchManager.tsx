@@ -121,7 +121,8 @@ export const BranchManager = () => {
     setLoading(true);
     const { data } = await supabase
       .from('business_branches').select('*').eq('owner_id', user.id)
-      .order('created_at', { ascending: true });
+        .is('deleted_at', null)
+        .order('created_at', { ascending: true });
     setBranches((data as any[] || []).map(b => ({ ...b, features: typeof b.features === 'object' ? b.features : {} })));
     setLoading(false);
   };
@@ -386,22 +387,21 @@ export const BranchManager = () => {
     if (!transferDialog || !transferTarget) return;
     setSaving(true);
     try {
-      const { error: insertErr } = await supabase.from('branch_staff').insert({
-        branch_id: transferTarget, user_id: transferDialog.user_id,
-        role: transferDialog.role, assigned_by: user?.id,
-        notes: `Amehamishwa kutoka tawi lingine`,
-      });
-      if (insertErr && insertErr.code === '23505') {
-        await supabase.from('branch_staff').update({ is_active: true })
-          .eq('branch_id', transferTarget).eq('user_id', transferDialog.user_id);
-      } else if (insertErr) throw insertErr;
+      const { data: result, error: transferErr } = await (supabase.rpc('owner_assign_branch_staff' as any, {
+        p_branch_id: transferTarget,
+        p_user_id: transferDialog.user_id,
+        p_role: transferDialog.role,
+        p_notes: `Amehamishwa kutoka tawi lingine`,
+      } as any) as any);
+      if (transferErr) throw transferErr;
+      if (!result?.success) throw Object.assign(new Error(result?.message || result?.error || 'transfer_failed'), { details: result?.details, code: result?.error });
 
       toast.success(`${transferDialog.full_name} amehamishwa!`);
       setTransferDialog(null);
       setTransferTarget('');
       if (selectedBranch) fetchBranchStaff(selectedBranch.id);
     } catch (err: any) {
-      toast.error(err.message);
+      toast.error(err.details?.friendly || err.message);
     } finally { setSaving(false); }
   };
 

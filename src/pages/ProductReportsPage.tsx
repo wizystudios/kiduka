@@ -20,6 +20,8 @@ interface ProductReport {
   profit_margin: number;
   current_stock: number;
   times_sold: number;
+  is_archived?: boolean;
+  archived_at?: string | null;
 }
 
 export const ProductReportsPage = () => {
@@ -54,7 +56,7 @@ export const ProductReportsPage = () => {
         .from('sales_items')
         .select(`
           *,
-          product:products(name, stock_quantity, cost_price),
+          product:products(name, stock_quantity, cost_price, is_archived, archived_at),
           sale:sales(owner_id)
         `)
         .eq('sale.owner_id', user.id);
@@ -79,6 +81,8 @@ export const ProductReportsPage = () => {
             profit_margin: 0,
             current_stock: item.product.stock_quantity || 0,
             times_sold: 0,
+            is_archived: item.product.is_archived || false,
+            archived_at: item.product.archived_at || null,
           });
         }
 
@@ -198,6 +202,7 @@ export const ProductReportsPage = () => {
                       <div className="flex items-center gap-2">
                         <Package className="h-4 w-4 text-blue-600" />
                         <h3 className="font-semibold text-sm">{report.product_name}</h3>
+                        {report.is_archived && <Badge variant="secondary" className="text-[10px]">Archived</Badge>}
                       </div>
                       <Badge variant="outline" className="text-xs">
                         Stock: {report.current_stock}

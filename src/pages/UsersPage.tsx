@@ -241,7 +241,10 @@ export const UsersPage = () => {
       } as any) as any);
 
       if (permError) throw permError;
-      if (!data?.success) throw new Error(data?.error || 'delete_failed');
+      if (!data?.success) {
+        const message = data?.details?.friendly || data?.message || data?.error || 'delete_failed';
+        throw Object.assign(new Error(message), { details: data?.details, code: data?.error });
+      }
 
       setAssistants(assistants.filter(a => a.assistant_id !== deleteTarget.assistant_id));
       logActivity('assistant_remove', `Msaidizi "${assistantName}" amefutwa`, { assistant_id: deleteTarget.assistant_id });
@@ -250,6 +253,7 @@ export const UsersPage = () => {
     } catch (error: any) {
       console.error('Error deleting assistant:', error);
       toast.error(`Imeshindwa kumfuta msaidizi: ${error.message || 'kosa la mfumo'}`);
+      throw error;
     }
   };
 

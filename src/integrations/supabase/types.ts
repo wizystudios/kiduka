@@ -208,7 +208,10 @@ export type Database = {
           can_view_reports: boolean | null
           can_view_sales: boolean | null
           created_at: string | null
+          deactivated_at: string | null
+          deactivated_by: string | null
           id: string
+          is_active: boolean
           owner_id: string
           updated_at: string | null
         }
@@ -225,7 +228,10 @@ export type Database = {
           can_view_reports?: boolean | null
           can_view_sales?: boolean | null
           created_at?: string | null
+          deactivated_at?: string | null
+          deactivated_by?: string | null
           id?: string
+          is_active?: boolean
           owner_id: string
           updated_at?: string | null
         }
@@ -242,7 +248,10 @@ export type Database = {
           can_view_reports?: boolean | null
           can_view_sales?: boolean | null
           created_at?: string | null
+          deactivated_at?: string | null
+          deactivated_by?: string | null
           id?: string
+          is_active?: boolean
           owner_id?: string
           updated_at?: string | null
         }
@@ -257,6 +266,9 @@ export type Database = {
           id: string
           is_active: boolean
           notes: string | null
+          removal_reason: string | null
+          removed_at: string | null
+          removed_by: string | null
           role: string
           updated_at: string
           user_id: string
@@ -269,6 +281,9 @@ export type Database = {
           id?: string
           is_active?: boolean
           notes?: string | null
+          removal_reason?: string | null
+          removed_at?: string | null
+          removed_by?: string | null
           role?: string
           updated_at?: string
           user_id: string
@@ -281,6 +296,9 @@ export type Database = {
           id?: string
           is_active?: boolean
           notes?: string | null
+          removal_reason?: string | null
+          removed_at?: string | null
+          removed_by?: string | null
           role?: string
           updated_at?: string
           user_id?: string
@@ -381,6 +399,9 @@ export type Database = {
           branch_name: string
           branch_type: string
           created_at: string
+          delete_reason: string | null
+          deleted_at: string | null
+          deleted_by: string | null
           district: string | null
           features: Json
           id: string
@@ -398,6 +419,9 @@ export type Database = {
           branch_name: string
           branch_type?: string
           created_at?: string
+          delete_reason?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
           district?: string | null
           features?: Json
           id?: string
@@ -415,6 +439,9 @@ export type Database = {
           branch_name?: string
           branch_type?: string
           created_at?: string
+          delete_reason?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
           district?: string | null
           features?: Json
           id?: string
@@ -1759,6 +1786,9 @@ export type Database = {
       }
       products: {
         Row: {
+          archive_reason: string | null
+          archived_at: string | null
+          archived_by: string | null
           barcode: string | null
           branch_id: string | null
           business_id: string | null
@@ -1783,6 +1813,9 @@ export type Database = {
           variant_name: string | null
         }
         Insert: {
+          archive_reason?: string | null
+          archived_at?: string | null
+          archived_by?: string | null
           barcode?: string | null
           branch_id?: string | null
           business_id?: string | null
@@ -1807,6 +1840,9 @@ export type Database = {
           variant_name?: string | null
         }
         Update: {
+          archive_reason?: string | null
+          archived_at?: string | null
+          archived_by?: string | null
           barcode?: string | null
           branch_id?: string | null
           business_id?: string | null
@@ -1866,6 +1902,9 @@ export type Database = {
           business_name: string | null
           country: string | null
           created_at: string
+          deactivated_at: string | null
+          deactivated_by: string | null
+          deactivation_reason: string | null
           district: string | null
           email: string | null
           email_consent: Json
@@ -1874,6 +1913,7 @@ export type Database = {
           full_name: string | null
           google_pixel_id: string | null
           id: string
+          is_active: boolean
           location_set: boolean | null
           phone: string | null
           region: string | null
@@ -1888,6 +1928,9 @@ export type Database = {
           business_name?: string | null
           country?: string | null
           created_at?: string
+          deactivated_at?: string | null
+          deactivated_by?: string | null
+          deactivation_reason?: string | null
           district?: string | null
           email?: string | null
           email_consent?: Json
@@ -1896,6 +1939,7 @@ export type Database = {
           full_name?: string | null
           google_pixel_id?: string | null
           id: string
+          is_active?: boolean
           location_set?: boolean | null
           phone?: string | null
           region?: string | null
@@ -1910,6 +1954,9 @@ export type Database = {
           business_name?: string | null
           country?: string | null
           created_at?: string
+          deactivated_at?: string | null
+          deactivated_by?: string | null
+          deactivation_reason?: string | null
           district?: string | null
           email?: string | null
           email_consent?: Json
@@ -1918,6 +1965,7 @@ export type Database = {
           full_name?: string | null
           google_pixel_id?: string | null
           id?: string
+          is_active?: boolean
           location_set?: boolean | null
           phone?: string | null
           region?: string | null
@@ -2947,6 +2995,10 @@ export type Database = {
           issue: string
         }[]
       }
+      admin_deactivate_user: {
+        Args: { p_reason?: string; p_user_id: string }
+        Returns: Json
+      }
       admin_delete_business: {
         Args: {
           p_confirmation_name: string
@@ -2963,6 +3015,7 @@ export type Database = {
         }
         Returns: Json
       }
+      admin_reactivate_user: { Args: { p_user_id: string }; Returns: Json }
       approve_user_subscription: {
         Args: {
           p_admin_id: string
@@ -2988,6 +3041,10 @@ export type Database = {
       enqueue_email: {
         Args: { payload: Json; queue_name: string }
         Returns: number
+      }
+      format_delete_error: {
+        Args: { p_code: string; p_message: string }
+        Returns: Json
       }
       generate_tracking_code: { Args: never; Returns: string }
       get_primary_business_id: { Args: { _user_id?: string }; Returns: string }
