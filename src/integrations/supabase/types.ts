@@ -3024,6 +3024,18 @@ export type Database = {
         }
         Returns: Json
       }
+      audit_delete_attempt: {
+        Args: {
+          p_action: string
+          p_actor_id: string
+          p_business_id: string
+          p_entity_id: string
+          p_entity_type: string
+          p_metadata?: Json
+          p_summary: string
+        }
+        Returns: undefined
+      }
       can_access_branch: { Args: { p_branch_id: string }; Returns: boolean }
       can_access_business_data: {
         Args: { _business_id: string }

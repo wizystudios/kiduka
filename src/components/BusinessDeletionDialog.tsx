@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
+import { Progress } from '@/components/ui/progress';
 import { AlertTriangle, Trash2, ShieldAlert, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -35,12 +36,14 @@ export const BusinessDeletionDialog = ({ open, onOpenChange, ownerId, expectedNa
   const [confirmation, setConfirmation] = useState('');
   const [scope, setScope] = useState<Record<string, boolean>>({});
   const [submitting, setSubmitting] = useState(false);
+  const [progress, setProgress] = useState(0);
 
   useEffect(() => {
     if (open) {
       setMode('selective');
       setConfirmation('');
       setScope({});
+      setProgress(0);
     }
   }, [open]);
 
@@ -50,26 +53,32 @@ export const BusinessDeletionDialog = ({ open, onOpenChange, ownerId, expectedNa
 
   const executeDeletion = async () => {
     setSubmitting(true);
+    setProgress(15);
+    const loadingToast = toast.loading('Inafuta biashara hatua kwa hatua...');
     try {
       const payload = mode === 'full' ? { all: true } : scope;
+      setProgress(35);
       const { data, error } = await supabase.rpc('admin_delete_business', {
         p_owner_id: ownerId,
         p_confirmation_name: confirmation,
         p_scope: payload as any,
       });
       if (error) throw error;
+      setProgress(75);
       const res = data as any;
       if (!res?.success) {
-        toast.error(res?.error === 'name_mismatch' ? 'Jina halilingani' : `Hitilafu: ${res?.error || 'unknown'}`);
+        toast.error(res?.message || (res?.error === 'name_mismatch' ? 'Jina halilingani' : `Hitilafu: ${res?.error || 'unknown'}`), { id: loadingToast });
         return;
       }
       const counts = res?.deleted || {};
       const total = Object.values(counts).reduce((s: number, n: any) => s + (Number(n) || 0), 0);
-      toast.success(`Imefutwa: rekodi ${total} kutoka kwa jedwali ${Object.keys(counts).length}`);
+      setProgress(100);
+      toast.success(`Imefanikiwa: hatua ${Object.keys(counts).length}, rekodi ${total}. Audit log imeandikwa.`, { id: loadingToast });
       onDeleted?.();
       onOpenChange(false);
     } catch (e: any) {
-      toast.error(e.message || 'Imeshindikana kufuta');
+      setProgress(0);
+      toast.error(e.message || 'Imeshindikana kufuta', { id: loadingToast, description: e?.details?.friendly || e?.code || 'Backend/RLS/foreign-key error' });
     } finally {
       setSubmitting(false);
     }
@@ -172,6 +181,15 @@ export const BusinessDeletionDialog = ({ open, onOpenChange, ownerId, expectedNa
               <p className="text-xs text-green-600">✓ Jina linalingana</p>
             )}
           </div>
+
+          {submitting && (
+            <div className="rounded-3xl border border-border bg-muted/40 p-4 space-y-2">
+              <Progress value={progress} className="h-2" />
+              <p className="text-xs text-muted-foreground text-center">
+                Inafuta/deactivate business, staff, branches, stock links, sales links na audit logs...
+              </p>
+            </div>
+          )}
         </div>
 
         <SheetFooter className="border-t border-border p-5 sm:flex-row sm:justify-end gap-2">

@@ -1678,98 +1678,15 @@ export const SuperAdminDashboard = () => {
                         <p className="text-sm text-muted-foreground truncate">{u.email}</p>
                         <p className="text-xs text-muted-foreground">{u.business_name || 'No Business'}</p>
                       </div>
-                      <div className="flex flex-col gap-1">
-                        <Select 
-                          value={u.role} 
-                          onValueChange={(v) => handleUpdateRole(u.id, v as 'owner' | 'assistant' | 'super_admin')}
-                        >
-                          <SelectTrigger className="w-24 h-7 text-xs">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="owner">Owner</SelectItem>
-                            <SelectItem value="assistant">Assistant</SelectItem>
-                            <SelectItem value="super_admin">Super Admin</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <div className="flex gap-1">
-                          <Button 
-                            variant="outline" 
-                            size="icon" 
-                            className="h-7 w-7"
-                            onClick={() => setViewDialog({type: 'user', data: u})}
-                          >
-                            <Eye className="h-3 w-3" />
-                          </Button>
-                          <Button 
-                            variant="outline" 
-                            size="icon" 
-                            className="h-7 w-7"
-                            onClick={() => setEditDialog({type: 'user', data: {...u}})}
-                          >
-                            <Pencil className="h-3 w-3" />
-                          </Button>
-                          <Button 
-                            variant="outline" 
-                            size="icon" 
-                            className="h-7 w-7 text-red-600"
-                            onClick={() => handleDelete('user', u.id, u.full_name || u.email)}
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
-                        </div>
-                        <div className="flex gap-1 mt-1">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="flex-1 text-xs h-7"
-                            onClick={() => handleChangeUserPassword(u.id, u.full_name || u.email)}
-                          >
-                            <Key className="h-3 w-3 mr-1" />
-                            Nenosiri
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="flex-1 text-xs h-7 text-orange-600"
-                            onClick={() => handleBanUser(u.id, u.full_name || u.email)}
-                          >
-                            <Ban className="h-3 w-3 mr-1" />
-                            Zuia
-                          </Button>
-                        </div>
-                        <div className="flex gap-1 mt-1">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="flex-1 text-xs h-7 text-green-600"
-                            onClick={() => handleUnbanUser(u.id, u.full_name || u.email)}
-                          >
-                            <ShieldCheck className="h-3 w-3 mr-1" />
-                            Rudisha
-                          </Button>
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            className="flex-1 text-xs h-7"
-                            onClick={() => handleDeleteUserFull(u.id, u.full_name || u.email)}
-                          >
-                            <Trash2 className="h-3 w-3 mr-1" />
-                            Futa Kabisa
-                          </Button>
-                        </div>
-                        {u.role === 'owner' && (
-                          <Button
-                            variant="default"
-                            size="sm"
-                            className="w-full mt-1 rounded-xl text-xs h-7"
-                            onClick={() => handleEnterBusiness(u.id, u.business_name || u.full_name || u.email)}
-                          >
-                            <LogIn className="h-3 w-3 mr-1" />
-                            Ingia Biashara
-                          </Button>
-                        )}
-                      </div>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="h-8 rounded-full text-xs"
+                        onClick={() => setViewDialog({type: 'user', data: u})}
+                      >
+                        <Eye className="h-3 w-3 mr-1" />
+                        View
+                      </Button>
                     </div>
                   </CardContent>
                 </Card>
@@ -2079,12 +1996,14 @@ export const SuperAdminDashboard = () => {
         </TabsContent>
       </Tabs>
       
-      {/* View Dialog */}
-      <Dialog open={!!viewDialog} onOpenChange={() => setViewDialog(null)}>
-        <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Maelezo Kamili - {viewDialog?.type}</DialogTitle>
-          </DialogHeader>
+      {/* View Sheet */}
+      <Sheet open={!!viewDialog} onOpenChange={(open) => { if (!open) setViewDialog(null); }}>
+        <SheetContent side="right" className="w-full sm:max-w-md max-h-dvh overflow-y-auto p-0">
+          <SheetHeader className="border-b border-border p-5 text-left">
+            <SheetTitle>Maelezo Kamili - {viewDialog?.type}</SheetTitle>
+            <SheetDescription>Vitendo vya admin vinafanyika hapa baada ya kufungua view.</SheetDescription>
+          </SheetHeader>
+          <div className="p-5">
           
           {/* User View */}
           {viewDialog?.type === 'user' && viewDialog.data && (
@@ -2311,8 +2230,9 @@ export const SuperAdminDashboard = () => {
               </div>
             </div>
           )}
-        </DialogContent>
-      </Dialog>
+          </div>
+        </SheetContent>
+      </Sheet>
       
       {/* Edit Dialog */}
       <Dialog open={!!editDialog} onOpenChange={() => setEditDialog(null)}>

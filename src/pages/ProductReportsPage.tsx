@@ -9,6 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Search, Download, Package, TrendingUp, BarChart3 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface ProductReport {
   product_id: string;
@@ -22,6 +23,7 @@ interface ProductReport {
   times_sold: number;
   is_archived?: boolean;
   archived_at?: string | null;
+  business_id?: string | null;
 }
 
 export const ProductReportsPage = () => {
@@ -30,6 +32,8 @@ export const ProductReportsPage = () => {
   const [reports, setReports] = useState<ProductReport[]>([]);
   const [filteredReports, setFilteredReports] = useState<ProductReport[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [archiveFilter, setArchiveFilter] = useState<'active' | 'archived' | 'all'>('active');
+  const [businessFilter, setBusinessFilter] = useState('');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -37,15 +41,14 @@ export const ProductReportsPage = () => {
   }, [user]);
 
   useEffect(() => {
-    if (searchTerm) {
-      const filtered = reports.filter((report) =>
-        report.product_name.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-      setFilteredReports(filtered);
-    } else {
-      setFilteredReports(reports);
-    }
-  }, [searchTerm, reports]);
+    const q = searchTerm.trim().toLowerCase();
+    setFilteredReports(reports.filter((report) => {
+      const matchesSearch = !q || report.product_name.toLowerCase().includes(q) || report.business_id?.toLowerCase().includes(q);
+      const matchesArchive = archiveFilter === 'all' || (archiveFilter === 'archived' ? report.is_archived : !report.is_archived);
+      const matchesBusiness = !businessFilter.trim() || report.business_id === businessFilter.trim();
+      return matchesSearch && matchesArchive && matchesBusiness;
+    }));
+  }, [searchTerm, archiveFilter, businessFilter, reports]);
 
   const fetchProductReports = async () => {
     if (!user) return;
@@ -56,8 +59,8 @@ export const ProductReportsPage = () => {
         .from('sales_items')
         .select(`
           *,
-          product:products(name, stock_quantity, cost_price, is_archived, archived_at),
-          sale:sales(owner_id)
+          product:products(name, stock_quantity, cost_price, is_archived, archived_at, business_id),
+          sale:sales(owner_id, business_id)
         `)
         .eq('sale.owner_id', user.id);
 
@@ -83,6 +86,7 @@ export const ProductReportsPage = () => {
             times_sold: 0,
             is_archived: item.product.is_archived || false,
             archived_at: item.product.archived_at || null,
+            business_id: item.product.business_id || item.sale?.business_id || null,
           });
         }
 
@@ -129,6 +133,8 @@ export const ProductReportsPage = () => {
       'Asilimia ya Faida',
       'Stock Iliyobaki',
       'Mara Zilizouzwa',
+      'Archived',
+      'Business ID',
     ];
 
     const rows = filteredReports.map((report) => [
@@ -140,6 +146,8 @@ export const ProductReportsPage = () => {
       report.profit_margin.toFixed(2),
       report.current_stock,
       report.times_sold,
+      report.is_archived ? 'Ndiyo' : 'Hapana',
+      report.business_id || '',
     ]);
 
     const csv = [headers.join(','), ...rows.map((row) => row.join(','))].join('\n');
@@ -173,6 +181,15 @@ export const ProductReportsPage = () => {
                 className="pl-8"
               />
             </div>
+            <Select value={archiveFilter} onValueChange={(v) => setArchiveFilter(v as any)}>
+              <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="active">Active</SelectItem>
+                <SelectItem value="archived">Archived</SelectItem>
+                <SelectItem value="all">Vyote</SelectItem>
+              </SelectContent>
+            </Select>
+            <Input placeholder="business_id" value={businessFilter} onChange={(e) => setBusinessFilter(e.target.value)} className="w-40" />
             <Button
               onClick={exportToCSV}
               variant="outline"
@@ -204,6 +221,7 @@ export const ProductReportsPage = () => {
                         <h3 className="font-semibold text-sm">{report.product_name}</h3>
                         {report.is_archived && <Badge variant="secondary" className="text-[10px]">Archived</Badge>}
                       </div>
+                      {report.business_id && <p className="text-[10px] text-muted-foreground break-all">business_id: {report.business_id}</p>}
                       <Badge variant="outline" className="text-xs">
                         Stock: {report.current_stock}
                       </Badge>
