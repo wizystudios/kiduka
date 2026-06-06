@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
-import { AlertTriangle, Loader2, Trash2 } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, Loader2, Trash2 } from 'lucide-react';
 import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Progress } from '@/components/ui/progress';
 import { toast } from 'sonner';
 
 interface UnifiedDeleteSheetProps {
@@ -27,11 +28,13 @@ export const UnifiedDeleteSheet = ({
   const [confirmation, setConfirmation] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [backendError, setBackendError] = useState<string | null>(null);
+  const [progress, setProgress] = useState(0);
 
   useEffect(() => {
     if (open) {
       setConfirmation('');
       setBackendError(null);
+      setProgress(0);
     }
   }, [open]);
 
@@ -41,16 +44,22 @@ export const UnifiedDeleteSheet = ({
     if (!nameMatches || submitting) return;
     setSubmitting(true);
     setBackendError(null);
+    setProgress(18);
+    const loadingToast = toast.loading('Inathibitisha na kuandika audit log...');
     try {
+      setProgress(45);
       await onConfirm();
+      setProgress(100);
+      toast.success('Imefanikiwa. Data imesasishwa na audit log imeandikwa.', { id: loadingToast });
       onOpenChange(false);
     } catch (error: any) {
       console.error('Unified delete failed:', error);
+      setProgress(0);
       const message = error?.details?.friendly || error?.message || error?.error || 'Deletion imeshindikana backend.';
       const code = error?.details?.code || error?.code || error?.error;
       const visibleMessage = code ? `${message} (${code})` : message;
       setBackendError(visibleMessage);
-      toast.error(visibleMessage);
+      toast.error(visibleMessage, { id: loadingToast, description: 'RLS/foreign-key/backend reason imeonyeshwa ndani ya sheet.' });
     } finally {
       setSubmitting(false);
     }
@@ -96,6 +105,16 @@ export const UnifiedDeleteSheet = ({
                 <div className="rounded-2xl border border-destructive/30 bg-background p-3 text-left">
                   <p className="text-xs font-semibold text-destructive">Backend/RLS error</p>
                   <p className="mt-1 break-words text-[11px] text-muted-foreground">{backendError}</p>
+                </div>
+              )}
+              {submitting && (
+                <div className="space-y-2 rounded-2xl bg-background p-3 text-left">
+                  <Progress value={progress} className="h-2" />
+                  <div className="grid gap-1 text-[11px] text-muted-foreground">
+                    <span className="flex items-center gap-1"><CheckCircle2 className="h-3 w-3 text-primary" /> Thibitisha jina</span>
+                    <span className="flex items-center gap-1"><CheckCircle2 className="h-3 w-3 text-primary" /> Tuma ombi backend</span>
+                    <span className="flex items-center gap-1"><CheckCircle2 className="h-3 w-3 text-primary" /> Audit log + refresh data</span>
+                  </div>
                 </div>
               )}
             </div>
