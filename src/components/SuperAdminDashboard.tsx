@@ -1996,12 +1996,14 @@ export const SuperAdminDashboard = () => {
         </TabsContent>
       </Tabs>
       
-      {/* View Dialog */}
-      <Dialog open={!!viewDialog} onOpenChange={() => setViewDialog(null)}>
-        <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Maelezo Kamili - {viewDialog?.type}</DialogTitle>
-          </DialogHeader>
+      {/* View Sheet */}
+      <Sheet open={!!viewDialog} onOpenChange={(open) => { if (!open) setViewDialog(null); }}>
+        <SheetContent side="right" className="w-full sm:max-w-md max-h-dvh overflow-y-auto p-0">
+          <SheetHeader className="border-b border-border p-5 text-left">
+            <SheetTitle>Maelezo Kamili - {viewDialog?.type}</SheetTitle>
+            <SheetDescription>Vitendo vya admin vinafanyika hapa baada ya kufungua view.</SheetDescription>
+          </SheetHeader>
+          <div className="p-5">
           
           {/* User View */}
           {viewDialog?.type === 'user' && viewDialog.data && (
@@ -2228,8 +2230,9 @@ export const SuperAdminDashboard = () => {
               </div>
             </div>
           )}
-        </DialogContent>
-      </Dialog>
+          </div>
+        </SheetContent>
+      </Sheet>
       
       {/* Edit Dialog */}
       <Dialog open={!!editDialog} onOpenChange={() => setEditDialog(null)}>
