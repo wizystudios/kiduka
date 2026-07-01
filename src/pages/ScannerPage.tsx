@@ -388,7 +388,7 @@ export const ScannerPage = () => {
   }
 
   return (
-    <div className="page-container">
+    <div className="fixed inset-0 bg-black flex flex-col overflow-hidden">
 
       <CameraScanner
         isOpen={showCamera}
@@ -412,7 +412,7 @@ export const ScannerPage = () => {
       <PaymentMethodDialog
         open={showPayment}
         onOpenChange={setShowPayment}
-        totalAmount={getSubtotal()} 
+        totalAmount={getSubtotal()}
         onPaymentComplete={handlePaymentComplete}
       />
 
@@ -430,7 +430,7 @@ export const ScannerPage = () => {
               businessName={completedSale.businessName}
               onPrint={handlePrintComplete}
             />
-            <Button 
+            <Button
               onClick={handlePrintComplete}
               variant="outline"
               className="w-full mt-4"
@@ -458,167 +458,149 @@ export const ScannerPage = () => {
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="space-y-4">
-          <div className="space-y-4">
-              <div className="flex space-x-2">
-                <Button
-                  variant={searchType === "name" ? "default" : "outline"}
-                  onClick={() => setSearchType("name")}
-                  className="flex-1 h-10 text-sm rounded-2xl"
+      {/* Camera / Scan Viewport (top half) */}
+      <div className="relative flex-1 min-h-0 bg-neutral-900 overflow-hidden">
+        {/* Simulated camera / product surface */}
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(255,255,255,0.08),transparent_70%)]" />
+
+        {/* Green corner brackets */}
+        <div className="absolute inset-8 pointer-events-none">
+          <span className="absolute top-0 left-0 w-10 h-10 border-t-4 border-l-4 border-emerald-400 rounded-tl-xl" />
+          <span className="absolute top-0 right-0 w-10 h-10 border-t-4 border-r-4 border-emerald-400 rounded-tr-xl" />
+          <span className="absolute bottom-0 left-0 w-10 h-10 border-b-4 border-l-4 border-emerald-400 rounded-bl-xl" />
+          <span className="absolute bottom-0 right-0 w-10 h-10 border-b-4 border-r-4 border-emerald-400 rounded-br-xl" />
+        </div>
+
+        {/* Floating quick actions on right */}
+        <div className="absolute top-4 right-4 flex flex-col gap-3">
+          <Button
+            size="icon"
+            variant="secondary"
+            className="rounded-full h-10 w-10 bg-white/90 hover:bg-white text-neutral-900 shadow-lg"
+            onClick={() => setShowCamera(true)}
+            title="Fungua Kamera"
+          >
+            <Camera className="h-5 w-5" />
+          </Button>
+          <Button
+            size="icon"
+            variant="secondary"
+            className="rounded-full h-10 w-10 bg-white/90 hover:bg-white text-neutral-900 shadow-lg"
+            onClick={() => setSearchType(searchType === 'barcode' ? 'name' : 'barcode')}
+            title="Badili aina ya utafutaji"
+          >
+            <Edit2 className="h-5 w-5" />
+          </Button>
+        </div>
+
+        {/* Search input floating at top */}
+        <div className="absolute top-4 left-4 right-20">
+          <Input
+            placeholder={searchType === 'barcode' ? 'Ingiza barcode…' : 'Andika jina la bidhaa…'}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="h-11 rounded-full bg-white/95 border-0 shadow-lg text-sm"
+            autoFocus
+          />
+          {searchResults.length > 0 && (
+            <div className="mt-2 bg-white rounded-2xl shadow-xl max-h-56 overflow-y-auto divide-y">
+              {searchResults.map((p) => (
+                <button
+                  key={p.id}
+                  onClick={() => selectProduct(p)}
+                  className="w-full text-left p-3 hover:bg-neutral-50 flex justify-between items-center"
                 >
-                  📝 Jina
-                </Button>
-                <Button
-                  variant={searchType === "barcode" ? "default" : "outline"}
-                  onClick={() => setSearchType("barcode")}
-                  className="flex-1 h-10 text-sm rounded-2xl"
-                >
-                  📷 Barcode
-                </Button>
-              </div>
+                  <span className="text-sm text-neutral-900">{p.name}</span>
+                  <span className="text-sm font-semibold text-primary">TZS {p.price.toLocaleString()}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
 
-              <div className="flex gap-2">
-                <Input
-                  placeholder={searchType === 'barcode' ? "Ingiza nambari ya barcode..." : "Andika jina la bidhaa..."}
-                  value={searchQuery}
-                  onChange={(e) => {
-                    setSearchQuery(e.target.value);
-                    handleSearchProduct(e.target.value);
-                  }}
-                  className="h-12 text-base flex-1"
-                  autoFocus
-                />
-                {searchType === 'barcode' && (
-                  <Button 
-                    onClick={() => setShowCamera(true)}
-                    variant="outline"
-                    className="h-12 px-6 rounded-2xl"
-                  >
-                    <Camera className="h-6 w-6" />
-                  </Button>
-                )}
-              </div>
+        {/* Selected product quick-add pill */}
+        {scannedProduct && (
+          <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between bg-white/95 rounded-full pl-4 pr-1 py-1 shadow-lg">
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-neutral-900 truncate">{scannedProduct.name}</p>
+              <p className="text-xs text-neutral-500">TZS {scannedProduct.price.toLocaleString()}</p>
+            </div>
+            <Button
+              size="sm"
+              className="rounded-full h-9 px-4"
+              onClick={() => addToCart(scannedProduct)}
+              disabled={scannedProduct.stock_quantity <= 0}
+            >
+              <Plus className="h-4 w-4 mr-1" /> Ongeza
+            </Button>
+          </div>
+        )}
+      </div>
 
-              {searchResults.length > 0 && (
-                <div className="space-y-2 mt-4">
-                  <h4 className="font-medium text-sm text-foreground">Matokeo ({searchResults.length})</h4>
-                  {searchResults.map((product) => (
-                    <div 
-                      key={product.id} 
-                      className="cursor-pointer hover:bg-muted/50 transition-colors p-3 border border-border/50 rounded-xl"
-                      onClick={() => selectProduct(product)}
-                    >
-                      <div className="flex justify-between items-center">
-                        <div>
-                          <p className="font-medium text-foreground">{product.name}</p>
-                          <p className="text-sm text-muted-foreground">{product.category}</p>
-                        </div>
-                        <div className="text-right">
-                          <p className="font-bold text-primary">TZS {product.price.toLocaleString()}</p>
-                          <Badge variant={product.stock_quantity > 0 ? "default" : "destructive"}>
-                            Stock: {product.stock_quantity}
-                          </Badge>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
+      {/* Bottom sheet: Scanned Items */}
+      <div className="relative bg-white rounded-t-3xl shadow-[0_-8px_30px_rgba(0,0,0,0.15)] flex flex-col max-h-[55%]">
+        {/* Grabber */}
+        <div className="pt-2 pb-1 flex justify-center">
+          <span className="h-1 w-10 rounded-full bg-neutral-200" />
+        </div>
 
-              {scannedProduct && (
-                <div className="border-2 border-primary bg-primary/5 rounded-xl p-4">
-                  <div className="flex justify-between items-start mb-3">
-                    <div>
-                      <h3 className="font-bold text-lg text-foreground">{scannedProduct.name}</h3>
-                      <p className="text-sm text-muted-foreground">{scannedProduct.category}</p>
-                      {scannedProduct.barcode && (
-                        <p className="text-xs text-muted-foreground">Barcode: {scannedProduct.barcode}</p>
-                      )}
-                    </div>
-                    <div className="text-right">
-                      <p className="text-2xl font-bold text-primary">
-                        TZS {scannedProduct.price.toLocaleString()}
-                      </p>
-                      <Badge variant={scannedProduct.stock_quantity > 0 ? "default" : "destructive"}>
-                        Stock: {scannedProduct.stock_quantity}
-                      </Badge>
-                    </div>
-                  </div>
-                  <Button 
-                    className="w-full h-12"
-                    onClick={() => addToCart(scannedProduct)}
-                    disabled={scannedProduct.stock_quantity <= 0}
-                  >
-                    <Plus className="h-5 w-5 mr-2" />
-                    Ongeza kwenye Kikapu
-                  </Button>
-                </div>
-              )}
+        {/* Header with total */}
+        <div className="px-5 pt-2 pb-3 flex items-start justify-between">
+          <div>
+            <h3 className="text-base font-semibold text-neutral-900">Scanned Items</h3>
+            <p className="text-xs text-neutral-500">{cart.length} bidhaa</p>
+          </div>
+          <div className="text-right">
+            <p className="text-[10px] uppercase tracking-wider text-neutral-400">Total Price</p>
+            <p className="text-lg font-bold text-neutral-900">TZS {getSubtotal().toLocaleString()}</p>
           </div>
         </div>
 
-        <div>
-          <div className="space-y-4">
-            <div className="flex items-center gap-2">
-              <ShoppingCart className="h-5 w-5 text-primary" />
-              <h3 className="font-bold text-foreground">Kikapu ({cart.length})</h3>
-            </div>
-              {cart.length === 0 ? (
-                <p className="text-muted-foreground text-center py-8">Kikapu ni tupu</p>
-              ) : (
-                <div className="space-y-3">
-                  {cart.map((item) => (
-                    <div key={item.id} className="p-3 border border-border/50 rounded-xl">
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1">
-                          <p className="font-medium text-sm text-foreground">{item.name}</p>
-                          <div className="flex items-center gap-1 mt-1">
-                            <span className="text-xs text-muted-foreground">Bei:</span>
-                            <Input
-                              type="number"
-                              value={item.price}
-                              onChange={(e) => {
-                                const newPrice = parseFloat(e.target.value) || 0;
-                                setCart(cart.map(ci => ci.id === item.id ? { ...ci, price: newPrice } : ci));
-                              }}
-                              className="h-7 w-24 text-xs px-2"
-                              min="0"
-                            />
-                            <span className="text-xs text-muted-foreground">× {item.quantity}</span>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => updateQuantity(item.id, -1)}>
-                            <Minus className="h-4 w-4" />
-                          </Button>
-                          <span className="w-8 text-center font-medium text-foreground">{item.quantity}</span>
-                          <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => updateQuantity(item.id, 1)}>
-                            <Plus className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                      <p className="text-right font-bold text-primary text-sm mt-1">
-                        TZS {(item.price * item.quantity).toLocaleString()}
-                      </p>
-                    </div>
-                  ))}
-                  
-                  <div className="border-t border-border pt-4 mt-4">
-                    <div className="flex justify-between text-xl font-bold">
-                      <span className="text-foreground">Jumla:</span>
-                      <span className="text-primary">TZS {getSubtotal().toLocaleString()}</span>
-                    </div>
-                    <Button 
-                      className="w-full mt-4 h-14 text-lg"
-                      onClick={() => setShowPayment(true)}
-                    >
-                      Lipa Sasa
-                    </Button>
-                  </div>
+        {/* Items list */}
+        <div className="flex-1 overflow-y-auto px-5 pb-3 divide-y divide-neutral-100">
+          {cart.length === 0 ? (
+            <p className="text-center text-sm text-neutral-400 py-8">Kikapu ni tupu — anza kuscan bidhaa</p>
+          ) : (
+            cart.map((item) => (
+              <div key={item.id} className="flex items-center justify-between py-3">
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium text-neutral-900 truncate">{item.name}</p>
+                  <p className="text-xs text-neutral-500">TZS {item.price.toLocaleString()}</p>
                 </div>
-              )}
-          </div>
+                <div className="flex items-center gap-2 ml-3">
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-8 w-8 rounded-full border border-neutral-200"
+                    onClick={() => updateQuantity(item.id, -1)}
+                  >
+                    <Minus className="h-4 w-4" />
+                  </Button>
+                  <span className="w-6 text-center text-sm font-semibold text-neutral-900">{item.quantity}</span>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-8 w-8 rounded-full border border-neutral-200"
+                    onClick={() => updateQuantity(item.id, 1)}
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        {/* Review Order button */}
+        <div className="px-5 pb-5 pt-2 border-t border-neutral-100">
+          <Button
+            className="w-full h-12 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white text-base font-semibold shadow-md"
+            disabled={cart.length === 0}
+            onClick={() => setShowPayment(true)}
+          >
+            <ShoppingCart className="h-5 w-5 mr-2" />
+            Review Order
+          </Button>
         </div>
       </div>
     </div>
