@@ -505,33 +505,34 @@ export const ScannerPage = () => {
           <span className="absolute bottom-0 right-0 w-10 h-10 border-b-4 border-r-4 border-emerald-400 rounded-br-xl" />
         </div>
 
-        {/* Floating quick actions on right */}
-        <div className="absolute top-4 right-4 flex flex-col gap-3">
+        {/* Floating quick actions on right (transparent, not blocking scan area) */}
+        <div className="absolute top-3 right-3 flex flex-col gap-2 z-20">
           <Button
             size="icon"
             variant="secondary"
-            className="rounded-full h-10 w-10 bg-white/90 hover:bg-white text-neutral-900 shadow-lg"
+            className="rounded-full h-9 w-9 bg-white/70 backdrop-blur hover:bg-white text-neutral-900 shadow"
             onClick={() => setShowCamera(true)}
             title="Fungua Kamera"
           >
-            <Camera className="h-5 w-5" />
+            <Camera className="h-4 w-4" />
           </Button>
           <Button
             size="icon"
             variant="secondary"
-            className="rounded-full h-10 w-10 bg-white/90 hover:bg-white text-neutral-900 shadow-lg"
+            className="rounded-full h-9 w-9 bg-white/70 backdrop-blur hover:bg-white text-neutral-900 shadow"
             onClick={() => setSearchType(searchType === 'barcode' ? 'name' : 'barcode')}
             title="Badili aina ya utafutaji"
           >
-            <Edit2 className="h-5 w-5" />
+            <Edit2 className="h-4 w-4" />
           </Button>
         </div>
 
         {/* Search input floating at top */}
-        <div className="absolute top-4 left-4 right-20">
+        <div className="absolute top-3 left-3 right-16 z-20">
           <Input
             placeholder={searchType === 'barcode' ? 'Ingiza barcode…' : 'Andika jina la bidhaa…'}
             value={searchQuery}
+
             onChange={(e) => setSearchQuery(e.target.value)}
             className="h-11 rounded-full bg-white/95 border-0 shadow-lg text-sm"
             autoFocus
