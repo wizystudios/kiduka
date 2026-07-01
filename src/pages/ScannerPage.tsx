@@ -579,13 +579,35 @@ export const ScannerPage = () => {
         </div>
 
         {/* Header with total */}
-        <div className="px-5 pt-2 pb-3 flex items-start justify-between">
-          <div>
+        <div className="px-5 pt-2 pb-3 flex items-start justify-between gap-3">
+          <div className="min-w-0">
             <h3 className="text-base font-semibold text-neutral-900">Scanned Items</h3>
             <p className="text-xs text-neutral-500">{cart.length} bidhaa</p>
           </div>
+          <div className="flex items-center gap-1">
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-8 rounded-full text-xs text-neutral-600"
+              onClick={() => setShowHistory(true)}
+              title="Historia ya scan"
+            >
+              <History className="h-4 w-4 mr-1" />
+              {scanHistory.length}
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-8 rounded-full text-xs text-red-600 hover:bg-red-50"
+              onClick={clearHistory}
+              disabled={scanHistory.length === 0 && cart.length === 0}
+              title="Futa vyote"
+            >
+              <Trash2 className="h-4 w-4 mr-1" /> Futa
+            </Button>
+          </div>
           <div className="text-right">
-            <p className="text-[10px] uppercase tracking-wider text-neutral-400">Total Price</p>
+            <p className="text-[10px] uppercase tracking-wider text-neutral-400">Total</p>
             <p className="text-lg font-bold text-neutral-900">TZS {getSubtotal().toLocaleString()}</p>
           </div>
         </div>
@@ -596,28 +618,34 @@ export const ScannerPage = () => {
             <p className="text-center text-sm text-neutral-400 py-8">Kikapu ni tupu — anza kuscan bidhaa</p>
           ) : (
             cart.map((item) => (
-              <div key={item.id} className="flex items-center justify-between py-3">
+              <div key={item.id} className="flex items-center justify-between py-3 gap-2">
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-medium text-neutral-900 truncate">{item.name}</p>
-                  <p className="text-xs text-neutral-500">TZS {item.price.toLocaleString()}</p>
+                  <p className="text-xs text-neutral-500">TZS {item.price.toLocaleString()} · Jumla TZS {(item.price * item.quantity).toLocaleString()}</p>
                 </div>
-                <div className="flex items-center gap-2 ml-3">
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="h-8 w-8 rounded-full border border-neutral-200"
-                    onClick={() => updateQuantity(item.id, -1)}
-                  >
+                <div className="flex items-center gap-1 flex-shrink-0">
+                  <Button size="icon" variant="ghost" className="h-8 w-8 rounded-full border border-neutral-200"
+                    onClick={() => updateQuantity(item.id, -1)}>
                     <Minus className="h-4 w-4" />
                   </Button>
-                  <span className="w-6 text-center text-sm font-semibold text-neutral-900">{item.quantity}</span>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="h-8 w-8 rounded-full border border-neutral-200"
-                    onClick={() => updateQuantity(item.id, 1)}
-                  >
+                  <Input
+                    type="number"
+                    min={1}
+                    value={item.quantity}
+                    onChange={(e) => setQuantity(item.id, parseInt(e.target.value) || 1)}
+                    className="h-8 w-12 text-center text-sm rounded-full px-1"
+                  />
+                  <Button size="icon" variant="ghost" className="h-8 w-8 rounded-full border border-neutral-200"
+                    onClick={() => updateQuantity(item.id, 1)}>
                     <Plus className="h-4 w-4" />
+                  </Button>
+                  <Button size="icon" variant="ghost" className="h-8 w-8 rounded-full text-blue-600"
+                    onClick={() => rescanItem(item)} title="Scan upya">
+                    <RotateCcw className="h-4 w-4" />
+                  </Button>
+                  <Button size="icon" variant="ghost" className="h-8 w-8 rounded-full text-red-600"
+                    onClick={() => removeFromCart(item.id)} title="Ondoa">
+                    <X className="h-4 w-4" />
                   </Button>
                 </div>
               </div>
@@ -630,13 +658,90 @@ export const ScannerPage = () => {
           <Button
             className="w-full h-12 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white text-base font-semibold shadow-md"
             disabled={cart.length === 0}
-            onClick={() => setShowPayment(true)}
+            onClick={() => setShowReview(true)}
           >
             <ShoppingCart className="h-5 w-5 mr-2" />
             Review Order
           </Button>
         </div>
       </div>
+
+      {/* Scan History Sheet */}
+      <Sheet open={showHistory} onOpenChange={setShowHistory}>
+        <SheetContent side="right" className="w-full sm:max-w-md flex flex-col">
+          <SheetHeader>
+            <SheetTitle className="flex items-center justify-between">
+              <span className="flex items-center gap-2"><History className="h-5 w-5" /> Historia ya Scan</span>
+              <Button size="sm" variant="ghost" className="text-red-600" onClick={() => setScanHistory([])} disabled={scanHistory.length === 0}>
+                <Trash2 className="h-4 w-4 mr-1" /> Futa
+              </Button>
+            </SheetTitle>
+          </SheetHeader>
+          <div className="flex-1 overflow-y-auto mt-4 divide-y">
+            {scanHistory.length === 0 ? (
+              <p className="text-center text-sm text-neutral-400 py-8">Bado hakuna scan yoyote</p>
+            ) : scanHistory.map(p => (
+              <div key={p.id} className="py-3 flex items-center justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="text-sm font-medium truncate">{p.name}</p>
+                  <p className="text-xs text-neutral-500 font-mono">{p.barcode} · TZS {p.price.toLocaleString()}</p>
+                </div>
+                <Button size="sm" variant="outline" className="rounded-full" onClick={() => addToCart(p)}>
+                  <Plus className="h-4 w-4 mr-1" /> Ongeza
+                </Button>
+              </div>
+            ))}
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      {/* Review Order Sheet */}
+      <Sheet open={showReview} onOpenChange={setShowReview}>
+        <SheetContent side="right" className="w-full sm:max-w-md flex flex-col">
+          <SheetHeader>
+            <SheetTitle>Review Order</SheetTitle>
+          </SheetHeader>
+          <div className="flex-1 overflow-y-auto mt-4 divide-y">
+            {cart.map(item => (
+              <div key={item.id} className="py-3 flex items-center justify-between gap-2">
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium truncate">{item.name}</p>
+                  <p className="text-xs text-neutral-500">TZS {item.price.toLocaleString()} × {item.quantity}</p>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Button size="icon" variant="ghost" className="h-7 w-7 rounded-full border" onClick={() => updateQuantity(item.id, -1)}>
+                    <Minus className="h-3 w-3" />
+                  </Button>
+                  <span className="w-8 text-center text-sm font-semibold">{item.quantity}</span>
+                  <Button size="icon" variant="ghost" className="h-7 w-7 rounded-full border" onClick={() => updateQuantity(item.id, 1)}>
+                    <Plus className="h-3 w-3" />
+                  </Button>
+                  <p className="w-20 text-right text-sm font-semibold">TZS {(item.price * item.quantity).toLocaleString()}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="border-t pt-3 mt-2 space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-neutral-500">Jumla</span>
+              <span className="text-xl font-bold">TZS {getSubtotal().toLocaleString()}</span>
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" className="flex-1 rounded-2xl h-11" onClick={() => setShowReview(false)}>
+                Rekebisha
+              </Button>
+              <Button
+                className="flex-1 rounded-2xl h-11 bg-blue-600 hover:bg-blue-700 text-white"
+                onClick={() => { setShowReview(false); setShowPayment(true); }}
+                disabled={cart.length === 0}
+              >
+                <Check className="h-4 w-4 mr-1" /> Thibitisha na Lipa
+              </Button>
+            </div>
+          </div>
+        </SheetContent>
+      </Sheet>
+
     </div>
   );
 };
