@@ -240,7 +240,9 @@ export const ScannerPage = () => {
       title: 'Imeongezwa',
       description: `${product.name} imeongezwa kwenye kikapu`
     });
+    setScanHistory(prev => [product, ...prev.filter(p => p.id !== product.id)].slice(0, 30));
   };
+
 
   const handleWeightBasedAddToCart = (product: Product, weightData: { weight: number; unit: string; totalPrice: number }) => {
     const cartItem = {
