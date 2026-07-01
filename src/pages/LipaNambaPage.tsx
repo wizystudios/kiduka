@@ -119,10 +119,70 @@ export default function LipaNambaPage() {
   };
 
   const buildQrUrl = (item: PaymentNumber) => {
-    // Payload encodes network + lipa namba; customer can scan and pay via their app
     const payload = `Network:${item.network}\nLipa Namba:${item.lipa_namba}\n${item.account_name ? `Jina:${item.account_name}` : ''}`;
-    return `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(payload)}`;
+    return `https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${encodeURIComponent(payload)}&margin=10`;
   };
+
+  const captureShareCard = async (): Promise<Blob | null> => {
+    if (!shareCardRef.current) return null;
+    const canvas = await html2canvas(shareCardRef.current, {
+      backgroundColor: '#ffffff',
+      scale: 2,
+      useCORS: true,
+      logging: false,
+    });
+    return await new Promise<Blob | null>((resolve) => canvas.toBlob((b) => resolve(b), 'image/png'));
+  };
+
+  const shareQrImage = async () => {
+    if (!qrFor) return;
+    setSharing(true);
+    try {
+      // give the QR <img> a moment to fully load
+      await new Promise(r => setTimeout(r, 300));
+      const blob = await captureShareCard();
+      if (!blob) throw new Error('Imeshindwa kutengeneza picha');
+      const file = new File([blob], `kiduka-lipa-namba-${qrFor.lipa_namba}.png`, { type: 'image/png' });
+      const nav = navigator as any;
+      if (nav.canShare && nav.canShare({ files: [file] })) {
+        await nav.share({
+          files: [file],
+          title: 'Lipa Namba - Kiduka',
+          text: `Lipa kwa ${NETWORKS.find(n => n.value === qrFor.network)?.label}: ${qrFor.lipa_namba}`,
+        });
+      } else {
+        // fallback: download
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = file.name; a.click();
+        URL.revokeObjectURL(url);
+        toast.success('Picha imepakuliwa');
+      }
+    } catch (e: any) {
+      if (e?.name !== 'AbortError') toast.error(e.message || 'Imeshindwa kushare');
+    } finally {
+      setSharing(false);
+    }
+  };
+
+  const downloadQrImage = async () => {
+    setSharing(true);
+    try {
+      await new Promise(r => setTimeout(r, 300));
+      const blob = await captureShareCard();
+      if (!blob || !qrFor) return;
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `kiduka-lipa-namba-${qrFor.lipa_namba}.png`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success('Picha imepakuliwa');
+    } finally {
+      setSharing(false);
+    }
+  };
+
 
   return (
     <div className="p-4 pb-24 space-y-4 max-w-3xl mx-auto">
