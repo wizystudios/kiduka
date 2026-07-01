@@ -3,7 +3,9 @@ import { useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Camera, Search, Plus, Minus, ShoppingCart, Edit2 } from 'lucide-react';
+import { Camera, Search, Plus, Minus, ShoppingCart, Edit2, Trash2, X, RotateCcw, Check, History } from 'lucide-react';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from '@/components/ui/sheet';
+
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
