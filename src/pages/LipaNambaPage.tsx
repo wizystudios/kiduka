@@ -310,23 +310,57 @@ export default function LipaNambaPage() {
 
       {/* QR Dialog */}
       <Dialog open={!!qrFor} onOpenChange={(o) => !o && setQrFor(null)}>
-        <DialogContent className="rounded-3xl max-w-sm">
-          <DialogHeader><DialogTitle>QR ya Lipa Namba</DialogTitle></DialogHeader>
+        <DialogContent className="rounded-3xl max-w-sm p-4">
+          <DialogHeader><DialogTitle>Shiriki Lipa Namba</DialogTitle></DialogHeader>
           {qrFor && (
-            <div className="flex flex-col items-center gap-3 py-2">
-              <img src={buildQrUrl(qrFor)} alt="QR" className="w-64 h-64 rounded-2xl border" />
-              <div className="text-center">
-                <p className="text-xs text-muted-foreground">{NETWORKS.find(n => n.value === qrFor.network)?.label}</p>
-                <p className="font-mono font-bold">{qrFor.lipa_namba}</p>
-                {qrFor.account_name && <p className="text-sm">{qrFor.account_name}</p>}
+            <div className="space-y-3">
+              {/* Branded share card (captured to image) */}
+              <div
+                ref={shareCardRef}
+                className="rounded-3xl overflow-hidden bg-white p-5 shadow-inner border"
+                style={{ background: 'linear-gradient(180deg,#ffffff 0%,#f8fafc 100%)' }}
+              >
+                <div className="flex items-center justify-center mb-3">
+                  <KidukaLogo size="md" showText={true} animate={false} />
+                </div>
+                <div className={`rounded-2xl ${NETWORKS.find(n => n.value === qrFor.network)?.color || 'bg-gray-500'} text-white text-center py-2 mb-3`}>
+                  <p className="text-xs font-medium opacity-90">{NETWORKS.find(n => n.value === qrFor.network)?.label}</p>
+                </div>
+                <div className="flex flex-col items-center gap-2">
+                  <img
+                    src={buildQrUrl(qrFor)}
+                    alt="QR Code"
+                    crossOrigin="anonymous"
+                    className="w-56 h-56 rounded-2xl border-4 border-white shadow-lg"
+                  />
+                  <p className="text-[11px] uppercase tracking-wider text-neutral-500 mt-1">Lipa Namba</p>
+                  <p className="font-mono font-black text-3xl tracking-wide text-neutral-900">{qrFor.lipa_namba}</p>
+                  {qrFor.account_name && (
+                    <p className="text-sm font-semibold text-neutral-700">{qrFor.account_name}</p>
+                  )}
+                </div>
+                <div className="text-center mt-3 pt-3 border-t border-dashed">
+                  <p className="text-[10px] text-neutral-500">Scan QR au ingiza Lipa Namba kulipa</p>
+                  <p className="text-[10px] font-semibold text-neutral-700 mt-0.5">Kiduka · Biashara Smart</p>
+                </div>
+              </div>
+
+              <div className="flex gap-2">
+                <Button variant="outline" className="flex-1 rounded-full" disabled={sharing} onClick={downloadQrImage}>
+                  <Download className="h-4 w-4 mr-1" /> Pakua
+                </Button>
+                <Button className="flex-1 rounded-full" disabled={sharing} onClick={shareQrImage}>
+                  <Share2 className="h-4 w-4 mr-1" /> {sharing ? 'Inatengeneza...' : 'Shiriki'}
+                </Button>
               </div>
               <p className="text-[10px] text-muted-foreground text-center">
-                Mteja akinasa QR atapata maelekezo ya kulipa kwa mtandao husika.
+                Utashiriki picha yenye QR code na jina lako la biashara — sio maandishi tu.
               </p>
             </div>
           )}
         </DialogContent>
       </Dialog>
+
     </div>
   );
 }
