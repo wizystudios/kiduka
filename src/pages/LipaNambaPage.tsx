@@ -49,6 +49,9 @@ export default function LipaNambaPage() {
     is_default: false,
   });
   const [saving, setSaving] = useState(false);
+  const shareCardRef = useRef<HTMLDivElement>(null);
+  const [sharing, setSharing] = useState(false);
+
 
   const load = async () => {
     if (!user?.id) return;
