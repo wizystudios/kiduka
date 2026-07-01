@@ -818,7 +818,27 @@ export const SokoniMarketplace = () => {
               <Grid3X3 className="h-3 w-3" />
               Zote
             </Button>
-            {/* Quick-jump pill to home sections */}
+            {/* Quick-jump pills to home sections */}
+            <Button
+              variant="ghost" size="sm"
+              className="rounded-full text-xs text-primary-foreground hover:bg-primary-foreground/10"
+              onClick={() => {
+                setActiveTab('home');
+                setTimeout(() => document.getElementById('sec-top-deals')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
+              }}
+            >
+              <TrendingUp className="h-3 w-3 mr-1" /> Top Deals
+            </Button>
+            <Button
+              variant="ghost" size="sm"
+              className="rounded-full text-xs text-primary-foreground hover:bg-primary-foreground/10"
+              onClick={() => {
+                setActiveTab('home');
+                setTimeout(() => document.getElementById('sec-top-ranking')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
+              }}
+            >
+              <Star className="h-3 w-3 mr-1" /> Top Ranking
+            </Button>
             <Button
               variant="ghost" size="sm"
               className="rounded-full text-xs text-primary-foreground hover:bg-primary-foreground/10"
@@ -829,6 +849,7 @@ export const SokoniMarketplace = () => {
             >
               <Clock className="h-3 w-3 mr-1" /> Bidhaa Mpya
             </Button>
+
 
             {categories.map(cat => (
               <Button 
@@ -907,19 +928,9 @@ export const SokoniMarketplace = () => {
 
           {/* Top Deals */}
           <section id="sec-top-deals" className="scroll-mt-32">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <TrendingUp className="h-5 w-5 text-destructive" />
-                <h2 className="font-bold text-lg">Top Deals</h2>
-              </div>
-              <Button 
-                variant="ghost" 
-                size="sm"
-                onClick={() => setActiveTab('browse')}
-              >
-                Zaidi
-                <ChevronRight className="h-4 w-4 ml-1" />
-              </Button>
+            <div className="flex items-center gap-2 mb-3">
+              <TrendingUp className="h-5 w-5 text-destructive" />
+              <h2 className="font-bold text-lg">Top Deals</h2>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
               {topDeals.map(product => (
@@ -931,14 +942,9 @@ export const SokoniMarketplace = () => {
           {/* Top Ranking & New Arrivals */}
           <div className="grid md:grid-cols-2 gap-6">
             <section id="sec-top-ranking" className="scroll-mt-32">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <Star className="h-5 w-5 text-yellow-500" />
-                  <h2 className="font-bold">Top Ranking</h2>
-                </div>
-                <Button variant="ghost" size="sm" onClick={() => setActiveTab('browse')}>
-                  Zaidi <ChevronRight className="h-4 w-4" />
-                </Button>
+              <div className="flex items-center gap-2 mb-3">
+                <Star className="h-5 w-5 text-yellow-500" />
+                <h2 className="font-bold">Top Ranking</h2>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 {topRanking.map(product => (
@@ -948,14 +954,9 @@ export const SokoniMarketplace = () => {
             </section>
 
             <section id="sec-bidhaa-mpya" className="scroll-mt-32">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <Clock className="h-5 w-5 text-blue-500" />
-                  <h2 className="font-bold">Bidhaa Mpya</h2>
-                </div>
-                <Button variant="ghost" size="sm" onClick={() => setActiveTab('browse')}>
-                  Zaidi <ChevronRight className="h-4 w-4" />
-                </Button>
+              <div className="flex items-center gap-2 mb-3">
+                <Clock className="h-5 w-5 text-blue-500" />
+                <h2 className="font-bold">Bidhaa Mpya</h2>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 {newArrivals.slice(0, 4).map(product => (
@@ -964,6 +965,7 @@ export const SokoniMarketplace = () => {
               </div>
             </section>
           </div>
+
         </TabsContent>
 
         {/* Products Tab */}

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
@@ -9,9 +9,12 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Switch } from '@/components/ui/switch';
-import { Plus, Smartphone, QrCode, Trash2, Star, Sparkles } from 'lucide-react';
+import { Plus, Smartphone, QrCode, Trash2, Star, Sparkles, Share2, Download } from 'lucide-react';
 import { toast } from 'sonner';
 import { BackButton } from '@/components/BackButton';
+import { KidukaLogo } from '@/components/KidukaLogo';
+import html2canvas from 'html2canvas';
+
 
 interface PaymentNumber {
   id: string;
@@ -46,6 +49,9 @@ export default function LipaNambaPage() {
     is_default: false,
   });
   const [saving, setSaving] = useState(false);
+  const shareCardRef = useRef<HTMLDivElement>(null);
+  const [sharing, setSharing] = useState(false);
+
 
   const load = async () => {
     if (!user?.id) return;
@@ -113,10 +119,70 @@ export default function LipaNambaPage() {
   };
 
   const buildQrUrl = (item: PaymentNumber) => {
-    // Payload encodes network + lipa namba; customer can scan and pay via their app
     const payload = `Network:${item.network}\nLipa Namba:${item.lipa_namba}\n${item.account_name ? `Jina:${item.account_name}` : ''}`;
-    return `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(payload)}`;
+    return `https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${encodeURIComponent(payload)}&margin=10`;
   };
+
+  const captureShareCard = async (): Promise<Blob | null> => {
+    if (!shareCardRef.current) return null;
+    const canvas = await html2canvas(shareCardRef.current, {
+      backgroundColor: '#ffffff',
+      scale: 2,
+      useCORS: true,
+      logging: false,
+    });
+    return await new Promise<Blob | null>((resolve) => canvas.toBlob((b) => resolve(b), 'image/png'));
+  };
+
+  const shareQrImage = async () => {
+    if (!qrFor) return;
+    setSharing(true);
+    try {
+      // give the QR <img> a moment to fully load
+      await new Promise(r => setTimeout(r, 300));
+      const blob = await captureShareCard();
+      if (!blob) throw new Error('Imeshindwa kutengeneza picha');
+      const file = new File([blob], `kiduka-lipa-namba-${qrFor.lipa_namba}.png`, { type: 'image/png' });
+      const nav = navigator as any;
+      if (nav.canShare && nav.canShare({ files: [file] })) {
+        await nav.share({
+          files: [file],
+          title: 'Lipa Namba - Kiduka',
+          text: `Lipa kwa ${NETWORKS.find(n => n.value === qrFor.network)?.label}: ${qrFor.lipa_namba}`,
+        });
+      } else {
+        // fallback: download
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = file.name; a.click();
+        URL.revokeObjectURL(url);
+        toast.success('Picha imepakuliwa');
+      }
+    } catch (e: any) {
+      if (e?.name !== 'AbortError') toast.error(e.message || 'Imeshindwa kushare');
+    } finally {
+      setSharing(false);
+    }
+  };
+
+  const downloadQrImage = async () => {
+    setSharing(true);
+    try {
+      await new Promise(r => setTimeout(r, 300));
+      const blob = await captureShareCard();
+      if (!blob || !qrFor) return;
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `kiduka-lipa-namba-${qrFor.lipa_namba}.png`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success('Picha imepakuliwa');
+    } finally {
+      setSharing(false);
+    }
+  };
+
 
   return (
     <div className="p-4 pb-24 space-y-4 max-w-3xl mx-auto">
@@ -244,23 +310,57 @@ export default function LipaNambaPage() {
 
       {/* QR Dialog */}
       <Dialog open={!!qrFor} onOpenChange={(o) => !o && setQrFor(null)}>
-        <DialogContent className="rounded-3xl max-w-sm">
-          <DialogHeader><DialogTitle>QR ya Lipa Namba</DialogTitle></DialogHeader>
+        <DialogContent className="rounded-3xl max-w-sm p-4">
+          <DialogHeader><DialogTitle>Shiriki Lipa Namba</DialogTitle></DialogHeader>
           {qrFor && (
-            <div className="flex flex-col items-center gap-3 py-2">
-              <img src={buildQrUrl(qrFor)} alt="QR" className="w-64 h-64 rounded-2xl border" />
-              <div className="text-center">
-                <p className="text-xs text-muted-foreground">{NETWORKS.find(n => n.value === qrFor.network)?.label}</p>
-                <p className="font-mono font-bold">{qrFor.lipa_namba}</p>
-                {qrFor.account_name && <p className="text-sm">{qrFor.account_name}</p>}
+            <div className="space-y-3">
+              {/* Branded share card (captured to image) */}
+              <div
+                ref={shareCardRef}
+                className="rounded-3xl overflow-hidden bg-white p-5 shadow-inner border"
+                style={{ background: 'linear-gradient(180deg,#ffffff 0%,#f8fafc 100%)' }}
+              >
+                <div className="flex items-center justify-center mb-3">
+                  <KidukaLogo size="md" showText={true} animate={false} />
+                </div>
+                <div className={`rounded-2xl ${NETWORKS.find(n => n.value === qrFor.network)?.color || 'bg-gray-500'} text-white text-center py-2 mb-3`}>
+                  <p className="text-xs font-medium opacity-90">{NETWORKS.find(n => n.value === qrFor.network)?.label}</p>
+                </div>
+                <div className="flex flex-col items-center gap-2">
+                  <img
+                    src={buildQrUrl(qrFor)}
+                    alt="QR Code"
+                    crossOrigin="anonymous"
+                    className="w-56 h-56 rounded-2xl border-4 border-white shadow-lg"
+                  />
+                  <p className="text-[11px] uppercase tracking-wider text-neutral-500 mt-1">Lipa Namba</p>
+                  <p className="font-mono font-black text-3xl tracking-wide text-neutral-900">{qrFor.lipa_namba}</p>
+                  {qrFor.account_name && (
+                    <p className="text-sm font-semibold text-neutral-700">{qrFor.account_name}</p>
+                  )}
+                </div>
+                <div className="text-center mt-3 pt-3 border-t border-dashed">
+                  <p className="text-[10px] text-neutral-500">Scan QR au ingiza Lipa Namba kulipa</p>
+                  <p className="text-[10px] font-semibold text-neutral-700 mt-0.5">Kiduka · Biashara Smart</p>
+                </div>
+              </div>
+
+              <div className="flex gap-2">
+                <Button variant="outline" className="flex-1 rounded-full" disabled={sharing} onClick={downloadQrImage}>
+                  <Download className="h-4 w-4 mr-1" /> Pakua
+                </Button>
+                <Button className="flex-1 rounded-full" disabled={sharing} onClick={shareQrImage}>
+                  <Share2 className="h-4 w-4 mr-1" /> {sharing ? 'Inatengeneza...' : 'Shiriki'}
+                </Button>
               </div>
               <p className="text-[10px] text-muted-foreground text-center">
-                Mteja akinasa QR atapata maelekezo ya kulipa kwa mtandao husika.
+                Utashiriki picha yenye QR code na jina lako la biashara — sio maandishi tu.
               </p>
             </div>
           )}
         </DialogContent>
       </Dialog>
+
     </div>
   );
 }
