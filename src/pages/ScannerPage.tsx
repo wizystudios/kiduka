@@ -268,9 +268,35 @@ export const ScannerPage = () => {
     }).filter(Boolean) as CartItem[]);
   };
 
+  const setQuantity = (id: string, qty: number) => {
+    setCart(cart.map(item => {
+      if (item.id === id) {
+        const clamped = Math.max(1, Math.min(item.stock_quantity || qty, qty));
+        return { ...item, quantity: clamped };
+      }
+      return item;
+    }));
+  };
+
   const removeFromCart = (id: string) => {
     setCart(cart.filter(item => item.id !== id));
   };
+
+  const rescanItem = (item: CartItem) => {
+    removeFromCart(item.id);
+    setSearchType('barcode');
+    setShowCamera(true);
+  };
+
+  const clearHistory = () => {
+    setScanHistory([]);
+    setCart([]);
+    setScannedProduct(null);
+    setSearchQuery('');
+    setSearchResults([]);
+    toast({ title: 'Historia imefutwa', description: 'Anza kuscan upya' });
+  };
+
 
   const getSubtotal = () => {
     return cart.reduce((total, item) => total + (item.price * item.quantity), 0);
