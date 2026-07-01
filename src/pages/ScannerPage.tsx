@@ -52,6 +52,10 @@ export const ScannerPage = () => {
   const [showCamera, setShowCamera] = useState(false);
   const [showWeightSelector, setShowWeightSelector] = useState(false);
   const [selectedProductForWeight, setSelectedProductForWeight] = useState<Product | null>(null);
+  const [scanHistory, setScanHistory] = useState<Product[]>([]);
+  const [showHistory, setShowHistory] = useState(false);
+  const [showReview, setShowReview] = useState(false);
+
   const [completedSale, setCompletedSale] = useState<{
     id: string;
     items: any[];
