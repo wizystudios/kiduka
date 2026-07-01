@@ -818,27 +818,7 @@ export const SokoniMarketplace = () => {
               <Grid3X3 className="h-3 w-3" />
               Zote
             </Button>
-            {/* Quick-jump pills to home sections */}
-            <Button
-              variant="ghost" size="sm"
-              className="rounded-full text-xs text-primary-foreground hover:bg-primary-foreground/10"
-              onClick={() => {
-                setActiveTab('home');
-                setTimeout(() => document.getElementById('sec-top-deals')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
-              }}
-            >
-              <TrendingUp className="h-3 w-3 mr-1" /> Top Deals
-            </Button>
-            <Button
-              variant="ghost" size="sm"
-              className="rounded-full text-xs text-primary-foreground hover:bg-primary-foreground/10"
-              onClick={() => {
-                setActiveTab('home');
-                setTimeout(() => document.getElementById('sec-top-ranking')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
-              }}
-            >
-              <Star className="h-3 w-3 mr-1" /> Top Ranking
-            </Button>
+            {/* Quick-jump pill to home sections */}
             <Button
               variant="ghost" size="sm"
               className="rounded-full text-xs text-primary-foreground hover:bg-primary-foreground/10"
@@ -849,6 +829,7 @@ export const SokoniMarketplace = () => {
             >
               <Clock className="h-3 w-3 mr-1" /> Bidhaa Mpya
             </Button>
+
             {categories.map(cat => (
               <Button 
                 key={cat.name}
