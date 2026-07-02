@@ -462,13 +462,8 @@ export const ScannerPage = () => {
   }
 
   return (
-    <div className="fixed inset-0 bg-black flex flex-col overflow-hidden">
+    <div className="fixed inset-0 z-[60] bg-black flex flex-col overflow-hidden">
 
-      <CameraScanner
-        isOpen={showCamera}
-        onScan={handleCameraScan}
-        onClose={() => setShowCamera(false)}
-      />
 
       {showWeightSelector && selectedProductForWeight && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
