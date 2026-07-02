@@ -55,6 +55,11 @@ export const ScannerPage = () => {
   const [scanHistory, setScanHistory] = useState<Product[]>([]);
   const [showHistory, setShowHistory] = useState(false);
   const [showReview, setShowReview] = useState(false);
+  const [cameraOn, setCameraOn] = useState(true);
+  const [cameraError, setCameraError] = useState<string | null>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const readerRef = useRef<BrowserMultiFormatReader | null>(null);
+  const lastScanRef = useRef<{ code: string; at: number }>({ code: '', at: 0 });
 
   const [completedSale, setCompletedSale] = useState<{
     id: string;
