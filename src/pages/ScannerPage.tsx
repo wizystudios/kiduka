@@ -327,7 +327,7 @@ export const ScannerPage = () => {
   const rescanItem = (item: CartItem) => {
     removeFromCart(item.id);
     setSearchType('barcode');
-    setShowCamera(true);
+    setCameraOn(true);
   };
 
   const clearHistory = () => {
