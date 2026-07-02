@@ -14,6 +14,7 @@ import { toast } from 'sonner';
 import { BackButton } from '@/components/BackButton';
 import { KidukaLogo } from '@/components/KidukaLogo';
 import html2canvas from 'html2canvas';
+import { QRCodeCanvas } from 'qrcode.react';
 
 
 interface PaymentNumber {
