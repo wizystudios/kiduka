@@ -102,6 +102,42 @@ export const ScannerPage = () => {
     }, 400);
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
   }, [searchQuery, searchType]);
+
+  // Auto-start live camera scanner (continuous decode)
+  useEffect(() => {
+    if (!cameraOn) return;
+    let cancelled = false;
+    const reader = new BrowserMultiFormatReader();
+    readerRef.current = reader;
+    setCameraError(null);
+    (async () => {
+      try {
+        if (!videoRef.current) return;
+        await reader.decodeFromVideoDevice(null, videoRef.current, (result, err) => {
+          if (cancelled) return;
+          if (result) {
+            const code = result.getText();
+            const now = Date.now();
+            // debounce identical repeats within 1.5s
+            if (code === lastScanRef.current.code && now - lastScanRef.current.at < 1500) return;
+            lastScanRef.current = { code, at: now };
+            skipNextSearchRef.current = true;
+            setSearchType('barcode');
+            setSearchQuery(code);
+            handleSearchProduct(code);
+          }
+        });
+      } catch (e: any) {
+        console.error('Camera error:', e);
+        if (!cancelled) setCameraError(e?.message || 'Imeshindwa kufungua kamera. Ruhusu ufikiaji wa kamera.');
+      }
+    })();
+    return () => {
+      cancelled = true;
+      try { reader.reset(); } catch {}
+      readerRef.current = null;
+    };
+  }, [cameraOn]);
   const handleSearchProduct = async (query: string) => {
     if (!query.trim()) {
       setSearchResults([]);
