@@ -327,12 +327,14 @@ export default function LipaNambaPage() {
                   <p className="text-xs font-medium opacity-90">{NETWORKS.find(n => n.value === qrFor.network)?.label}</p>
                 </div>
                 <div className="flex flex-col items-center gap-2">
-                  <img
-                    src={buildQrUrl(qrFor)}
-                    alt="QR Code"
-                    crossOrigin="anonymous"
-                    className="w-56 h-56 rounded-2xl border-4 border-white shadow-lg"
-                  />
+                  <div className="p-3 bg-white rounded-2xl border-4 border-white shadow-lg">
+                    <QRCodeCanvas
+                      value={buildQrPayload(qrFor)}
+                      size={224}
+                      level="M"
+                      includeMargin={false}
+                    />
+                  </div>
                   <p className="text-[11px] uppercase tracking-wider text-neutral-500 mt-1">Lipa Namba</p>
                   <p className="font-mono font-black text-3xl tracking-wide text-neutral-900">{qrFor.lipa_namba}</p>
                   {qrFor.account_name && (
