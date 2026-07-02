@@ -231,7 +231,6 @@ export const ScannerPage = () => {
   const handleCameraScan = (barcode: string) => {
     setSearchQuery(barcode);
     setSearchType('barcode');
-    setShowCamera(false);
     handleSearchProduct(barcode);
   };
 
