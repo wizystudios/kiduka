@@ -3,14 +3,14 @@ import { useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Camera, Search, Plus, Minus, ShoppingCart, Edit2, Trash2, X, RotateCcw, Check, History } from 'lucide-react';
+import { Camera, CameraOff, Search, Plus, Minus, ShoppingCart, Edit2, Trash2, X, RotateCcw, Check, History } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from '@/components/ui/sheet';
+import { BrowserMultiFormatReader } from '@zxing/library';
 
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { useDataAccess } from '@/hooks/useDataAccess';
-import { CameraScanner } from '@/components/CameraScanner';
 import { PaymentMethodDialog } from '@/components/PaymentMethodDialog';
 import { EnhancedReceiptPrinter } from '@/components/EnhancedReceiptPrinter';
 import { WeightSelector } from '@/components/WeightSelector';
@@ -49,12 +49,17 @@ export const ScannerPage = () => {
   const [showPayment, setShowPayment] = useState(false);
   const [showReceipt, setShowReceipt] = useState(false);
   const [showDigitalReceipt, setShowDigitalReceipt] = useState(false);
-  const [showCamera, setShowCamera] = useState(false);
+  
   const [showWeightSelector, setShowWeightSelector] = useState(false);
   const [selectedProductForWeight, setSelectedProductForWeight] = useState<Product | null>(null);
   const [scanHistory, setScanHistory] = useState<Product[]>([]);
   const [showHistory, setShowHistory] = useState(false);
   const [showReview, setShowReview] = useState(false);
+  const [cameraOn, setCameraOn] = useState(true);
+  const [cameraError, setCameraError] = useState<string | null>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const readerRef = useRef<BrowserMultiFormatReader | null>(null);
+  const lastScanRef = useRef<{ code: string; at: number }>({ code: '', at: 0 });
 
   const [completedSale, setCompletedSale] = useState<{
     id: string;
@@ -97,6 +102,42 @@ export const ScannerPage = () => {
     }, 400);
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
   }, [searchQuery, searchType]);
+
+  // Auto-start live camera scanner (continuous decode)
+  useEffect(() => {
+    if (!cameraOn) return;
+    let cancelled = false;
+    const reader = new BrowserMultiFormatReader();
+    readerRef.current = reader;
+    setCameraError(null);
+    (async () => {
+      try {
+        if (!videoRef.current) return;
+        await reader.decodeFromVideoDevice(null, videoRef.current, (result, err) => {
+          if (cancelled) return;
+          if (result) {
+            const code = result.getText();
+            const now = Date.now();
+            // debounce identical repeats within 1.5s
+            if (code === lastScanRef.current.code && now - lastScanRef.current.at < 1500) return;
+            lastScanRef.current = { code, at: now };
+            skipNextSearchRef.current = true;
+            setSearchType('barcode');
+            setSearchQuery(code);
+            handleSearchProduct(code);
+          }
+        });
+      } catch (e: any) {
+        console.error('Camera error:', e);
+        if (!cancelled) setCameraError(e?.message || 'Imeshindwa kufungua kamera. Ruhusu ufikiaji wa kamera.');
+      }
+    })();
+    return () => {
+      cancelled = true;
+      try { reader.reset(); } catch {}
+      readerRef.current = null;
+    };
+  }, [cameraOn]);
   const handleSearchProduct = async (query: string) => {
     if (!query.trim()) {
       setSearchResults([]);
@@ -190,7 +231,6 @@ export const ScannerPage = () => {
   const handleCameraScan = (barcode: string) => {
     setSearchQuery(barcode);
     setSearchType('barcode');
-    setShowCamera(false);
     handleSearchProduct(barcode);
   };
 
@@ -287,7 +327,7 @@ export const ScannerPage = () => {
   const rescanItem = (item: CartItem) => {
     removeFromCart(item.id);
     setSearchType('barcode');
-    setShowCamera(true);
+    setCameraOn(true);
   };
 
   const clearHistory = () => {
@@ -422,13 +462,8 @@ export const ScannerPage = () => {
   }
 
   return (
-    <div className="fixed inset-0 bg-black flex flex-col overflow-hidden">
+    <div className="fixed inset-0 z-[60] bg-black flex flex-col overflow-hidden">
 
-      <CameraScanner
-        isOpen={showCamera}
-        onScan={handleCameraScan}
-        onClose={() => setShowCamera(false)}
-      />
 
       {showWeightSelector && selectedProductForWeight && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -492,10 +527,36 @@ export const ScannerPage = () => {
         </div>
       )}
 
-      {/* Camera / Scan Viewport (top half) */}
-      <div className="relative flex-1 min-h-0 bg-neutral-900 overflow-hidden">
-        {/* Simulated camera / product surface */}
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(255,255,255,0.08),transparent_70%)]" />
+      {/* Camera / Scan Viewport (top half) — LIVE camera, auto-scans */}
+      <div className="relative flex-1 min-h-0 bg-black overflow-hidden">
+        {/* Live camera feed */}
+        <video
+          ref={videoRef}
+          className="absolute inset-0 w-full h-full object-cover"
+          autoPlay
+          playsInline
+          muted
+        />
+        {/* Subtle scrim so overlays remain readable */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/40 pointer-events-none" />
+
+        {cameraError && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-6 text-white bg-black/70 z-10">
+            <CameraOff className="h-10 w-10 mb-3 opacity-80" />
+            <p className="text-sm mb-3">{cameraError}</p>
+            <Button size="sm" className="rounded-full" onClick={() => { setCameraOn(false); setTimeout(() => setCameraOn(true), 50); }}>
+              Jaribu tena
+            </Button>
+          </div>
+        )}
+
+        {!cameraOn && !cameraError && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/60 z-10">
+            <Button size="sm" className="rounded-full" onClick={() => setCameraOn(true)}>
+              <Camera className="h-4 w-4 mr-1" /> Washa Kamera
+            </Button>
+          </div>
+        )}
 
         {/* Green corner brackets */}
         <div className="absolute inset-8 pointer-events-none">
@@ -511,10 +572,10 @@ export const ScannerPage = () => {
             size="icon"
             variant="secondary"
             className="rounded-full h-9 w-9 bg-white/70 backdrop-blur hover:bg-white text-neutral-900 shadow"
-            onClick={() => setShowCamera(true)}
-            title="Fungua Kamera"
+            onClick={() => setCameraOn((v) => !v)}
+            title={cameraOn ? 'Zima Kamera' : 'Washa Kamera'}
           >
-            <Camera className="h-4 w-4" />
+            {cameraOn ? <CameraOff className="h-4 w-4" /> : <Camera className="h-4 w-4" />}
           </Button>
           <Button
             size="icon"

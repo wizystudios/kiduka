@@ -14,6 +14,7 @@ import { toast } from 'sonner';
 import { BackButton } from '@/components/BackButton';
 import { KidukaLogo } from '@/components/KidukaLogo';
 import html2canvas from 'html2canvas';
+import { QRCodeCanvas } from 'qrcode.react';
 
 
 interface PaymentNumber {
@@ -118,9 +119,8 @@ export default function LipaNambaPage() {
     load();
   };
 
-  const buildQrUrl = (item: PaymentNumber) => {
-    const payload = `Network:${item.network}\nLipa Namba:${item.lipa_namba}\n${item.account_name ? `Jina:${item.account_name}` : ''}`;
-    return `https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${encodeURIComponent(payload)}&margin=10`;
+  const buildQrPayload = (item: PaymentNumber) => {
+    return `Network:${item.network}\nLipa Namba:${item.lipa_namba}\n${item.account_name ? `Jina:${item.account_name}` : ''}`;
   };
 
   const captureShareCard = async (): Promise<Blob | null> => {
@@ -327,12 +327,14 @@ export default function LipaNambaPage() {
                   <p className="text-xs font-medium opacity-90">{NETWORKS.find(n => n.value === qrFor.network)?.label}</p>
                 </div>
                 <div className="flex flex-col items-center gap-2">
-                  <img
-                    src={buildQrUrl(qrFor)}
-                    alt="QR Code"
-                    crossOrigin="anonymous"
-                    className="w-56 h-56 rounded-2xl border-4 border-white shadow-lg"
-                  />
+                  <div className="p-3 bg-white rounded-2xl border-4 border-white shadow-lg">
+                    <QRCodeCanvas
+                      value={buildQrPayload(qrFor)}
+                      size={224}
+                      level="M"
+                      includeMargin={false}
+                    />
+                  </div>
                   <p className="text-[11px] uppercase tracking-wider text-neutral-500 mt-1">Lipa Namba</p>
                   <p className="font-mono font-black text-3xl tracking-wide text-neutral-900">{qrFor.lipa_namba}</p>
                   {qrFor.account_name && (
