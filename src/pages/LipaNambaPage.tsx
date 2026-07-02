@@ -119,9 +119,8 @@ export default function LipaNambaPage() {
     load();
   };
 
-  const buildQrUrl = (item: PaymentNumber) => {
-    const payload = `Network:${item.network}\nLipa Namba:${item.lipa_namba}\n${item.account_name ? `Jina:${item.account_name}` : ''}`;
-    return `https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${encodeURIComponent(payload)}&margin=10`;
+  const buildQrPayload = (item: PaymentNumber) => {
+    return `Network:${item.network}\nLipa Namba:${item.lipa_namba}\n${item.account_name ? `Jina:${item.account_name}` : ''}`;
   };
 
   const captureShareCard = async (): Promise<Blob | null> => {
