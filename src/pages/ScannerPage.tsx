@@ -49,7 +49,7 @@ export const ScannerPage = () => {
   const [showPayment, setShowPayment] = useState(false);
   const [showReceipt, setShowReceipt] = useState(false);
   const [showDigitalReceipt, setShowDigitalReceipt] = useState(false);
-  const [showCamera, setShowCamera] = useState(false);
+  
   const [showWeightSelector, setShowWeightSelector] = useState(false);
   const [selectedProductForWeight, setSelectedProductForWeight] = useState<Product | null>(null);
   const [scanHistory, setScanHistory] = useState<Product[]>([]);
