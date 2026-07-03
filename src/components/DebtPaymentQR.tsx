@@ -1,11 +1,15 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Copy, Download, MessageCircle } from 'lucide-react';
+import { Copy, Download, FileText, Share2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
+import { KidukaLogo } from '@/components/KidukaLogo';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
+import { QRCodeCanvas } from 'qrcode.react';
 
 interface DebtPaymentQRProps {
   open: boolean;
@@ -35,6 +39,8 @@ export const DebtPaymentQR = ({ open, onOpenChange, customerName, customerPhone,
   const { user } = useAuth();
   const [nums, setNums] = useState<PayNum[]>([]);
   const [selected, setSelected] = useState<PayNum | null>(null);
+  const [sharing, setSharing] = useState(false);
+  const shareCardRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!open || !user?.id) return;
@@ -64,20 +70,65 @@ export const DebtPaymentQR = ({ open, onOpenChange, customerName, customerPhone,
     ts: Date.now(),
   }) : '';
 
-  const qrUrl = payload
-    ? `https://api.qrserver.com/v1/create-qr-code/?size=320x320&margin=8&data=${encodeURIComponent(payload)}`
-    : '';
+  const captureShareCard = async (): Promise<{ blob: Blob; dataUrl: string } | null> => {
+    if (!shareCardRef.current) return null;
+    const canvas = await html2canvas(shareCardRef.current, {
+      backgroundColor: '#ffffff',
+      scale: 2,
+      useCORS: true,
+      logging: false,
+    });
+    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob((b) => resolve(b), 'image/png'));
+    return blob ? { blob, dataUrl: canvas.toDataURL('image/png') } : null;
+  };
 
-  const sendWhatsApp = () => {
-    if (!customerPhone) { toast.error('Hakuna namba ya simu ya mteja'); return; }
+  const shareFile = async (file: File) => {
+    const nav = navigator as any;
+    if (nav.canShare && nav.canShare({ files: [file] })) {
+      await nav.share({ files: [file], title: 'Kiduka Lipa Namba' });
+      return;
+    }
+    const url = URL.createObjectURL(file);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = file.name;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success(file.type === 'application/pdf' ? 'PDF imepakuliwa' : 'Picha imepakuliwa');
+  };
+
+  const sharePaymentImage = async () => {
     if (!selected) return;
-    const msg = `Habari ${customerName}, lipa deni TSh ${amount.toLocaleString()} kwa:\n` +
-      `${NET_LABEL[selected.network] || selected.network}: *${selected.lipa_namba}*\n` +
-      `${selected.account_name ? `Jina: ${selected.account_name}\n` : ''}` +
-      `Kumbukumbu: ${reference.slice(0, 8).toUpperCase()}\n` +
-      `${selected.instructions || ''}`;
-    const phone = customerPhone.replace(/\D/g, '');
-    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, '_blank');
+    setSharing(true);
+    try {
+      await new Promise(r => setTimeout(r, 250));
+      const capture = await captureShareCard();
+      if (!capture) throw new Error('Imeshindwa kutengeneza picha ya malipo');
+      await shareFile(new File([capture.blob], `kiduka-malipo-${reference.slice(0, 8)}.png`, { type: 'image/png' }));
+    } catch (e: any) {
+      if (e?.name !== 'AbortError') toast.error(e.message || 'Imeshindwa kushare picha');
+    } finally {
+      setSharing(false);
+    }
+  };
+
+  const sharePaymentPdf = async () => {
+    if (!selected) return;
+    setSharing(true);
+    try {
+      await new Promise(r => setTimeout(r, 250));
+      const capture = await captureShareCard();
+      if (!capture) throw new Error('Imeshindwa kutengeneza PDF');
+      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      pdf.addImage(capture.dataUrl, 'PNG', 22, 18, pageWidth - 44, 154);
+      const blob = pdf.output('blob');
+      await shareFile(new File([blob], `kiduka-malipo-${reference.slice(0, 8)}.pdf`, { type: 'application/pdf' }));
+    } catch (e: any) {
+      if (e?.name !== 'AbortError') toast.error(e.message || 'Imeshindwa kushare PDF');
+    } finally {
+      setSharing(false);
+    }
   };
 
   const copyPayload = async () => {
@@ -122,25 +173,42 @@ export const DebtPaymentQR = ({ open, onOpenChange, customerName, customerPhone,
                   <div className="flex justify-between"><span className="text-muted-foreground">Kumbukumbu</span><Badge variant="outline" className="font-mono text-[10px]">{reference.slice(0,8).toUpperCase()}</Badge></div>
                 </div>
 
-                <div className="flex justify-center bg-white rounded-2xl p-3 border border-border/50">
-                  <img src={qrUrl} alt="QR ya malipo" className="w-64 h-64" />
+                <div ref={shareCardRef} className="bg-white rounded-3xl p-5 border border-border/50 text-neutral-900">
+                  <div className="flex items-center justify-center mb-3">
+                    <KidukaLogo size="md" showText={true} animate={false} />
+                  </div>
+                  <div className="rounded-2xl bg-primary text-primary-foreground text-center py-2 mb-3">
+                    <p className="text-xs opacity-90">QR ya Malipo</p>
+                    <p className="font-bold">{NET_LABEL[selected.network] || selected.network}</p>
+                  </div>
+                  <div className="flex justify-center bg-white rounded-2xl p-3 border border-border/50">
+                    <QRCodeCanvas value={payload} size={236} level="M" includeMargin={false} />
+                  </div>
+                  <div className="mt-3 text-center space-y-1">
+                    <p className="text-[10px] uppercase text-neutral-500">Lipa Namba</p>
+                    <p className="font-mono font-black text-2xl">{selected.lipa_namba}</p>
+                    {selected.account_name && <p className="text-sm font-semibold">{selected.account_name}</p>}
+                    <p className="font-bold text-primary">TSh {amount.toLocaleString()}</p>
+                    <Badge variant="outline" className="font-mono text-[10px]">REF {reference.slice(0,8).toUpperCase()}</Badge>
+                  </div>
                 </div>
 
                 <p className="text-[11px] text-muted-foreground text-center">
                   Mteja akiscan QR hii, ataona maelezo ya malipo yake mahsusi (kiasi, kumbukumbu).
                 </p>
 
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-4 gap-2">
                   <Button variant="outline" size="sm" className="rounded-full" onClick={copyPayload}>
                     <Copy className="h-3.5 w-3.5 mr-1" /> Nakili
                   </Button>
-                  <Button variant="outline" size="sm" className="rounded-full" asChild>
-                    <a href={qrUrl} download={`qr-${reference.slice(0,8)}.png`}>
-                      <Download className="h-3.5 w-3.5 mr-1" /> Pakua
-                    </a>
+                  <Button variant="outline" size="sm" className="rounded-full" onClick={sharePaymentImage} disabled={sharing}>
+                    <Download className="h-3.5 w-3.5 mr-1" /> Picha
                   </Button>
-                  <Button size="sm" className="rounded-full bg-green-600 hover:bg-green-700" onClick={sendWhatsApp}>
-                    <MessageCircle className="h-3.5 w-3.5 mr-1" /> WA
+                  <Button variant="outline" size="sm" className="rounded-full" onClick={sharePaymentPdf} disabled={sharing}>
+                    <FileText className="h-3.5 w-3.5 mr-1" /> PDF
+                  </Button>
+                  <Button size="sm" className="rounded-full bg-green-600 hover:bg-green-700" onClick={sharePaymentImage} disabled={sharing}>
+                    <Share2 className="h-3.5 w-3.5 mr-1" /> Share
                   </Button>
                 </div>
               </>
