@@ -579,7 +579,7 @@ export const ScannerPage = () => {
         )}
 
         {/* Green corner brackets */}
-        <div className="absolute inset-8 pointer-events-none">
+        <div className="absolute top-8 left-8 right-8 bottom-28 pointer-events-none">
           <span className="absolute top-0 left-0 w-10 h-10 border-t-4 border-l-4 border-emerald-400 rounded-tl-xl" />
           <span className="absolute top-0 right-0 w-10 h-10 border-t-4 border-r-4 border-emerald-400 rounded-tr-xl" />
           <span className="absolute bottom-0 left-0 w-10 h-10 border-b-4 border-l-4 border-emerald-400 rounded-bl-xl" />
