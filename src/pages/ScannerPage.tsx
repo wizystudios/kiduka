@@ -3,8 +3,8 @@ import { useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Camera, CameraOff, Search, Plus, Minus, ShoppingCart, Edit2, Trash2, X, RotateCcw, Check, History } from 'lucide-react';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from '@/components/ui/sheet';
+import { CameraOff, Search, Plus, Minus, ShoppingCart, Edit2, Trash2, X, RotateCcw, Check, History } from 'lucide-react';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { BarcodeFormat, BrowserMultiFormatReader, DecodeHintType } from '@zxing/library';
 
 import { supabase } from '@/integrations/supabase/client';
@@ -41,7 +41,6 @@ interface PaymentData {
 
 export const ScannerPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [searchType, setSearchType] = useState<'barcode' | 'name'>('barcode');
   const [scannedProduct, setScannedProduct] = useState<Product | null>(null);
   const [searchResults, setSearchResults] = useState<Product[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -103,7 +102,7 @@ export const ScannerPage = () => {
       handleSearchProduct(searchQuery, { source: 'manual' });
     }, 400);
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
-  }, [searchQuery, searchType]);
+  }, [searchQuery]);
 
   // Auto-start live camera scanner (continuous decode)
   useEffect(() => {
@@ -148,7 +147,6 @@ export const ScannerPage = () => {
             lastScanRef.current = { code, at: now };
             scanProcessingRef.current = true;
             skipNextSearchRef.current = true;
-            setSearchType('barcode');
             setSearchQuery(code);
             handleSearchProduct(code, { source: 'camera', autoAddBarcode: true }).finally(() => {
               window.setTimeout(() => { scanProcessingRef.current = false; }, 650);
@@ -260,7 +258,6 @@ export const ScannerPage = () => {
 
   const handleCameraScan = (barcode: string) => {
     setSearchQuery(barcode);
-    setSearchType('barcode');
     handleSearchProduct(barcode, { source: 'camera', autoAddBarcode: true });
   };
 
@@ -287,24 +284,25 @@ export const ScannerPage = () => {
       return;
     }
 
-    const existingItem = cart.find(item => item.id === product.id);
-    if (existingItem) {
-      if (existingItem.quantity >= product.stock_quantity) {
-        toast({
-          title: 'Stock Haitoshi',
-          description: 'Haiwezekani kuongeza zaidi ya stock iliyopo',
-          variant: 'destructive'
-        });
-        return;
+    setCart(prev => {
+      const existingItem = prev.find(item => item.id === product.id);
+      if (existingItem) {
+        if (existingItem.quantity >= product.stock_quantity) {
+          toast({
+            title: 'Stock Haitoshi',
+            description: 'Haiwezekani kuongeza zaidi ya stock iliyopo',
+            variant: 'destructive'
+          });
+          return prev;
+        }
+        return prev.map(item =>
+          item.id === product.id
+            ? { ...item, quantity: item.quantity + 1 }
+            : item
+        );
       }
-      setCart(cart.map(item => 
-        item.id === product.id 
-          ? { ...item, quantity: item.quantity + 1 }
-          : item
-      ));
-    } else {
-      setCart([...cart, { ...product, quantity: 1 }]);
-    }
+      return [...prev, { ...product, quantity: 1 }];
+    });
     
     toast({
       title: 'Imeongezwa',
@@ -356,7 +354,6 @@ export const ScannerPage = () => {
 
   const rescanItem = (item: CartItem) => {
     removeFromCart(item.id);
-    setSearchType('barcode');
     setCameraOn(true);
     searchInputRef.current?.blur();
   };
