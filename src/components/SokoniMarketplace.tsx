@@ -926,47 +926,8 @@ export const SokoniMarketplace = () => {
             </div>
           </div>
 
-          {/* Top Deals */}
-          <section id="sec-top-deals" className="scroll-mt-32">
-            <div className="flex items-center gap-2 mb-3">
-              <TrendingUp className="h-5 w-5 text-destructive" />
-              <h2 className="font-bold text-lg">Top Deals</h2>
-            </div>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-              {topDeals.map(product => (
-                <ProductCard key={product.id} product={product} />
-              ))}
-            </div>
-          </section>
-
-          {/* Top Ranking & New Arrivals */}
-          <div className="grid md:grid-cols-2 gap-6">
-            <section id="sec-top-ranking" className="scroll-mt-32">
-              <div className="flex items-center gap-2 mb-3">
-                <Star className="h-5 w-5 text-yellow-500" />
-                <h2 className="font-bold">Top Ranking</h2>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                {topRanking.map(product => (
-                  <ProductCard key={product.id} product={product} />
-                ))}
-              </div>
-            </section>
-
-            <section id="sec-bidhaa-mpya" className="scroll-mt-32">
-              <div className="flex items-center gap-2 mb-3">
-                <Clock className="h-5 w-5 text-blue-500" />
-                <h2 className="font-bold">Bidhaa Mpya</h2>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                {newArrivals.slice(0, 4).map(product => (
-                  <ProductCard key={product.id} product={product} />
-                ))}
-              </div>
-            </section>
-          </div>
-
-        </TabsContent>
+          {/* Sections (Top Deals / Top Ranking / Bidhaa Mpya) removed from center —
+              accessible via top nav pills to avoid duplication. */}
 
         {/* Products Tab */}
         <TabsContent value="browse" className="px-4 mt-2">
