@@ -928,6 +928,7 @@ export const SokoniMarketplace = () => {
 
           {/* Sections (Top Deals / Top Ranking / Bidhaa Mpya) removed from center —
               accessible via top nav pills to avoid duplication. */}
+        </TabsContent>
 
         {/* Products Tab */}
         <TabsContent value="browse" className="px-4 mt-2">
