@@ -167,6 +167,10 @@ export const GlobalNurathFloat = () => {
 
   useEffect(() => {
     if (!user) return;
+    // Do not auto-start listening unless the global Nurath toggle is on.
+    let enabled = false;
+    try { enabled = window.localStorage.getItem('kiduka_nurath_globally_enabled') === '1'; } catch {}
+    if (!enabled) return;
     let optedOut = false;
     try { optedOut = window.localStorage.getItem(NURATH_AUTO_LISTEN_KEY) === 'false'; } catch {}
     if (location.pathname === '/voice-pos') {
@@ -178,6 +182,27 @@ export const GlobalNurathFloat = () => {
     return () => stopWakeListener(false);
   }, [location.pathname, startWakeListener, stopWakeListener, user]);
 
+  // Nurath is hidden by default across the app. Enable via Settings → Nurath toggle
+  // (localStorage key: kiduka_nurath_globally_enabled = "1").
+  const [globallyEnabled, setGloballyEnabled] = useState<boolean>(() => {
+    try { return window.localStorage.getItem('kiduka_nurath_globally_enabled') === '1'; } catch { return false; }
+  });
+  useEffect(() => {
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === 'kiduka_nurath_globally_enabled') setGloballyEnabled(e.newValue === '1');
+    };
+    const onCustom = () => {
+      try { setGloballyEnabled(window.localStorage.getItem('kiduka_nurath_globally_enabled') === '1'); } catch {}
+    };
+    window.addEventListener('storage', onStorage);
+    window.addEventListener('kiduka:nurath-toggle', onCustom as any);
+    return () => {
+      window.removeEventListener('storage', onStorage);
+      window.removeEventListener('kiduka:nurath-toggle', onCustom as any);
+    };
+  }, []);
+
+  if (!globallyEnabled) return null;
   if (!user || HIDE_ROUTES.includes(location.pathname)) return null;
 
   const onVoicePage = location.pathname === '/voice-pos';

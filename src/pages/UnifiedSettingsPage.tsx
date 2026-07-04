@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Headphones, Megaphone, MessageSquare, Settings, ShieldAlert, Smartphone, Crown, ClipboardCheck } from 'lucide-react';
+import { Headphones, Megaphone, MessageSquare, Settings, ShieldAlert, Smartphone, Crown, ClipboardCheck, Sparkles } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { SettingsPage } from '@/pages/SettingsPage';
 import { HelpPage } from '@/pages/HelpPage';
@@ -11,6 +11,7 @@ import { PWAInstallerPage } from '@/pages/PWAInstallerPage';
 import { WhatsAppPage } from '@/pages/WhatsAppPage';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { BusinessRegistrationPanel } from '@/components/BusinessRegistrationPanel';
+import { NurathSettingsPanel } from '@/components/NurathSettingsPanel';
 
 export const UnifiedSettingsPage = () => {
   const isMobile = useIsMobile();
@@ -22,6 +23,7 @@ export const UnifiedSettingsPage = () => {
     { id: 'profile', label: 'Profaili', icon: Settings },
     { id: 'registration', label: 'Sheria', icon: ShieldAlert },
     { id: 'whatsapp', label: 'WhatsApp', icon: MessageSquare },
+    { id: 'nurath', label: 'Nurath', icon: Sparkles },
     { id: 'subscription', label: 'Michango', icon: Crown },
     { id: 'ads', label: 'Matangazo', icon: Megaphone },
     { id: 'install', label: 'App', icon: Smartphone },
@@ -37,6 +39,7 @@ export const UnifiedSettingsPage = () => {
     switch (activeTab) {
       case 'registration': return <BusinessRegistrationPanel />;
       case 'whatsapp': return <WhatsAppPage />;
+      case 'nurath': return <NurathSettingsPanel />;
       case 'subscription': return <SubscriptionPage embedded />;
       case 'ads': return <AdsManagerPage />;
       case 'install': return <PWAInstallerPage />;

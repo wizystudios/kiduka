@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useDataAccess } from '@/hooks/useDataAccess';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -39,6 +40,8 @@ const NETWORKS = [
 
 export default function LipaNambaPage() {
   const { user } = useAuth();
+  const { ownerBusinessName } = useDataAccess();
+  const businessName = ownerBusinessName || 'Kiduka';
   const [items, setItems] = useState<PaymentNumber[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -126,11 +129,18 @@ export default function LipaNambaPage() {
 
   const captureShareCard = async (): Promise<{ blob: Blob; dataUrl: string } | null> => {
     if (!shareCardRef.current) return null;
-    const canvas = await html2canvas(shareCardRef.current, {
+    const el = shareCardRef.current;
+    // Measure real element to avoid html2canvas cropping to viewport width
+    const rect = el.getBoundingClientRect();
+    const canvas = await html2canvas(el, {
       backgroundColor: '#ffffff',
       scale: 2,
       useCORS: true,
       logging: false,
+      width: Math.ceil(rect.width),
+      height: Math.ceil(rect.height),
+      windowWidth: Math.ceil(rect.width),
+      windowHeight: Math.ceil(rect.height),
     });
     const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob((b) => resolve(b), 'image/png'));
     return blob ? { blob, dataUrl: canvas.toDataURL('image/png') } : null;
@@ -343,23 +353,35 @@ export default function LipaNambaPage() {
           <DialogHeader><DialogTitle>Shiriki Lipa Namba</DialogTitle></DialogHeader>
           {qrFor && (
             <div className="space-y-3">
-              {/* Branded share card (captured to image) */}
+              {/* Branded share card — fixed pixel width so html2canvas exports a full, un-cropped image */}
               <div
                 ref={shareCardRef}
-                className="rounded-3xl overflow-hidden bg-white p-5 shadow-inner border"
-                style={{ background: 'linear-gradient(180deg,#ffffff 0%,#f8fafc 100%)' }}
+                className="rounded-3xl overflow-hidden border shadow-inner mx-auto"
+                style={{
+                  width: 360,
+                  padding: 20,
+                  background: 'linear-gradient(180deg,#ffffff 0%,#f8fafc 100%)',
+                  boxSizing: 'border-box',
+                }}
               >
-                <div className="flex items-center justify-center mb-3">
-                  <KidukaLogo size="md" showText={true} animate={false} />
+                {/* Brand row: Kiduka logo + business name */}
+                <div className="flex items-center justify-center gap-2 mb-3">
+                  <KidukaLogo size="md" showText={false} animate={false} />
+                  <div className="text-left leading-tight">
+                    <p className="text-[15px] font-black text-neutral-900 truncate max-w-[220px]">{businessName}</p>
+                    <p className="text-[10px] text-neutral-500">Kiduka · Biashara Smart</p>
+                  </div>
                 </div>
+
                 <div className={`rounded-2xl ${NETWORKS.find(n => n.value === qrFor.network)?.color || 'bg-gray-500'} text-white text-center py-2 mb-3`}>
-                  <p className="text-xs font-medium opacity-90">{NETWORKS.find(n => n.value === qrFor.network)?.label}</p>
+                  <p className="text-xs font-semibold opacity-95">{NETWORKS.find(n => n.value === qrFor.network)?.label}</p>
                 </div>
+
                 <div className="flex flex-col items-center gap-2">
                   <div className="p-3 bg-white rounded-2xl border-4 border-white shadow-lg">
                     <QRCodeCanvas
                       value={buildQrPayload(qrFor)}
-                      size={224}
+                      size={220}
                       level="M"
                       includeMargin={false}
                     />
@@ -370,9 +392,10 @@ export default function LipaNambaPage() {
                     <p className="text-sm font-semibold text-neutral-700">{qrFor.account_name}</p>
                   )}
                 </div>
-                <div className="text-center mt-3 pt-3 border-t border-dashed">
+
+                <div className="text-center mt-3 pt-3 border-t border-dashed border-neutral-300">
                   <p className="text-[10px] text-neutral-500">Scan QR au ingiza Lipa Namba kulipa</p>
-                  <p className="text-[10px] font-semibold text-neutral-700 mt-0.5">Kiduka · Biashara Smart</p>
+                  <p className="text-[10px] font-semibold text-neutral-700 mt-0.5">{businessName}</p>
                 </div>
               </div>
 
