@@ -120,7 +120,7 @@ export const ScannerPage = () => {
       BarcodeFormat.QR_CODE,
     ]);
     hints.set(DecodeHintType.TRY_HARDER, true);
-    const reader = new BrowserMultiFormatReader(hints, 250);
+    const reader = new BrowserMultiFormatReader(hints, 80);
     readerRef.current = reader;
     setCameraError(null);
     (async () => {
