@@ -303,10 +303,25 @@ export const ScannerPage = () => {
       }
       return [...prev, { ...product, quantity: 1 }];
     });
-    
+    // Haptic + subtle beep feedback (non-blocking, tiny)
+    try { navigator.vibrate?.(60); } catch {}
+    try {
+      const AC = (window as any).AudioContext || (window as any).webkitAudioContext;
+      if (AC) {
+        const ctx = new AC();
+        const o = ctx.createOscillator();
+        const g = ctx.createGain();
+        o.type = 'sine';
+        o.frequency.value = 880;
+        g.gain.value = 0.05;
+        o.connect(g); g.connect(ctx.destination);
+        o.start();
+        setTimeout(() => { try { o.stop(); ctx.close(); } catch {} }, 90);
+      }
+    } catch {}
     toast({
-      title: 'Imeongezwa',
-      description: `${product.name} imeongezwa kwenye kikapu`
+      title: '✓ Imeongezwa',
+      description: `${product.name} · TZS ${product.price.toLocaleString()}`
     });
     setScanHistory(prev => [product, ...prev.filter(p => p.id !== product.id)].slice(0, 30));
   };
