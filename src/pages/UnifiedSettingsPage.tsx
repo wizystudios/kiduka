@@ -11,6 +11,7 @@ import { PWAInstallerPage } from '@/pages/PWAInstallerPage';
 import { WhatsAppPage } from '@/pages/WhatsAppPage';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { BusinessRegistrationPanel } from '@/components/BusinessRegistrationPanel';
+import { NurathSettingsPanel } from '@/components/NurathSettingsPanel';
 
 export const UnifiedSettingsPage = () => {
   const isMobile = useIsMobile();
