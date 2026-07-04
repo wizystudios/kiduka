@@ -167,6 +167,10 @@ export const GlobalNurathFloat = () => {
 
   useEffect(() => {
     if (!user) return;
+    // Do not auto-start listening unless the global Nurath toggle is on.
+    let enabled = false;
+    try { enabled = window.localStorage.getItem('kiduka_nurath_globally_enabled') === '1'; } catch {}
+    if (!enabled) return;
     let optedOut = false;
     try { optedOut = window.localStorage.getItem(NURATH_AUTO_LISTEN_KEY) === 'false'; } catch {}
     if (location.pathname === '/voice-pos') {
