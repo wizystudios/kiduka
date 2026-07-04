@@ -129,11 +129,18 @@ export default function LipaNambaPage() {
 
   const captureShareCard = async (): Promise<{ blob: Blob; dataUrl: string } | null> => {
     if (!shareCardRef.current) return null;
-    const canvas = await html2canvas(shareCardRef.current, {
+    const el = shareCardRef.current;
+    // Measure real element to avoid html2canvas cropping to viewport width
+    const rect = el.getBoundingClientRect();
+    const canvas = await html2canvas(el, {
       backgroundColor: '#ffffff',
       scale: 2,
       useCORS: true,
       logging: false,
+      width: Math.ceil(rect.width),
+      height: Math.ceil(rect.height),
+      windowWidth: Math.ceil(rect.width),
+      windowHeight: Math.ceil(rect.height),
     });
     const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob((b) => resolve(b), 'image/png'));
     return blob ? { blob, dataUrl: canvas.toDataURL('image/png') } : null;
