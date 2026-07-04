@@ -505,7 +505,12 @@ export const ScannerPage = () => {
   }
 
   return (
-    <div className="fixed inset-0 z-[60] bg-black flex flex-col overflow-hidden">
+    <div className="fixed inset-0 z-30 pt-14 pb-16 bg-black flex flex-col overflow-hidden">
+    {/*
+      z-30 keeps this BELOW radix Dialog/Sheet portals (z-50) so PaymentMethodDialog,
+      Review sheet, History sheet, and WeightSelector actually render on top.
+      pt-14 / pb-16 leaves room for the app's top and bottom navigation.
+    */}
 
 
       {showWeightSelector && selectedProductForWeight && (
