@@ -39,6 +39,7 @@ export const UnifiedSettingsPage = () => {
     switch (activeTab) {
       case 'registration': return <BusinessRegistrationPanel />;
       case 'whatsapp': return <WhatsAppPage />;
+      case 'nurath': return <NurathSettingsPanel />;
       case 'subscription': return <SubscriptionPage embedded />;
       case 'ads': return <AdsManagerPage />;
       case 'install': return <PWAInstallerPage />;
