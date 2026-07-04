@@ -23,6 +23,7 @@ export const UnifiedSettingsPage = () => {
     { id: 'profile', label: 'Profaili', icon: Settings },
     { id: 'registration', label: 'Sheria', icon: ShieldAlert },
     { id: 'whatsapp', label: 'WhatsApp', icon: MessageSquare },
+    { id: 'nurath', label: 'Nurath', icon: Sparkles },
     { id: 'subscription', label: 'Michango', icon: Crown },
     { id: 'ads', label: 'Matangazo', icon: Megaphone },
     { id: 'install', label: 'App', icon: Smartphone },
