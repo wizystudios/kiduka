@@ -40,6 +40,8 @@ const NETWORKS = [
 
 export default function LipaNambaPage() {
   const { user } = useAuth();
+  const { ownerBusinessName } = useDataAccess();
+  const businessName = ownerBusinessName || 'Kiduka';
   const [items, setItems] = useState<PaymentNumber[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
