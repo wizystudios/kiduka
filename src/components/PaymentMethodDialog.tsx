@@ -84,14 +84,14 @@ export const PaymentMethodDialog = ({ open, onOpenChange, totalAmount, onPayment
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md p-0 overflow-hidden rounded-2xl">
+      <DialogContent className="h-[100dvh] w-screen max-w-none translate-x-[-50%] translate-y-[-50%] overflow-y-auto rounded-none border-0 p-0 sm:rounded-none">
         {/* Header */}
         <div className="bg-gradient-to-br from-primary/10 via-background to-secondary/10 p-5 text-center border-b border-border">
           <h2 className="text-lg font-bold">Chagua Njia ya Malipo</h2>
           <p className="text-2xl font-bold text-primary mt-1">TSh {totalAmount.toLocaleString()}</p>
         </div>
         
-        <div className="p-5 space-y-4">
+        <div className="mx-auto max-w-md p-5 space-y-4">
           {!awaitingPayment && !paymentConfirmed && (
             <>
               <div className="grid grid-cols-3 gap-2">

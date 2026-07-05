@@ -1,12 +1,13 @@
-
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { QrCode, MessageSquare, Download, Phone, CheckCircle, AlertCircle } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Download, FileText, Mail, MessageSquare, Phone, Share2, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+import { KidukaLogo } from '@/components/KidukaLogo';
+import { captureElementAsImage, createPdfFromImage, shareOrDownloadFile, type ExportType } from '@/utils/shareExport';
 
 interface ReceiptData {
   transactionId: string;
@@ -33,330 +34,213 @@ interface DigitalReceiptServiceProps {
   onClose: () => void;
 }
 
+type ShareTarget = 'whatsapp' | 'email' | 'download';
+
 export const DigitalReceiptService = ({ receiptData, onClose }: DigitalReceiptServiceProps) => {
   const [customerPhone, setCustomerPhone] = useState('');
-  const [sendingMethod, setSendingMethod] = useState<'sms' | 'qr'>('sms');
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [qrCodeData, setQrCodeData] = useState('');
-  const [smsStatus, setSmsStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const [customerEmail, setCustomerEmail] = useState('');
+  const [format, setFormat] = useState<ExportType>('image');
+  const [shareTarget, setShareTarget] = useState<ShareTarget>('whatsapp');
+  const [processing, setProcessing] = useState(false);
+  const [preview, setPreview] = useState<{ dataUrl: string; file: File; type: ExportType; target: ShareTarget } | null>(null);
+  const receiptRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
-  const generateReceiptSummary = () => {
-    const itemsList = receiptData.items.map(item => 
-      `${item.name} x${item.quantity} = TZS ${item.total.toLocaleString()}`
-    ).join('\n');
-    
-    return `
-${receiptData.businessName}
-Receipt: ${receiptData.transactionId}
-Date: ${new Date().toLocaleDateString('sw-TZ')}
+  const receiptNo = receiptData.transactionId.slice(0, 8).toUpperCase();
+  const receiptDate = new Date().toLocaleString('sw-TZ', { dateStyle: 'medium', timeStyle: 'short' });
 
-ITEMS:
-${itemsList}
-
-Subtotal: TZS ${receiptData.subtotal.toLocaleString()}
-VAT (18%): TZS ${receiptData.vatAmount.toLocaleString()}
-TOTAL: TZS ${receiptData.total.toLocaleString()}
-
-Payment: ${receiptData.paymentData.method.toUpperCase()}
-${receiptData.paymentData.provider ? `Provider: ${receiptData.paymentData.provider}` : ''}
-
-Asante kwa Biashara Yako!
-Powered by Kiduka POS
-    `.trim();
+  const makeFile = async (type: ExportType) => {
+    if (!receiptRef.current) throw new Error('Risiti haijawa tayari');
+    const capture = await captureElementAsImage(receiptRef.current);
+    if (type === 'pdf') {
+      return { capture, file: createPdfFromImage(capture, `kiduka-risiti-${receiptNo}.pdf`) };
+    }
+    return {
+      capture,
+      file: new File([capture.blob], `kiduka-risiti-${receiptNo}.png`, { type: 'image/png' }),
+    };
   };
 
-  const validatePhoneNumber = (phone: string) => {
-    // Remove spaces and non-digits except +
-    const cleaned = phone.replace(/[^\d+]/g, '');
-    
-    // Check if it's a valid Tanzanian number
-    if (cleaned.startsWith('+255') && cleaned.length === 13) return true;
-    if (cleaned.startsWith('255') && cleaned.length === 12) return true;
-    if (cleaned.startsWith('0') && cleaned.length === 10) return true;
-    if (cleaned.length === 9 && /^[67]/.test(cleaned)) return true;
-    
-    return false;
-  };
-
-  const sendSMSReceipt = async () => {
-    const phoneToValidate = customerPhone.trim();
-    
-    if (!phoneToValidate) {
-      toast({
-        title: 'Namba ya Simu Inahitajika',
-        description: 'Tafadhali ingiza namba ya simu ya mteja',
-        variant: 'destructive'
-      });
-      return;
-    }
-
-    if (!validatePhoneNumber(phoneToValidate)) {
-      toast({
-        title: 'Namba si Sahihi',
-        description: 'Tafadhali ingiza namba sahihi ya simu (mfano: 0754123456 au +255754123456)',
-        variant: 'destructive'
-      });
-      return;
-    }
-
-    setIsProcessing(true);
-    setSmsStatus('idle');
-    
+  const preparePreview = async (target: ShareTarget) => {
+    setShareTarget(target);
+    setProcessing(true);
     try {
-      console.log('Sending SMS to:', phoneToValidate);
-      
-      const { data, error } = await supabase.functions.invoke('send-sms', {
-        body: {
-          phoneNumber: phoneToValidate,
-          message: generateReceiptSummary(),
-          transactionId: receiptData.transactionId
-        }
-      });
-
-      console.log('SMS response:', { data, error });
-
-      if (error) {
-        console.error('Supabase function error:', error);
-        throw new Error(error.message || 'Failed to send SMS');
-      }
-      
-      if (data && data.success) {
-        setSmsStatus('success');
-        toast({
-          title: 'Risiti Imetumwa!',
-          description: `Risiti imetumwa kwa namba ${data.phoneNumber || phoneToValidate}`,
-        });
-        console.log('SMS sent successfully:', data);
-      } else {
-        throw new Error(data?.error || 'SMS sending failed');
-      }
-
-    } catch (error: any) {
-      console.error('Error sending SMS:', error);
-      setSmsStatus('error');
-      toast({
-        title: 'Hitilafu',
-        description: error.message || 'Imeshindwa kutuma risiti kwa SMS. Hakikisha namba sahihi.',
-        variant: 'destructive'
-      });
+      await new Promise(resolve => setTimeout(resolve, 120));
+      const { capture, file } = await makeFile(format);
+      setPreview({ dataUrl: capture.dataUrl, file, type: format, target });
+    } catch (e: any) {
+      toast({ title: 'Hitilafu', description: e.message || 'Imeshindwa kuandaa risiti', variant: 'destructive' });
     } finally {
-      setIsProcessing(false);
+      setProcessing(false);
     }
   };
 
-  const generateQRCode = () => {
-    // Use full sale ID for the receipt URL
-    const receiptUrl = `${window.location.origin}/receipt/${receiptData.transactionId}`;
-    setQrCodeData(receiptUrl);
-    
-    // Generate QR code using a real QR service
-    const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(receiptUrl)}`;
-    
-    toast({
-      title: 'QR Code Imeundwa',
-      description: 'Mteja anaweza kupiga picha QR code kupata risiti',
-    });
-
-    // Display the QR code
-    const img = document.createElement('img');
-    img.src = qrCodeUrl;
-    img.style.width = '200px';
-    img.style.height = '200px';
-    img.style.margin = '20px auto';
-    img.style.display = 'block';
-    img.style.border = '2px solid #0284c7';
-    img.style.borderRadius = '10px';
-    
-    const qrContainer = document.getElementById('qr-container');
-    if (qrContainer) {
-      qrContainer.innerHTML = '';
-      qrContainer.appendChild(img);
+  const confirmShare = async () => {
+    if (!preview) return;
+    setProcessing(true);
+    try {
+      if (preview.target === 'email' && customerEmail.trim() && !navigator.share) {
+        window.location.href = `mailto:${customerEmail.trim()}?subject=${encodeURIComponent(`Risiti ${receiptNo}`)}&body=${encodeURIComponent('Nimepakua risiti kama faili. Tafadhali ambatisha faili lililopakuliwa ikiwa app yako haikuruhusu kushare moja kwa moja.')}`;
+      }
+      const result = await shareOrDownloadFile(preview.file, `Risiti ${receiptNo} - ${receiptData.businessName}`);
+      if (result === 'downloaded') {
+        toast({ title: preview.type === 'pdf' ? 'PDF imepakuliwa' : 'Picha imepakuliwa', description: 'Faili halisi la risiti liko tayari kutumwa.' });
+      }
+      setPreview(null);
+    } catch (e: any) {
+      if (e?.name !== 'AbortError') {
+        toast({ title: 'Hitilafu', description: e.message || 'Imeshindwa kutuma risiti', variant: 'destructive' });
+      }
+    } finally {
+      setProcessing(false);
     }
   };
 
-  const sendWhatsAppReceipt = () => {
-    const phoneToValidate = customerPhone.trim();
-    if (!phoneToValidate) {
-      toast({
-        title: 'Namba ya Simu Inahitajika',
-        description: 'Tafadhali ingiza namba ya simu ya mteja',
-        variant: 'destructive'
-      });
-      return;
+  const downloadNow = async () => {
+    setProcessing(true);
+    try {
+      const { file } = await makeFile(format);
+      await shareOrDownloadFile(file, `Risiti ${receiptNo} - ${receiptData.businessName}`);
+    } catch (e: any) {
+      toast({ title: 'Hitilafu', description: e.message || 'Imeshindwa kupakua', variant: 'destructive' });
+    } finally {
+      setProcessing(false);
     }
-    
-    const receiptText = generateReceiptSummary();
-    const encodedMsg = encodeURIComponent(receiptText);
-    // Normalize phone for wa.me
-    let waPhone = phoneToValidate.replace(/[^\d]/g, '');
-    if (waPhone.startsWith('0') && waPhone.length === 10) waPhone = '255' + waPhone.slice(1);
-    if (waPhone.length === 9) waPhone = '255' + waPhone;
-    
-    window.open(`https://wa.me/${waPhone}?text=${encodedMsg}`, '_blank');
-    toast({ title: 'WhatsApp imefunguliwa', description: 'Tuma risiti kupitia WhatsApp' });
-  };
-
-  const downloadReceipt = () => {
-    const receiptContent = generateReceiptSummary();
-    const blob = new Blob([receiptContent], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `receipt-${receiptData.transactionId}.txt`;
-    a.click();
-    URL.revokeObjectURL(url);
   };
 
   return (
-    <Card className="w-full max-w-md mx-auto">
-      <CardHeader>
-        <CardTitle className="flex items-center">
-          <MessageSquare className="h-5 w-5 mr-2" />
-          Tuma Risiti kwa Mteja
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {/* Method Selection */}
-        <div className="grid grid-cols-3 gap-2">
-          <Button
-            variant={sendingMethod === 'sms' ? 'default' : 'outline'}
-            onClick={() => setSendingMethod('sms')}
-            className="flex items-center text-xs"
-          >
-            <Phone className="h-4 w-4 mr-1" />
-            SMS
-          </Button>
-          <Button
-            variant={sendingMethod === 'whatsapp' as any ? 'default' : 'outline'}
-            onClick={() => setSendingMethod('whatsapp' as any)}
-            className="flex items-center text-xs"
-          >
-            <MessageSquare className="h-4 w-4 mr-1" />
-            WhatsApp
-          </Button>
-          <Button
-            variant={sendingMethod === 'qr' ? 'default' : 'outline'}
-            onClick={() => setSendingMethod('qr')}
-            className="flex items-center text-xs"
-          >
-            <QrCode className="h-4 w-4 mr-1" />
-            QR Code
-          </Button>
+    <div className="fixed inset-0 z-[60] bg-background overflow-y-auto">
+      <div className="sticky top-0 z-10 flex items-center justify-between border-b bg-background/95 px-4 py-3 backdrop-blur">
+        <div>
+          <h1 className="text-lg font-bold">Tuma Risiti</h1>
+          <p className="text-xs text-muted-foreground">Preview kwanza, kisha tuma kama picha au PDF</p>
         </div>
+        <Button variant="ghost" size="icon" className="rounded-full" onClick={onClose}>
+          <X className="h-5 w-5" />
+        </Button>
+      </div>
 
-        {/* SMS Option */}
-        {sendingMethod === 'sms' && (
-          <div className="space-y-3">
-            <div>
-              <Label htmlFor="phone">Namba ya Simu ya Mteja</Label>
-              <Input
-                id="phone"
-                type="tel"
-                placeholder="0754123456 au +255754123456"
-                value={customerPhone}
-                onChange={(e) => setCustomerPhone(e.target.value)}
-                className={smsStatus === 'error' ? 'border-red-500' : smsStatus === 'success' ? 'border-green-500' : ''}
-              />
-              <p className="text-xs text-gray-500 mt-1">
-                Mfano: 0754123456, +255754123456, 754123456
-              </p>
-            </div>
-            
-            <Button 
-              onClick={sendSMSReceipt}
-              disabled={isProcessing}
-              className="w-full bg-green-600 hover:bg-green-700 flex items-center justify-center"
-            >
-              {isProcessing ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                  Inatuma...
-                </>
-              ) : smsStatus === 'success' ? (
-                <>
-                  <CheckCircle className="h-4 w-4 mr-2" />
-                  Imetumwa!
-                </>
-              ) : smsStatus === 'error' ? (
-                <>
-                  <AlertCircle className="h-4 w-4 mr-2" />
-                  Jaribu Tena
-                </>
-              ) : (
-                'Tuma Risiti kwa SMS'
-              )}
-            </Button>
-            
-            {smsStatus === 'success' && (
-              <div className="text-center text-sm text-green-600 bg-green-50 p-2 rounded">
-                Risiti imetumwa kikamilifu!
+      <div className="mx-auto max-w-md space-y-4 p-4 pb-10">
+        <div
+          ref={receiptRef}
+          className="mx-auto overflow-hidden rounded-3xl border bg-white shadow-sm"
+          style={{ width: 360, maxWidth: '100%', color: '#111827' }}
+        >
+          <div className="p-5">
+            <div className="flex items-center justify-center gap-2 border-b pb-4 text-center">
+              <KidukaLogo size="md" showText={false} animate={false} />
+              <div className="text-left leading-tight">
+                <p className="max-w-[230px] truncate text-[16px] font-black text-neutral-900">{receiptData.businessName}</p>
+                <p className="text-[10px] font-semibold uppercase text-neutral-500">Risiti ya Mauzo · Kiduka</p>
               </div>
-            )}
-          </div>
-        )}
-
-        {/* WhatsApp Option */}
-        {sendingMethod === ('whatsapp' as any) && (
-          <div className="space-y-3">
-            <div>
-              <Label htmlFor="wa-phone">Namba ya Simu ya Mteja</Label>
-              <Input
-                id="wa-phone"
-                type="tel"
-                placeholder="0754123456 au +255754123456"
-                value={customerPhone}
-                onChange={(e) => setCustomerPhone(e.target.value)}
-              />
             </div>
-            <Button 
-              onClick={sendWhatsAppReceipt}
-              className="w-full bg-green-600 hover:bg-green-700"
-            >
-              <MessageSquare className="h-4 w-4 mr-2" />
-              Tuma kwa WhatsApp
-            </Button>
-          </div>
-        )}
 
-        {/* QR Code Option */}
-        {sendingMethod === 'qr' && (
-          <div className="space-y-3">
-            <Button 
-              onClick={generateQRCode}
-              className="w-full bg-blue-600 hover:bg-blue-700"
-            >
-              <QrCode className="h-4 w-4 mr-2" />
-              Unda QR Code
-            </Button>
-            <div id="qr-container" className="text-center"></div>
-            {qrCodeData && (
-              <p className="text-sm text-gray-600 text-center">
-                Mteja anaweza kupiga picha QR code ili kupata risiti
-              </p>
-            )}
-          </div>
-        )}
+            <div className="grid grid-cols-2 gap-3 py-4 text-xs">
+              <div>
+                <p className="text-neutral-500">Risiti</p>
+                <p className="font-mono font-bold text-neutral-900">#{receiptNo}</p>
+              </div>
+              <div className="text-right">
+                <p className="text-neutral-500">Tarehe</p>
+                <p className="font-semibold text-neutral-900">{receiptDate}</p>
+              </div>
+              <div>
+                <p className="text-neutral-500">Malipo</p>
+                <p className="font-semibold uppercase text-neutral-900">{receiptData.paymentData.method}</p>
+              </div>
+              <div className="text-right">
+                <p className="text-neutral-500">Bidhaa</p>
+                <p className="font-semibold text-neutral-900">{receiptData.items.length}</p>
+              </div>
+            </div>
 
-        {/* Additional Options */}
-        <div className="border-t pt-3 space-y-2">
-          <Button 
-            onClick={downloadReceipt}
-            variant="outline"
-            className="w-full"
-          >
-            <Download className="h-4 w-4 mr-2" />
-            Pakua Risiti
+            <div className="divide-y border-y">
+              {receiptData.items.map((item, index) => (
+                <div key={`${item.name}-${index}`} className="flex items-start justify-between gap-3 py-3 text-sm">
+                  <div className="min-w-0 flex-1">
+                    <p className="font-semibold text-neutral-900">{item.name}</p>
+                    <p className="text-xs text-neutral-500">{item.quantity} × TSh {item.price.toLocaleString()}</p>
+                  </div>
+                  <p className="whitespace-nowrap font-bold text-neutral-900">TSh {item.total.toLocaleString()}</p>
+                </div>
+              ))}
+            </div>
+
+            <div className="space-y-2 py-4 text-sm">
+              <div className="flex justify-between text-neutral-600"><span>Subtotal</span><span>TSh {receiptData.subtotal.toLocaleString()}</span></div>
+              {receiptData.vatAmount > 0 && (
+                <div className="flex justify-between text-neutral-600"><span>Kodi</span><span>TSh {receiptData.vatAmount.toLocaleString()}</span></div>
+              )}
+              <div className="flex justify-between border-t pt-3 text-lg font-black text-neutral-900">
+                <span>JUMLA</span><span>TSh {receiptData.total.toLocaleString()}</span>
+              </div>
+            </div>
+
+            <div className="rounded-2xl bg-neutral-50 p-3 text-center text-[11px] text-neutral-600">
+              Asante kwa biashara yako · Powered by Kiduka
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-2">
+          <Button variant={format === 'image' ? 'default' : 'outline'} className="rounded-full" onClick={() => setFormat('image')}>
+            Picha
           </Button>
-          <Button 
-            onClick={onClose}
-            variant="outline"
-            className="w-full"
-          >
-            Funga
+          <Button variant={format === 'pdf' ? 'default' : 'outline'} className="rounded-full" onClick={() => setFormat('pdf')}>
+            PDF
           </Button>
         </div>
-      </CardContent>
-    </Card>
+
+        <div className="space-y-3 rounded-3xl border bg-card p-4">
+          <div className="space-y-2">
+            <Label className="text-xs">Simu ya mteja (WhatsApp / mobile share)</Label>
+            <Input value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} placeholder="0754xxxxxx" className="rounded-2xl" />
+          </div>
+          <div className="space-y-2">
+            <Label className="text-xs">Email ya mteja</Label>
+            <Input value={customerEmail} onChange={(e) => setCustomerEmail(e.target.value)} placeholder="mteja@example.com" className="rounded-2xl" />
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <Button className="rounded-2xl" disabled={processing} onClick={() => preparePreview('whatsapp')}>
+              <MessageSquare className="mr-1 h-4 w-4" /> WhatsApp
+            </Button>
+            <Button variant="outline" className="rounded-2xl" disabled={processing} onClick={() => preparePreview('email')}>
+              <Mail className="mr-1 h-4 w-4" /> Email
+            </Button>
+          </div>
+          <Button variant="outline" className="w-full rounded-2xl" disabled={processing} onClick={downloadNow}>
+            <Download className="mr-1 h-4 w-4" /> Pakua faili
+          </Button>
+          <p className="text-center text-[11px] text-muted-foreground">
+            WhatsApp na Email zitatumia share sheet ya kifaa kutuma faili halisi; si maandishi tu.
+          </p>
+        </div>
+      </div>
+
+      <Dialog open={!!preview} onOpenChange={(open) => !open && setPreview(null)}>
+        <DialogContent className="max-w-sm rounded-3xl p-4">
+          <DialogHeader>
+            <DialogTitle>Hakiki risiti kabla ya kutuma</DialogTitle>
+          </DialogHeader>
+          {preview && (
+            <div className="space-y-3">
+              <div className="rounded-3xl border bg-muted/30 p-2">
+                <img src={preview.dataUrl} alt="Preview ya risiti yenye logo na jina la biashara" className="w-full rounded-2xl bg-white object-contain" />
+              </div>
+              <Badge variant="secondary" className="rounded-full">
+                {preview.type === 'pdf' ? <FileText className="mr-1 h-3 w-3" /> : <Phone className="mr-1 h-3 w-3" />}
+                {preview.type === 'pdf' ? 'PDF halisi' : 'Picha halisi'} · {preview.target === 'email' ? 'Email' : preview.target === 'whatsapp' ? 'WhatsApp' : 'Download'}
+              </Badge>
+              <div className="grid grid-cols-2 gap-2">
+                <Button variant="outline" className="rounded-full" onClick={() => setPreview(null)} disabled={processing}>Rudi</Button>
+                <Button className="rounded-full" onClick={confirmShare} disabled={processing}>
+                  <Share2 className="mr-1 h-4 w-4" /> Tuma
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+    </div>
   );
 };
