@@ -14,9 +14,8 @@ import { Plus, Smartphone, QrCode, Trash2, Star, Sparkles, Share2, Download } fr
 import { toast } from 'sonner';
 import { BackButton } from '@/components/BackButton';
 import { KidukaLogo } from '@/components/KidukaLogo';
-import html2canvas from 'html2canvas';
 import { QRCodeCanvas } from 'qrcode.react';
-import jsPDF from 'jspdf';
+import { captureElementAsImage, createPdfFromImage, shareOrDownloadFile, type ExportType } from '@/utils/shareExport';
 
 
 interface PaymentNumber {
@@ -56,6 +55,11 @@ export default function LipaNambaPage() {
   const [saving, setSaving] = useState(false);
   const shareCardRef = useRef<HTMLDivElement>(null);
   const [sharing, setSharing] = useState(false);
+  const [sharePreview, setSharePreview] = useState<{
+    type: ExportType;
+    dataUrl: string;
+    file: File;
+  } | null>(null);
 
 
   const load = async () => {
@@ -127,62 +131,44 @@ export default function LipaNambaPage() {
     return `Network:${item.network}\nLipa Namba:${item.lipa_namba}\n${item.account_name ? `Jina:${item.account_name}` : ''}`;
   };
 
-  const captureShareCard = async (): Promise<{ blob: Blob; dataUrl: string } | null> => {
-    if (!shareCardRef.current) return null;
-    const el = shareCardRef.current;
-    // Measure real element to avoid html2canvas cropping to viewport width
-    const rect = el.getBoundingClientRect();
-    const canvas = await html2canvas(el, {
-      backgroundColor: '#ffffff',
-      scale: 2,
-      useCORS: true,
-      logging: false,
-      width: Math.ceil(rect.width),
-      height: Math.ceil(rect.height),
-      windowWidth: Math.ceil(rect.width),
-      windowHeight: Math.ceil(rect.height),
-    });
-    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob((b) => resolve(b), 'image/png'));
-    return blob ? { blob, dataUrl: canvas.toDataURL('image/png') } : null;
+  const captureShareCard = async () => {
+    if (!shareCardRef.current) throw new Error('Preview haijawa tayari');
+    return captureElementAsImage(shareCardRef.current);
   };
 
   const createPdfFile = async (item: PaymentNumber): Promise<File> => {
     const capture = await captureShareCard();
-    if (!capture) throw new Error('Imeshindwa kutengeneza PDF');
-    const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-    const pageWidth = pdf.internal.pageSize.getWidth();
-    const imgWidth = 96;
-    const imgHeight = 132;
-    pdf.addImage(capture.dataUrl, 'PNG', (pageWidth - imgWidth) / 2, 18, imgWidth, imgHeight);
-    const blob = pdf.output('blob');
-    return new File([blob], `kiduka-lipa-namba-${item.lipa_namba}.pdf`, { type: 'application/pdf' });
+    return createPdfFromImage(capture, `kiduka-lipa-namba-${item.lipa_namba}.pdf`);
   };
 
   const shareFile = async (file: File) => {
-    const nav = navigator as any;
-    if (nav.canShare && nav.canShare({ files: [file] })) {
-      await nav.share({ files: [file], title: 'Lipa Namba - Kiduka' });
-      return;
-    }
-    const url = URL.createObjectURL(file);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = file.name;
-    a.click();
-    URL.revokeObjectURL(url);
-    toast.success(file.type === 'application/pdf' ? 'PDF imepakuliwa' : 'Picha imepakuliwa');
+    const result = await shareOrDownloadFile(file, 'Lipa Namba - Kiduka');
+    if (result === 'downloaded') toast.success(file.type === 'application/pdf' ? 'PDF imepakuliwa' : 'Picha imepakuliwa');
   };
 
-  const shareQrImage = async () => {
+  const prepareSharePreview = async (type: ExportType) => {
     if (!qrFor) return;
     setSharing(true);
     try {
-      // give the QR <img> a moment to fully load
       await new Promise(r => setTimeout(r, 300));
       const capture = await captureShareCard();
-      if (!capture) throw new Error('Imeshindwa kutengeneza picha');
-      const file = new File([capture.blob], `kiduka-lipa-namba-${qrFor.lipa_namba}.png`, { type: 'image/png' });
-      await shareFile(file);
+      const file = type === 'pdf'
+        ? createPdfFromImage(capture, `kiduka-lipa-namba-${qrFor.lipa_namba}.pdf`)
+        : new File([capture.blob], `kiduka-lipa-namba-${qrFor.lipa_namba}.png`, { type: 'image/png' });
+      setSharePreview({ type, dataUrl: capture.dataUrl, file });
+    } catch (e: any) {
+      if (e?.name !== 'AbortError') toast.error(e.message || 'Imeshindwa kuandaa preview');
+    } finally {
+      setSharing(false);
+    }
+  };
+
+  const confirmSharePreview = async () => {
+    if (!sharePreview) return;
+    setSharing(true);
+    try {
+      await shareFile(sharePreview.file);
+      setSharePreview(null);
     } catch (e: any) {
       if (e?.name !== 'AbortError') toast.error(e.message || 'Imeshindwa kushare');
     } finally {
@@ -195,7 +181,7 @@ export default function LipaNambaPage() {
     try {
       await new Promise(r => setTimeout(r, 300));
       const capture = await captureShareCard();
-      if (!capture || !qrFor) return;
+        if (!qrFor) return;
       const url = URL.createObjectURL(capture.blob);
       const a = document.createElement('a');
       a.href = url;
@@ -209,17 +195,11 @@ export default function LipaNambaPage() {
   };
 
   const shareQrPdf = async () => {
-    if (!qrFor) return;
-    setSharing(true);
-    try {
-      await new Promise(r => setTimeout(r, 300));
-      const file = await createPdfFile(qrFor);
-      await shareFile(file);
-    } catch (e: any) {
-      if (e?.name !== 'AbortError') toast.error(e.message || 'Imeshindwa kushare PDF');
-    } finally {
-      setSharing(false);
-    }
+    await prepareSharePreview('pdf');
+  };
+
+  const shareQrImage = async () => {
+    await prepareSharePreview('image');
   };
 
 
@@ -413,6 +393,36 @@ export default function LipaNambaPage() {
               <p className="text-[10px] text-muted-foreground text-center">
                 Utashiriki picha yenye QR code na jina lako la biashara — sio maandishi tu.
               </p>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!sharePreview} onOpenChange={(open) => !open && setSharePreview(null)}>
+        <DialogContent className="rounded-3xl max-w-sm p-4">
+          <DialogHeader>
+            <DialogTitle>Hakiki kabla ya kutuma</DialogTitle>
+          </DialogHeader>
+          {sharePreview && (
+            <div className="space-y-3">
+              <div className="rounded-3xl border bg-muted/30 p-2">
+                <img
+                  src={sharePreview.dataUrl}
+                  alt="Preview ya Lipa Namba yenye nembo ya Kiduka na jina la biashara"
+                  className="w-full rounded-2xl bg-white object-contain"
+                />
+              </div>
+              <Badge variant="secondary" className="rounded-full">
+                {sharePreview.type === 'pdf' ? 'Itatumwa kama PDF halisi' : 'Itatumwa kama picha halisi'} · {businessName}
+              </Badge>
+              <div className="grid grid-cols-2 gap-2">
+                <Button variant="outline" className="rounded-full" onClick={() => setSharePreview(null)} disabled={sharing}>
+                  Rudi
+                </Button>
+                <Button className="rounded-full" onClick={confirmSharePreview} disabled={sharing}>
+                  <Share2 className="h-4 w-4 mr-1" /> Tuma
+                </Button>
+              </div>
             </div>
           )}
         </DialogContent>
