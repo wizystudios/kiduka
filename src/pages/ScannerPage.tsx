@@ -120,12 +120,23 @@ export const ScannerPage = () => {
       BarcodeFormat.QR_CODE,
     ]);
     hints.set(DecodeHintType.TRY_HARDER, true);
-    const reader = new BrowserMultiFormatReader(hints, 80);
+    const reader = new BrowserMultiFormatReader(hints, 150);
     readerRef.current = reader;
     setCameraError(null);
     (async () => {
       try {
         if (!videoRef.current) return;
+        
+        // Explicitly check for camera permissions first
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+          stream.getTracks().forEach(track => track.stop()); // Close the test stream
+        } catch (permErr) {
+          console.error('Permission error:', permErr);
+          setCameraError('Ruhusu ufikiaji wa kamera ili uweze kuscan barcode.');
+          return;
+        }
+
         await reader.decodeFromConstraints(
           {
             video: {
@@ -505,7 +516,7 @@ export const ScannerPage = () => {
   }
 
   return (
-    <div className="fixed inset-0 z-30 pt-14 pb-16 bg-black flex flex-col overflow-hidden">
+    <div className="fixed inset-0 z-30 bg-black flex flex-col overflow-hidden">
     {/*
       z-30 keeps this BELOW radix Dialog/Sheet portals (z-50) so PaymentMethodDialog,
       Review sheet, History sheet, and WeightSelector actually render on top.
@@ -514,7 +525,7 @@ export const ScannerPage = () => {
 
 
       {showWeightSelector && selectedProductForWeight && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100] p-4">
           <WeightSelector
             product={selectedProductForWeight}
             onAddToCart={handleWeightBasedAddToCart}
@@ -534,7 +545,7 @@ export const ScannerPage = () => {
       />
 
       {showReceipt && completedSale && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100] p-4">
           <div className="bg-background rounded-lg p-6 max-w-sm w-full">
             <h3 className="text-lg font-bold mb-4 text-center text-foreground">Mauzo Yamekamilika!</h3>
             <EnhancedReceiptPrinter
@@ -559,7 +570,7 @@ export const ScannerPage = () => {
       )}
 
       {showDigitalReceipt && completedSale && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100] p-4">
           <DigitalReceiptService
             receiptData={{
               transactionId: completedSale.id,
@@ -580,7 +591,7 @@ export const ScannerPage = () => {
         {/* Live camera feed */}
         <video
           ref={videoRef}
-          className="absolute inset-0 w-full h-full object-cover"
+          className="absolute inset-0 w-full h-full object-cover bg-black"
           autoPlay
           playsInline
           muted

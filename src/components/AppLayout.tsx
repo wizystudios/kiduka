@@ -25,6 +25,7 @@ export function AppLayout({ children }: AppLayoutProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const isDashboardRoute = location.pathname === "/dashboard";
+  const isScannerRoute = location.pathname === "/scanner";
 
   useEffect(() => {
     const mobileLockedRoutes = new Set([
@@ -51,7 +52,7 @@ export function AppLayout({ children }: AppLayoutProps) {
     <SidebarProvider>
       <AdminSessionBanner />
       <AdminConsentRequest />
-      <TopNavbar />
+      {!isScannerRoute && <TopNavbar />}
       <OfflineSyncBootstrap />
       <div className="flex min-h-screen w-full overflow-x-hidden">
         <AppSidebar />
@@ -67,7 +68,7 @@ export function AppLayout({ children }: AppLayoutProps) {
               )}
             </Button>
           </header>
-          <main className={`w-full pt-16 ${isDashboardRoute ? 'pb-24' : 'pb-28'} md:pt-0 md:pb-0 md:min-h-screen`}>
+          <main className={`w-full ${isScannerRoute ? 'pt-0 pb-0' : (isDashboardRoute ? 'pt-16 pb-24' : 'pt-16 pb-28')} md:pt-0 md:pb-0 md:min-h-screen`}>
             <LocationSetupGate>
               <ContractComplianceGate>{children}</ContractComplianceGate>
             </LocationSetupGate>
@@ -75,8 +76,8 @@ export function AppLayout({ children }: AppLayoutProps) {
           
         </SidebarInset>
       </div>
-      <UserInfoBar />
-      <MobileBottomNav />
+      {!isScannerRoute && <UserInfoBar />}
+      {!isScannerRoute && <MobileBottomNav />}
     </SidebarProvider>
   );
 }
