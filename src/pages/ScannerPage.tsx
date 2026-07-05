@@ -59,6 +59,7 @@ export const ScannerPage = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const readerRef = useRef<BrowserMultiFormatReader | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
   const lastScanRef = useRef<{ code: string; at: number }>({ code: '', at: 0 });
   const scanProcessingRef = useRef(false);
 
@@ -106,6 +107,16 @@ export const ScannerPage = () => {
 
   // Auto-start live camera scanner (continuous decode)
   useEffect(() => {
+    if (cart.length === 0 && showReview) setShowReview(false);
+  }, [cart.length, showReview]);
+
+  useEffect(() => {
+    const paymentOrReceiptOpen = showPayment || showReceipt || showDigitalReceipt || showReview || showWeightSelector;
+    if (paymentOrReceiptOpen && cameraOn) setCameraOn(false);
+    if (!paymentOrReceiptOpen && !cameraOn) setCameraOn(true);
+  }, [showPayment, showReceipt, showDigitalReceipt, showReview, showWeightSelector]);
+
+  useEffect(() => {
     if (!cameraOn) return;
     let cancelled = false;
     const hints = new Map();
@@ -120,32 +131,44 @@ export const ScannerPage = () => {
       BarcodeFormat.QR_CODE,
     ]);
     hints.set(DecodeHintType.TRY_HARDER, true);
-    const reader = new BrowserMultiFormatReader(hints, 150);
+    const reader = new BrowserMultiFormatReader(hints, 80);
     readerRef.current = reader;
     setCameraError(null);
     (async () => {
       try {
         if (!videoRef.current) return;
-        
-        // Explicitly check for camera permissions first
-        try {
-          const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
-          stream.getTracks().forEach(track => track.stop()); // Close the test stream
-        } catch (permErr) {
-          console.error('Permission error:', permErr);
-          setCameraError('Ruhusu ufikiaji wa kamera ili uweze kuscan barcode.');
+
+        if (!navigator.mediaDevices?.getUserMedia) {
+          setCameraError('Kifaa/browser hii haiwezi kufungua kamera.');
           return;
         }
 
-        await reader.decodeFromConstraints(
-          {
-            video: {
-              facingMode: { ideal: 'environment' },
-              width: { ideal: 1280 },
-              height: { ideal: 720 },
-            },
-            audio: false,
-          },
+        const baseVideo: MediaTrackConstraints = {
+          facingMode: { ideal: 'environment' },
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+          frameRate: { ideal: 30, max: 60 },
+        };
+
+        const stream = await navigator.mediaDevices.getUserMedia({ video: baseVideo, audio: false });
+        streamRef.current = stream;
+
+        const [track] = stream.getVideoTracks();
+        try {
+          const capabilities = track.getCapabilities?.() as any;
+          const advanced: any[] = [];
+          if (capabilities?.focusMode?.includes?.('continuous')) advanced.push({ focusMode: 'continuous' });
+          if (capabilities?.torch) advanced.push({ torch: false });
+          if (advanced.length) await track.applyConstraints({ advanced } as MediaTrackConstraints);
+        } catch (constraintError) {
+          console.warn('Camera focus constraints skipped:', constraintError);
+        }
+
+        videoRef.current.srcObject = stream;
+        await videoRef.current.play().catch(() => undefined);
+
+        await reader.decodeFromStream(
+          stream,
           videoRef.current,
           (result) => {
           if (cancelled) return;
@@ -172,6 +195,9 @@ export const ScannerPage = () => {
     return () => {
       cancelled = true;
       try { reader.reset(); } catch {}
+      try { streamRef.current?.getTracks().forEach(track => track.stop()); } catch {}
+      streamRef.current = null;
+      if (videoRef.current) videoRef.current.srcObject = null;
       readerRef.current = null;
     };
   }, [cameraOn]);
