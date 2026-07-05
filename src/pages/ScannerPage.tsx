@@ -571,9 +571,9 @@ export const ScannerPage = () => {
       />
 
       {showReceipt && completedSale && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100] p-4">
-          <div className="bg-background rounded-lg p-6 max-w-sm w-full">
-            <h3 className="text-lg font-bold mb-4 text-center text-foreground">Mauzo Yamekamilika!</h3>
+        <div className="fixed inset-0 z-[100] overflow-y-auto bg-background p-4">
+          <div className="mx-auto flex min-h-[100dvh] max-w-md flex-col justify-center py-6">
+            <h3 className="mb-4 text-center text-lg font-bold text-foreground">Mauzo Yamekamilika!</h3>
             <EnhancedReceiptPrinter
               items={completedSale.items}
               subtotal={completedSale.subtotal}
@@ -587,7 +587,7 @@ export const ScannerPage = () => {
             <Button
               onClick={handlePrintComplete}
               variant="outline"
-              className="w-full mt-4"
+              className="mt-4 w-full rounded-full"
             >
               Endelea
             </Button>
@@ -596,7 +596,7 @@ export const ScannerPage = () => {
       )}
 
       {showDigitalReceipt && completedSale && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100] p-4">
+        <div className="fixed inset-0 z-[100] bg-background">
           <DigitalReceiptService
             receiptData={{
               transactionId: completedSale.id,
@@ -841,7 +841,7 @@ export const ScannerPage = () => {
 
       {/* Review Order Sheet */}
       <Sheet open={showReview} onOpenChange={setShowReview}>
-        <SheetContent side="right" className="w-full sm:max-w-md flex flex-col">
+        <SheetContent side="right" className="inset-0 h-[100dvh] w-screen max-w-none border-0 sm:max-w-none flex flex-col">
           <SheetHeader>
             <SheetTitle>Review Order</SheetTitle>
           </SheetHeader>
