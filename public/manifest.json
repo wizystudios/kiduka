@@ -1,12 +1,12 @@
 
 {
-  "name": "KidukaPOS - Smart Business Management",
-  "short_name": "KidukaPOS",
-  "description": "Mfumo wa kisasa wa kusimamia biashara na maduka ya Tanzania",
+  "name": "Kiduka - Biashara Smart",
+  "short_name": "Kiduka",
+  "description": "Mfumo wa kisasa wa kusimamia biashara, mauzo, stock, madeni na Sokoni.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
-  "theme_color": "#7c3aed",
+  "theme_color": "#2563eb",
   "orientation": "portrait-primary",
   "scope": "/",
   "lang": "sw",
