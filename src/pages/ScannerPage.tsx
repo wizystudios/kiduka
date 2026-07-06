@@ -3,7 +3,7 @@ import { useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { CameraOff, Search, Plus, Minus, ShoppingCart, Edit2, Trash2, X, RotateCcw, Check, History } from 'lucide-react';
+import { CameraOff, Search, Plus, Minus, ShoppingCart, Edit2, Trash2, X, RotateCcw, Check, History, Activity } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { BarcodeFormat, BrowserMultiFormatReader, DecodeHintType } from '@zxing/library';
 
@@ -56,6 +56,11 @@ export const ScannerPage = () => {
   const [showReview, setShowReview] = useState(false);
   const [cameraOn, setCameraOn] = useState(true);
   const [cameraError, setCameraError] = useState<string | null>(null);
+  const [cameraStatus, setCameraStatus] = useState<'starting' | 'permission-check' | 'requesting' | 'active' | 'blank' | 'paused' | 'error'>('starting');
+  const [permissionState, setPermissionState] = useState<'unknown' | 'prompt' | 'granted' | 'denied' | 'unsupported'>('unknown');
+  const [decodeAttempts, setDecodeAttempts] = useState(0);
+  const [lastCameraErrorName, setLastCameraErrorName] = useState<string | null>(null);
+  const [videoAudit, setVideoAudit] = useState({ readyState: 0, width: 0, height: 0 });
   const videoRef = useRef<HTMLVideoElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const readerRef = useRef<BrowserMultiFormatReader | null>(null);
@@ -117,8 +122,21 @@ export const ScannerPage = () => {
   }, [showPayment, showReceipt, showDigitalReceipt, showReview, showWeightSelector]);
 
   useEffect(() => {
-    if (!cameraOn) return;
+    document.body.classList.add('scanner-active');
+    document.documentElement.classList.add('scanner-active');
+    return () => {
+      document.body.classList.remove('scanner-active');
+      document.documentElement.classList.remove('scanner-active');
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!cameraOn) {
+      setCameraStatus('paused');
+      return;
+    }
     let cancelled = false;
+    let blankTimer: number | undefined;
     const hints = new Map();
     hints.set(DecodeHintType.POSSIBLE_FORMATS, [
       BarcodeFormat.EAN_13,
@@ -134,13 +152,46 @@ export const ScannerPage = () => {
     const reader = new BrowserMultiFormatReader(hints, 80);
     readerRef.current = reader;
     setCameraError(null);
+    setLastCameraErrorName(null);
+    setCameraStatus('starting');
+    setDecodeAttempts(0);
+    setVideoAudit({ readyState: 0, width: 0, height: 0 });
     (async () => {
       try {
         if (!videoRef.current) return;
 
+        if (!window.isSecureContext) {
+          setCameraStatus('error');
+          setLastCameraErrorName('InsecureContext');
+          setCameraError('Kamera inahitaji HTTPS au localhost. Fungua app kwa link salama.');
+          return;
+        }
+
         if (!navigator.mediaDevices?.getUserMedia) {
+          setCameraStatus('error');
+          setLastCameraErrorName('MediaDevicesUnsupported');
           setCameraError('Kifaa/browser hii haiwezi kufungua kamera.');
           return;
+        }
+
+        setCameraStatus('permission-check');
+        try {
+          if (navigator.permissions?.query) {
+            const status = await navigator.permissions.query({ name: 'camera' as PermissionName });
+            if (cancelled) return;
+            setPermissionState(status.state as 'prompt' | 'granted' | 'denied');
+            status.onchange = () => setPermissionState(status.state as 'prompt' | 'granted' | 'denied');
+            if (status.state === 'denied') {
+              setCameraStatus('error');
+              setLastCameraErrorName('PermissionDenied');
+              setCameraError('Ruhusa ya kamera imezuiwa. Fungua browser settings za site hii kisha ruhusu Camera.');
+              return;
+            }
+          } else {
+            setPermissionState('unsupported');
+          }
+        } catch {
+          setPermissionState('unsupported');
         }
 
         const baseVideo: MediaTrackConstraints = {
@@ -150,8 +201,10 @@ export const ScannerPage = () => {
           frameRate: { ideal: 30, max: 60 },
         };
 
+        setCameraStatus('requesting');
         const stream = await navigator.mediaDevices.getUserMedia({ video: baseVideo, audio: false });
         streamRef.current = stream;
+        setPermissionState('granted');
 
         const [track] = stream.getVideoTracks();
         try {
@@ -166,12 +219,37 @@ export const ScannerPage = () => {
 
         videoRef.current.srcObject = stream;
         await videoRef.current.play().catch(() => undefined);
+        setCameraStatus('active');
+        setVideoAudit({
+          readyState: videoRef.current.readyState,
+          width: videoRef.current.videoWidth,
+          height: videoRef.current.videoHeight,
+        });
+
+        blankTimer = window.setInterval(() => {
+          const video = videoRef.current;
+          if (!video || cancelled) return;
+          const nextAudit = { readyState: video.readyState, width: video.videoWidth, height: video.videoHeight };
+          setVideoAudit(nextAudit);
+          const trackLive = stream.getVideoTracks().some((track) => track.readyState === 'live');
+          if (trackLive && video.readyState >= 2 && (video.videoWidth === 0 || video.videoHeight === 0)) {
+            setCameraStatus('blank');
+            setCameraError('Kamera imefunguka lakini frame ni tupu. Jaribu kufunga app nyingine inayotumia kamera au badili ruhusa ya Camera.');
+          } else if (trackLive && video.readyState >= 2) {
+            setCameraStatus('active');
+            setCameraError(null);
+          }
+        }, 1200);
 
         await reader.decodeFromStream(
           stream,
           videoRef.current,
-          (result) => {
+          (result, decodeError) => {
           if (cancelled) return;
+          setDecodeAttempts(prev => prev + 1);
+          if (decodeError && (decodeError as any)?.name && (decodeError as any).name !== 'NotFoundException') {
+            setLastCameraErrorName((decodeError as any).name);
+          }
           if (result) {
             const code = result.getText();
             const now = Date.now();
@@ -189,11 +267,28 @@ export const ScannerPage = () => {
         });
       } catch (e: any) {
         console.error('Camera error:', e);
-        if (!cancelled) setCameraError(e?.message || 'Imeshindwa kufungua kamera. Ruhusu ufikiaji wa kamera.');
+        if (!cancelled) {
+          const name = e?.name || 'CameraError';
+          setCameraStatus('error');
+          setLastCameraErrorName(name);
+          if (name === 'NotAllowedError' || name === 'PermissionDeniedError') {
+            setPermissionState('denied');
+            setCameraError('Ruhusa ya kamera imekataliwa. Bonyeza lock/settings kwenye browser kisha ruhusu Camera kwa Kiduka.');
+          } else if (name === 'NotFoundError' || name === 'DevicesNotFoundError') {
+            setCameraError('Hakuna kamera imepatikana kwenye kifaa hiki.');
+          } else if (name === 'NotReadableError' || name === 'TrackStartError') {
+            setCameraError('Kamera inatumika na app nyingine au browser imeizua. Funga app nyingine kisha jaribu tena.');
+          } else if (name === 'OverconstrainedError' || name === 'ConstraintNotSatisfiedError') {
+            setCameraError('Kamera haikubali mipangilio ya scan. Jaribu tena au tumia input chini kuandika barcode/jina.');
+          } else {
+            setCameraError(e?.message || 'Imeshindwa kufungua kamera. Ruhusu ufikiaji wa kamera.');
+          }
+        }
       }
     })();
     return () => {
       cancelled = true;
+      if (blankTimer) window.clearInterval(blankTimer);
       try { reader.reset(); } catch {}
       try { streamRef.current?.getTracks().forEach(track => track.stop()); } catch {}
       streamRef.current = null;
@@ -201,6 +296,13 @@ export const ScannerPage = () => {
       readerRef.current = null;
     };
   }, [cameraOn]);
+
+  const restartCamera = () => {
+    setCameraError(null);
+    setLastCameraErrorName(null);
+    setCameraOn(false);
+    window.setTimeout(() => setCameraOn(true), 80);
+  };
   const handleSearchProduct = async (
     query: string,
     options: { source?: 'camera' | 'manual'; autoAddBarcode?: boolean } = {}
@@ -542,7 +644,7 @@ export const ScannerPage = () => {
   }
 
   return (
-    <div className="fixed inset-0 z-30 bg-black flex flex-col overflow-hidden">
+    <div className="fixed inset-0 z-30 bg-black flex flex-col overflow-hidden scanner-page-root">
     {/*
       z-30 keeps this BELOW radix Dialog/Sheet portals (z-50) so PaymentMethodDialog,
       Review sheet, History sheet, and WeightSelector actually render on top.
@@ -629,11 +731,22 @@ export const ScannerPage = () => {
           <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-6 text-white bg-black/70 z-10">
             <CameraOff className="h-10 w-10 mb-3 opacity-80" />
             <p className="text-sm mb-3">{cameraError}</p>
-            <Button size="sm" className="rounded-full" onClick={() => { setCameraOn(false); setTimeout(() => setCameraOn(true), 50); }}>
+            <Button size="sm" className="rounded-full" onClick={restartCamera}>
               Jaribu tena
             </Button>
           </div>
         )}
+
+        <div className="absolute left-3 top-3 z-20 rounded-2xl bg-black/60 px-3 py-2 text-[10px] text-white shadow-lg backdrop-blur pointer-events-none">
+          <div className="mb-1 flex items-center gap-1.5 font-semibold">
+            <Activity className="h-3 w-3 text-green-400" /> Camera audit
+          </div>
+          <div>Status: <span className="font-mono">{cameraStatus}</span></div>
+          <div>Permission: <span className="font-mono">{permissionState}</span></div>
+          <div>Decode: <span className="font-mono">{decodeAttempts}</span></div>
+          <div>Video: <span className="font-mono">{videoAudit.width}×{videoAudit.height} r{videoAudit.readyState}</span></div>
+          {lastCameraErrorName && <div>Error: <span className="font-mono text-red-200">{lastCameraErrorName}</span></div>}
+        </div>
 
         {/* Green corner brackets */}
         <div className="absolute top-8 left-8 right-8 bottom-28 pointer-events-none">
@@ -839,12 +952,15 @@ export const ScannerPage = () => {
         </SheetContent>
       </Sheet>
 
-      {/* Review Order Sheet */}
-      <Sheet open={showReview} onOpenChange={setShowReview}>
-        <SheetContent side="right" className="inset-0 h-[100dvh] w-screen max-w-none border-0 sm:max-w-none flex flex-col">
-          <SheetHeader>
-            <SheetTitle>Review Order</SheetTitle>
-          </SheetHeader>
+      {/* Review Order Full Page */}
+      {showReview && (
+        <div className="fixed inset-0 z-[110] flex h-[100dvh] w-screen flex-col overflow-hidden bg-background">
+          <div className="flex items-center justify-between border-b border-border px-4 py-3">
+            <h1 className="text-lg font-bold">Review Order</h1>
+            <Button variant="ghost" size="icon" className="rounded-full" onClick={() => setShowReview(false)}>
+              <X className="h-5 w-5" />
+            </Button>
+          </div>
           <div className="flex-1 overflow-y-auto mt-4 divide-y">
             {cart.map(item => (
               <div key={item.id} className="py-3 flex items-center justify-between gap-2">
@@ -883,8 +999,8 @@ export const ScannerPage = () => {
               </Button>
             </div>
           </div>
-        </SheetContent>
-      </Sheet>
+        </div>
+      )}
 
     </div>
   );
