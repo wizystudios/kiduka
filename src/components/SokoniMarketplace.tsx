@@ -88,6 +88,8 @@ interface CategoryItem {
   count: number;
 }
 
+type DealFilter = 'top-deals' | 'top-ranking' | 'new-products' | null;
+
 // Local storage keys
 const GUEST_CART_KEY = 'sokoni_guest_cart';
 const GUEST_ORDERS_KEY = 'sokoni_guest_orders';
@@ -177,6 +179,7 @@ export const SokoniMarketplace = () => {
   const [couponDiscount, setCouponDiscount] = useState(0);
   const [couponApplied, setCouponApplied] = useState(false);
   const [validatingCoupon, setValidatingCoupon] = useState(false);
+  const [dealFilter, setDealFilter] = useState<DealFilter>(null);
   
   // Receipt dialog state
   const [receiptOpen, setReceiptOpen] = useState(false);
@@ -467,7 +470,12 @@ export const SokoniMarketplace = () => {
     const matchesCategory = !selectedCategory || product.category === selectedCategory;
     
     return matchesSearch && matchesCategory;
-  }).sort((a, b) => getLocationScore(a) - getLocationScore(b));
+  }).sort((a, b) => {
+    if (dealFilter === 'top-deals') return (b.discount_percent || 0) - (a.discount_percent || 0) || a.price - b.price;
+    if (dealFilter === 'top-ranking') return (b.stock_quantity || 0) - (a.stock_quantity || 0) || getLocationScore(a) - getLocationScore(b);
+    if (dealFilter === 'new-products') return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
+    return getLocationScore(a) - getLocationScore(b);
+  });
 
   // Get top deals - products with real discounts first, then lowest prices
   const topDeals = [...products]
@@ -478,7 +486,7 @@ export const SokoniMarketplace = () => {
   const newArrivals = products.slice(0, 6);
 
   // Get top ranking
-  const topRanking = [...products].sort(() => Math.random() - 0.5).slice(0, 4);
+  const topRanking = [...products].sort((a, b) => (b.stock_quantity || 0) - (a.stock_quantity || 0)).slice(0, 4);
 
   // Group products by seller for "Maduka" tab
   const productsBySeller = products.reduce((acc, product) => {
@@ -777,6 +785,7 @@ export const SokoniMarketplace = () => {
               value={searchTerm}
               onChange={(e) => {
                 setSearchTerm(e.target.value);
+                setDealFilter(null);
                 if (activeTab === 'home') setActiveTab('browse');
               }}
               className="pl-10 pr-10 bg-primary-foreground/20 border-0 text-primary-foreground placeholder:text-primary-foreground/70 h-10 rounded-full"
@@ -812,6 +821,7 @@ export const SokoniMarketplace = () => {
               className={`rounded-full flex items-center gap-1 text-xs ${!selectedCategory ? '' : 'text-primary-foreground hover:bg-primary-foreground/10'}`}
               onClick={() => {
                 setSelectedCategory(null);
+                setDealFilter(null);
                 setActiveTab('browse');
               }}
             >
@@ -820,31 +830,34 @@ export const SokoniMarketplace = () => {
             </Button>
             {/* Quick-jump pills to home sections */}
             <Button
-              variant="ghost" size="sm"
-              className="rounded-full text-xs text-primary-foreground hover:bg-primary-foreground/10"
+              variant={dealFilter === 'top-deals' ? 'secondary' : 'ghost'} size="sm"
+              className={`rounded-full text-xs ${dealFilter === 'top-deals' ? '' : 'text-primary-foreground hover:bg-primary-foreground/10'}`}
               onClick={() => {
-                setActiveTab('home');
-                setTimeout(() => document.getElementById('sec-top-deals')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
+                setDealFilter('top-deals');
+                setSelectedCategory(null);
+                setActiveTab('browse');
               }}
             >
               <TrendingUp className="h-3 w-3 mr-1" /> Top Deals
             </Button>
             <Button
-              variant="ghost" size="sm"
-              className="rounded-full text-xs text-primary-foreground hover:bg-primary-foreground/10"
+              variant={dealFilter === 'top-ranking' ? 'secondary' : 'ghost'} size="sm"
+              className={`rounded-full text-xs ${dealFilter === 'top-ranking' ? '' : 'text-primary-foreground hover:bg-primary-foreground/10'}`}
               onClick={() => {
-                setActiveTab('home');
-                setTimeout(() => document.getElementById('sec-top-ranking')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
+                setDealFilter('top-ranking');
+                setSelectedCategory(null);
+                setActiveTab('browse');
               }}
             >
               <Star className="h-3 w-3 mr-1" /> Top Ranking
             </Button>
             <Button
-              variant="ghost" size="sm"
-              className="rounded-full text-xs text-primary-foreground hover:bg-primary-foreground/10"
+              variant={dealFilter === 'new-products' ? 'secondary' : 'ghost'} size="sm"
+              className={`rounded-full text-xs ${dealFilter === 'new-products' ? '' : 'text-primary-foreground hover:bg-primary-foreground/10'}`}
               onClick={() => {
-                setActiveTab('home');
-                setTimeout(() => document.getElementById('sec-bidhaa-mpya')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
+                setDealFilter('new-products');
+                setSelectedCategory(null);
+                setActiveTab('browse');
               }}
             >
               <Clock className="h-3 w-3 mr-1" /> Bidhaa Mpya
@@ -859,6 +872,7 @@ export const SokoniMarketplace = () => {
                 className={`rounded-full text-xs ${selectedCategory === cat.name ? '' : 'text-primary-foreground hover:bg-primary-foreground/10'}`}
                 onClick={() => {
                   setSelectedCategory(cat.name);
+                  setDealFilter(null);
                   setActiveTab('browse');
                 }}
               >
@@ -932,12 +946,12 @@ export const SokoniMarketplace = () => {
 
         {/* Products Tab */}
         <TabsContent value="browse" className="px-4 mt-2">
-          {selectedCategory && (
+          {(selectedCategory || dealFilter) && (
             <div className="flex items-center gap-2 mb-3">
-              <Badge variant="secondary" className="text-sm">
-                {getCategoryIcon(selectedCategory)} {selectedCategory}
+              <Badge variant="secondary" className="text-sm rounded-full">
+                {selectedCategory ? `${getCategoryIcon(selectedCategory)} ${selectedCategory}` : dealFilter === 'top-deals' ? 'Top Deals' : dealFilter === 'top-ranking' ? 'Top Ranking' : 'Bidhaa Mpya'}
               </Badge>
-              <Button variant="ghost" size="sm" onClick={() => setSelectedCategory(null)}>
+              <Button variant="ghost" size="sm" onClick={() => { setSelectedCategory(null); setDealFilter(null); }}>
                 Ondoa
               </Button>
             </div>
