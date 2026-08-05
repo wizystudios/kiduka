@@ -233,7 +233,7 @@ export const BranchManager = () => {
     const { data, error } = await (supabase.rpc('owner_delete_entity' as any, {
       p_entity_type: deleteTarget.type,
       p_entity_id: deleteTarget.id,
-      p_confirmation_name: deleteTarget.name,
+      p_confirmation_name: '__CONFIRMED__',
     } as any) as any);
     if (error) throw error;
     if (!data?.success) throw new Error(data?.error || 'delete_failed');

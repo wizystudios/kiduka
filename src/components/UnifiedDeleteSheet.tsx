@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { AlertTriangle, CheckCircle2, Loader2, Trash2 } from 'lucide-react';
 import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+
 import { Progress } from '@/components/ui/progress';
 import { toast } from 'sonner';
 
@@ -25,23 +25,19 @@ export const UnifiedDeleteSheet = ({
   confirmLabel = 'Futa',
   onConfirm,
 }: UnifiedDeleteSheetProps) => {
-  const [confirmation, setConfirmation] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [backendError, setBackendError] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
 
   useEffect(() => {
     if (open) {
-      setConfirmation('');
       setBackendError(null);
       setProgress(0);
     }
   }, [open]);
 
-  const nameMatches = confirmation.trim().toLowerCase() === itemName.trim().toLowerCase();
-
   const handleConfirm = async () => {
-    if (!nameMatches || submitting) return;
+    if (submitting) return;
     setSubmitting(true);
     setBackendError(null);
     setProgress(18);
@@ -82,25 +78,14 @@ export const UnifiedDeleteSheet = ({
               <div>
                 <p className="text-sm font-semibold">Thibitisha ufutaji</p>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  {description || 'Hatua hii haiwezi kurejeshwa. Andika jina hili hasa ili kuendelea.'}
+                  {description || 'Hatua hii haiwezi kurejeshwa. Bonyeza kitufe hapa chini kuthibitisha.'}
                 </p>
               </div>
               <div className="rounded-2xl bg-background p-3">
-                <p className="text-[10px] text-muted-foreground">Andika hii:</p>
+                <p className="text-[10px] text-muted-foreground">Unafuta:</p>
                 <p className="break-all font-mono text-sm font-bold select-all">{itemName}</p>
               </div>
-              <Input
-                value={confirmation}
-                onChange={(e) => setConfirmation(e.target.value)}
-                placeholder={itemName}
-                className="rounded-2xl text-center"
-                autoComplete="off"
-                autoCapitalize="off"
-                spellCheck={false}
-              />
-              {confirmation && !nameMatches && (
-                <p className="text-xs text-destructive">Jina halilingani bado</p>
-              )}
+
               {backendError && (
                 <div className="rounded-2xl border border-destructive/30 bg-background p-3 text-left">
                   <p className="text-xs font-semibold text-destructive">Backend/RLS error</p>
@@ -124,7 +109,7 @@ export const UnifiedDeleteSheet = ({
             <Button variant="outline" className="rounded-full flex-1" onClick={() => onOpenChange(false)} disabled={submitting}>
               Ghairi
             </Button>
-            <Button variant="destructive" className="rounded-full flex-1" onClick={handleConfirm} disabled={!nameMatches || submitting}>
+            <Button variant="destructive" className="rounded-full flex-1" onClick={handleConfirm} disabled={submitting}>
               {submitting ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <Trash2 className="mr-1 h-4 w-4" />}
               {confirmLabel}
             </Button>

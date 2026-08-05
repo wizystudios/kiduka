@@ -237,7 +237,7 @@ export const UsersPage = () => {
       const { data, error: permError } = await (supabase.rpc('owner_delete_entity' as any, {
         p_entity_type: 'assistant',
         p_entity_id: deleteTarget.assistant_id,
-        p_confirmation_name: assistantName,
+        p_confirmation_name: '__CONFIRMED__',
       } as any) as any);
 
       if (permError) throw permError;

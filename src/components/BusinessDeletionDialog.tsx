@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter, SheetDescription } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -34,6 +34,7 @@ const SCOPE_OPTIONS = [
 export const BusinessDeletionDialog = ({ open, onOpenChange, ownerId, expectedName, onDeleted, requireAdminVerification }: Props) => {
   const [mode, setMode] = useState<'selective' | 'full'>('selective');
   const [confirmation, setConfirmation] = useState('');
+
   const [scope, setScope] = useState<Record<string, boolean>>({});
   const [submitting, setSubmitting] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -48,8 +49,7 @@ export const BusinessDeletionDialog = ({ open, onOpenChange, ownerId, expectedNa
   }, [open]);
 
   const selectedCount = Object.values(scope).filter(Boolean).length;
-  const nameMatches = confirmation.trim().toLowerCase() === expectedName.trim().toLowerCase();
-  const canSubmit = nameMatches && (mode === 'full' || selectedCount > 0) && !submitting;
+  const canSubmit = (mode === 'full' || selectedCount > 0) && !submitting;
 
   const executeDeletion = async () => {
     setSubmitting(true);
@@ -60,14 +60,14 @@ export const BusinessDeletionDialog = ({ open, onOpenChange, ownerId, expectedNa
       setProgress(35);
       const { data, error } = await supabase.rpc('admin_delete_business', {
         p_owner_id: ownerId,
-        p_confirmation_name: confirmation,
+        p_confirmation_name: '__CONFIRMED__',
         p_scope: payload as any,
       });
       if (error) throw error;
       setProgress(75);
       const res = data as any;
       if (!res?.success) {
-        toast.error(res?.message || (res?.error === 'name_mismatch' ? 'Jina halilingani' : `Hitilafu: ${res?.error || 'unknown'}`), { id: loadingToast });
+        toast.error(res?.message || `Hitilafu: ${res?.error || 'unknown'}`, { id: loadingToast });
         return;
       }
       const counts = res?.deleted || {};
@@ -86,12 +86,9 @@ export const BusinessDeletionDialog = ({ open, onOpenChange, ownerId, expectedNa
 
   const handleSubmit = async () => {
     if (!canSubmit) return;
-    if (requireAdminVerification) {
-      requireAdminVerification(executeDeletion);
-      return;
-    }
     executeDeletion();
   };
+
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -158,29 +155,12 @@ export const BusinessDeletionDialog = ({ open, onOpenChange, ownerId, expectedNa
           <Separator />
 
           <div className="space-y-1.5 rounded-3xl border border-destructive/20 bg-destructive/5 p-4 text-center">
-            <Label className="text-xs">
-              Andika jina sahihi kuthibitisha (jina lenyewe ndio "nywila"):
-            </Label>
+            <Label className="text-xs">Unafuta data ya biashara hii:</Label>
             <div className="p-2 rounded-xl bg-muted text-center">
-              <p className="text-[10px] text-muted-foreground mb-0.5">Andika hii hasa:</p>
               <p className="font-mono text-sm font-bold select-all break-all">{expectedName}</p>
             </div>
-            <Input
-              value={confirmation}
-              onChange={(e) => setConfirmation(e.target.value)}
-              placeholder={expectedName}
-              className="rounded-2xl"
-              autoComplete="off"
-              autoCapitalize="off"
-              spellCheck={false}
-            />
-            {confirmation && !nameMatches && (
-              <p className="text-xs text-destructive">Jina halilingani bado — nakili hasa kutoka juu</p>
-            )}
-            {confirmation && nameMatches && (
-              <p className="text-xs text-green-600">✓ Jina linalingana</p>
-            )}
           </div>
+
 
           {submitting && (
             <div className="rounded-3xl border border-border bg-muted/40 p-4 space-y-2">

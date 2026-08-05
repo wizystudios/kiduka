@@ -34,6 +34,7 @@ import { AdminUserActivities } from './AdminUserActivities';
 import { AdminMarketplacePanel } from './AdminMarketplacePanel';
 import { AdminAdsPanel } from './AdminAdsPanel';
 import { BusinessDeletionDialog } from './BusinessDeletionDialog';
+import { UnifiedDeleteSheet } from './UnifiedDeleteSheet';
 import { BusinessAuditLogsPanel } from './BusinessAuditLogsPanel';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
@@ -726,29 +727,23 @@ export const SuperAdminDashboard = () => {
   
   const executeDelete = async () => {
     if (!deleteDialog) return;
-    
+
     const { type, id } = deleteDialog;
-    
-    try {
-      const { data, error } = await (supabase.rpc('admin_delete_entity' as any, {
-        p_entity_type: type,
-        p_entity_id: id,
-        p_confirmation_name: deleteConfirmation,
-      } as any) as any);
-      if (error) throw error;
-      const result = data as any;
-      if (!result?.success) {
-        const message = result?.details?.friendly || result?.message || result?.error || 'delete_failed';
-        throw Object.assign(new Error(result?.error === 'name_mismatch' ? 'Jina halilingani' : message), { details: result?.details, code: result?.error });
-      }
-      toast.success(type === 'user' ? 'Mtumiaji amezimwa' : `${type} imefutwa/imehifadhiwa`);
-      fetchAllData();
-    } catch (error: any) {
-      console.error('Delete error:', error);
-      toast.error(`Imeshindwa kufuta: ${error.message}`);
-    } finally {
-      setDeleteDialog(null);
+
+    const { data, error } = await (supabase.rpc('admin_delete_entity' as any, {
+      p_entity_type: type,
+      p_entity_id: id,
+      p_confirmation_name: '__CONFIRMED__',
+    } as any) as any);
+    if (error) throw error;
+    const result = data as any;
+    if (!result?.success) {
+      const message = result?.details?.friendly || result?.message || result?.error || 'delete_failed';
+      throw Object.assign(new Error(message), { details: result?.details, code: result?.error });
     }
+    toast.success(type === 'user' ? 'Mtumiaji amezimwa' : `${type} imefutwa/imehifadhiwa`);
+    await fetchAllData();
+    setDeleteDialog(null);
   };
 
   const runSensitiveAction = (action: string, callback: () => void, description?: string) => {
@@ -758,24 +753,13 @@ export const SuperAdminDashboard = () => {
     }
     setPasswordDialog({ action, description, callback });
   };
-  
+
   const handleDelete = (type: string, id: string, name: string) => {
     setDeleteConfirmation('');
     setDeleteDialog({ type, id, name });
   };
 
-  const confirmDeleteDialog = () => {
-    if (!deleteDialog) return;
-    if (deleteConfirmation.trim().toLowerCase() !== deleteDialog.name.trim().toLowerCase()) {
-      toast.error('Jina halijalingana');
-      return;
-    }
-    runSensitiveAction(
-      `Kufuta ${deleteDialog.type}: ${deleteDialog.name}`,
-      executeDelete,
-      'Hatua hii haiwezi kurejeshwa. Uthibitisho huu utatumika hadi page i-refresh.'
-    );
-  };
+
 
   const executeEdit = async () => {
     if (!editDialog) return;
@@ -2484,48 +2468,16 @@ export const SuperAdminDashboard = () => {
         </DialogContent>
       </Dialog>
 
-      <Sheet open={!!deleteDialog} onOpenChange={(open) => { if (!open) setDeleteDialog(null); }}>
-        <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto p-0">
-          <div className="flex min-h-full flex-col">
-            <SheetHeader className="border-b border-border bg-destructive/5 p-5 text-left">
-              <SheetTitle className="flex items-center gap-2 text-destructive">
-                <Trash2 className="h-5 w-5" /> Futa {deleteDialog?.type}
-              </SheetTitle>
-              <SheetDescription>{deleteDialog?.name}</SheetDescription>
-            </SheetHeader>
-            <div className="flex-1 p-5">
-              <div className="mx-auto mt-8 max-w-sm space-y-4 rounded-3xl border border-destructive/20 bg-destructive/5 p-5 text-center">
-                <AlertTriangle className="mx-auto h-10 w-10 text-destructive" />
-                <div>
-                  <p className="text-sm font-semibold">Thibitisha ufutaji</p>
-                  <p className="mt-1 text-xs text-muted-foreground">Andika jina hili hasa ili kuendelea. Ukishathibitisha admin mara moja, hutaulizwa tena hadi u-refresh page.</p>
-                </div>
-                <div className="rounded-2xl bg-background p-3">
-                  <p className="text-[10px] text-muted-foreground">Andika hii:</p>
-                  <p className="break-all font-mono text-sm font-bold">{deleteDialog?.name}</p>
-                </div>
-                <Input
-                  value={deleteConfirmation}
-                  onChange={(e) => setDeleteConfirmation(e.target.value)}
-                  placeholder={deleteDialog?.name}
-                  className="rounded-2xl text-center"
-                />
-              </div>
-            </div>
-            <SheetFooter className="border-t border-border p-5 sm:flex-row gap-2">
-              <Button variant="outline" className="rounded-full flex-1" onClick={() => setDeleteDialog(null)}>Ghairi</Button>
-              <Button
-                variant="destructive"
-                className="rounded-full flex-1"
-                onClick={confirmDeleteDialog}
-                disabled={!deleteDialog || deleteConfirmation.trim().toLowerCase() !== deleteDialog.name.trim().toLowerCase()}
-              >
-                <Trash2 className="mr-1 h-4 w-4" /> Futa
-              </Button>
-            </SheetFooter>
-          </div>
-        </SheetContent>
-      </Sheet>
+      <UnifiedDeleteSheet
+        open={!!deleteDialog}
+        onOpenChange={(open) => { if (!open) setDeleteDialog(null); }}
+        title={`Futa ${deleteDialog?.type || ''}`}
+        itemName={deleteDialog?.name || ''}
+        description="Hatua hii haiwezi kurejeshwa. Audit log itaandikwa moja kwa moja."
+        confirmLabel="Futa"
+        onConfirm={executeDelete}
+      />
+
 
       {/* Admin Password Dialog */}
       <AdminPasswordDialog
@@ -2554,7 +2506,7 @@ export const SuperAdminDashboard = () => {
           onOpenChange={(o) => { if (!o) setDeletionDialog(null); }}
           ownerId={deletionDialog.ownerId}
           expectedName={deletionDialog.name}
-          requireAdminVerification={(callback) => runSensitiveAction('Kufuta biashara', callback, 'Uthibitisho huu utatumika hadi page i-refresh.')}
+          
           onDeleted={() => { setSelectedBusiness(null); fetchAllData(); }}
         />
       )}
