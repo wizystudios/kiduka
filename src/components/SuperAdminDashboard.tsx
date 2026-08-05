@@ -34,6 +34,7 @@ import { AdminUserActivities } from './AdminUserActivities';
 import { AdminMarketplacePanel } from './AdminMarketplacePanel';
 import { AdminAdsPanel } from './AdminAdsPanel';
 import { BusinessDeletionDialog } from './BusinessDeletionDialog';
+import { UnifiedDeleteSheet } from './UnifiedDeleteSheet';
 import { BusinessAuditLogsPanel } from './BusinessAuditLogsPanel';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
@@ -2522,7 +2523,7 @@ export const SuperAdminDashboard = () => {
           onOpenChange={(o) => { if (!o) setDeletionDialog(null); }}
           ownerId={deletionDialog.ownerId}
           expectedName={deletionDialog.name}
-          requireAdminVerification={(callback) => runSensitiveAction('Kufuta biashara', callback, 'Uthibitisho huu utatumika hadi page i-refresh.')}
+          
           onDeleted={() => { setSelectedBusiness(null); fetchAllData(); }}
         />
       )}
