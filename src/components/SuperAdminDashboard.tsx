@@ -727,29 +727,23 @@ export const SuperAdminDashboard = () => {
   
   const executeDelete = async () => {
     if (!deleteDialog) return;
-    
+
     const { type, id } = deleteDialog;
-    
-    try {
-      const { data, error } = await (supabase.rpc('admin_delete_entity' as any, {
-        p_entity_type: type,
-        p_entity_id: id,
-        p_confirmation_name: '__CONFIRMED__',
-      } as any) as any);
-      if (error) throw error;
-      const result = data as any;
-      if (!result?.success) {
-        const message = result?.details?.friendly || result?.message || result?.error || 'delete_failed';
-        throw Object.assign(new Error(result?.error === 'name_mismatch' ? 'Jina halilingani' : message), { details: result?.details, code: result?.error });
-      }
-      toast.success(type === 'user' ? 'Mtumiaji amezimwa' : `${type} imefutwa/imehifadhiwa`);
-      fetchAllData();
-    } catch (error: any) {
-      console.error('Delete error:', error);
-      toast.error(`Imeshindwa kufuta: ${error.message}`);
-    } finally {
-      setDeleteDialog(null);
+
+    const { data, error } = await (supabase.rpc('admin_delete_entity' as any, {
+      p_entity_type: type,
+      p_entity_id: id,
+      p_confirmation_name: '__CONFIRMED__',
+    } as any) as any);
+    if (error) throw error;
+    const result = data as any;
+    if (!result?.success) {
+      const message = result?.details?.friendly || result?.message || result?.error || 'delete_failed';
+      throw Object.assign(new Error(message), { details: result?.details, code: result?.error });
     }
+    toast.success(type === 'user' ? 'Mtumiaji amezimwa' : `${type} imefutwa/imehifadhiwa`);
+    await fetchAllData();
+    setDeleteDialog(null);
   };
 
   const runSensitiveAction = (action: string, callback: () => void, description?: string) => {
@@ -759,24 +753,13 @@ export const SuperAdminDashboard = () => {
     }
     setPasswordDialog({ action, description, callback });
   };
-  
+
   const handleDelete = (type: string, id: string, name: string) => {
     setDeleteConfirmation('');
     setDeleteDialog({ type, id, name });
   };
 
-  const confirmDeleteDialog = () => {
-    if (!deleteDialog) return;
-    if (deleteConfirmation.trim().toLowerCase() !== deleteDialog.name.trim().toLowerCase()) {
-      toast.error('Jina halijalingana');
-      return;
-    }
-    runSensitiveAction(
-      `Kufuta ${deleteDialog.type}: ${deleteDialog.name}`,
-      executeDelete,
-      'Hatua hii haiwezi kurejeshwa. Uthibitisho huu utatumika hadi page i-refresh.'
-    );
-  };
+
 
   const executeEdit = async () => {
     if (!editDialog) return;
