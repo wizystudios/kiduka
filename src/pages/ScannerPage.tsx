@@ -303,6 +303,37 @@ export const ScannerPage = () => {
     setCameraOn(false);
     window.setTimeout(() => setCameraOn(true), 80);
   };
+
+  const isEmbedded = typeof window !== 'undefined' && window.self !== window.top;
+
+  // Explicit user-gesture permission request (some browsers/PWAs never prompt automatically)
+  const requestCameraAccess = async () => {
+    setCameraError(null);
+    setLastCameraErrorName(null);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: 'environment' } },
+        audio: false,
+      });
+      stream.getTracks().forEach((track) => track.stop());
+      setPermissionState('granted');
+      restartCamera();
+    } catch (e: any) {
+      const name = e?.name || 'CameraError';
+      setLastCameraErrorName(name);
+      setCameraStatus('error');
+      if (name === 'NotAllowedError' || name === 'PermissionDeniedError') {
+        setPermissionState('denied');
+        setCameraError(
+          isEmbedded
+            ? 'Preview iliyo-embed haiwezi kuomba ruhusa ya kamera. Fungua Kiduka kwenye tab yako mwenyewe.'
+            : 'Ruhusa ya kamera imekataliwa. Bonyeza alama ya kufuli kwenye browser kisha ruhusu Camera.'
+        );
+      } else {
+        setCameraError(e?.message || 'Imeshindwa kufungua kamera.');
+      }
+    }
+  };
   const handleSearchProduct = async (
     query: string,
     options: { source?: 'camera' | 'manual'; autoAddBarcode?: boolean } = {}
@@ -727,13 +758,30 @@ export const ScannerPage = () => {
         {/* Subtle scrim so overlays remain readable */}
         <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/40 pointer-events-none" />
 
-        {cameraError && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-6 text-white bg-black/70 z-10">
+        {(cameraError || cameraStatus === 'blank' || (cameraStatus !== 'active' && permissionState !== 'granted')) && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-6 text-white bg-black/75 z-10">
             <CameraOff className="h-10 w-10 mb-3 opacity-80" />
-            <p className="text-sm mb-3">{cameraError}</p>
-            <Button size="sm" className="rounded-full" onClick={restartCamera}>
-              Jaribu tena
+            <p className="text-sm mb-2">
+              {cameraError || 'Bonyeza kuruhusu kamera ili kuanza ku-scan.'}
+            </p>
+            {isEmbedded && (
+              <p className="text-[11px] mb-3 text-amber-200">
+                Uko ndani ya preview iliyo-embed. Fungua Kiduka kwenye tab/browser yako mwenyewe ili browser iulize ruhusa ya kamera.
+              </p>
+            )}
+            <Button size="sm" className="rounded-full" onClick={requestCameraAccess}>
+              Ruhusu Kamera
             </Button>
+            {isEmbedded && (
+              <Button
+                size="sm"
+                variant="secondary"
+                className="rounded-full mt-2"
+                onClick={() => window.open(window.location.href, '_blank', 'noopener')}
+              >
+                Fungua kwenye tab mpya
+              </Button>
+            )}
           </div>
         )}
 

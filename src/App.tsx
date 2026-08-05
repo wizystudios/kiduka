@@ -79,6 +79,7 @@ import SuppliersPage from '@/pages/SuppliersPage';
 import BookkeepingPage from '@/pages/BookkeepingPage';
 import GroupsPage from '@/pages/GroupsPage';
 import UnifiedSalesPage from '@/pages/UnifiedSalesPage';
+import InvoicesPage from '@/pages/InvoicesPage';
 import UnifiedSettingsPage from '@/pages/UnifiedSettingsPage';
 import { BranchManager } from '@/components/BranchManager';
 import RewardsPage from '@/pages/RewardsPage';
@@ -173,6 +174,14 @@ export default function App() {
                 </ProtectedRoute>
               } />
               
+              <Route path="/invoices" element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <InvoicesPage />
+                  </AppLayout>
+                </ProtectedRoute>
+              } />
+
               <Route path="/customers" element={
                 <ProtectedRoute>
                   <AppLayout>
