@@ -48,8 +48,7 @@ export const BusinessDeletionDialog = ({ open, onOpenChange, ownerId, expectedNa
   }, [open]);
 
   const selectedCount = Object.values(scope).filter(Boolean).length;
-  const nameMatches = confirmation.trim().toLowerCase() === expectedName.trim().toLowerCase();
-  const canSubmit = nameMatches && (mode === 'full' || selectedCount > 0) && !submitting;
+  const canSubmit = (mode === 'full' || selectedCount > 0) && !submitting;
 
   const executeDeletion = async () => {
     setSubmitting(true);
@@ -60,14 +59,14 @@ export const BusinessDeletionDialog = ({ open, onOpenChange, ownerId, expectedNa
       setProgress(35);
       const { data, error } = await supabase.rpc('admin_delete_business', {
         p_owner_id: ownerId,
-        p_confirmation_name: confirmation,
+        p_confirmation_name: expectedName,
         p_scope: payload as any,
       });
       if (error) throw error;
       setProgress(75);
       const res = data as any;
       if (!res?.success) {
-        toast.error(res?.message || (res?.error === 'name_mismatch' ? 'Jina halilingani' : `Hitilafu: ${res?.error || 'unknown'}`), { id: loadingToast });
+        toast.error(res?.message || `Hitilafu: ${res?.error || 'unknown'}`, { id: loadingToast });
         return;
       }
       const counts = res?.deleted || {};
@@ -86,12 +85,9 @@ export const BusinessDeletionDialog = ({ open, onOpenChange, ownerId, expectedNa
 
   const handleSubmit = async () => {
     if (!canSubmit) return;
-    if (requireAdminVerification) {
-      requireAdminVerification(executeDeletion);
-      return;
-    }
     executeDeletion();
   };
+
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
