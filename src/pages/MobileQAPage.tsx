@@ -25,6 +25,23 @@ import { Mic } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 
+// ---- QA screenshot thumbnail (private bucket -> signed URL) ----
+const QaScreenshotThumb = ({ pathOrUrl }: { pathOrUrl: string }) => {
+  const [src, setSrc] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (/^https?:\/\//.test(pathOrUrl)) { setSrc(pathOrUrl); return; }
+    supabase.storage.from('qa-screenshots').createSignedUrl(pathOrUrl, 300).then(({ data }) => {
+      if (!cancelled) setSrc(data?.signedUrl ?? null);
+    });
+    return () => { cancelled = true; };
+  }, [pathOrUrl]);
+
+  if (!src) return <div className="w-12 h-12 rounded-lg border bg-muted animate-pulse" />;
+  return <img src={src} alt="Picha ya ripoti ya hitilafu" className="w-12 h-12 object-cover rounded-lg border" />;
+};
+
 // ---- helpers ----
 const printAsPDF = (title: string, htmlBody: string) => {
   const w = window.open('', '_blank', 'width=900,height=700');
@@ -364,8 +381,8 @@ export default function MobileQAPage() {
         const path = `${user.id}/${Date.now()}-${f.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
         const { error } = await supabase.storage.from('qa-screenshots').upload(path, f, { upsert: false });
         if (error) { toast.error(`Upload imeshindwa: ${error.message}`); continue; }
-        const { data } = supabase.storage.from('qa-screenshots').getPublicUrl(path);
-        urls.push(data.publicUrl);
+        // Bucket ni private: tunahifadhi path pekee, tunaonyesha kwa signed URL
+        urls.push(path);
       }
       const { error } = await supabase.from('qa_bug_reports').insert({
         reporter_id: user.id,
@@ -994,7 +1011,7 @@ export default function MobileQAPage() {
                       {b.screenshot_urls?.length > 0 && (
                         <div className="flex gap-1">
                           {b.screenshot_urls.slice(0, 3).map((u: string, i: number) => (
-                            <img key={i} src={u} alt="" className="w-12 h-12 object-cover rounded-lg border" />
+                            <QaScreenshotThumb key={i} pathOrUrl={u} />
                           ))}
                         </div>
                       )}
