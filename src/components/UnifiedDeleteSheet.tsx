@@ -109,7 +109,7 @@ export const UnifiedDeleteSheet = ({
             <Button variant="outline" className="rounded-full flex-1" onClick={() => onOpenChange(false)} disabled={submitting}>
               Ghairi
             </Button>
-            <Button variant="destructive" className="rounded-full flex-1" onClick={handleConfirm} disabled={!nameMatches || submitting}>
+            <Button variant="destructive" className="rounded-full flex-1" onClick={handleConfirm} disabled={submitting}>
               {submitting ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <Trash2 className="mr-1 h-4 w-4" />}
               {confirmLabel}
             </Button>
