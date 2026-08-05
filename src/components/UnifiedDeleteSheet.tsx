@@ -78,25 +78,14 @@ export const UnifiedDeleteSheet = ({
               <div>
                 <p className="text-sm font-semibold">Thibitisha ufutaji</p>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  {description || 'Hatua hii haiwezi kurejeshwa. Andika jina hili hasa ili kuendelea.'}
+                  {description || 'Hatua hii haiwezi kurejeshwa. Bonyeza kitufe hapa chini kuthibitisha.'}
                 </p>
               </div>
               <div className="rounded-2xl bg-background p-3">
-                <p className="text-[10px] text-muted-foreground">Andika hii:</p>
+                <p className="text-[10px] text-muted-foreground">Unafuta:</p>
                 <p className="break-all font-mono text-sm font-bold select-all">{itemName}</p>
               </div>
-              <Input
-                value={confirmation}
-                onChange={(e) => setConfirmation(e.target.value)}
-                placeholder={itemName}
-                className="rounded-2xl text-center"
-                autoComplete="off"
-                autoCapitalize="off"
-                spellCheck={false}
-              />
-              {confirmation && !nameMatches && (
-                <p className="text-xs text-destructive">Jina halilingani bado</p>
-              )}
+
               {backendError && (
                 <div className="rounded-2xl border border-destructive/30 bg-background p-3 text-left">
                   <p className="text-xs font-semibold text-destructive">Backend/RLS error</p>
