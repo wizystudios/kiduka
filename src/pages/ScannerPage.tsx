@@ -727,13 +727,30 @@ export const ScannerPage = () => {
         {/* Subtle scrim so overlays remain readable */}
         <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/40 pointer-events-none" />
 
-        {cameraError && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-6 text-white bg-black/70 z-10">
+        {(cameraError || cameraStatus === 'blank' || (cameraStatus !== 'active' && permissionState !== 'granted')) && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-6 text-white bg-black/75 z-10">
             <CameraOff className="h-10 w-10 mb-3 opacity-80" />
-            <p className="text-sm mb-3">{cameraError}</p>
-            <Button size="sm" className="rounded-full" onClick={restartCamera}>
-              Jaribu tena
+            <p className="text-sm mb-2">
+              {cameraError || 'Bonyeza kuruhusu kamera ili kuanza ku-scan.'}
+            </p>
+            {isEmbedded && (
+              <p className="text-[11px] mb-3 text-amber-200">
+                Uko ndani ya preview iliyo-embed. Fungua Kiduka kwenye tab/browser yako mwenyewe ili browser iulize ruhusa ya kamera.
+              </p>
+            )}
+            <Button size="sm" className="rounded-full" onClick={requestCameraAccess}>
+              Ruhusu Kamera
             </Button>
+            {isEmbedded && (
+              <Button
+                size="sm"
+                variant="secondary"
+                className="rounded-full mt-2"
+                onClick={() => window.open(window.location.href, '_blank', 'noopener')}
+              >
+                Fungua kwenye tab mpya
+              </Button>
+            )}
           </div>
         )}
 
