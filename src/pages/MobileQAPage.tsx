@@ -364,8 +364,8 @@ export default function MobileQAPage() {
         const path = `${user.id}/${Date.now()}-${f.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
         const { error } = await supabase.storage.from('qa-screenshots').upload(path, f, { upsert: false });
         if (error) { toast.error(`Upload imeshindwa: ${error.message}`); continue; }
-        const { data } = supabase.storage.from('qa-screenshots').getPublicUrl(path);
-        urls.push(data.publicUrl);
+        // Bucket ni private: tunahifadhi path pekee, tunaonyesha kwa signed URL
+        urls.push(path);
       }
       const { error } = await supabase.from('qa_bug_reports').insert({
         reporter_id: user.id,
