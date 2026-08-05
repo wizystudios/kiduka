@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter, SheetDescription } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -34,6 +34,7 @@ const SCOPE_OPTIONS = [
 export const BusinessDeletionDialog = ({ open, onOpenChange, ownerId, expectedName, onDeleted, requireAdminVerification }: Props) => {
   const [mode, setMode] = useState<'selective' | 'full'>('selective');
   const [confirmation, setConfirmation] = useState('');
+
   const [scope, setScope] = useState<Record<string, boolean>>({});
   const [submitting, setSubmitting] = useState(false);
   const [progress, setProgress] = useState(0);
