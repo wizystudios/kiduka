@@ -25,23 +25,19 @@ export const UnifiedDeleteSheet = ({
   confirmLabel = 'Futa',
   onConfirm,
 }: UnifiedDeleteSheetProps) => {
-  const [confirmation, setConfirmation] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [backendError, setBackendError] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
 
   useEffect(() => {
     if (open) {
-      setConfirmation('');
       setBackendError(null);
       setProgress(0);
     }
   }, [open]);
 
-  const nameMatches = confirmation.trim().toLowerCase() === itemName.trim().toLowerCase();
-
   const handleConfirm = async () => {
-    if (!nameMatches || submitting) return;
+    if (submitting) return;
     setSubmitting(true);
     setBackendError(null);
     setProgress(18);
