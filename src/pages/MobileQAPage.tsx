@@ -994,7 +994,7 @@ export default function MobileQAPage() {
                       {b.screenshot_urls?.length > 0 && (
                         <div className="flex gap-1">
                           {b.screenshot_urls.slice(0, 3).map((u: string, i: number) => (
-                            <img key={i} src={u} alt="" className="w-12 h-12 object-cover rounded-lg border" />
+                            <QaScreenshotThumb key={i} pathOrUrl={u} />
                           ))}
                         </div>
                       )}
