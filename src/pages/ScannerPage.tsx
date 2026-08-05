@@ -303,6 +303,37 @@ export const ScannerPage = () => {
     setCameraOn(false);
     window.setTimeout(() => setCameraOn(true), 80);
   };
+
+  const isEmbedded = typeof window !== 'undefined' && window.self !== window.top;
+
+  // Explicit user-gesture permission request (some browsers/PWAs never prompt automatically)
+  const requestCameraAccess = async () => {
+    setCameraError(null);
+    setLastCameraErrorName(null);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: 'environment' } },
+        audio: false,
+      });
+      stream.getTracks().forEach((track) => track.stop());
+      setPermissionState('granted');
+      restartCamera();
+    } catch (e: any) {
+      const name = e?.name || 'CameraError';
+      setLastCameraErrorName(name);
+      setCameraStatus('error');
+      if (name === 'NotAllowedError' || name === 'PermissionDeniedError') {
+        setPermissionState('denied');
+        setCameraError(
+          isEmbedded
+            ? 'Preview iliyo-embed haiwezi kuomba ruhusa ya kamera. Fungua Kiduka kwenye tab yako mwenyewe.'
+            : 'Ruhusa ya kamera imekataliwa. Bonyeza alama ya kufuli kwenye browser kisha ruhusu Camera.'
+        );
+      } else {
+        setCameraError(e?.message || 'Imeshindwa kufungua kamera.');
+      }
+    }
+  };
   const handleSearchProduct = async (
     query: string,
     options: { source?: 'camera' | 'manual'; autoAddBarcode?: boolean } = {}
