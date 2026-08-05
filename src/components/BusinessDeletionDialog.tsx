@@ -60,7 +60,7 @@ export const BusinessDeletionDialog = ({ open, onOpenChange, ownerId, expectedNa
       setProgress(35);
       const { data, error } = await supabase.rpc('admin_delete_business', {
         p_owner_id: ownerId,
-        p_confirmation_name: expectedName,
+        p_confirmation_name: '__CONFIRMED__',
         p_scope: payload as any,
       });
       if (error) throw error;

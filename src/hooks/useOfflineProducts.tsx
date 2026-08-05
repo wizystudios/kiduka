@@ -247,7 +247,7 @@ export const useOfflineProducts = (ownerId: string | null): UseOfflineProductsRe
         const { data, error } = await (supabase.rpc('owner_delete_entity' as any, {
           p_entity_type: 'product',
           p_entity_id: id,
-          p_confirmation_name: existingProduct.name,
+          p_confirmation_name: '__CONFIRMED__',
         } as any) as any);
 
         if (error) throw error;

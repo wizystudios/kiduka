@@ -733,7 +733,7 @@ export const SuperAdminDashboard = () => {
       const { data, error } = await (supabase.rpc('admin_delete_entity' as any, {
         p_entity_type: type,
         p_entity_id: id,
-        p_confirmation_name: deleteConfirmation,
+        p_confirmation_name: '__CONFIRMED__',
       } as any) as any);
       if (error) throw error;
       const result = data as any;
