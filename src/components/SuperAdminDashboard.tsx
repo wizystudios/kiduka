@@ -1313,8 +1313,9 @@ export const SuperAdminDashboard = () => {
 
       {/* Main Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <div className="w-full px-1">
-          <TabsList className="mb-4 flex h-auto w-full flex-wrap justify-start gap-1 bg-transparent p-0">
+        <div className="w-full px-1 overflow-x-auto no-scrollbar">
+          <TabsList className="mb-4 flex h-auto w-max min-w-full flex-nowrap justify-start gap-1 bg-transparent p-0 md:w-full md:flex-wrap">
+
             <TabsTrigger value="overview" className="h-8 rounded-full border border-border bg-transparent px-3 text-[11px]">Overview</TabsTrigger>
             <TabsTrigger value="analytics" className="h-8 rounded-full border border-border bg-transparent px-3 text-[11px]">Analytics</TabsTrigger>
             <TabsTrigger value="subscriptions" className="relative h-8 rounded-full border border-border bg-transparent px-3 text-[11px]">
