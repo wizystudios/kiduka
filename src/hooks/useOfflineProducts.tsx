@@ -243,11 +243,9 @@ export const useOfflineProducts = (ownerId: string | null): UseOfflineProductsRe
       }
 
       if (navigator.onLine) {
-        // Online: use secure RPC so related sales/inventory history is detached safely
-        const { data, error } = await (supabase.rpc('owner_delete_entity' as any, {
-          p_entity_type: 'product',
-          p_entity_id: id,
-          p_confirmation_name: '__CONFIRMED__',
+        // Online: permanently remove the product from the database (history rows are detached automatically)
+        const { data, error } = await (supabase.rpc('owner_hard_delete_product' as any, {
+          p_product_id: id,
         } as any) as any);
 
         if (error) throw error;
@@ -256,6 +254,7 @@ export const useOfflineProducts = (ownerId: string | null): UseOfflineProductsRe
           const message = data?.details?.friendly || data?.message || data?.error || 'delete_failed';
           throw Object.assign(new Error(message), { details: data?.details, code: data?.error });
         }
+
 
         // Update local state and cache
         setProducts(prev => prev.filter(p => p.id !== id));
