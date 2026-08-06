@@ -8,7 +8,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import { toast } from 'sonner';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
-import { KidukaLogo } from '@/components/KidukaLogo';
+import { BrandMark } from '@/components/BrandMark';
 
 interface ReceiptOrder {
   id: string;
