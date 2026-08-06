@@ -645,6 +645,7 @@ export type Database = {
           email: string | null
           founded_at: string | null
           id: string
+          is_active: boolean
           legal_name: string | null
           logo_url: string | null
           name: string
@@ -664,6 +665,7 @@ export type Database = {
           email?: string | null
           founded_at?: string | null
           id?: string
+          is_active?: boolean
           legal_name?: string | null
           logo_url?: string | null
           name: string
@@ -683,6 +685,7 @@ export type Database = {
           email?: string | null
           founded_at?: string | null
           id?: string
+          is_active?: boolean
           legal_name?: string | null
           logo_url?: string | null
           name?: string
@@ -3116,6 +3119,10 @@ export type Database = {
           p_entity_id: string
           p_entity_type: string
         }
+        Returns: Json
+      }
+      owner_hard_delete_product: {
+        Args: { p_product_id: string }
         Returns: Json
       }
       process_sokoni_order_to_sale: {

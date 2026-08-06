@@ -13,7 +13,7 @@ import { Switch } from '@/components/ui/switch';
 import { Plus, Smartphone, QrCode, Trash2, Star, Sparkles, Share2, Download } from 'lucide-react';
 import { toast } from 'sonner';
 import { BackButton } from '@/components/BackButton';
-import { KidukaLogo } from '@/components/KidukaLogo';
+import { BrandMark } from '@/components/BrandMark';
 import { QRCodeCanvas } from 'qrcode.react';
 import { captureElementAsImage, createPdfFromImage, shareOrDownloadFile, type ExportType } from '@/utils/shareExport';
 
@@ -346,7 +346,7 @@ export default function LipaNambaPage() {
               >
                 {/* Brand row: Kiduka logo + business name */}
                 <div className="flex items-center justify-center gap-2 mb-3">
-                  <KidukaLogo size="md" showText={false} animate={false} />
+                  <BrandMark size="md" iconOnly />
                   <div className="text-left leading-tight">
                     <p className="text-[15px] font-black text-neutral-900 truncate max-w-[220px]">{businessName}</p>
                     <p className="text-[10px] text-neutral-500">Kiduka · Biashara Smart</p>

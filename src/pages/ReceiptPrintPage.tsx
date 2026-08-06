@@ -8,7 +8,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import { toast } from 'sonner';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
-import { KidukaLogo } from '@/components/KidukaLogo';
+import { BrandMark } from '@/components/BrandMark';
 
 interface ReceiptOrder {
   id: string;
@@ -129,13 +129,8 @@ export default function ReceiptPrintPage() {
 
       <Card ref={receiptRef} className="max-w-2xl mx-auto p-8 print:shadow-none print:border-0 rounded-3xl bg-white">
         <div className="flex items-start justify-between mb-6 pb-6 border-b">
-          <div className="flex items-center gap-3">
-            <KidukaLogo size="md" />
-            <div>
-              <h1 className="text-xl font-bold">{order.business_name || 'Biashara'}</h1>
-              <p className="text-xs text-muted-foreground">Risiti ya Oda</p>
-            </div>
-          </div>
+          <BrandMark title={order.business_name || 'Biashara'} subtitle="Risiti ya Oda" size="md" />
+
           <div className="text-right">
             <p className="text-xs text-muted-foreground">Tracking</p>
             <p className="font-mono text-sm font-bold">{order.tracking_code}</p>
