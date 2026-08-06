@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Download, FileText, Mail, MessageSquare, Phone, Share2, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { KidukaLogo } from '@/components/KidukaLogo';
+import { BrandMark } from '@/components/BrandMark';
 import { captureElementAsImage, createPdfFromImage, shareOrDownloadFile, type ExportType } from '@/utils/shareExport';
 
 interface ReceiptData {
@@ -128,7 +128,7 @@ export const DigitalReceiptService = ({ receiptData, onClose }: DigitalReceiptSe
         >
           <div className="p-5">
             <div className="flex items-center justify-center gap-2 border-b pb-4 text-center">
-              <KidukaLogo size="md" showText={false} animate={false} />
+              <BrandMark size="md" iconOnly />
               <div className="text-left leading-tight">
                 <p className="max-w-[230px] truncate text-[16px] font-black text-neutral-900">{receiptData.businessName}</p>
                 <p className="text-[10px] font-semibold uppercase text-neutral-500">Risiti ya Mauzo · Kiduka</p>
