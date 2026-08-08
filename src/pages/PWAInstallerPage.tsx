@@ -31,27 +31,7 @@ export const PWAInstallerPage = () => {
   }, []);
 
 
-  const handleInstallClick = async () => {
-    if (!deferredPrompt) {
-      // Show manual instructions
-      toast.info('Tumia menu ya browser kusakinisha', {
-        description: 'Bonyeza "⋮" kisha "Add to Home Screen" au "Install App"'
-      });
-      return;
-    }
 
-    try {
-      await deferredPrompt.prompt();
-      const { outcome } = await deferredPrompt.userChoice;
-      
-      if (outcome === 'accepted') {
-        setDeferredPrompt(null);
-        toast.success('Asante! App inasanikishwa...');
-      }
-    } catch (error) {
-      console.error('Install error:', error);
-    }
-  };
 
   const shareApp = async () => {
     if (navigator.share) {
