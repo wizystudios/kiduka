@@ -15,48 +15,21 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 
-interface BeforeInstallPromptEvent extends Event {
-  prompt(): Promise<void>;
-  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
-}
-
 export const PWAInstallerPage = () => {
-  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
-  const [isInstalled, setIsInstalled] = useState(false);
+  const { isInstalled: installed, instructions } = useInstallPrompt();
   const [isOnline, setIsOnline] = useState(navigator.onLine);
 
   useEffect(() => {
-    // Check if already installed
-    if (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) {
-      setIsInstalled(true);
-    }
-
-    const handleBeforeInstallPrompt = (e: Event) => {
-      e.preventDefault();
-      setDeferredPrompt(e as BeforeInstallPromptEvent);
-    };
-
-    const handleAppInstalled = () => {
-      setIsInstalled(true);
-      setDeferredPrompt(null);
-      toast.success('KidukaPOS Imesakinishwa!');
-    };
-
     const handleOnline = () => setIsOnline(true);
     const handleOffline = () => setIsOnline(false);
-
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-    window.addEventListener('appinstalled', handleAppInstalled);
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
-
     return () => {
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-      window.removeEventListener('appinstalled', handleAppInstalled);
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
   }, []);
+
 
   const handleInstallClick = async () => {
     if (!deferredPrompt) {
