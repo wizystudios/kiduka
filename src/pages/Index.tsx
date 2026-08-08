@@ -6,11 +6,16 @@ import { KidukaLogo } from "@/components/KidukaLogo";
 import { FloatingCards } from "@/components/FloatingCards";
 import { Button } from "@/components/ui/button";
 import { LogIn, Store } from "lucide-react";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { InstallAppButton } from "@/components/InstallAppButton";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const Index = () => {
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const { user, loading } = useAuth();
   const [showOnboarding, setShowOnboarding] = useState(false);
+
 
   // Lock scroll while on landing/onboarding
   useEffect(() => {
