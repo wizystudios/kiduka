@@ -14,6 +14,9 @@ import {
   Bell
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useInstallPrompt } from '@/hooks/useInstallPrompt';
+import { InstallAppButton } from '@/components/InstallAppButton';
+
 
 export const PWAInstallerPage = () => {
   const { isInstalled: installed, instructions } = useInstallPrompt();
