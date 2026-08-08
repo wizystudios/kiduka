@@ -4,16 +4,21 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { User, Download, Save, Eye, EyeOff, Phone, Loader2, Shield } from 'lucide-react';
+import { User, Download, Save, Eye, EyeOff, Phone, Loader2, Shield, Languages } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { SokoniOrderNotificationSettings } from '@/components/SokoniOrderNotificationSettings';
 import { EmailConsentSettings } from '@/components/EmailConsentSettings';
 import { CompanyProductsFooter } from '@/components/CompanyProductsFooter';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
+import { InstallAppButton } from '@/components/InstallAppButton';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 export const SettingsPage = () => {
   const { user, userProfile, updateProfile, loading } = useAuth();
+  const { t } = useLanguage();
+
   const [formData, setFormData] = useState({ full_name: '', business_name: '', phone: '', newPassword: '', confirmPassword: '' });
   const [updating, setUpdating] = useState(false);
   const [savingPhone, setSavingPhone] = useState(false);
@@ -140,7 +145,28 @@ export const SettingsPage = () => {
         </Button>
       </div>
 
+      {/* Language */}
+      <div className="border-t border-border pt-4 space-y-3">
+        <div className="flex items-center gap-2">
+          <Languages className="h-4 w-4 text-muted-foreground" />
+          <p className="text-sm font-medium">{t('language_settings')}</p>
+        </div>
+        <p className="text-xs text-muted-foreground">{t('choose_language')}</p>
+        <LanguageSwitcher variant="grid" />
+      </div>
+
+      {/* Install app */}
+      <div className="border-t border-border pt-4 space-y-3">
+        <div className="flex items-center gap-2">
+          <Download className="h-4 w-4 text-muted-foreground" />
+          <p className="text-sm font-medium">{t('install_app')}</p>
+        </div>
+        <p className="text-xs text-muted-foreground">{t('install_app_desc')}</p>
+        <InstallAppButton variant="secondary" />
+      </div>
+
       {/* Phone */}
+
       <div className="border-t border-border pt-4 space-y-3">
         <div className="flex items-center gap-2">
           <Phone className="h-4 w-4 text-muted-foreground" />

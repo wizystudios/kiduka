@@ -6,11 +6,16 @@ import { KidukaLogo } from "@/components/KidukaLogo";
 import { FloatingCards } from "@/components/FloatingCards";
 import { Button } from "@/components/ui/button";
 import { LogIn, Store } from "lucide-react";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { InstallAppButton } from "@/components/InstallAppButton";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const Index = () => {
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const { user, loading } = useAuth();
   const [showOnboarding, setShowOnboarding] = useState(false);
+
 
   // Lock scroll while on landing/onboarding
   useEffect(() => {
@@ -64,12 +69,16 @@ const Index = () => {
     <div className="h-[100dvh] max-h-[100dvh] bg-gradient-to-br from-primary/5 via-background to-secondary/10 flex flex-col items-center justify-center px-4 py-3 relative overflow-hidden">
       <FloatingCards />
 
+      <div className="absolute top-3 right-3 z-20">
+        <LanguageSwitcher variant="full" />
+      </div>
+
       <div className="relative z-10 flex w-full max-w-sm flex-col items-center gap-4">
         <KidukaLogo size="xl" />
         
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-foreground">Karibu Kiduka</h1>
-          <p className="text-sm text-muted-foreground mt-1">Biashara yako, urahisi wako</p>
+          <h1 className="text-2xl font-bold text-foreground">{t('welcome_kiduka')}</h1>
+          <p className="text-sm text-muted-foreground mt-1">{t('tagline')}</p>
         </div>
 
         <div className="mt-2 w-full space-y-2.5">
@@ -79,7 +88,7 @@ const Index = () => {
             onClick={() => navigate('/auth')}
           >
             <LogIn className="h-5 w-5 mr-2" />
-            Ingia / Jisajili
+            {t('login_register')}
           </Button>
 
           <Button
@@ -89,11 +98,14 @@ const Index = () => {
             onClick={() => navigate('/sokoni')}
           >
             <Store className="h-5 w-5 mr-2" />
-            Tembelea Sokoni
+            {t('visit_sokoni')}
           </Button>
+
+          <InstallAppButton variant="secondary" />
         </div>
       </div>
     </div>
+
   );
 };
 

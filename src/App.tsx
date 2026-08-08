@@ -3,6 +3,8 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from '@/hooks/useAuth';
 import { BusinessProvider } from '@/hooks/useBusinessContext';
+import { LanguageProvider } from '@/contexts/LanguageContext';
+
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { AppLayout } from '@/components/AppLayout';
 import { NotificationSettingsPage } from '@/pages/NotificationSettingsPage';
@@ -100,9 +102,11 @@ const queryClient = new QueryClient({
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
+      <LanguageProvider>
       <Router>
         <AuthProvider>
           <BusinessProvider>
+
           <div className="App">
             <Routes>
               {/* Public Routes */}
@@ -576,6 +580,8 @@ export default function App() {
           </BusinessProvider>
         </AuthProvider>
       </Router>
+      </LanguageProvider>
     </QueryClientProvider>
+
   );
 }

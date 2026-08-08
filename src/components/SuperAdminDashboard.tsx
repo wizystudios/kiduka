@@ -1313,8 +1313,39 @@ export const SuperAdminDashboard = () => {
 
       {/* Main Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <div className="w-full px-1 overflow-x-auto no-scrollbar">
+        {/* Mobile: dropdown navigation (tabs strip is unusable on small screens) */}
+        <div className="mb-4 px-1 md:hidden">
+          <select
+            value={activeTab}
+            onChange={(e) => setActiveTab(e.target.value)}
+            className="h-11 w-full rounded-2xl border border-border bg-card px-3 text-sm font-medium text-foreground"
+            aria-label="Chagua sehemu"
+          >
+            {[
+              ['overview', 'Overview'],
+              ['analytics', 'Analytics'],
+              ['subscriptions', `Usajili${stats.pendingSubscriptions > 0 ? ` (${stats.pendingSubscriptions})` : ''}`],
+              ['compliance', 'Sheria'],
+              ['users', 'Watumiaji'],
+              ['activities', 'Shughuli'],
+              ['products', 'Bidhaa'],
+              ['sales', 'Mauzo'],
+              ['orders', 'Oda'],
+              ['marketplace', 'Sokoni'],
+              ['ads', 'Matangazo'],
+              ['chat', 'Mazungumzo'],
+              ['emails', 'Barua'],
+              ['logs', 'Logi'],
+              ['more', 'Zaidi'],
+            ].map(([value, label]) => (
+              <option key={value} value={value}>{label}</option>
+            ))}
+          </select>
+        </div>
+
+        <div className="hidden w-full px-1 overflow-x-auto no-scrollbar md:block">
           <TabsList className="mb-4 flex h-auto w-max min-w-full flex-nowrap justify-start gap-1 bg-transparent p-0 md:w-full md:flex-wrap">
+
 
             <TabsTrigger value="overview" className="h-8 shrink-0 rounded-full border border-border bg-transparent px-3 text-[11px]">Overview</TabsTrigger>
             <TabsTrigger value="analytics" className="h-8 shrink-0 rounded-full border border-border bg-transparent px-3 text-[11px]">Analytics</TabsTrigger>

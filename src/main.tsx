@@ -2,6 +2,9 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App.tsx'
 import './index.css'
+// Capture the browser install prompt as early as possible (fires before React mounts)
+import './utils/pwaInstall'
+
 
 const PREVIEW_RESET_KEY = 'kiduka-preview-sw-reset'
 
