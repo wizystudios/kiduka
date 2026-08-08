@@ -4,16 +4,21 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { User, Download, Save, Eye, EyeOff, Phone, Loader2, Shield } from 'lucide-react';
+import { User, Download, Save, Eye, EyeOff, Phone, Loader2, Shield, Languages } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { SokoniOrderNotificationSettings } from '@/components/SokoniOrderNotificationSettings';
 import { EmailConsentSettings } from '@/components/EmailConsentSettings';
 import { CompanyProductsFooter } from '@/components/CompanyProductsFooter';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
+import { InstallAppButton } from '@/components/InstallAppButton';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 export const SettingsPage = () => {
   const { user, userProfile, updateProfile, loading } = useAuth();
+  const { t } = useLanguage();
+
   const [formData, setFormData] = useState({ full_name: '', business_name: '', phone: '', newPassword: '', confirmPassword: '' });
   const [updating, setUpdating] = useState(false);
   const [savingPhone, setSavingPhone] = useState(false);
