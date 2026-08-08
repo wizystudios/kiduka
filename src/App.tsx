@@ -100,9 +100,11 @@ const queryClient = new QueryClient({
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
+      <LanguageProvider>
       <Router>
         <AuthProvider>
           <BusinessProvider>
+
           <div className="App">
             <Routes>
               {/* Public Routes */}
