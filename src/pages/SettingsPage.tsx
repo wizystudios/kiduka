@@ -140,7 +140,28 @@ export const SettingsPage = () => {
         </Button>
       </div>
 
+      {/* Language */}
+      <div className="border-t border-border pt-4 space-y-3">
+        <div className="flex items-center gap-2">
+          <Languages className="h-4 w-4 text-muted-foreground" />
+          <p className="text-sm font-medium">{t('language_settings')}</p>
+        </div>
+        <p className="text-xs text-muted-foreground">{t('choose_language')}</p>
+        <LanguageSwitcher variant="grid" />
+      </div>
+
+      {/* Install app */}
+      <div className="border-t border-border pt-4 space-y-3">
+        <div className="flex items-center gap-2">
+          <Download className="h-4 w-4 text-muted-foreground" />
+          <p className="text-sm font-medium">{t('install_app')}</p>
+        </div>
+        <p className="text-xs text-muted-foreground">{t('install_app_desc')}</p>
+        <InstallAppButton variant="secondary" />
+      </div>
+
       {/* Phone */}
+
       <div className="border-t border-border pt-4 space-y-3">
         <div className="flex items-center gap-2">
           <Phone className="h-4 w-4 text-muted-foreground" />
