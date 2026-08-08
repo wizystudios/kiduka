@@ -120,37 +120,36 @@ export const PWAInstallerPage = () => {
       {/* Status Card */}
       <Card>
         <CardContent className="p-4">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
-                isInstalled ? 'bg-green-100' : 'bg-blue-100'
+                installed ? 'bg-primary/10' : 'bg-primary/5'
               }`}>
-                {isInstalled ? (
-                  <CheckCircle className="h-6 w-6 text-green-600" />
+                {installed ? (
+                  <span className="relative flex h-8 w-8 items-center justify-center">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary/30" />
+                    <CheckCircle className="relative h-6 w-6 text-primary animate-in zoom-in duration-500" />
+                  </span>
                 ) : (
-                  <Smartphone className="h-6 w-6 text-blue-600" />
+                  <Smartphone className="h-6 w-6 text-primary" />
                 )}
               </div>
               <div>
                 <h3 className="font-semibold">
-                  {isInstalled ? 'Imesakinishwa' : 'Sakinisha App'}
+                  {installed ? 'Tayari Imesakinishwa' : 'Sakinisha App'}
                 </h3>
                 <p className="text-sm text-muted-foreground">
-                  {isInstalled 
-                    ? 'KidukaPOS iko kwenye kifaa chako' 
-                    : 'Pata ufikiaji wa haraka'}
+                  {installed
+                    ? 'Kiduka ipo kwenye kifaa chako'
+                    : instructions}
                 </p>
               </div>
             </div>
-            {!isInstalled && (
-              <Button onClick={handleInstallClick}>
-                <Download className="h-4 w-4 mr-2" />
-                Sakinisha
-              </Button>
-            )}
           </div>
+          {!installed && <div className="mt-3"><InstallAppButton /></div>}
         </CardContent>
       </Card>
+
 
       {/* Network Status */}
       <Card className={isOnline ? 'border-green-200' : 'border-orange-200'}>
