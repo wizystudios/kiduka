@@ -578,6 +578,8 @@ export default function App() {
           </BusinessProvider>
         </AuthProvider>
       </Router>
+      </LanguageProvider>
     </QueryClientProvider>
+
   );
 }
