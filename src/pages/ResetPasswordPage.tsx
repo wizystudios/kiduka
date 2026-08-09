@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { KidukaLogo } from '@/components/KidukaLogo';
-import { Lock, Eye, EyeOff, CheckCircle, Loader2 } from 'lucide-react';
+import { Lock, Eye, EyeOff, CheckCircle, Loader2, Mail } from 'lucide-react';
 import { toast } from 'sonner';
 import { logActivity } from '@/hooks/useActivityLogger';
 
