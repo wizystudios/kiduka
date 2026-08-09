@@ -1317,35 +1317,29 @@ export const SuperAdminDashboard = () => {
 
       {/* Main Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        {/* Mobile: dropdown navigation (tabs strip is unusable on small screens) */}
-        <div className="mb-4 px-1 md:hidden">
-          <select
-            value={activeTab}
-            onChange={(e) => setActiveTab(e.target.value)}
-            className="h-11 w-full rounded-2xl border border-border bg-card px-3 text-sm font-medium text-foreground"
-            aria-label="Chagua sehemu"
-          >
-            {[
-              ['overview', 'Overview'],
-              ['analytics', 'Analytics'],
-              ['subscriptions', `Usajili${stats.pendingSubscriptions > 0 ? ` (${stats.pendingSubscriptions})` : ''}`],
-              ['compliance', 'Sheria'],
-              ['users', 'Watumiaji'],
-              ['activities', 'Shughuli'],
-              ['products', 'Bidhaa'],
-              ['sales', 'Mauzo'],
-              ['orders', 'Oda'],
-              ['marketplace', 'Sokoni'],
-              ['ads', 'Matangazo'],
-              ['chat', 'Mazungumzo'],
-              ['emails', 'Barua'],
-              ['logs', 'Logi'],
-              ['more', 'Zaidi'],
-            ].map(([value, label]) => (
-              <option key={value} value={value}>{label}</option>
-            ))}
-          </select>
-        </div>
+        {/* Mobile: compact quick-switch bar + all-sections grid */}
+        <AdminMobileTabBar
+          active={activeTab}
+          onChange={setActiveTab}
+          tabs={[
+            { value: 'overview', label: 'Overview' },
+            { value: 'analytics', label: 'Analytics' },
+            { value: 'subscriptions', label: 'Usajili', badge: stats.pendingSubscriptions },
+            { value: 'compliance', label: 'Sheria' },
+            { value: 'users', label: 'Watumiaji' },
+            { value: 'activities', label: 'Shughuli' },
+            { value: 'products', label: 'Bidhaa' },
+            { value: 'sales', label: 'Mauzo' },
+            { value: 'orders', label: 'Oda' },
+            { value: 'marketplace', label: 'Sokoni' },
+            { value: 'ads', label: 'Matangazo' },
+            { value: 'chat', label: 'Mazungumzo' },
+            { value: 'emails', label: 'Barua' },
+            { value: 'logs', label: 'Logi' },
+            { value: 'more', label: 'Zaidi' },
+          ]}
+        />
+
 
         <div className="hidden w-full px-1 overflow-x-auto no-scrollbar md:block">
           <TabsList className="mb-4 flex h-auto w-max min-w-full flex-nowrap justify-start gap-1 bg-transparent p-0 md:w-full md:flex-wrap">
