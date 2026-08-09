@@ -1189,10 +1189,11 @@ export const SuperAdminDashboard = () => {
           <Button variant="outline" size="sm" className="h-8 px-2 flex-shrink-0 text-xs" onClick={handleExportSales}>
             <FileSpreadsheet className="h-3.5 w-3.5 mr-1" />CSV
           </Button>
-          <Button variant={adminVerified ? 'default' : 'outline'} size="sm" className="h-8 px-2 flex-shrink-0 text-xs rounded-full">
+          <Button variant="default" size="sm" className="h-8 px-2 flex-shrink-0 text-xs rounded-full">
             <ShieldCheck className="h-3.5 w-3.5 mr-1" />
-            {adminVerified ? `Admin ${sessionLabel}` : 'Admin haja-thibitishwa'}
+            Admin • ruhusa kamili
           </Button>
+
           <Button onClick={fetchAllData} variant="outline" size="sm" className="h-8 px-2 flex-shrink-0 text-xs">
             <RefreshCw className="h-3.5 w-3.5 mr-1" />Refresh
           </Button>
