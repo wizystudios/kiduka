@@ -746,13 +746,16 @@ export const SuperAdminDashboard = () => {
     setDeleteDialog(null);
   };
 
-  const runSensitiveAction = (action: string, callback: () => void, description?: string) => {
-    if (adminVerified) {
-      callback();
-      return;
+  // Super admins are already authenticated + authorised server-side (RLS + edge
+  // function role checks). No extra admin password gate: run the action directly.
+  const runSensitiveAction = (_action: string, callback: () => void, _description?: string) => {
+    if (!adminVerified) {
+      setAdminVerified(true);
+      setAdminVerifiedAt(new Date());
     }
-    setPasswordDialog({ action, description, callback });
+    callback();
   };
+
 
   const handleDelete = (type: string, id: string, name: string) => {
     setDeleteConfirmation('');
