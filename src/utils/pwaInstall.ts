@@ -18,14 +18,38 @@ const state = {
 
 const notify = () => listeners.forEach((l) => l());
 
+const DISPLAY_MODES = ['standalone', 'minimal-ui', 'fullscreen', 'window-controls-overlay'];
+
 export const detectInstalled = (): boolean => {
   if (typeof window === 'undefined') return false;
-  const standalone =
-    (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) ||
-    // iOS Safari
-    (window.navigator as any).standalone === true;
+  const displayMode = DISPLAY_MODES.some(
+    (mode) => window.matchMedia && window.matchMedia(`(display-mode: ${mode})`).matches,
+  );
+  // iOS Safari
+  const iosStandalone = (window.navigator as any).standalone === true;
+  // Android TWA / installed app launch
+  const androidApp = document.referrer.startsWith('android-app://');
   const flagged = localStorage.getItem('kiduka_pwa_installed') === 'true';
-  return standalone || flagged;
+  return displayMode || iosStandalone || androidApp || flagged;
+};
+
+const setInstalled = (value: boolean) => {
+  if (state.installed === value) return;
+  state.installed = value;
+  if (value) localStorage.setItem('kiduka_pwa_installed', 'true');
+  else localStorage.removeItem('kiduka_pwa_installed');
+  notify();
+};
+
+const checkRelatedApps = () => {
+  const anyNav = navigator as any;
+  if (typeof anyNav.getInstalledRelatedApps !== 'function') return;
+  anyNav
+    .getInstalledRelatedApps()
+    .then((apps: unknown[]) => {
+      if (apps && apps.length > 0) setInstalled(true);
+    })
+    .catch(() => undefined);
 };
 
 if (typeof window !== 'undefined') {
@@ -34,32 +58,37 @@ if (typeof window !== 'undefined') {
   window.addEventListener('beforeinstallprompt', (e: Event) => {
     e.preventDefault();
     state.deferredPrompt = e as BeforeInstallPromptEvent;
+    // The browser only fires this when the app is NOT installed -> clear any
+    // stale "installed" flag (e.g. user uninstalled it later).
+    localStorage.removeItem('kiduka_pwa_installed');
     state.installed = false;
     notify();
   });
 
   window.addEventListener('appinstalled', () => {
     state.deferredPrompt = null;
-    state.installed = true;
-    localStorage.setItem('kiduka_pwa_installed', 'true');
-    notify();
+    setInstalled(true);
   });
 
-  // Some browsers expose related installed apps
-  const anyNav = navigator as any;
-  if (typeof anyNav.getInstalledRelatedApps === 'function') {
-    anyNav
-      .getInstalledRelatedApps()
-      .then((apps: unknown[]) => {
-        if (apps && apps.length > 0) {
-          state.installed = true;
-          localStorage.setItem('kiduka_pwa_installed', 'true');
-          notify();
-        }
-      })
-      .catch(() => undefined);
-  }
+  // Display-mode can flip while the tab is open (installed then launched standalone)
+  DISPLAY_MODES.forEach((mode) => {
+    const mq = window.matchMedia?.(`(display-mode: ${mode})`);
+    mq?.addEventListener?.('change', (ev: MediaQueryListEvent) => {
+      if (ev.matches) setInstalled(true);
+    });
+  });
+
+  // Re-check when the user comes back from the browser install flow
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+      checkRelatedApps();
+      if (detectInstalled()) setInstalled(true);
+    }
+  });
+
+  checkRelatedApps();
 }
+
 
 export const pwaInstallStore = {
   subscribe(listener: Listener) {

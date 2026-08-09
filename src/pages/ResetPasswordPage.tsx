@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { KidukaLogo } from '@/components/KidukaLogo';
-import { Lock, Eye, EyeOff, CheckCircle, Loader2 } from 'lucide-react';
+import { Lock, Eye, EyeOff, CheckCircle, Loader2, Mail } from 'lucide-react';
 import { toast } from 'sonner';
 import { logActivity } from '@/hooks/useActivityLogger';
 
@@ -17,6 +17,18 @@ export const ResetPasswordPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [phase, setPhase] = useState<Phase>('checking');
+  const [linkError, setLinkError] = useState<string | null>(null);
+  const [resendEmail, setResendEmail] = useState('');
+  const [resending, setResending] = useState(false);
+
+  const describeLinkError = (raw?: string | null) => {
+    const msg = (raw || '').toLowerCase();
+    if (msg.includes('expired')) return 'Kiungo kimekwisha muda. Viungo vya nywila hudumu saa 1 tu.';
+    if (msg.includes('already') || msg.includes('used') || msg.includes('invalid'))
+      return 'Kiungo hiki kimeshatumika au si sahihi. Kila kiungo hutumika mara moja tu.';
+    if (msg.includes('otp')) return 'Kiungo hakikuweza kuthibitishwa. Omba kiungo kipya.';
+    return null;
+  };
 
   // Establish the recovery session from whichever link format Supabase sent
   useEffect(() => {
@@ -31,13 +43,26 @@ export const ResetPasswordPage = () => {
         const refreshToken = hash.get('refresh_token');
         const code = url.searchParams.get('code');
         const tokenHash = url.searchParams.get('token_hash') || hash.get('token_hash');
+        const urlError =
+          url.searchParams.get('error_description') || hash.get('error_description') || hash.get('error');
 
+        if (urlError) {
+          setLinkError(describeLinkError(urlError) || decodeURIComponent(urlError));
+          window.history.replaceState({}, '', '/reset-password');
+          setPhase('invalid');
+          return;
+        }
+
+        let authError: string | null = null;
         if (accessToken && refreshToken) {
-          await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
+          const { error } = await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
+          authError = error?.message ?? null;
         } else if (code) {
-          await supabase.auth.exchangeCodeForSession(code);
+          const { error } = await supabase.auth.exchangeCodeForSession(code);
+          authError = error?.message ?? null;
         } else if (tokenHash) {
-          await supabase.auth.verifyOtp({ type: 'recovery', token_hash: tokenHash });
+          const { error } = await supabase.auth.verifyOtp({ type: 'recovery', token_hash: tokenHash });
+          authError = error?.message ?? null;
         }
 
         // Clean sensitive tokens out of the address bar
@@ -47,13 +72,20 @@ export const ResetPasswordPage = () => {
 
         const { data } = await supabase.auth.getSession();
         if (cancelled) return;
-        setPhase(data.session ? 'ready' : 'invalid');
+        if (data.session) {
+          setPhase('ready');
+        } else {
+          setLinkError(describeLinkError(authError));
+          setPhase('invalid');
+        }
       } catch (err: any) {
         if (cancelled) return;
         console.error('Recovery session error:', err);
+        setLinkError(describeLinkError(err?.message));
         setPhase('invalid');
       }
     };
+
 
     establish();
 
@@ -107,6 +139,15 @@ export const ResetPasswordPage = () => {
       localStorage.setItem(`kiduka_pw_updated_${userId}`, 'true');
 
       logActivity('password_reset', 'Nywila imebadilishwa kupitia reset link');
+
+      // Guarantee the user ends up signed in with the NEW password, even if the
+      // recovery session was single-use and got invalidated by the update.
+      const email = data.user?.email || session.user.email;
+      if (email) {
+        const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+        if (signInError) console.warn('Post-reset sign-in fallback failed:', signInError.message);
+      }
+
       setPhase('success');
       toast.success('Nywila imebadilishwa! Unaingia sasa...');
 
@@ -114,11 +155,37 @@ export const ResetPasswordPage = () => {
       setTimeout(() => navigate('/dashboard', { replace: true }), 1200);
     } catch (error: any) {
       console.error('Password update failed:', error);
-      toast.error(error?.message || 'Imeshindwa kubadilisha nywila');
+      const friendly = describeLinkError(error?.message);
+      if (friendly) {
+        setLinkError(friendly);
+        setPhase('invalid');
+      }
+      toast.error(friendly || error?.message || 'Imeshindwa kubadilisha nywila');
     } finally {
       setLoading(false);
     }
   };
+
+  const handleResend = async () => {
+    if (!resendEmail || !resendEmail.includes('@')) {
+      toast.error('Ingiza barua pepe sahihi');
+      return;
+    }
+    setResending(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(resendEmail, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      if (error) throw error;
+      toast.success('Kiungo kipya kimetumwa! Angalia barua pepe yako.');
+      setLinkError('Kiungo kipya kimetumwa. Fungua barua pepe yako ndani ya saa 1.');
+    } catch (err: any) {
+      toast.error(err?.message || 'Imeshindwa kutuma kiungo');
+    } finally {
+      setResending(false);
+    }
+  };
+
 
   if (phase === 'checking') {
     return (
@@ -132,16 +199,38 @@ export const ResetPasswordPage = () => {
 
   if (phase === 'invalid') {
     return (
-      <div className="flex h-[100dvh] max-h-[100dvh] flex-col items-center justify-center overflow-hidden bg-gradient-to-br from-primary/5 via-background to-secondary/10 p-4">
+      <div className="flex h-[100dvh] max-h-[100dvh] flex-col items-center justify-center overflow-hidden bg-gradient-to-br from-primary/5 via-background to-secondary/10 px-6">
         <KidukaLogo size="lg" />
-        <p className="mt-6 text-center text-muted-foreground">Kiungo si sahihi au kimekwisha muda.</p>
-        <div className="mt-4 flex gap-2">
-          <Button variant="outline" onClick={() => navigate('/forgot-password')}>Omba Kiungo Kipya</Button>
-          <Button onClick={() => navigate('/auth')}>Rudi Kuingia</Button>
+        <h1 className="mt-6 text-xl font-bold">Kiungo hakifanyi kazi</h1>
+        <p className="mt-2 max-w-xs text-center text-sm text-muted-foreground">
+          {linkError ||
+            'Kiungo hiki kimekwisha muda au kimeshatumika. Omba kiungo kipya hapa chini — kitatumwa kwenye barua pepe yako.'}
+        </p>
+
+        <div className="mt-5 w-full max-w-sm space-y-3">
+          <Input
+            type="email"
+            placeholder="Barua pepe yako"
+            value={resendEmail}
+            onChange={(e) => setResendEmail(e.target.value)}
+            onKeyPress={(e) => e.key === 'Enter' && handleResend()}
+            className="h-12 rounded-2xl"
+          />
+          <Button onClick={handleResend} disabled={resending || !resendEmail} className="h-11 w-full rounded-full">
+            {resending ? (
+              <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Inatuma...</>
+            ) : (
+              <><Mail className="mr-2 h-4 w-4" />Tuma Kiungo Kipya</>
+            )}
+          </Button>
+          <Button variant="ghost" onClick={() => navigate('/auth')} className="h-11 w-full rounded-full">
+            Rudi Kuingia
+          </Button>
         </div>
       </div>
     );
   }
+
 
   if (phase === 'success') {
     return (

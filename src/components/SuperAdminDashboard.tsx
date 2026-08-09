@@ -36,6 +36,8 @@ import { AdminAdsPanel } from './AdminAdsPanel';
 import { BusinessDeletionDialog } from './BusinessDeletionDialog';
 import { UnifiedDeleteSheet } from './UnifiedDeleteSheet';
 import { BusinessAuditLogsPanel } from './BusinessAuditLogsPanel';
+import { AdminMobileTabBar } from './AdminMobileTabBar';
+
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Check, ChevronsUpDown } from 'lucide-react';
@@ -746,13 +748,16 @@ export const SuperAdminDashboard = () => {
     setDeleteDialog(null);
   };
 
-  const runSensitiveAction = (action: string, callback: () => void, description?: string) => {
-    if (adminVerified) {
-      callback();
-      return;
+  // Super admins are already authenticated + authorised server-side (RLS + edge
+  // function role checks). No extra admin password gate: run the action directly.
+  const runSensitiveAction = (_action: string, callback: () => void, _description?: string) => {
+    if (!adminVerified) {
+      setAdminVerified(true);
+      setAdminVerifiedAt(new Date());
     }
-    setPasswordDialog({ action, description, callback });
+    callback();
   };
+
 
   const handleDelete = (type: string, id: string, name: string) => {
     setDeleteConfirmation('');
@@ -1186,10 +1191,11 @@ export const SuperAdminDashboard = () => {
           <Button variant="outline" size="sm" className="h-8 px-2 flex-shrink-0 text-xs" onClick={handleExportSales}>
             <FileSpreadsheet className="h-3.5 w-3.5 mr-1" />CSV
           </Button>
-          <Button variant={adminVerified ? 'default' : 'outline'} size="sm" className="h-8 px-2 flex-shrink-0 text-xs rounded-full">
+          <Button variant="default" size="sm" className="h-8 px-2 flex-shrink-0 text-xs rounded-full">
             <ShieldCheck className="h-3.5 w-3.5 mr-1" />
-            {adminVerified ? `Admin ${sessionLabel}` : 'Admin haja-thibitishwa'}
+            Admin • ruhusa kamili
           </Button>
+
           <Button onClick={fetchAllData} variant="outline" size="sm" className="h-8 px-2 flex-shrink-0 text-xs">
             <RefreshCw className="h-3.5 w-3.5 mr-1" />Refresh
           </Button>
@@ -1313,35 +1319,29 @@ export const SuperAdminDashboard = () => {
 
       {/* Main Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        {/* Mobile: dropdown navigation (tabs strip is unusable on small screens) */}
-        <div className="mb-4 px-1 md:hidden">
-          <select
-            value={activeTab}
-            onChange={(e) => setActiveTab(e.target.value)}
-            className="h-11 w-full rounded-2xl border border-border bg-card px-3 text-sm font-medium text-foreground"
-            aria-label="Chagua sehemu"
-          >
-            {[
-              ['overview', 'Overview'],
-              ['analytics', 'Analytics'],
-              ['subscriptions', `Usajili${stats.pendingSubscriptions > 0 ? ` (${stats.pendingSubscriptions})` : ''}`],
-              ['compliance', 'Sheria'],
-              ['users', 'Watumiaji'],
-              ['activities', 'Shughuli'],
-              ['products', 'Bidhaa'],
-              ['sales', 'Mauzo'],
-              ['orders', 'Oda'],
-              ['marketplace', 'Sokoni'],
-              ['ads', 'Matangazo'],
-              ['chat', 'Mazungumzo'],
-              ['emails', 'Barua'],
-              ['logs', 'Logi'],
-              ['more', 'Zaidi'],
-            ].map(([value, label]) => (
-              <option key={value} value={value}>{label}</option>
-            ))}
-          </select>
-        </div>
+        {/* Mobile: compact quick-switch bar + all-sections grid */}
+        <AdminMobileTabBar
+          active={activeTab}
+          onChange={setActiveTab}
+          tabs={[
+            { value: 'overview', label: 'Overview' },
+            { value: 'analytics', label: 'Analytics' },
+            { value: 'subscriptions', label: 'Usajili', badge: stats.pendingSubscriptions },
+            { value: 'compliance', label: 'Sheria' },
+            { value: 'users', label: 'Watumiaji' },
+            { value: 'activities', label: 'Shughuli' },
+            { value: 'products', label: 'Bidhaa' },
+            { value: 'sales', label: 'Mauzo' },
+            { value: 'orders', label: 'Oda' },
+            { value: 'marketplace', label: 'Sokoni' },
+            { value: 'ads', label: 'Matangazo' },
+            { value: 'chat', label: 'Mazungumzo' },
+            { value: 'emails', label: 'Barua' },
+            { value: 'logs', label: 'Logi' },
+            { value: 'more', label: 'Zaidi' },
+          ]}
+        />
+
 
         <div className="hidden w-full px-1 overflow-x-auto no-scrollbar md:block">
           <TabsList className="mb-4 flex h-auto w-max min-w-full flex-nowrap justify-start gap-1 bg-transparent p-0 md:w-full md:flex-wrap">
