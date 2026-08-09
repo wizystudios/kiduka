@@ -139,6 +139,15 @@ export const ResetPasswordPage = () => {
       localStorage.setItem(`kiduka_pw_updated_${userId}`, 'true');
 
       logActivity('password_reset', 'Nywila imebadilishwa kupitia reset link');
+
+      // Guarantee the user ends up signed in with the NEW password, even if the
+      // recovery session was single-use and got invalidated by the update.
+      const email = data.user?.email || session.user.email;
+      if (email) {
+        const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+        if (signInError) console.warn('Post-reset sign-in fallback failed:', signInError.message);
+      }
+
       setPhase('success');
       toast.success('Nywila imebadilishwa! Unaingia sasa...');
 
@@ -146,11 +155,37 @@ export const ResetPasswordPage = () => {
       setTimeout(() => navigate('/dashboard', { replace: true }), 1200);
     } catch (error: any) {
       console.error('Password update failed:', error);
-      toast.error(error?.message || 'Imeshindwa kubadilisha nywila');
+      const friendly = describeLinkError(error?.message);
+      if (friendly) {
+        setLinkError(friendly);
+        setPhase('invalid');
+      }
+      toast.error(friendly || error?.message || 'Imeshindwa kubadilisha nywila');
     } finally {
       setLoading(false);
     }
   };
+
+  const handleResend = async () => {
+    if (!resendEmail || !resendEmail.includes('@')) {
+      toast.error('Ingiza barua pepe sahihi');
+      return;
+    }
+    setResending(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(resendEmail, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      if (error) throw error;
+      toast.success('Kiungo kipya kimetumwa! Angalia barua pepe yako.');
+      setLinkError('Kiungo kipya kimetumwa. Fungua barua pepe yako ndani ya saa 1.');
+    } catch (err: any) {
+      toast.error(err?.message || 'Imeshindwa kutuma kiungo');
+    } finally {
+      setResending(false);
+    }
+  };
+
 
   if (phase === 'checking') {
     return (
