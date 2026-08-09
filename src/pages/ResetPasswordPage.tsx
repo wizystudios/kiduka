@@ -132,16 +132,38 @@ export const ResetPasswordPage = () => {
 
   if (phase === 'invalid') {
     return (
-      <div className="flex h-[100dvh] max-h-[100dvh] flex-col items-center justify-center overflow-hidden bg-gradient-to-br from-primary/5 via-background to-secondary/10 p-4">
+      <div className="flex h-[100dvh] max-h-[100dvh] flex-col items-center justify-center overflow-hidden bg-gradient-to-br from-primary/5 via-background to-secondary/10 px-6">
         <KidukaLogo size="lg" />
-        <p className="mt-6 text-center text-muted-foreground">Kiungo si sahihi au kimekwisha muda.</p>
-        <div className="mt-4 flex gap-2">
-          <Button variant="outline" onClick={() => navigate('/forgot-password')}>Omba Kiungo Kipya</Button>
-          <Button onClick={() => navigate('/auth')}>Rudi Kuingia</Button>
+        <h1 className="mt-6 text-xl font-bold">Kiungo hakifanyi kazi</h1>
+        <p className="mt-2 max-w-xs text-center text-sm text-muted-foreground">
+          {linkError ||
+            'Kiungo hiki kimekwisha muda au kimeshatumika. Omba kiungo kipya hapa chini — kitatumwa kwenye barua pepe yako.'}
+        </p>
+
+        <div className="mt-5 w-full max-w-sm space-y-3">
+          <Input
+            type="email"
+            placeholder="Barua pepe yako"
+            value={resendEmail}
+            onChange={(e) => setResendEmail(e.target.value)}
+            onKeyPress={(e) => e.key === 'Enter' && handleResend()}
+            className="h-12 rounded-2xl"
+          />
+          <Button onClick={handleResend} disabled={resending || !resendEmail} className="h-11 w-full rounded-full">
+            {resending ? (
+              <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Inatuma...</>
+            ) : (
+              <><Mail className="mr-2 h-4 w-4" />Tuma Kiungo Kipya</>
+            )}
+          </Button>
+          <Button variant="ghost" onClick={() => navigate('/auth')} className="h-11 w-full rounded-full">
+            Rudi Kuingia
+          </Button>
         </div>
       </div>
     );
   }
+
 
   if (phase === 'success') {
     return (
