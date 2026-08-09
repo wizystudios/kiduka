@@ -36,6 +36,8 @@ import { AdminAdsPanel } from './AdminAdsPanel';
 import { BusinessDeletionDialog } from './BusinessDeletionDialog';
 import { UnifiedDeleteSheet } from './UnifiedDeleteSheet';
 import { BusinessAuditLogsPanel } from './BusinessAuditLogsPanel';
+import { AdminMobileTabBar } from './AdminMobileTabBar';
+
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Check, ChevronsUpDown } from 'lucide-react';
