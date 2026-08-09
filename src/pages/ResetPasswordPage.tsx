@@ -17,6 +17,18 @@ export const ResetPasswordPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [phase, setPhase] = useState<Phase>('checking');
+  const [linkError, setLinkError] = useState<string | null>(null);
+  const [resendEmail, setResendEmail] = useState('');
+  const [resending, setResending] = useState(false);
+
+  const describeLinkError = (raw?: string | null) => {
+    const msg = (raw || '').toLowerCase();
+    if (msg.includes('expired')) return 'Kiungo kimekwisha muda. Viungo vya nywila hudumu saa 1 tu.';
+    if (msg.includes('already') || msg.includes('used') || msg.includes('invalid'))
+      return 'Kiungo hiki kimeshatumika au si sahihi. Kila kiungo hutumika mara moja tu.';
+    if (msg.includes('otp')) return 'Kiungo hakikuweza kuthibitishwa. Omba kiungo kipya.';
+    return null;
+  };
 
   // Establish the recovery session from whichever link format Supabase sent
   useEffect(() => {
@@ -31,13 +43,26 @@ export const ResetPasswordPage = () => {
         const refreshToken = hash.get('refresh_token');
         const code = url.searchParams.get('code');
         const tokenHash = url.searchParams.get('token_hash') || hash.get('token_hash');
+        const urlError =
+          url.searchParams.get('error_description') || hash.get('error_description') || hash.get('error');
 
+        if (urlError) {
+          setLinkError(describeLinkError(urlError) || decodeURIComponent(urlError));
+          window.history.replaceState({}, '', '/reset-password');
+          setPhase('invalid');
+          return;
+        }
+
+        let authError: string | null = null;
         if (accessToken && refreshToken) {
-          await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
+          const { error } = await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
+          authError = error?.message ?? null;
         } else if (code) {
-          await supabase.auth.exchangeCodeForSession(code);
+          const { error } = await supabase.auth.exchangeCodeForSession(code);
+          authError = error?.message ?? null;
         } else if (tokenHash) {
-          await supabase.auth.verifyOtp({ type: 'recovery', token_hash: tokenHash });
+          const { error } = await supabase.auth.verifyOtp({ type: 'recovery', token_hash: tokenHash });
+          authError = error?.message ?? null;
         }
 
         // Clean sensitive tokens out of the address bar
@@ -47,13 +72,20 @@ export const ResetPasswordPage = () => {
 
         const { data } = await supabase.auth.getSession();
         if (cancelled) return;
-        setPhase(data.session ? 'ready' : 'invalid');
+        if (data.session) {
+          setPhase('ready');
+        } else {
+          setLinkError(describeLinkError(authError));
+          setPhase('invalid');
+        }
       } catch (err: any) {
         if (cancelled) return;
         console.error('Recovery session error:', err);
+        setLinkError(describeLinkError(err?.message));
         setPhase('invalid');
       }
     };
+
 
     establish();
 
