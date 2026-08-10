@@ -26,7 +26,6 @@ import { useNavigate } from 'react-router-dom';
 import { useAdminNotifications } from '@/hooks/useAdminNotifications';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 import { exportToCSV, exportToPDF, createPrintableTable } from '@/utils/exportUtils';
-import { AdminPasswordDialog } from './AdminPasswordDialog';
 import { AdminChatPanel } from './AdminChatPanel';
 import { AdminCompliancePanel } from './AdminCompliancePanel';
 import { AdminEmailsPanel } from './AdminEmailsPanel';
@@ -168,6 +167,7 @@ interface OwnershipIssue {
 }
 
 const ADMIN_PAGE_SIZE = 30;
+const ADMIN_PASSWORD_PATTERN = /^(?=.*[A-Z])(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>/?])(?=(?:.*\d){3,}).{8,}$/;
 
 const PageControls = ({ page, total, onChange }: { page: number; total: number; onChange: (page: number) => void }) => {
   const pages = Math.max(1, Math.ceil(total / ADMIN_PAGE_SIZE));
@@ -233,7 +233,6 @@ export const SuperAdminDashboard = () => {
   const [editDialog, setEditDialog] = useState<{type: string; data: any} | null>(null);
   const [deleteDialog, setDeleteDialog] = useState<{type: string; id: string; name: string} | null>(null);
   const [deleteConfirmation, setDeleteConfirmation] = useState('');
-  const [passwordDialog, setPasswordDialog] = useState<{action: string; callback: () => void; description?: string} | null>(null);
   const [adminVerified, setAdminVerified] = useState(false);
   const [adminVerifiedAt, setAdminVerifiedAt] = useState<Date | null>(null);
   const [sessionNow, setSessionNow] = useState(Date.now());
@@ -804,19 +803,23 @@ export const SuperAdminDashboard = () => {
 
     const { type, id } = deleteDialog;
 
-    const { data, error } = await (supabase.rpc('admin_delete_entity' as any, {
-      p_entity_type: type,
-      p_entity_id: id,
-      p_confirmation_name: '__CONFIRMED__',
-    } as any) as any);
-    if (error) throw error;
-    const result = data as any;
-    if (!result?.success) {
-      const message = result?.details?.friendly || result?.message || result?.error || 'delete_failed';
-      throw Object.assign(new Error(message), { details: result?.details, code: result?.error });
+    if (type === 'user') {
+      await callAdminManageUser('delete_user', id);
+    } else {
+      const { data, error } = await (supabase.rpc('admin_delete_entity' as any, {
+        p_entity_type: type,
+        p_entity_id: id,
+        p_confirmation_name: '__CONFIRMED__',
+      } as any) as any);
+      if (error) throw error;
+      const result = data as any;
+      if (!result?.success) {
+        const message = result?.details?.friendly || result?.message || result?.error || 'delete_failed';
+        throw Object.assign(new Error(message), { details: result?.details, code: result?.error });
+      }
     }
-    toast.success(type === 'user' ? 'Mtumiaji amezimwa' : `${type} imefutwa/imehifadhiwa`);
-    await fetchAllData();
+    toast.success(type === 'user' ? 'User and linked account data deleted' : `${type} deleted/archived`);
+    await fetchActiveTab();
     setDeleteDialog(null);
   };
 
@@ -979,7 +982,15 @@ export const SuperAdminDashboard = () => {
       body: { action, user_id: userId, ...params },
     });
     
-    if (response.error) throw response.error;
+    if (response.error) {
+      const context = (response.error as any)?.context;
+      let detail = response.error.message;
+      try {
+        const body = await context?.json?.();
+        detail = body?.error || body?.message || detail;
+      } catch { /* response body is optional */ }
+      throw new Error(detail || 'Admin backend request failed');
+    }
     if (response.data?.error) throw new Error(response.data.error);
     return response.data;
   };
@@ -999,6 +1010,7 @@ export const SuperAdminDashboard = () => {
           });
           toast.success('Nenosiri limebadilishwa!');
           setUserPasswordChange(null);
+          await fetchUsers();
         } catch (err: any) {
           toast.error(`Imeshindwa: ${err.message}`);
         }
@@ -2548,7 +2560,7 @@ export const SuperAdminDashboard = () => {
             <Button variant="outline" onClick={() => setUserPasswordChange(null)}>Ghairi</Button>
             <Button 
               onClick={executePasswordChange}
-              disabled={!userPasswordChange?.newPassword || !/^(?=.*[A-Z])(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>/?])(?=(?:.*\d){3,}).{8,}$/.test(userPasswordChange.newPassword)}
+              disabled={!userPasswordChange?.newPassword || !ADMIN_PASSWORD_PATTERN.test(userPasswordChange.newPassword)}
             >
               Badilisha
             </Button>
@@ -2606,29 +2618,6 @@ export const SuperAdminDashboard = () => {
         confirmLabel="Futa"
         onConfirm={executeDelete}
       />
-
-
-      {/* Admin Password Dialog */}
-      <AdminPasswordDialog
-        open={!!passwordDialog}
-        onClose={() => {
-          setPasswordDialog(null);
-          setDeleteDialog(null);
-        }}
-        onConfirm={() => {
-          setAdminVerified(true);
-          setAdminVerifiedAt(new Date());
-          setPasswordDialog(null);
-          if (deleteDialog) {
-            executeDelete();
-          } else if (passwordDialog?.callback) {
-            passwordDialog.callback();
-          }
-        }}
-        action={passwordDialog?.action || ''}
-        description={passwordDialog?.description}
-      />
-
       {deletionDialog && (
         <BusinessDeletionDialog
           open={!!deletionDialog}
