@@ -17,7 +17,7 @@ import {
   RefreshCw, BarChart3, Store, CreditCard, Bell,
   Settings, AlertTriangle, CheckCircle, XCircle,
   FileSpreadsheet, FileText, Clock, UserPlus, DollarSign,
-  Building2, Phone, Mail, LogIn, Lock, Ban, ShieldCheck, Key, Tag
+  Building2, Phone, Mail, LogIn, Lock, Ban, ShieldCheck, ShieldAlert, Key, Tag
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -1772,7 +1772,7 @@ export const SuperAdminDashboard = () => {
         
         {/* Users Tab */}
         <TabsContent value="users" className="space-y-3">
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
+          <div className="virtualized-list grid md:grid-cols-2 lg:grid-cols-3 gap-3">
             {pagedUsers
               .map(u => (
                 <Card key={u.id}>
@@ -1810,7 +1810,7 @@ export const SuperAdminDashboard = () => {
         
         {/* Products Tab */}
         <TabsContent value="products" className="space-y-3">
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
+          <div className="virtualized-list grid md:grid-cols-2 lg:grid-cols-3 gap-3">
             {pagedProducts
               .map(p => (
                 <Card key={p.id}>
@@ -1866,7 +1866,7 @@ export const SuperAdminDashboard = () => {
         
         {/* Sales Tab */}
         <TabsContent value="sales" className="space-y-3">
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
+          <div className="virtualized-list grid md:grid-cols-2 lg:grid-cols-3 gap-3">
             {pagedSales
               .map(s => (
                 <Card key={s.id}>
@@ -1916,7 +1916,7 @@ export const SuperAdminDashboard = () => {
         
         {/* Orders Tab */}
         <TabsContent value="orders" className="space-y-3">
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
+          <div className="virtualized-list grid md:grid-cols-2 lg:grid-cols-3 gap-3">
             {pagedOrders
               .map(o => (
                 <Card key={o.id}>
