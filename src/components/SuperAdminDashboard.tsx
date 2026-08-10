@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -40,7 +40,7 @@ import { AdminMobileTabBar } from './AdminMobileTabBar';
 
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
-import { Check, ChevronsUpDown } from 'lucide-react';
+import { Check, ChevronsUpDown, Gauge, ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface User {
@@ -167,6 +167,24 @@ interface OwnershipIssue {
   affected_count: number;
 }
 
+const ADMIN_PAGE_SIZE = 30;
+
+const PageControls = ({ page, total, onChange }: { page: number; total: number; onChange: (page: number) => void }) => {
+  const pages = Math.max(1, Math.ceil(total / ADMIN_PAGE_SIZE));
+  if (pages <= 1) return null;
+  return (
+    <div className="flex items-center justify-between border-t border-border pt-3" dir="ltr">
+      <Button variant="outline" size="sm" className="rounded-full" disabled={page === 0} onClick={() => onChange(page - 1)}>
+        <ChevronLeft className="h-4 w-4" />
+      </Button>
+      <span className="text-xs text-muted-foreground">{page + 1} / {pages} · {total}</span>
+      <Button variant="outline" size="sm" className="rounded-full" disabled={page + 1 >= pages} onClick={() => onChange(page + 1)}>
+        <ChevronRight className="h-4 w-4" />
+      </Button>
+    </div>
+  );
+};
+
 export const SuperAdminDashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -174,6 +192,11 @@ export const SuperAdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('overview');
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [listPage, setListPage] = useState(0);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [adminAccess, setAdminAccess] = useState<'checking' | 'allowed' | 'blocked'>('checking');
+  const [lastLoadMs, setLastLoadMs] = useState(0);
+  const refreshTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [notificationsPanelOpen, setNotificationsPanelOpen] = useState(false);
   
   // Stats
@@ -226,19 +249,31 @@ export const SuperAdminDashboard = () => {
   
   useEffect(() => {
     fetchAllData();
+    testAdminPermissions();
   }, []);
 
+  useEffect(() => { setListPage(0); }, [activeTab, selectedBusiness, searchQuery]);
+
   useEffect(() => {
+    const scheduleRefresh = () => {
+      if (refreshTimer.current) clearTimeout(refreshTimer.current);
+      refreshTimer.current = setTimeout(() => fetchActiveTab(), 500);
+    };
     const channel = supabase
       .channel('super-admin-live-data')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, fetchAllData)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, fetchAllData)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'sales' }, fetchAllData)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'sokoni_orders' }, fetchAllData)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, scheduleRefresh)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, scheduleRefresh)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'sales' }, scheduleRefresh)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'sokoni_orders' }, scheduleRefresh)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'business_audit_logs' }, fetchBusinessAudit)
       .subscribe();
-    return () => { supabase.removeChannel(channel); };
-  }, [selectedBusiness, businessMembers.length]);
+    return () => {
+      if (refreshTimer.current) clearTimeout(refreshTimer.current);
+      supabase.removeChannel(channel);
+    };
+  }, [selectedBusiness, activeTab]);
+
+  useEffect(() => { if (!loading) fetchActiveTab(); }, [activeTab]);
 
   useEffect(() => {
     const timer = setInterval(() => setSessionNow(Date.now()), 1000);
@@ -251,23 +286,58 @@ export const SuperAdminDashboard = () => {
   }, [selectedBusiness]);
   
   const fetchAllData = async () => {
+    const started = performance.now();
     setLoading(true);
+    setLoadError(null);
     try {
       await Promise.all([
         fetchStats(),
         fetchUsers(),
-        fetchProducts(),
-        fetchSales(),
-        fetchExpenses(),
-        fetchCustomers(),
-        fetchOrders(),
         fetchChartData(),
         fetchSubscriptions(),
         fetchBusinessRelations()
       ]);
+      await fetchActiveTab();
+    } catch (error: any) {
+      setLoadError(error?.message || 'Admin data failed to load');
     } finally {
+      setLastLoadMs(Math.round(performance.now() - started));
       setLoading(false);
     }
+  };
+
+  const fetchActiveTab = async () => {
+    const jobs: Promise<void>[] = [];
+    if (activeTab === 'products' || activeTab === 'analytics' || activeTab === 'overview') jobs.push(fetchProducts());
+    if (activeTab === 'sales' || activeTab === 'analytics' || activeTab === 'overview') jobs.push(fetchSales());
+    if (activeTab === 'orders' || activeTab === 'overview') jobs.push(fetchOrders());
+    if (activeTab === 'users') jobs.push(fetchUsers());
+    if (activeTab === 'more') jobs.push(fetchExpenses(), fetchCustomers());
+    const started = performance.now();
+    try {
+      await Promise.all(jobs);
+      setLoadError(null);
+      setLastLoadMs(Math.round(performance.now() - started));
+    } catch (error: any) {
+      setLoadError(error?.message || `Failed to load ${activeTab}`);
+    }
+  };
+
+  const testAdminPermissions = async () => {
+    setAdminAccess('checking');
+    const { data: { user: currentUser }, error: authError } = await supabase.auth.getUser();
+    if (authError || !currentUser) {
+      setAdminAccess('blocked');
+      setLoadError('Admin action blocked: authentication session is missing or expired. Sign in again.');
+      return;
+    }
+    const { data, error } = await supabase.from('user_roles').select('role').eq('user_id', currentUser.id).eq('role', 'super_admin').maybeSingle();
+    if (error || !data) {
+      setAdminAccess('blocked');
+      setLoadError(`Admin action blocked: ${error?.message || 'super_admin role was not found for this account'}`);
+      return;
+    }
+    setAdminAccess('allowed');
   };
 
   useEffect(() => {
@@ -600,10 +670,12 @@ export const SuperAdminDashboard = () => {
   };
   
   const fetchUsers = async () => {
-    const { data: profiles } = await supabase
+    const { data: profiles, error: profilesError } = await supabase
       .from('profiles')
       .select('*')
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .limit(200);
+    if (profilesError) throw profilesError;
     
     const { data: roles } = await supabase.from('user_roles').select('user_id, role');
     
@@ -620,7 +692,7 @@ export const SuperAdminDashboard = () => {
       .from('products')
       .select('*')
       .order('created_at', { ascending: false })
-      .limit(1000);
+      .limit(120);
     
     // Enrich with owner info
     const ownerIds = [...new Set((data || []).map(p => p.owner_id))];
@@ -643,7 +715,7 @@ export const SuperAdminDashboard = () => {
       .from('sales')
       .select('*')
       .order('created_at', { ascending: false })
-      .limit(1000);
+      .limit(120);
     
     // Enrich with owner info
     const ownerIds = [...new Set((data || []).map(s => s.owner_id))];
@@ -666,7 +738,7 @@ export const SuperAdminDashboard = () => {
       .from('expenses')
       .select('*')
       .order('expense_date', { ascending: false })
-      .limit(1000);
+      .limit(120);
     
     const ownerIds = [...new Set((data || []).map(e => e.owner_id))];
     const { data: profiles } = await supabase
@@ -688,7 +760,7 @@ export const SuperAdminDashboard = () => {
       .from('customers')
       .select('*')
       .order('created_at', { ascending: false })
-      .limit(1000);
+      .limit(120);
     
     const ownerIds = [...new Set((data || []).map(c => c.owner_id))];
     const { data: profiles } = await supabase
@@ -710,7 +782,7 @@ export const SuperAdminDashboard = () => {
       .from('sokoni_orders')
       .select('*')
       .order('created_at', { ascending: false })
-      .limit(1000);
+      .limit(120);
     
     const sellerIds = [...new Set((data || []).map(o => o.seller_id))];
     const { data: profiles } = await supabase
