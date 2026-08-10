@@ -119,10 +119,11 @@ export const BranchManager = () => {
   const fetchBranches = async () => {
     if (!user?.id) return;
     setLoading(true);
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('business_branches').select('*').eq('owner_id', user.id)
         .is('deleted_at', null)
         .order('created_at', { ascending: true });
+    if (error) toast.error(`Matawi hayajapakiwa: ${error.message}`);
     setBranches((data as any[] || []).map(b => ({ ...b, features: typeof b.features === 'object' ? b.features : {} })));
     setLoading(false);
   };
@@ -277,52 +278,19 @@ export const BranchManager = () => {
           return;
         }
 
-        // Save current owner session BEFORE signUp (signUp auto-logs-in the new user)
-        const { data: { session: ownerSession } } = await supabase.auth.getSession();
-
-        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-          email: staffForm.email.trim().toLowerCase(),
-          password: staffForm.password,
-          options: {
-            data: {
-              full_name: staffForm.full_name.trim(),
-              role: 'assistant',
-              owner_id: user.id,
-              business_name: '',
-            }
-          }
+        // Create staff through the privileged backend so the owner's session is
+        // never replaced by the newly-created user's session.
+        const { data: created, error: createError } = await supabase.functions.invoke('owner-create-assistant', {
+          body: {
+            email: staffForm.email.trim().toLowerCase(),
+            password: staffForm.password,
+            full_name: staffForm.full_name.trim(),
+          },
         });
-
-        if (signUpError) throw signUpError;
-        if (!signUpData.user) throw new Error('Imeshindwa kuunda akaunti');
-
-        const newUserId = signUpData.user.id;
-
-        // CRITICAL: Restore owner session immediately so subsequent inserts run as owner
-        if (ownerSession) {
-          await supabase.auth.setSession({
-            access_token: ownerSession.access_token,
-            refresh_token: ownerSession.refresh_token,
-          });
-        }
-
-        // Wait briefly for profile trigger
-        await new Promise(r => setTimeout(r, 1500));
-
-        // Ensure profile exists
-        await supabase.from('profiles').upsert({
-          id: newUserId,
-          email: staffForm.email.trim().toLowerCase(),
-          full_name: staffForm.full_name.trim(),
-          phone: staffForm.phone || null,
-        }, { onConflict: 'id' });
-
-        // Add assistant permission linking to owner
-        await supabase.rpc('add_assistant_permission', {
-          p_assistant_id: newUserId,
-          p_owner_id: user.id,
-          p_business_name: null,
-        });
+        if (createError) throw createError;
+        if (created?.error) throw new Error(created.error);
+        const newUserId = created?.assistant_id;
+        if (!newUserId) throw new Error('Backend haikurudisha akaunti ya mfanyakazi');
 
         // Add to branch staff and business membership together
         const { data: staffResult, error: staffErr } = await (supabase.rpc('owner_assign_branch_staff' as any, {
@@ -370,7 +338,7 @@ export const BranchManager = () => {
       setStaffForm({ full_name: '', email: '', phone: '', password: '', role: 'staff', notes: '', mode: 'new' });
       fetchBranchStaff(selectedBranch.id);
     } catch (err: any) {
-      toast.error(err.message);
+      toast.error(err?.context?.body?.error || err.message || 'Kitendo cha tawi kimeshindwa');
     } finally { setSaving(false); }
   };
 

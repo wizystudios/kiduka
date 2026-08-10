@@ -3058,6 +3058,7 @@ export type Database = {
         Args: { payload: Json; queue_name: string }
         Returns: number
       }
+      ensure_owner_business: { Args: { _owner_id: string }; Returns: string }
       format_delete_error: {
         Args: { p_code: string; p_message: string }
         Returns: Json

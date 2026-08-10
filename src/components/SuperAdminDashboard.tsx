@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,7 +17,7 @@ import {
   RefreshCw, BarChart3, Store, CreditCard, Bell,
   Settings, AlertTriangle, CheckCircle, XCircle,
   FileSpreadsheet, FileText, Clock, UserPlus, DollarSign,
-  Building2, Phone, Mail, LogIn, Lock, Ban, ShieldCheck, Key, Tag
+  Building2, Phone, Mail, LogIn, Lock, Ban, ShieldCheck, ShieldAlert, Key, Tag
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -26,7 +26,6 @@ import { useNavigate } from 'react-router-dom';
 import { useAdminNotifications } from '@/hooks/useAdminNotifications';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 import { exportToCSV, exportToPDF, createPrintableTable } from '@/utils/exportUtils';
-import { AdminPasswordDialog } from './AdminPasswordDialog';
 import { AdminChatPanel } from './AdminChatPanel';
 import { AdminCompliancePanel } from './AdminCompliancePanel';
 import { AdminEmailsPanel } from './AdminEmailsPanel';
@@ -40,7 +39,7 @@ import { AdminMobileTabBar } from './AdminMobileTabBar';
 
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
-import { Check, ChevronsUpDown } from 'lucide-react';
+import { Check, ChevronsUpDown, Gauge, ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface User {
@@ -167,6 +166,25 @@ interface OwnershipIssue {
   affected_count: number;
 }
 
+const ADMIN_PAGE_SIZE = 30;
+const ADMIN_PASSWORD_PATTERN = /^(?=.*[A-Z])(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>/?])(?=(?:.*\d){3,}).{8,}$/;
+
+const PageControls = ({ page, total, onChange }: { page: number; total: number; onChange: (page: number) => void }) => {
+  const pages = Math.max(1, Math.ceil(total / ADMIN_PAGE_SIZE));
+  if (pages <= 1) return null;
+  return (
+    <div className="flex items-center justify-between border-t border-border pt-3" dir="ltr">
+      <Button variant="outline" size="sm" className="rounded-full" disabled={page === 0} onClick={() => onChange(page - 1)}>
+        <ChevronLeft className="h-4 w-4" />
+      </Button>
+      <span className="text-xs text-muted-foreground">{page + 1} / {pages} · {total}</span>
+      <Button variant="outline" size="sm" className="rounded-full" disabled={page + 1 >= pages} onClick={() => onChange(page + 1)}>
+        <ChevronRight className="h-4 w-4" />
+      </Button>
+    </div>
+  );
+};
+
 export const SuperAdminDashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -174,6 +192,11 @@ export const SuperAdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('overview');
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [listPage, setListPage] = useState(0);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [adminAccess, setAdminAccess] = useState<'checking' | 'allowed' | 'blocked'>('checking');
+  const [lastLoadMs, setLastLoadMs] = useState(0);
+  const refreshTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [notificationsPanelOpen, setNotificationsPanelOpen] = useState(false);
   
   // Stats
@@ -210,7 +233,6 @@ export const SuperAdminDashboard = () => {
   const [editDialog, setEditDialog] = useState<{type: string; data: any} | null>(null);
   const [deleteDialog, setDeleteDialog] = useState<{type: string; id: string; name: string} | null>(null);
   const [deleteConfirmation, setDeleteConfirmation] = useState('');
-  const [passwordDialog, setPasswordDialog] = useState<{action: string; callback: () => void; description?: string} | null>(null);
   const [adminVerified, setAdminVerified] = useState(false);
   const [adminVerifiedAt, setAdminVerifiedAt] = useState<Date | null>(null);
   const [sessionNow, setSessionNow] = useState(Date.now());
@@ -226,19 +248,31 @@ export const SuperAdminDashboard = () => {
   
   useEffect(() => {
     fetchAllData();
+    testAdminPermissions();
   }, []);
 
+  useEffect(() => { setListPage(0); }, [activeTab, selectedBusiness, searchQuery]);
+
   useEffect(() => {
+    const scheduleRefresh = () => {
+      if (refreshTimer.current) clearTimeout(refreshTimer.current);
+      refreshTimer.current = setTimeout(() => fetchActiveTab(), 500);
+    };
     const channel = supabase
       .channel('super-admin-live-data')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, fetchAllData)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, fetchAllData)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'sales' }, fetchAllData)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'sokoni_orders' }, fetchAllData)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, scheduleRefresh)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, scheduleRefresh)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'sales' }, scheduleRefresh)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'sokoni_orders' }, scheduleRefresh)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'business_audit_logs' }, fetchBusinessAudit)
       .subscribe();
-    return () => { supabase.removeChannel(channel); };
-  }, [selectedBusiness, businessMembers.length]);
+    return () => {
+      if (refreshTimer.current) clearTimeout(refreshTimer.current);
+      supabase.removeChannel(channel);
+    };
+  }, [selectedBusiness, activeTab]);
+
+  useEffect(() => { if (!loading) fetchActiveTab(); }, [activeTab]);
 
   useEffect(() => {
     const timer = setInterval(() => setSessionNow(Date.now()), 1000);
@@ -251,23 +285,58 @@ export const SuperAdminDashboard = () => {
   }, [selectedBusiness]);
   
   const fetchAllData = async () => {
+    const started = performance.now();
     setLoading(true);
+    setLoadError(null);
     try {
       await Promise.all([
         fetchStats(),
         fetchUsers(),
-        fetchProducts(),
-        fetchSales(),
-        fetchExpenses(),
-        fetchCustomers(),
-        fetchOrders(),
         fetchChartData(),
         fetchSubscriptions(),
         fetchBusinessRelations()
       ]);
+      await fetchActiveTab();
+    } catch (error: any) {
+      setLoadError(error?.message || 'Admin data failed to load');
     } finally {
+      setLastLoadMs(Math.round(performance.now() - started));
       setLoading(false);
     }
+  };
+
+  const fetchActiveTab = async () => {
+    const jobs: Promise<void>[] = [];
+    if (activeTab === 'products' || activeTab === 'analytics' || activeTab === 'overview') jobs.push(fetchProducts());
+    if (activeTab === 'sales' || activeTab === 'analytics' || activeTab === 'overview') jobs.push(fetchSales());
+    if (activeTab === 'orders' || activeTab === 'overview') jobs.push(fetchOrders());
+    if (activeTab === 'users') jobs.push(fetchUsers());
+    if (activeTab === 'more') jobs.push(fetchExpenses(), fetchCustomers());
+    const started = performance.now();
+    try {
+      await Promise.all(jobs);
+      setLoadError(null);
+      setLastLoadMs(Math.round(performance.now() - started));
+    } catch (error: any) {
+      setLoadError(error?.message || `Failed to load ${activeTab}`);
+    }
+  };
+
+  const testAdminPermissions = async () => {
+    setAdminAccess('checking');
+    const { data: { user: currentUser }, error: authError } = await supabase.auth.getUser();
+    if (authError || !currentUser) {
+      setAdminAccess('blocked');
+      setLoadError('Admin action blocked: authentication session is missing or expired. Sign in again.');
+      return;
+    }
+    const { data, error } = await supabase.from('user_roles').select('role').eq('user_id', currentUser.id).eq('role', 'super_admin').maybeSingle();
+    if (error || !data) {
+      setAdminAccess('blocked');
+      setLoadError(`Admin action blocked: ${error?.message || 'super_admin role was not found for this account'}`);
+      return;
+    }
+    setAdminAccess('allowed');
   };
 
   useEffect(() => {
@@ -600,10 +669,12 @@ export const SuperAdminDashboard = () => {
   };
   
   const fetchUsers = async () => {
-    const { data: profiles } = await supabase
+    const { data: profiles, error: profilesError } = await supabase
       .from('profiles')
       .select('*')
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .limit(200);
+    if (profilesError) throw profilesError;
     
     const { data: roles } = await supabase.from('user_roles').select('user_id, role');
     
@@ -620,7 +691,7 @@ export const SuperAdminDashboard = () => {
       .from('products')
       .select('*')
       .order('created_at', { ascending: false })
-      .limit(1000);
+      .limit(120);
     
     // Enrich with owner info
     const ownerIds = [...new Set((data || []).map(p => p.owner_id))];
@@ -643,7 +714,7 @@ export const SuperAdminDashboard = () => {
       .from('sales')
       .select('*')
       .order('created_at', { ascending: false })
-      .limit(1000);
+      .limit(120);
     
     // Enrich with owner info
     const ownerIds = [...new Set((data || []).map(s => s.owner_id))];
@@ -666,7 +737,7 @@ export const SuperAdminDashboard = () => {
       .from('expenses')
       .select('*')
       .order('expense_date', { ascending: false })
-      .limit(1000);
+      .limit(120);
     
     const ownerIds = [...new Set((data || []).map(e => e.owner_id))];
     const { data: profiles } = await supabase
@@ -688,7 +759,7 @@ export const SuperAdminDashboard = () => {
       .from('customers')
       .select('*')
       .order('created_at', { ascending: false })
-      .limit(1000);
+      .limit(120);
     
     const ownerIds = [...new Set((data || []).map(c => c.owner_id))];
     const { data: profiles } = await supabase
@@ -710,7 +781,7 @@ export const SuperAdminDashboard = () => {
       .from('sokoni_orders')
       .select('*')
       .order('created_at', { ascending: false })
-      .limit(1000);
+      .limit(120);
     
     const sellerIds = [...new Set((data || []).map(o => o.seller_id))];
     const { data: profiles } = await supabase
@@ -732,19 +803,23 @@ export const SuperAdminDashboard = () => {
 
     const { type, id } = deleteDialog;
 
-    const { data, error } = await (supabase.rpc('admin_delete_entity' as any, {
-      p_entity_type: type,
-      p_entity_id: id,
-      p_confirmation_name: '__CONFIRMED__',
-    } as any) as any);
-    if (error) throw error;
-    const result = data as any;
-    if (!result?.success) {
-      const message = result?.details?.friendly || result?.message || result?.error || 'delete_failed';
-      throw Object.assign(new Error(message), { details: result?.details, code: result?.error });
+    if (type === 'user') {
+      await callAdminManageUser('delete_user', id);
+    } else {
+      const { data, error } = await (supabase.rpc('admin_delete_entity' as any, {
+        p_entity_type: type,
+        p_entity_id: id,
+        p_confirmation_name: '__CONFIRMED__',
+      } as any) as any);
+      if (error) throw error;
+      const result = data as any;
+      if (!result?.success) {
+        const message = result?.details?.friendly || result?.message || result?.error || 'delete_failed';
+        throw Object.assign(new Error(message), { details: result?.details, code: result?.error });
+      }
     }
-    toast.success(type === 'user' ? 'Mtumiaji amezimwa' : `${type} imefutwa/imehifadhiwa`);
-    await fetchAllData();
+    toast.success(type === 'user' ? 'User and linked account data deleted' : `${type} deleted/archived`);
+    await fetchActiveTab();
     setDeleteDialog(null);
   };
 
@@ -907,7 +982,15 @@ export const SuperAdminDashboard = () => {
       body: { action, user_id: userId, ...params },
     });
     
-    if (response.error) throw response.error;
+    if (response.error) {
+      const context = (response.error as any)?.context;
+      let detail = response.error.message;
+      try {
+        const body = await context?.json?.();
+        detail = body?.error || body?.message || detail;
+      } catch { /* response body is optional */ }
+      throw new Error(detail || 'Admin backend request failed');
+    }
     if (response.data?.error) throw new Error(response.data.error);
     return response.data;
   };
@@ -927,6 +1010,7 @@ export const SuperAdminDashboard = () => {
           });
           toast.success('Nenosiri limebadilishwa!');
           setUserPasswordChange(null);
+          await fetchUsers();
         } catch (err: any) {
           toast.error(`Imeshindwa: ${err.message}`);
         }
@@ -1064,6 +1148,11 @@ export const SuperAdminDashboard = () => {
   const searchedOrders = filteredOrders.filter(o => !q || o.tracking_code?.toLowerCase().includes(q) || o.customer_phone?.includes(searchQuery) || o.business_name?.toLowerCase().includes(q));
   const searchedCustomers = filteredCustomers.filter(c => !q || c.name?.toLowerCase().includes(q) || c.phone?.includes(searchQuery) || c.email?.toLowerCase().includes(q) || c.business_name?.toLowerCase().includes(q));
   const searchedExpenses = filteredExpenses.filter(e => !q || e.category?.toLowerCase().includes(q) || e.description?.toLowerCase().includes(q) || e.business_name?.toLowerCase().includes(q));
+  const pageSlice = <T,>(rows: T[]) => rows.slice(listPage * ADMIN_PAGE_SIZE, (listPage + 1) * ADMIN_PAGE_SIZE);
+  const pagedUsers = pageSlice(searchedUsers);
+  const pagedProducts = pageSlice(searchedProducts);
+  const pagedSales = pageSlice(searchedSales);
+  const pagedOrders = pageSlice(searchedOrders);
   const scopeSuffix = selectedBusiness ? selectedBusinessLabel.replace(/[^a-zA-Z0-9_-]+/g, '_') : 'Mfumo_Mzima';
   const dailyRevenueData = Array.from(filteredSales.reduce((map, sale) => {
     const date = new Date(sale.created_at).toLocaleDateString('sw-TZ', { day: '2-digit', month: 'short' });
@@ -1098,6 +1187,18 @@ export const SuperAdminDashboard = () => {
   
   return (
     <div className="w-full max-w-7xl mx-auto p-3 md:p-6 lg:p-8 space-y-4 pb-32 md:pb-20">
+      {(loadError || adminAccess !== 'allowed') && (
+        <div className={`rounded-2xl border p-3 text-sm ${adminAccess === 'blocked' ? 'border-destructive/30 bg-destructive/5 text-destructive' : 'border-border bg-muted/40'}`}>
+          <div className="flex items-start gap-2">
+            {adminAccess === 'checking' ? <RefreshCw className="h-4 w-4 animate-spin" /> : adminAccess === 'allowed' ? <AlertTriangle className="h-4 w-4" /> : <ShieldAlert className="h-4 w-4" />}
+            <div className="min-w-0 flex-1">
+              <p className="font-semibold">{adminAccess === 'checking' ? 'Testing admin permissions…' : adminAccess === 'blocked' ? 'Admin permissions blocked' : 'Some admin data did not load'}</p>
+              {loadError && <p className="mt-1 break-words text-xs opacity-80">{loadError}</p>}
+            </div>
+            <Button variant="outline" size="sm" className="rounded-full" onClick={() => { testAdminPermissions(); fetchActiveTab(); }}>Retry</Button>
+          </div>
+        </div>
+      )}
       {/* Header - compact, horizontally scrollable actions on mobile */}
       <div className="rounded-2xl border bg-card p-3 md:p-4">
         <div className="flex items-center gap-2 mb-2">
@@ -1196,7 +1297,10 @@ export const SuperAdminDashboard = () => {
             Admin • ruhusa kamili
           </Button>
 
-          <Button onClick={fetchAllData} variant="outline" size="sm" className="h-8 px-2 flex-shrink-0 text-xs">
+          <Badge variant="outline" className="h-8 gap-1 rounded-full px-2 font-normal">
+            <Gauge className="h-3.5 w-3.5" /> {lastLoadMs}ms
+          </Badge>
+          <Button onClick={fetchActiveTab} variant="outline" size="sm" className="h-8 px-2 flex-shrink-0 text-xs">
             <RefreshCw className="h-3.5 w-3.5 mr-1" />Refresh
           </Button>
         </div>
@@ -1680,8 +1784,8 @@ export const SuperAdminDashboard = () => {
         
         {/* Users Tab */}
         <TabsContent value="users" className="space-y-3">
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
-            {searchedUsers
+          <div className="virtualized-list grid md:grid-cols-2 lg:grid-cols-3 gap-3">
+            {pagedUsers
               .map(u => (
                 <Card key={u.id}>
                   <CardContent className="p-4">
@@ -1708,6 +1812,7 @@ export const SuperAdminDashboard = () => {
                 </Card>
               ))}
           </div>
+          <PageControls page={listPage} total={searchedUsers.length} onChange={setListPage} />
         </TabsContent>
 
         {/* Activities Tab */}
@@ -1717,8 +1822,8 @@ export const SuperAdminDashboard = () => {
         
         {/* Products Tab */}
         <TabsContent value="products" className="space-y-3">
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
-            {searchedProducts
+          <div className="virtualized-list grid md:grid-cols-2 lg:grid-cols-3 gap-3">
+            {pagedProducts
               .map(p => (
                 <Card key={p.id}>
                   <CardContent className="p-4">
@@ -1768,12 +1873,13 @@ export const SuperAdminDashboard = () => {
                 </Card>
               ))}
           </div>
+          <PageControls page={listPage} total={searchedProducts.length} onChange={setListPage} />
         </TabsContent>
         
         {/* Sales Tab */}
         <TabsContent value="sales" className="space-y-3">
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
-            {searchedSales
+          <div className="virtualized-list grid md:grid-cols-2 lg:grid-cols-3 gap-3">
+            {pagedSales
               .map(s => (
                 <Card key={s.id}>
                   <CardContent className="p-4">
@@ -1817,12 +1923,13 @@ export const SuperAdminDashboard = () => {
                 </Card>
               ))}
           </div>
+          <PageControls page={listPage} total={searchedSales.length} onChange={setListPage} />
         </TabsContent>
         
         {/* Orders Tab */}
         <TabsContent value="orders" className="space-y-3">
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
-            {searchedOrders
+          <div className="virtualized-list grid md:grid-cols-2 lg:grid-cols-3 gap-3">
+            {pagedOrders
               .map(o => (
                 <Card key={o.id}>
                   <CardContent className="p-4">
@@ -1873,6 +1980,7 @@ export const SuperAdminDashboard = () => {
                 </Card>
               ))}
           </div>
+          <PageControls page={listPage} total={searchedOrders.length} onChange={setListPage} />
         </TabsContent>
         
         {/* Marketplace Tab - Coupons, Returns, Reviews, Abandoned Carts */}
@@ -2441,17 +2549,18 @@ export const SuperAdminDashboard = () => {
               <Label>Nenosiri Jipya</Label>
               <Input
                 type="password"
-                placeholder="Angalau herufi 6"
+                placeholder="8+ chars, uppercase, 3 numbers, 1 symbol"
                 value={userPasswordChange?.newPassword || ''}
                 onChange={(e) => setUserPasswordChange(prev => prev ? { ...prev, newPassword: e.target.value } : null)}
               />
+              <p className="mt-1 text-xs text-muted-foreground">8+ characters, 1 uppercase letter, 3 numbers, and 1 symbol.</p>
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setUserPasswordChange(null)}>Ghairi</Button>
             <Button 
               onClick={executePasswordChange}
-              disabled={!userPasswordChange?.newPassword || userPasswordChange.newPassword.length < 6}
+              disabled={!userPasswordChange?.newPassword || !ADMIN_PASSWORD_PATTERN.test(userPasswordChange.newPassword)}
             >
               Badilisha
             </Button>
@@ -2509,29 +2618,6 @@ export const SuperAdminDashboard = () => {
         confirmLabel="Futa"
         onConfirm={executeDelete}
       />
-
-
-      {/* Admin Password Dialog */}
-      <AdminPasswordDialog
-        open={!!passwordDialog}
-        onClose={() => {
-          setPasswordDialog(null);
-          setDeleteDialog(null);
-        }}
-        onConfirm={() => {
-          setAdminVerified(true);
-          setAdminVerifiedAt(new Date());
-          setPasswordDialog(null);
-          if (deleteDialog) {
-            executeDelete();
-          } else if (passwordDialog?.callback) {
-            passwordDialog.callback();
-          }
-        }}
-        action={passwordDialog?.action || ''}
-        description={passwordDialog?.description}
-      />
-
       {deletionDialog && (
         <BusinessDeletionDialog
           open={!!deletionDialog}

@@ -6,6 +6,8 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+const STAFF_PASSWORD = /^(?=.*[A-Z])(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>/?])(?=(?:.*\d){3,}).{8,}$/;
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -54,8 +56,11 @@ Deno.serve(async (req) => {
     switch (action) {
       case "change_password": {
         const { new_password } = params;
-        if (!new_password || new_password.length < 6) {
-          return new Response(JSON.stringify({ error: "Password must be at least 6 characters" }), {
+        if (typeof new_password !== "string" || !STAFF_PASSWORD.test(new_password)) {
+          return new Response(JSON.stringify({
+            error: "Password must have 8+ characters, 1 uppercase letter, 3 numbers, and 1 symbol",
+            code: "weak_password",
+          }), {
             status: 400,
             headers: { ...corsHeaders, "Content-Type": "application/json" },
           });

@@ -338,3 +338,23 @@ h3 { font-size: 1.1rem !important; line-height: 1.3 !important; font-weight: 600
 [dir='rtl'] svg.lucide-arrow-left {
   transform: scaleX(-1);
 }
+
+/* Browser-backed list virtualization: off-screen admin rows skip layout/paint
+   while preserving native search, accessibility, and responsive grids. */
+.virtualized-list > * {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 104px;
+}
+
+/* Remaining RTL primitives used by sheets, menus, tables, and navigation. */
+[dir='rtl'] .flex-row { flex-direction: row-reverse; }
+[dir='rtl'] [data-radix-popper-content-wrapper] { text-align: right; }
+[dir='rtl'] table { direction: rtl; }
+[dir='rtl'] th,
+[dir='rtl'] td { text-align: right; }
+[dir='rtl'] input,
+[dir='rtl'] textarea,
+[dir='rtl'] select { text-align: right; }
+[dir='rtl'] [role='dialog'] [data-radix-dialog-content],
+[dir='rtl'] [role='menu'],
+[dir='rtl'] [role='listbox'] { direction: rtl; }

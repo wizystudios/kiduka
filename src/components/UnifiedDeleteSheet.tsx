@@ -88,7 +88,7 @@ export const UnifiedDeleteSheet = ({
 
               {backendError && (
                 <div className="rounded-2xl border border-destructive/30 bg-background p-3 text-left">
-                  <p className="text-xs font-semibold text-destructive">Backend/RLS error</p>
+                  <p className="text-xs font-semibold text-destructive">Sababu ya kitendo kuzuiwa</p>
                   <p className="mt-1 break-words text-[11px] text-muted-foreground">{backendError}</p>
                 </div>
               )}
