@@ -210,16 +210,17 @@ export const BranchManager = () => {
     setSaving(true);
     try {
       const payload = {
-        owner_id: user.id, branch_name: form.branch_name.trim(), branch_type: form.branch_type,
+        branch_name: form.branch_name.trim(), branch_type: form.branch_type,
         region: form.region || null, district: form.district || null, ward: form.ward || null, street: form.street || null,
         features: form.features,
       };
       if (editing) {
-        const { error } = await supabase.from('business_branches').update(payload).eq('id', editing.id);
+        const { data, error } = await supabase.from('business_branches').update(payload).eq('id', editing.id).select('id').maybeSingle();
         if (error) throw error;
+        if (!data) throw new Error('Tawi halijasasishwa. Huna ruhusa au tawi halipo.');
         toast.success('Tawi limesasishwa!');
       } else {
-        const { error } = await supabase.from('business_branches').insert([payload]);
+        const { error } = await supabase.from('business_branches').insert([{ ...payload, owner_id: user.id }]);
         if (error) throw error;
         toast.success('Tawi jipya limeundwa! Malipo: TSh 20,000/mwezi');
       }
@@ -243,7 +244,7 @@ export const BranchManager = () => {
       p_confirmation_name: '__CONFIRMED__',
     } as any) as any);
     if (error) throw error;
-    if (!data?.success) throw new Error(data?.error || 'delete_failed');
+    if (!data?.success) throw Object.assign(new Error(data?.message || data?.error || 'delete_failed'), { details: data?.details, code: data?.error });
 
     toast.success(deleteTarget.type === 'branch' ? 'Tawi limefutwa' : 'Mfanyakazi ameondolewa');
     if (deleteTarget.type === 'branch') {
@@ -329,9 +330,7 @@ export const BranchManager = () => {
           p_role: staffForm.role,
           p_notes: staffForm.notes || null,
         } as any) as any);
-        if (error?.code === '23505') {
-          toast.error('Mtumiaji huyu tayari yuko kwenye tawi hili');
-        } else if (error) {
+        if (error) {
           throw error;
         } else if (!staffResult?.success) {
           throw Object.assign(new Error(staffResult?.message || staffResult?.error || 'branch_staff_failed'), { details: staffResult?.details });
@@ -719,8 +718,9 @@ export const BranchManager = () => {
                 <Button className="w-full rounded-full" disabled={saving} onClick={async () => {
                   setSaving(true);
                   try {
-                    const { error } = await supabase.from('business_branches').update({ features: settingsDialog.features, is_active: settingsDialog.is_active }).eq('id', settingsDialog.id);
+                    const { data, error } = await supabase.from('business_branches').update({ features: settingsDialog.features, is_active: settingsDialog.is_active }).eq('id', settingsDialog.id).select('id').maybeSingle();
                     if (error) throw error;
+                    if (!data) throw new Error('Mipangilio haijahifadhiwa. Huna ruhusa au tawi halipo.');
                     toast.success('Imesasishwa');
                     setSettingsDialog(null);
                     setSelectedBranch(prev => prev ? { ...prev, features: settingsDialog.features, is_active: settingsDialog.is_active } : null);
