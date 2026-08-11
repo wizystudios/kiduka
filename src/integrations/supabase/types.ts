@@ -3126,6 +3126,14 @@ export type Database = {
         Args: { p_product_id: string }
         Returns: Json
       }
+      owner_update_branch_staff: {
+        Args: {
+          p_branch_staff_id: string
+          p_is_active?: boolean
+          p_role?: string
+        }
+        Returns: Json
+      }
       process_sokoni_order_to_sale: {
         Args: { order_id: string }
         Returns: string
