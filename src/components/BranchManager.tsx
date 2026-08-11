@@ -170,7 +170,13 @@ export const BranchManager = () => {
 
   const fetchBranchStaff = async (branchId: string) => {
     setStaffLoading(true);
-    const { data } = await supabase.from('branch_staff').select('*').eq('branch_id', branchId).order('assigned_at', { ascending: false });
+    const { data, error } = await supabase.from('branch_staff').select('*').eq('branch_id', branchId).order('assigned_at', { ascending: false });
+    if (error) {
+      toast.error(`Wafanyakazi hawajapakiwa: ${error.message}`);
+      setBranchStaff([]);
+      setStaffLoading(false);
+      return;
+    }
     if (data && data.length > 0) {
       const userIds = data.map(s => s.user_id);
       const { data: profiles } = await supabase.from('profiles').select('id, full_name, email, phone').in('id', userIds);
@@ -300,7 +306,7 @@ export const BranchManager = () => {
           p_notes: staffForm.notes || null,
         } as any) as any);
         if (staffErr) throw staffErr;
-        if (!staffResult?.success) throw new Error(staffResult?.error || 'branch_staff_failed');
+        if (!staffResult?.success) throw Object.assign(new Error(staffResult?.message || staffResult?.error || 'branch_staff_failed'), { details: staffResult?.details });
 
         toast.success(`${staffForm.full_name} ameundwa na kuongezwa kwenye tawi!`);
       } else {
@@ -328,7 +334,7 @@ export const BranchManager = () => {
         } else if (error) {
           throw error;
         } else if (!staffResult?.success) {
-          throw new Error(staffResult?.error || 'branch_staff_failed');
+          throw Object.assign(new Error(staffResult?.message || staffResult?.error || 'branch_staff_failed'), { details: staffResult?.details });
         } else {
           toast.success('Mfanyakazi ameongezwa kwenye tawi!');
         }
@@ -347,8 +353,19 @@ export const BranchManager = () => {
   };
 
   const handleToggleStaffActive = async (staff: BranchStaff) => {
-    await supabase.from('branch_staff').update({ is_active: !staff.is_active }).eq('id', staff.id);
-    if (selectedBranch) fetchBranchStaff(selectedBranch.id);
+    try {
+      const { data, error } = await (supabase.rpc('owner_update_branch_staff' as any, {
+        p_branch_staff_id: staff.id,
+        p_is_active: !staff.is_active,
+        p_role: null,
+      } as any) as any);
+      if (error) throw error;
+      if (!data?.success) throw Object.assign(new Error(data?.message || data?.error || 'update_failed'), { details: data?.details });
+      toast.success(staff.is_active ? 'Mfanyakazi amezimwa' : 'Mfanyakazi amewashwa');
+      if (selectedBranch) await fetchBranchStaff(selectedBranch.id);
+    } catch (err: any) {
+      toast.error(err?.details?.friendly || err?.message || 'Imeshindwa kubadilisha hali ya mfanyakazi');
+    }
   };
 
   const handleTransferStaff = async () => {
@@ -374,9 +391,19 @@ export const BranchManager = () => {
   };
 
   const handleChangeStaffRole = async (staffId: string, newRole: string) => {
-    await supabase.from('branch_staff').update({ role: newRole }).eq('id', staffId);
-    if (selectedBranch) fetchBranchStaff(selectedBranch.id);
-    toast.success('Jukumu limebadilishwa');
+    try {
+      const { data, error } = await (supabase.rpc('owner_update_branch_staff' as any, {
+        p_branch_staff_id: staffId,
+        p_is_active: null,
+        p_role: newRole,
+      } as any) as any);
+      if (error) throw error;
+      if (!data?.success) throw Object.assign(new Error(data?.message || data?.error || 'update_failed'), { details: data?.details });
+      if (selectedBranch) await fetchBranchStaff(selectedBranch.id);
+      toast.success('Jukumu limebadilishwa');
+    } catch (err: any) {
+      toast.error(err?.details?.friendly || err?.message || 'Imeshindwa kubadilisha jukumu');
+    }
   };
 
   if (loading) {
@@ -660,7 +687,7 @@ export const BranchManager = () => {
                 </Select>
               </div>
               <p className="text-[10px] text-muted-foreground">
-                Mfanyakazi ataongezwa kwenye tawi jipya na atabaki kwenye tawi la sasa (multi-branch access).
+                Mfanyakazi ataondolewa kwenye tawi la sasa na kuhamishwa kwenda tawi jipya.
               </p>
             </div>
             <DialogFooter className="gap-2">
@@ -689,13 +716,21 @@ export const BranchManager = () => {
                   <span className="text-sm">Tawi Hai</span>
                   <Switch checked={settingsDialog.is_active} onCheckedChange={v => setSettingsDialog(prev => prev ? { ...prev, is_active: v } : null)} />
                 </div>
-                <Button className="w-full rounded-full" onClick={() => {
-                  supabase.from('business_branches').update({ features: settingsDialog.features, is_active: settingsDialog.is_active }).eq('id', settingsDialog.id).then(() => {
+                <Button className="w-full rounded-full" disabled={saving} onClick={async () => {
+                  setSaving(true);
+                  try {
+                    const { error } = await supabase.from('business_branches').update({ features: settingsDialog.features, is_active: settingsDialog.is_active }).eq('id', settingsDialog.id);
+                    if (error) throw error;
                     toast.success('Imesasishwa');
                     setSettingsDialog(null);
-                    fetchBranches();
-                  });
-                }}>Hifadhi</Button>
+                    setSelectedBranch(prev => prev ? { ...prev, features: settingsDialog.features, is_active: settingsDialog.is_active } : null);
+                    await fetchBranches();
+                  } catch (err: any) {
+                    toast.error(err?.message || 'Mipangilio ya tawi haijasasishwa');
+                  } finally {
+                    setSaving(false);
+                  }
+                }}>{saving ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Hifadhi'}</Button>
               </div>
             </DialogContent>
           </Dialog>
