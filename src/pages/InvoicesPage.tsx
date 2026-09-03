@@ -224,6 +224,69 @@ export const InvoicesPage = () => {
         />
       </div>
 
+      {invoices.length > 0 && (
+        <section className="space-y-2">
+          <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Ankara Zilizohifadhiwa</h2>
+          {invoices
+            .filter((inv) => {
+              const q = query.trim().toLowerCase();
+              return !q || inv.customer_name.toLowerCase().includes(q) || inv.invoice_number.toLowerCase().includes(q);
+            })
+            .map((inv) => (
+              <Card key={inv.id} className="rounded-3xl transition hover:bg-muted/50">
+                <CardContent className="p-4 flex items-center justify-between gap-3">
+                  <button className="min-w-0 text-left flex-1" onClick={() => setSelectedInvoice(inv)}>
+                    <p className="font-semibold truncate">{inv.customer_name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {format(new Date(inv.created_at), 'dd/MM/yyyy HH:mm')} · {inv.invoice_number}
+                    </p>
+                  </button>
+                  <div className="text-right shrink-0">
+                    <p className="font-bold">TZS {Number(inv.total_amount).toLocaleString()}</p>
+                    <Badge variant={inv.status === 'paid' ? 'default' : 'destructive'} className="text-[10px]">
+                      {inv.status === 'paid' ? 'Amelipa' : inv.status === 'partial' ? 'Nusu' : 'Hajalipa'}
+                    </Badge>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    aria-label="Futa ankara"
+                    className="rounded-full text-destructive shrink-0"
+                    onClick={() => deleteInvoice(inv)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </CardContent>
+              </Card>
+            ))}
+        </section>
+      )}
+
+      <Sheet open={!!selectedInvoice} onOpenChange={(open) => !open && setSelectedInvoice(null)}>
+        <SheetContent side="right" className="w-full sm:max-w-lg overflow-y-auto p-4">
+          {selectedInvoice && (
+            <div className="space-y-3">
+              <Button variant="ghost" size="sm" className="rounded-full" onClick={() => setSelectedInvoice(null)}>
+                <ArrowLeft className="h-4 w-4 mr-1" /> Rudi
+              </Button>
+              <InvoiceGenerator
+                customer_name={selectedInvoice.customer_name}
+                customer_phone={selectedInvoice.customer_phone || undefined}
+                items={selectedInvoice.items || []}
+                total_amount={Number(selectedInvoice.total_amount)}
+                payment_method={selectedInvoice.payment_method || 'cash'}
+                payment_status={selectedInvoice.status}
+                invoice_number={selectedInvoice.invoice_number}
+                notes={selectedInvoice.notes || undefined}
+                date={format(new Date(selectedInvoice.created_at), 'dd/MM/yyyy')}
+              />
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
+
+      <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Ankara Kutoka Mauzo</h2>
+
       {loading ? (
         <div className="flex justify-center py-10"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
       ) : filtered.length === 0 ? (
