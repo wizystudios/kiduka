@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { InvoiceGenerator } from '@/components/InvoiceGenerator';
 import { FileText, Search, Loader2, ArrowLeft, Plus, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
+import { toast } from 'sonner';
 
 interface SaleRow {
   id: string;
@@ -31,6 +32,19 @@ interface DraftItem {
   name: string;
   quantity: number;
   unit_price: number;
+}
+
+interface SavedInvoice {
+  id: string;
+  invoice_number: string;
+  customer_name: string;
+  customer_phone: string | null;
+  items: Array<{ name: string; quantity: number; unit_price: number; subtotal: number }>;
+  total_amount: number;
+  payment_method: string | null;
+  status: string;
+  notes: string | null;
+  created_at: string;
 }
 
 const emptyItem = (): DraftItem => ({ name: '', quantity: 1, unit_price: 0 });
