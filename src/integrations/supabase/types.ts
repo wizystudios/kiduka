@@ -1268,6 +1268,60 @@ export type Database = {
           },
         ]
       }
+      invoices: {
+        Row: {
+          business_id: string | null
+          created_at: string
+          customer_name: string
+          customer_phone: string | null
+          due_date: string | null
+          id: string
+          invoice_number: string
+          items: Json
+          notes: string | null
+          owner_id: string
+          payment_method: string | null
+          sale_id: string | null
+          status: string
+          total_amount: number
+          updated_at: string
+        }
+        Insert: {
+          business_id?: string | null
+          created_at?: string
+          customer_name: string
+          customer_phone?: string | null
+          due_date?: string | null
+          id?: string
+          invoice_number: string
+          items?: Json
+          notes?: string | null
+          owner_id: string
+          payment_method?: string | null
+          sale_id?: string | null
+          status?: string
+          total_amount?: number
+          updated_at?: string
+        }
+        Update: {
+          business_id?: string | null
+          created_at?: string
+          customer_name?: string
+          customer_phone?: string | null
+          due_date?: string | null
+          id?: string
+          invoice_number?: string
+          items?: Json
+          notes?: string | null
+          owner_id?: string
+          payment_method?: string | null
+          sale_id?: string | null
+          status?: string
+          total_amount?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       journal_entries: {
         Row: {
           business_id: string | null
@@ -3096,6 +3150,7 @@ export type Database = {
         }
         Returns: number
       }
+      next_invoice_number: { Args: { _owner_id: string }; Returns: string }
       notify_owner_email: {
         Args: {
           _data: Json
