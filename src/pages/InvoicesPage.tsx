@@ -397,9 +397,25 @@ export const InvoicesPage = () => {
                 <span className="text-lg font-bold">TZS {draftTotal.toLocaleString()}</span>
               </div>
 
-              <Button className="w-full rounded-full h-11" disabled={!draftValid} onClick={() => setPreviewDraft(true)}>
-                Tazama Ankara
+              <Button
+                className="w-full rounded-full h-11"
+                disabled={!draftValid || saving}
+                onClick={async () => {
+                  const saved = await saveDraft();
+                  if (saved) {
+                    setCreateOpen(false);
+                    resetDraft();
+                    setSelectedInvoice(saved);
+                  }
+                }}
+              >
+                {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+                Hifadhi Ankara
               </Button>
+              <Button variant="outline" className="w-full rounded-full h-11" disabled={!draftValid} onClick={() => setPreviewDraft(true)}>
+                Tazama Kwanza
+              </Button>
+
             </div>
           )}
         </SheetContent>
