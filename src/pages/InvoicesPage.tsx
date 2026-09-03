@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { InvoiceGenerator } from '@/components/InvoiceGenerator';
 import { FileText, Search, Loader2, ArrowLeft, Plus, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
+import { toast } from 'sonner';
 
 interface SaleRow {
   id: string;
@@ -33,6 +34,19 @@ interface DraftItem {
   unit_price: number;
 }
 
+interface SavedInvoice {
+  id: string;
+  invoice_number: string;
+  customer_name: string;
+  customer_phone: string | null;
+  items: Array<{ name: string; quantity: number; unit_price: number; subtotal: number }>;
+  total_amount: number;
+  payment_method: string | null;
+  status: string;
+  notes: string | null;
+  created_at: string;
+}
+
 const emptyItem = (): DraftItem => ({ name: '', quantity: 1, unit_price: 0 });
 
 export const InvoicesPage = () => {
@@ -51,6 +65,89 @@ export const InvoicesPage = () => {
   const [draftNotes, setDraftNotes] = useState('');
   const [draftItems, setDraftItems] = useState<DraftItem[]>([emptyItem()]);
   const [previewDraft, setPreviewDraft] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  // Saved invoices
+  const [invoices, setInvoices] = useState<SavedInvoice[]>([]);
+  const [selectedInvoice, setSelectedInvoice] = useState<SavedInvoice | null>(null);
+
+  const loadInvoices = async (ownerId: string) => {
+    const { data, error } = await supabase
+      .from('invoices' as any)
+      .select('*')
+      .eq('owner_id', ownerId)
+      .order('created_at', { ascending: false })
+      .limit(200);
+    if (error) {
+      toast.error(`Imeshindikana kupakia ankara: ${error.message}`);
+      return;
+    }
+    setInvoices((data as any) || []);
+  };
+
+  useEffect(() => {
+    if (!dataOwnerId) return;
+    loadInvoices(dataOwnerId);
+  }, [dataOwnerId]);
+
+  const saveDraft = async (): Promise<SavedInvoice | null> => {
+    if (!dataOwnerId) {
+      toast.error('Hakuna biashara iliyochaguliwa.');
+      return null;
+    }
+    setSaving(true);
+    try {
+      const items = draftItems
+        .filter((i) => i.name.trim())
+        .map((i) => ({
+          name: i.name,
+          quantity: Number(i.quantity) || 0,
+          unit_price: Number(i.unit_price) || 0,
+          subtotal: (Number(i.quantity) || 0) * (Number(i.unit_price) || 0),
+        }));
+
+      const { data: numberData } = await supabase.rpc('next_invoice_number' as any, { _owner_id: dataOwnerId } as any);
+      const invoiceNumber = (numberData as any as string) || `INV-${Date.now().toString().slice(-8)}`;
+
+      const { data, error } = await supabase
+        .from('invoices' as any)
+        .insert({
+          owner_id: dataOwnerId,
+          invoice_number: invoiceNumber,
+          customer_name: draftCustomer.trim(),
+          customer_phone: draftPhone.trim() || null,
+          items,
+          total_amount: draftTotal,
+          payment_method: draftMethod,
+          status: draftStatus,
+          notes: draftNotes.trim() || null,
+        } as any)
+        .select()
+        .single();
+
+      if (error) throw error;
+      const saved = data as any as SavedInvoice;
+      setInvoices((prev) => [saved, ...prev]);
+      toast.success(`Ankara ${saved.invoice_number} imehifadhiwa`);
+      return saved;
+    } catch (e: any) {
+      toast.error(`Imeshindikana kuhifadhi: ${e.message || e}`);
+      return null;
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const deleteInvoice = async (inv: SavedInvoice) => {
+    const { error } = await supabase.from('invoices' as any).delete().eq('id', inv.id);
+    if (error) {
+      toast.error(`Imeshindikana kufuta: ${error.message}`);
+      return;
+    }
+    setInvoices((prev) => prev.filter((i) => i.id !== inv.id));
+    toast.success('Ankara imefutwa');
+  };
+
 
   useEffect(() => {
     document.title = 'Ankara (Invoices) - Kiduka';
@@ -126,6 +223,69 @@ export const InvoicesPage = () => {
           className="pl-11 rounded-2xl h-11"
         />
       </div>
+
+      {invoices.length > 0 && (
+        <section className="space-y-2">
+          <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Ankara Zilizohifadhiwa</h2>
+          {invoices
+            .filter((inv) => {
+              const q = query.trim().toLowerCase();
+              return !q || inv.customer_name.toLowerCase().includes(q) || inv.invoice_number.toLowerCase().includes(q);
+            })
+            .map((inv) => (
+              <Card key={inv.id} className="rounded-3xl transition hover:bg-muted/50">
+                <CardContent className="p-4 flex items-center justify-between gap-3">
+                  <button className="min-w-0 text-left flex-1" onClick={() => setSelectedInvoice(inv)}>
+                    <p className="font-semibold truncate">{inv.customer_name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {format(new Date(inv.created_at), 'dd/MM/yyyy HH:mm')} · {inv.invoice_number}
+                    </p>
+                  </button>
+                  <div className="text-right shrink-0">
+                    <p className="font-bold">TZS {Number(inv.total_amount).toLocaleString()}</p>
+                    <Badge variant={inv.status === 'paid' ? 'default' : 'destructive'} className="text-[10px]">
+                      {inv.status === 'paid' ? 'Amelipa' : inv.status === 'partial' ? 'Nusu' : 'Hajalipa'}
+                    </Badge>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    aria-label="Futa ankara"
+                    className="rounded-full text-destructive shrink-0"
+                    onClick={() => deleteInvoice(inv)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </CardContent>
+              </Card>
+            ))}
+        </section>
+      )}
+
+      <Sheet open={!!selectedInvoice} onOpenChange={(open) => !open && setSelectedInvoice(null)}>
+        <SheetContent side="right" className="w-full sm:max-w-lg overflow-y-auto p-4">
+          {selectedInvoice && (
+            <div className="space-y-3">
+              <Button variant="ghost" size="sm" className="rounded-full" onClick={() => setSelectedInvoice(null)}>
+                <ArrowLeft className="h-4 w-4 mr-1" /> Rudi
+              </Button>
+              <InvoiceGenerator
+                customer_name={selectedInvoice.customer_name}
+                customer_phone={selectedInvoice.customer_phone || undefined}
+                items={selectedInvoice.items || []}
+                total_amount={Number(selectedInvoice.total_amount)}
+                payment_method={selectedInvoice.payment_method || 'cash'}
+                payment_status={selectedInvoice.status}
+                invoice_number={selectedInvoice.invoice_number}
+                notes={selectedInvoice.notes || undefined}
+                date={format(new Date(selectedInvoice.created_at), 'dd/MM/yyyy')}
+              />
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
+
+      <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Ankara Kutoka Mauzo</h2>
 
       {loading ? (
         <div className="flex justify-center py-10"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
@@ -300,9 +460,25 @@ export const InvoicesPage = () => {
                 <span className="text-lg font-bold">TZS {draftTotal.toLocaleString()}</span>
               </div>
 
-              <Button className="w-full rounded-full h-11" disabled={!draftValid} onClick={() => setPreviewDraft(true)}>
-                Tazama Ankara
+              <Button
+                className="w-full rounded-full h-11"
+                disabled={!draftValid || saving}
+                onClick={async () => {
+                  const saved = await saveDraft();
+                  if (saved) {
+                    setCreateOpen(false);
+                    resetDraft();
+                    setSelectedInvoice(saved);
+                  }
+                }}
+              >
+                {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+                Hifadhi Ankara
               </Button>
+              <Button variant="outline" className="w-full rounded-full h-11" disabled={!draftValid} onClick={() => setPreviewDraft(true)}>
+                Tazama Kwanza
+              </Button>
+
             </div>
           )}
         </SheetContent>
