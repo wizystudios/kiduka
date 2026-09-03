@@ -758,6 +758,29 @@ export const ScannerPage = () => {
         {/* Subtle scrim so overlays remain readable */}
         <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/40 pointer-events-none" />
 
+        {/* Floating navigation: back + home */}
+        <div className="absolute top-4 left-4 right-4 z-20 flex items-center justify-between pointer-events-none">
+          <Button
+            size="icon"
+            variant="secondary"
+            aria-label="Rudi nyuma"
+            className="pointer-events-auto rounded-full h-11 w-11 bg-black/50 text-white border border-white/20 backdrop-blur hover:bg-black/70"
+            onClick={() => (window.history.length > 1 ? navigate(-1) : navigate('/dashboard'))}
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <Button
+            size="icon"
+            variant="secondary"
+            aria-label="Nenda Dashibodi"
+            className="pointer-events-auto rounded-full h-11 w-11 bg-black/50 text-white border border-white/20 backdrop-blur hover:bg-black/70"
+            onClick={() => navigate('/dashboard')}
+          >
+            <Home className="h-5 w-5" />
+          </Button>
+        </div>
+
+
         {(cameraError || cameraStatus === 'blank' || (cameraStatus !== 'active' && permissionState !== 'granted')) && (
           <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-6 text-white bg-black/75 z-10">
             <CameraOff className="h-10 w-10 mb-3 opacity-80" />
