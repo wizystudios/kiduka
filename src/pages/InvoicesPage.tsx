@@ -51,6 +51,89 @@ export const InvoicesPage = () => {
   const [draftNotes, setDraftNotes] = useState('');
   const [draftItems, setDraftItems] = useState<DraftItem[]>([emptyItem()]);
   const [previewDraft, setPreviewDraft] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  // Saved invoices
+  const [invoices, setInvoices] = useState<SavedInvoice[]>([]);
+  const [selectedInvoice, setSelectedInvoice] = useState<SavedInvoice | null>(null);
+
+  const loadInvoices = async (ownerId: string) => {
+    const { data, error } = await supabase
+      .from('invoices' as any)
+      .select('*')
+      .eq('owner_id', ownerId)
+      .order('created_at', { ascending: false })
+      .limit(200);
+    if (error) {
+      toast.error(`Imeshindikana kupakia ankara: ${error.message}`);
+      return;
+    }
+    setInvoices((data as any) || []);
+  };
+
+  useEffect(() => {
+    if (!dataOwnerId) return;
+    loadInvoices(dataOwnerId);
+  }, [dataOwnerId]);
+
+  const saveDraft = async (): Promise<SavedInvoice | null> => {
+    if (!dataOwnerId) {
+      toast.error('Hakuna biashara iliyochaguliwa.');
+      return null;
+    }
+    setSaving(true);
+    try {
+      const items = draftItems
+        .filter((i) => i.name.trim())
+        .map((i) => ({
+          name: i.name,
+          quantity: Number(i.quantity) || 0,
+          unit_price: Number(i.unit_price) || 0,
+          subtotal: (Number(i.quantity) || 0) * (Number(i.unit_price) || 0),
+        }));
+
+      const { data: numberData } = await supabase.rpc('next_invoice_number' as any, { _owner_id: dataOwnerId } as any);
+      const invoiceNumber = (numberData as any as string) || `INV-${Date.now().toString().slice(-8)}`;
+
+      const { data, error } = await supabase
+        .from('invoices' as any)
+        .insert({
+          owner_id: dataOwnerId,
+          invoice_number: invoiceNumber,
+          customer_name: draftCustomer.trim(),
+          customer_phone: draftPhone.trim() || null,
+          items,
+          total_amount: draftTotal,
+          payment_method: draftMethod,
+          status: draftStatus,
+          notes: draftNotes.trim() || null,
+        } as any)
+        .select()
+        .single();
+
+      if (error) throw error;
+      const saved = data as any as SavedInvoice;
+      setInvoices((prev) => [saved, ...prev]);
+      toast.success(`Ankara ${saved.invoice_number} imehifadhiwa`);
+      return saved;
+    } catch (e: any) {
+      toast.error(`Imeshindikana kuhifadhi: ${e.message || e}`);
+      return null;
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const deleteInvoice = async (inv: SavedInvoice) => {
+    const { error } = await supabase.from('invoices' as any).delete().eq('id', inv.id);
+    if (error) {
+      toast.error(`Imeshindikana kufuta: ${error.message}`);
+      return;
+    }
+    setInvoices((prev) => prev.filter((i) => i.id !== inv.id));
+    toast.success('Ankara imefutwa');
+  };
+
 
   useEffect(() => {
     document.title = 'Ankara (Invoices) - Kiduka';
