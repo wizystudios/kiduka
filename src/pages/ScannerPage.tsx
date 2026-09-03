@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { CameraOff, Search, Plus, Minus, ShoppingCart, Edit2, Trash2, X, RotateCcw, Check, History, Activity } from 'lucide-react';
+import { ArrowLeft, Home, CameraOff, Search, Plus, Minus, ShoppingCart, Edit2, Trash2, X, RotateCcw, Check, History, Activity } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { BarcodeFormat, BrowserMultiFormatReader, DecodeHintType } from '@zxing/library';
 
@@ -40,6 +40,7 @@ interface PaymentData {
 }
 
 export const ScannerPage = () => {
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [scannedProduct, setScannedProduct] = useState<Product | null>(null);
   const [searchResults, setSearchResults] = useState<Product[]>([]);
