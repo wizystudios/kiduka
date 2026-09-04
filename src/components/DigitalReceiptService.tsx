@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Download, FileText, Mail, MessageSquare, Phone, Share2, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { BrandMark } from '@/components/BrandMark';
+import { BusinessDocument } from '@/components/BusinessDocument';
 import { captureElementAsImage, createPdfFromImage, shareOrDownloadFile, type ExportType } from '@/utils/shareExport';
 
 interface ReceiptData {
@@ -121,66 +121,26 @@ export const DigitalReceiptService = ({ receiptData, onClose }: DigitalReceiptSe
       </div>
 
       <div className="mx-auto max-w-md space-y-4 p-4 pb-10">
-        <div
+        <BusinessDocument
           ref={receiptRef}
-          className="mx-auto overflow-hidden rounded-3xl border bg-white shadow-sm"
-          style={{ width: 360, maxWidth: '100%', color: '#111827' }}
-        >
-          <div className="p-5">
-            <div className="flex items-center justify-center gap-2 border-b pb-4 text-center">
-              <BrandMark size="md" iconOnly />
-              <div className="text-left leading-tight">
-                <p className="max-w-[230px] truncate text-[16px] font-black text-neutral-900">{receiptData.businessName}</p>
-                <p className="text-[10px] font-semibold uppercase text-neutral-500">Risiti ya Mauzo · Kiduka</p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3 py-4 text-xs">
-              <div>
-                <p className="text-neutral-500">Risiti</p>
-                <p className="font-mono font-bold text-neutral-900">#{receiptNo}</p>
-              </div>
-              <div className="text-right">
-                <p className="text-neutral-500">Tarehe</p>
-                <p className="font-semibold text-neutral-900">{receiptDate}</p>
-              </div>
-              <div>
-                <p className="text-neutral-500">Malipo</p>
-                <p className="font-semibold uppercase text-neutral-900">{receiptData.paymentData.method}</p>
-              </div>
-              <div className="text-right">
-                <p className="text-neutral-500">Bidhaa</p>
-                <p className="font-semibold text-neutral-900">{receiptData.items.length}</p>
-              </div>
-            </div>
-
-            <div className="divide-y border-y">
-              {receiptData.items.map((item, index) => (
-                <div key={`${item.name}-${index}`} className="flex items-start justify-between gap-3 py-3 text-sm">
-                  <div className="min-w-0 flex-1">
-                    <p className="font-semibold text-neutral-900">{item.name}</p>
-                    <p className="text-xs text-neutral-500">{item.quantity} × TSh {item.price.toLocaleString()}</p>
-                  </div>
-                  <p className="whitespace-nowrap font-bold text-neutral-900">TSh {item.total.toLocaleString()}</p>
-                </div>
-              ))}
-            </div>
-
-            <div className="space-y-2 py-4 text-sm">
-              <div className="flex justify-between text-neutral-600"><span>Subtotal</span><span>TSh {receiptData.subtotal.toLocaleString()}</span></div>
-              {receiptData.vatAmount > 0 && (
-                <div className="flex justify-between text-neutral-600"><span>Kodi</span><span>TSh {receiptData.vatAmount.toLocaleString()}</span></div>
-              )}
-              <div className="flex justify-between border-t pt-3 text-lg font-black text-neutral-900">
-                <span>JUMLA</span><span>TSh {receiptData.total.toLocaleString()}</span>
-              </div>
-            </div>
-
-            <div className="rounded-2xl bg-neutral-50 p-3 text-center text-[11px] text-neutral-600">
-              Asante kwa biashara yako · Powered by Kiduka
-            </div>
-          </div>
-        </div>
+          kind="receipt"
+          businessName={receiptData.businessName}
+          documentNumber={receiptNo}
+          documentDate={receiptDate}
+          customerName={receiptData.customerName}
+          customerPhone={customerPhone || undefined}
+          paymentMethod={receiptData.paymentData.method}
+          paymentStatus="paid"
+          items={receiptData.items.map((i) => ({
+            name: i.name,
+            quantity: i.quantity,
+            unit_price: i.price,
+            subtotal: i.total,
+          }))}
+          subtotal={receiptData.subtotal}
+          taxAmount={receiptData.vatAmount}
+          total={receiptData.total}
+        />
 
         <div className="grid grid-cols-2 gap-2">
           <Button variant={format === 'image' ? 'default' : 'outline'} className="rounded-full" onClick={() => setFormat('image')}>

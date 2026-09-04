@@ -1567,13 +1567,14 @@ export const SuperAdminDashboard = () => {
           </Card>
         </TabsContent>
         
-        {/* Approval Duration Dialog */}
-        <Dialog open={!!approvalDialog} onOpenChange={() => setApprovalDialog(null)}>
-          <DialogContent className="max-w-sm">
-            <DialogHeader>
-              <DialogTitle>Chagua Muda wa Idhini</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-3">
+        {/* Approval Duration Sheet (right side) */}
+        <Sheet open={!!approvalDialog} onOpenChange={(o) => !o && setApprovalDialog(null)}>
+          <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto">
+            <SheetHeader>
+              <SheetTitle>Chagua Muda wa Idhini</SheetTitle>
+              <SheetDescription>Idhinisha usajili wa mtumiaji kwa muda uliochagua.</SheetDescription>
+            </SheetHeader>
+            <div className="space-y-3 py-4">
               <Select 
                 value={approvalDialog?.duration || '1_month'} 
                 onValueChange={(v) => setApprovalDialog(prev => prev ? {...prev, duration: v} : null)}
@@ -1589,20 +1590,21 @@ export const SuperAdminDashboard = () => {
                 </SelectContent>
               </Select>
             </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setApprovalDialog(null)}>Ghairi</Button>
-              <Button onClick={() => approvalDialog && handleApproveSubscription(approvalDialog.subId, approvalDialog.duration)}>Kubali</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+            <SheetFooter className="gap-2">
+              <Button variant="outline" className="rounded-full" onClick={() => setApprovalDialog(null)}>Ghairi</Button>
+              <Button className="rounded-full" onClick={() => approvalDialog && handleApproveSubscription(approvalDialog.subId, approvalDialog.duration)}>Kubali</Button>
+            </SheetFooter>
+          </SheetContent>
+        </Sheet>
 
-        {/* Fee Editing Dialog */}
-        <Dialog open={!!feeDialog} onOpenChange={() => setFeeDialog(null)}>
-          <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle>Hariri Ada - {feeDialog?.user_name || feeDialog?.user_email}</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
+        {/* Fee Editing Sheet (right side) */}
+        <Sheet open={!!feeDialog} onOpenChange={(o) => !o && setFeeDialog(null)}>
+          <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto">
+            <SheetHeader>
+              <SheetTitle>Hariri Ada</SheetTitle>
+              <SheetDescription>{feeDialog?.user_name || feeDialog?.user_email}</SheetDescription>
+            </SheetHeader>
+            <div className="space-y-4 py-4">
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
                   <Label className="text-xs">Wasaidizi</Label>
@@ -1638,12 +1640,12 @@ export const SuperAdminDashboard = () => {
                 <Textarea placeholder="Kwa nini ada hii?" value={feeForm.admin_fee_notes} onChange={e => setFeeForm(f => ({...f, admin_fee_notes: e.target.value}))} rows={2} />
               </div>
             </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setFeeDialog(null)}>Ghairi</Button>
-              <Button onClick={handleUpdateFee}>Hifadhi</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+            <SheetFooter className="gap-2">
+              <Button variant="outline" className="rounded-full" onClick={() => setFeeDialog(null)}>Ghairi</Button>
+              <Button className="rounded-full" onClick={handleUpdateFee}>Hifadhi</Button>
+            </SheetFooter>
+          </SheetContent>
+        </Sheet>
         
         {/* Compliance Tab */}
         <TabsContent value="compliance" className="space-y-4">
