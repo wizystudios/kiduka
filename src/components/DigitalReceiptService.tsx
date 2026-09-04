@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Download, FileText, Mail, MessageSquare, Phone, Share2, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { BrandMark } from '@/components/BrandMark';
+import { BusinessDocument } from '@/components/BusinessDocument';
 import { captureElementAsImage, createPdfFromImage, shareOrDownloadFile, type ExportType } from '@/utils/shareExport';
 
 interface ReceiptData {
