@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
+import { BusinessDocument } from '@/components/BusinessDocument';
 import { Button } from '@/components/ui/button';
 import { Download, Printer, Share2, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
