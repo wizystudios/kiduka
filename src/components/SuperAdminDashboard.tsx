@@ -1640,12 +1640,12 @@ export const SuperAdminDashboard = () => {
                 <Textarea placeholder="Kwa nini ada hii?" value={feeForm.admin_fee_notes} onChange={e => setFeeForm(f => ({...f, admin_fee_notes: e.target.value}))} rows={2} />
               </div>
             </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setFeeDialog(null)}>Ghairi</Button>
-              <Button onClick={handleUpdateFee}>Hifadhi</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+            <SheetFooter className="gap-2">
+              <Button variant="outline" className="rounded-full" onClick={() => setFeeDialog(null)}>Ghairi</Button>
+              <Button className="rounded-full" onClick={handleUpdateFee}>Hifadhi</Button>
+            </SheetFooter>
+          </SheetContent>
+        </Sheet>
         
         {/* Compliance Tab */}
         <TabsContent value="compliance" className="space-y-4">
