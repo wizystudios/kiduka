@@ -1567,13 +1567,14 @@ export const SuperAdminDashboard = () => {
           </Card>
         </TabsContent>
         
-        {/* Approval Duration Dialog */}
-        <Dialog open={!!approvalDialog} onOpenChange={() => setApprovalDialog(null)}>
-          <DialogContent className="max-w-sm">
-            <DialogHeader>
-              <DialogTitle>Chagua Muda wa Idhini</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-3">
+        {/* Approval Duration Sheet (right side) */}
+        <Sheet open={!!approvalDialog} onOpenChange={(o) => !o && setApprovalDialog(null)}>
+          <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto">
+            <SheetHeader>
+              <SheetTitle>Chagua Muda wa Idhini</SheetTitle>
+              <SheetDescription>Idhinisha usajili wa mtumiaji kwa muda uliochagua.</SheetDescription>
+            </SheetHeader>
+            <div className="space-y-3 py-4">
               <Select 
                 value={approvalDialog?.duration || '1_month'} 
                 onValueChange={(v) => setApprovalDialog(prev => prev ? {...prev, duration: v} : null)}
