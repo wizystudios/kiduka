@@ -10,7 +10,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Switch } from '@/components/ui/switch';
-import { Plus, Smartphone, QrCode, Trash2, Star, Sparkles, Share2, Download } from 'lucide-react';
+import { Plus, Smartphone, QrCode, Trash2, Star, Sparkles, Share2, Download, Landmark, Pencil } from 'lucide-react';
 import { toast } from 'sonner';
 import { BackButton } from '@/components/BackButton';
 import { BrandMark } from '@/components/BrandMark';
