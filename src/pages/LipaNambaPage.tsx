@@ -29,13 +29,18 @@ interface PaymentNumber {
 }
 
 const NETWORKS = [
-  { value: 'mpesa', label: 'M-Pesa (Vodacom)', color: 'bg-red-500' },
-  { value: 'tigopesa', label: 'Tigo Pesa / Mixx', color: 'bg-blue-500' },
-  { value: 'airtelmoney', label: 'Airtel Money', color: 'bg-red-600' },
-  { value: 'halopesa', label: 'HaloPesa', color: 'bg-orange-500' },
-  { value: 'azampesa', label: 'AzamPesa', color: 'bg-green-600' },
-  { value: 'other', label: 'Nyingine', color: 'bg-gray-500' },
+  { value: 'mpesa', label: 'M-Pesa (Vodacom)', color: 'bg-red-500', kind: 'mobile' as const },
+  { value: 'tigopesa', label: 'Tigo Pesa / Mixx', color: 'bg-blue-500', kind: 'mobile' as const },
+  { value: 'airtelmoney', label: 'Airtel Money', color: 'bg-red-600', kind: 'mobile' as const },
+  { value: 'halopesa', label: 'HaloPesa', color: 'bg-orange-500', kind: 'mobile' as const },
+  { value: 'azampesa', label: 'AzamPesa', color: 'bg-green-600', kind: 'mobile' as const },
+  { value: 'crdb', label: 'CRDB Bank', color: 'bg-green-700', kind: 'bank' as const },
+  { value: 'nmb', label: 'NMB Bank', color: 'bg-blue-700', kind: 'bank' as const },
+  { value: 'nbc', label: 'NBC Bank', color: 'bg-indigo-700', kind: 'bank' as const },
+  { value: 'other_bank', label: 'Benki Nyingine', color: 'bg-slate-600', kind: 'bank' as const },
+  { value: 'other', label: 'Nyingine', color: 'bg-gray-500', kind: 'mobile' as const },
 ];
+
 
 export default function LipaNambaPage() {
   const { user } = useAuth();
