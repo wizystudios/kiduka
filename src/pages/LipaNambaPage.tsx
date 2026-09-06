@@ -333,13 +333,13 @@ export default function LipaNambaPage() {
       )}
 
 
-      {/* Add dialog */}
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+      {/* Add / edit dialog */}
+      <Dialog open={dialogOpen} onOpenChange={(o) => { setDialogOpen(o); if (!o) resetForm(); }}>
         <DialogContent className="rounded-3xl">
-          <DialogHeader><DialogTitle>Ongeza Lipa Namba</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{editingId ? 'Hariri njia ya malipo' : 'Ongeza njia ya malipo'}</DialogTitle></DialogHeader>
           <div className="space-y-3">
             <div>
-              <Label className="text-xs">Mtandao</Label>
+              <Label className="text-xs">Njia / Mtandao</Label>
               <Select value={form.network} onValueChange={(v) => setForm({ ...form, network: v })}>
                 <SelectTrigger className="rounded-2xl"><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -348,10 +348,13 @@ export default function LipaNambaPage() {
               </Select>
             </div>
             <div>
-              <Label className="text-xs">Lipa Namba</Label>
+              <Label className="text-xs">
+                {NETWORKS.find(n => n.value === form.network)?.kind === 'bank' ? 'Namba ya akaunti ya benki' : 'Lipa Namba'}
+              </Label>
               <Input value={form.lipa_namba} onChange={(e) => setForm({ ...form, lipa_namba: e.target.value })}
                 placeholder="mfano 1234567" className="rounded-2xl" />
             </div>
+
             <div>
               <Label className="text-xs">Jina la Akaunti (hiari)</Label>
               <Input value={form.account_name} onChange={(e) => setForm({ ...form, account_name: e.target.value })}
