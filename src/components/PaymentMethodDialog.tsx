@@ -62,17 +62,20 @@ export const PaymentMethodDialog = ({ open, onOpenChange, totalAmount, onPayment
   const [paymentConfirmed, setPaymentConfirmed] = useState(false);
   const [ownerNumbers, setOwnerNumbers] = useState<OwnerNumber[]>([]);
 
-  const mobileProviders = [
-    { id: 'mpesa', name: 'M-Pesa' },
-    { id: 'airtel', name: 'Airtel Money' },
-    { id: 'halopesa', name: 'Halo Pesa' },
-    { id: 'tigopesa', name: 'Mixx by Yas (Tigo Pesa)' }
-  ];
-
-  const bankProviders = [
-    { id: 'nmb', name: 'NMB Bank' },
-    { id: 'crdb', name: 'CRDB Bank' }
-  ];
+  const NETWORK_LABELS: Record<string, string> = {
+    mpesa: 'M-Pesa',
+    airtel: 'Airtel Money',
+    airtelmoney: 'Airtel Money',
+    halopesa: 'HaloPesa',
+    tigopesa: 'Mixx by Yas (Tigo Pesa)',
+    azampesa: 'AzamPesa',
+    crdb: 'CRDB Bank',
+    nmb: 'NMB Bank',
+    nbc: 'NBC Bank',
+    other_bank: 'Benki Nyingine',
+    other: 'Nyingine',
+  };
+  const BANK_NETWORKS = ['crdb', 'nmb', 'nbc', 'other_bank'];
 
   useEffect(() => {
     if (!open || !dataOwnerId) return;
@@ -89,9 +92,28 @@ export const PaymentMethodDialog = ({ open, onOpenChange, totalAmount, onPayment
     return () => { active = false; };
   }, [open, dataOwnerId]);
 
+  const mobileNumbers = ownerNumbers.filter(n => !BANK_NETWORKS.includes((n.network || '').toLowerCase()));
+  const bankNumbers = ownerNumbers.filter(n => BANK_NETWORKS.includes((n.network || '').toLowerCase()));
+
+  const mobileProviders = mobileNumbers.map(n => ({ id: n.network.toLowerCase(), name: NETWORK_LABELS[n.network.toLowerCase()] || n.network }));
+  const bankProviders = bankNumbers.map(n => ({ id: n.network.toLowerCase(), name: NETWORK_LABELS[n.network.toLowerCase()] || n.network }));
+
+  const methodOptions = [
+    { key: 'cash' as const, icon: Banknote, label: 'Taslimu', enabled: true },
+    { key: 'mobile' as const, icon: Smartphone, label: 'Simu', enabled: mobileNumbers.length > 0 },
+    { key: 'bank' as const, icon: CreditCard, label: 'Benki', enabled: bankNumbers.length > 0 },
+  ].filter(o => o.enabled);
+
+  // If the owner switched off a method, never keep it selected
+  useEffect(() => {
+    if (!methodOptions.some(o => o.key === selectedMethod)) setSelectedMethod('cash');
+  }, [ownerNumbers.length]);
+
+  const pool = selectedMethod === 'bank' ? bankNumbers : mobileNumbers;
   const activeNumber =
-    ownerNumbers.find((n) => n.network?.toLowerCase() === (selectedMethod === 'mobile' ? mobileProvider : bankProvider)) ||
-    ownerNumbers[0];
+    pool.find((n) => n.network?.toLowerCase() === (selectedMethod === 'mobile' ? mobileProvider : bankProvider)) ||
+    pool[0];
+
 
   const qrPayload = activeNumber
     ? JSON.stringify({
