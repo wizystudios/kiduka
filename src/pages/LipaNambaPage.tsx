@@ -49,6 +49,7 @@ export default function LipaNambaPage() {
   const [items, setItems] = useState<PaymentNumber[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [qrFor, setQrFor] = useState<PaymentNumber | null>(null);
   const [form, setForm] = useState({
     network: 'mpesa',
@@ -82,9 +83,31 @@ export default function LipaNambaPage() {
 
   useEffect(() => { load(); }, [user?.id]);
 
+  const resetForm = () => {
+    setEditingId(null);
+    setForm({ network: 'mpesa', lipa_namba: '', account_name: '', instructions: '', is_default: false });
+  };
+
+  const openCreate = () => {
+    resetForm();
+    setDialogOpen(true);
+  };
+
+  const openEdit = (item: PaymentNumber) => {
+    setEditingId(item.id);
+    setForm({
+      network: item.network,
+      lipa_namba: item.lipa_namba,
+      account_name: item.account_name || '',
+      instructions: item.instructions || '',
+      is_default: item.is_default,
+    });
+    setDialogOpen(true);
+  };
+
   const save = async () => {
     if (!user?.id || !form.lipa_namba.trim()) {
-      toast.error('Jaza Lipa Namba');
+      toast.error('Jaza namba ya malipo');
       return;
     }
     setSaving(true);
@@ -92,18 +115,20 @@ export default function LipaNambaPage() {
       if (form.is_default) {
         await supabase.from('owner_payment_numbers' as any).update({ is_default: false }).eq('owner_id', user.id);
       }
-      const { error } = await supabase.from('owner_payment_numbers' as any).insert({
-        owner_id: user.id,
+      const payload = {
         network: form.network,
         lipa_namba: form.lipa_namba.trim(),
         account_name: form.account_name.trim() || null,
         instructions: form.instructions.trim() || null,
         is_default: form.is_default,
-      });
+      };
+      const { error } = editingId
+        ? await supabase.from('owner_payment_numbers' as any).update(payload).eq('id', editingId)
+        : await supabase.from('owner_payment_numbers' as any).insert({ owner_id: user.id, ...payload });
       if (error) throw error;
-      toast.success('Lipa Namba imehifadhiwa');
+      toast.success(editingId ? 'Njia ya malipo imesasishwa' : 'Njia ya malipo imehifadhiwa');
       setDialogOpen(false);
-      setForm({ network: 'mpesa', lipa_namba: '', account_name: '', instructions: '', is_default: false });
+      resetForm();
       load();
     } catch (e: any) {
       toast.error(e.message || 'Imeshindwa');
@@ -111,6 +136,7 @@ export default function LipaNambaPage() {
       setSaving(false);
     }
   };
+
 
   const setDefault = async (id: string) => {
     if (!user?.id) return;
