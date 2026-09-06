@@ -240,12 +240,12 @@ export default function LipaNambaPage() {
         <BackButton />
         <div className="flex-1">
           <div className="flex items-center gap-2">
-            <h1 className="text-lg font-bold">Lipa Namba Zangu</h1>
+            <h1 className="text-lg font-bold">Usimamizi wa Malipo</h1>
             <Badge className="bg-gradient-to-r from-amber-500 to-pink-500 text-white border-0 animate-pulse">
               <Sparkles className="h-3 w-3 mr-1" /> MPYA
             </Badge>
           </div>
-          <p className="text-xs text-muted-foreground">Wateja watalipa madeni kwa kutumia Lipa Namba zako</p>
+          <p className="text-xs text-muted-foreground">Chagua njia za malipo unazotumia — simu, benki au taslimu</p>
         </div>
       </div>
 
@@ -256,17 +256,17 @@ export default function LipaNambaPage() {
             <QrCode className="h-5 w-5 text-primary" />
           </div>
           <div className="text-sm">
-            <p className="font-semibold mb-1">Kipengele Kipya — Lipa kwa QR</p>
+            <p className="font-semibold mb-1">Njia za malipo na QR</p>
             <p className="text-xs text-muted-foreground">
-              Ongeza Lipa Namba zako za M-Pesa, Tigo Pesa, Airtel Money n.k. Mteja akiwa anataka kulipa deni,
-              QR code itazalishwa moja kwa moja kulingana na mtandao alionao.
+              Ongeza namba za simu (M-Pesa, Mixx, Airtel, HaloPesa) na akaunti za benki (CRDB, NMB, NBC).
+              Kila njia ina QR code yake, na unaweza kuizima au kuiwasha. Njia ulizozima hazitaonekana wakati wa malipo.
             </p>
           </div>
         </CardContent>
       </Card>
 
-      <Button onClick={() => setDialogOpen(true)} className="rounded-full w-full">
-        <Plus className="h-4 w-4 mr-1" /> Ongeza Lipa Namba
+      <Button onClick={openCreate} className="rounded-full w-full">
+        <Plus className="h-4 w-4 mr-1" /> Ongeza njia ya malipo
       </Button>
 
       {loading ? (
@@ -274,48 +274,64 @@ export default function LipaNambaPage() {
       ) : items.length === 0 ? (
         <Card className="rounded-3xl"><CardContent className="text-center py-10">
           <Smartphone className="h-12 w-12 mx-auto text-muted-foreground mb-2" />
-          <p className="text-sm font-medium">Bado huja-ongeza Lipa Namba</p>
+          <p className="text-sm font-medium">Bado hujaongeza njia ya malipo</p>
           <p className="text-xs text-muted-foreground mt-1">Ongeza ya kwanza ili kuanza kupokea malipo</p>
         </CardContent></Card>
       ) : (
-        <div className="space-y-2">
-          {items.map(item => {
-            const net = NETWORKS.find(n => n.value === item.network);
-            return (
-              <Card key={item.id} className="rounded-2xl overflow-hidden">
-                <CardContent className="p-3 flex items-center gap-3">
-                  <div className={`h-12 w-12 rounded-2xl ${net?.color || 'bg-gray-500'} flex items-center justify-center flex-shrink-0`}>
-                    <Smartphone className="h-5 w-5 text-white" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-semibold text-sm">{net?.label}</span>
-                      {item.is_default && <Badge className="text-[10px] bg-amber-500"><Star className="h-2.5 w-2.5 mr-0.5" />KUU</Badge>}
-                      {!item.is_active && <Badge variant="secondary" className="text-[10px]">Imezimwa</Badge>}
-                    </div>
-                    <p className="text-sm font-mono">{item.lipa_namba}</p>
-                    {item.account_name && <p className="text-xs text-muted-foreground">{item.account_name}</p>}
-                  </div>
-                  <div className="flex flex-col gap-1">
-                    <Button size="sm" variant="ghost" className="h-8 px-2" onClick={() => setQrFor(item)}>
-                      <QrCode className="h-4 w-4" />
-                    </Button>
-                    {!item.is_default && (
-                      <Button size="sm" variant="ghost" className="h-8 px-2" onClick={() => setDefault(item.id)}>
-                        <Star className="h-4 w-4" />
-                      </Button>
-                    )}
-                    <Switch checked={item.is_active} onCheckedChange={() => toggleActive(item)} />
-                    <Button size="sm" variant="ghost" className="h-8 px-2 text-destructive" onClick={() => remove(item.id)}>
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
+        ['mobile', 'bank'].map((kind) => {
+          const group = items.filter(i => (NETWORKS.find(n => n.value === i.network)?.kind || 'mobile') === kind);
+          if (group.length === 0) return null;
+          return (
+            <div key={kind} className="space-y-2">
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground px-1">
+                {kind === 'mobile' ? 'Malipo kwa simu' : 'Malipo kwa benki'}
+              </p>
+              {group.map(item => {
+                const net = NETWORKS.find(n => n.value === item.network);
+                const Icon = net?.kind === 'bank' ? Landmark : Smartphone;
+                return (
+                  <Card key={item.id} className="rounded-2xl overflow-hidden">
+                    <CardContent className="p-3 flex items-center gap-3">
+                      <div className={`h-12 w-12 rounded-2xl ${net?.color || 'bg-gray-500'} flex items-center justify-center flex-shrink-0`}>
+                        <Icon className="h-5 w-5 text-white" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-semibold text-sm">{net?.label || item.network}</span>
+                          {item.is_default && <Badge className="text-[10px] bg-amber-500"><Star className="h-2.5 w-2.5 mr-0.5" />KUU</Badge>}
+                          {!item.is_active && <Badge variant="secondary" className="text-[10px]">Imezimwa</Badge>}
+                        </div>
+                        <p className="text-sm font-mono">{item.lipa_namba}</p>
+                        {item.account_name && <p className="text-xs text-muted-foreground">{item.account_name}</p>}
+                      </div>
+                      <div className="flex flex-col items-center gap-1">
+                        <Switch checked={item.is_active} onCheckedChange={() => toggleActive(item)} />
+                        <div className="flex items-center gap-0.5">
+                          <Button size="sm" variant="ghost" className="h-8 px-2" onClick={() => setQrFor(item)}>
+                            <QrCode className="h-4 w-4" />
+                          </Button>
+                          <Button size="sm" variant="ghost" className="h-8 px-2" onClick={() => openEdit(item)}>
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          {!item.is_default && (
+                            <Button size="sm" variant="ghost" className="h-8 px-2" onClick={() => setDefault(item.id)}>
+                              <Star className="h-4 w-4" />
+                            </Button>
+                          )}
+                          <Button size="sm" variant="ghost" className="h-8 px-2 text-destructive" onClick={() => remove(item.id)}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          );
+        })
       )}
+
 
       {/* Add dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
