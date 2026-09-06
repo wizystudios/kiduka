@@ -62,17 +62,20 @@ export const PaymentMethodDialog = ({ open, onOpenChange, totalAmount, onPayment
   const [paymentConfirmed, setPaymentConfirmed] = useState(false);
   const [ownerNumbers, setOwnerNumbers] = useState<OwnerNumber[]>([]);
 
-  const mobileProviders = [
-    { id: 'mpesa', name: 'M-Pesa' },
-    { id: 'airtel', name: 'Airtel Money' },
-    { id: 'halopesa', name: 'Halo Pesa' },
-    { id: 'tigopesa', name: 'Mixx by Yas (Tigo Pesa)' }
-  ];
-
-  const bankProviders = [
-    { id: 'nmb', name: 'NMB Bank' },
-    { id: 'crdb', name: 'CRDB Bank' }
-  ];
+  const NETWORK_LABELS: Record<string, string> = {
+    mpesa: 'M-Pesa',
+    airtel: 'Airtel Money',
+    airtelmoney: 'Airtel Money',
+    halopesa: 'HaloPesa',
+    tigopesa: 'Mixx by Yas (Tigo Pesa)',
+    azampesa: 'AzamPesa',
+    crdb: 'CRDB Bank',
+    nmb: 'NMB Bank',
+    nbc: 'NBC Bank',
+    other_bank: 'Benki Nyingine',
+    other: 'Nyingine',
+  };
+  const BANK_NETWORKS = ['crdb', 'nmb', 'nbc', 'other_bank'];
 
   useEffect(() => {
     if (!open || !dataOwnerId) return;
@@ -89,9 +92,28 @@ export const PaymentMethodDialog = ({ open, onOpenChange, totalAmount, onPayment
     return () => { active = false; };
   }, [open, dataOwnerId]);
 
+  const mobileNumbers = ownerNumbers.filter(n => !BANK_NETWORKS.includes((n.network || '').toLowerCase()));
+  const bankNumbers = ownerNumbers.filter(n => BANK_NETWORKS.includes((n.network || '').toLowerCase()));
+
+  const mobileProviders = mobileNumbers.map(n => ({ id: n.network.toLowerCase(), name: NETWORK_LABELS[n.network.toLowerCase()] || n.network }));
+  const bankProviders = bankNumbers.map(n => ({ id: n.network.toLowerCase(), name: NETWORK_LABELS[n.network.toLowerCase()] || n.network }));
+
+  const methodOptions = [
+    { key: 'cash' as const, icon: Banknote, label: 'Taslimu', enabled: true },
+    { key: 'mobile' as const, icon: Smartphone, label: 'Simu', enabled: mobileNumbers.length > 0 },
+    { key: 'bank' as const, icon: CreditCard, label: 'Benki', enabled: bankNumbers.length > 0 },
+  ].filter(o => o.enabled);
+
+  // If the owner switched off a method, never keep it selected
+  useEffect(() => {
+    if (!methodOptions.some(o => o.key === selectedMethod)) setSelectedMethod('cash');
+  }, [ownerNumbers.length]);
+
+  const pool = selectedMethod === 'bank' ? bankNumbers : mobileNumbers;
   const activeNumber =
-    ownerNumbers.find((n) => n.network?.toLowerCase() === (selectedMethod === 'mobile' ? mobileProvider : bankProvider)) ||
-    ownerNumbers[0];
+    pool.find((n) => n.network?.toLowerCase() === (selectedMethod === 'mobile' ? mobileProvider : bankProvider)) ||
+    pool[0];
+
 
   const qrPayload = activeNumber
     ? JSON.stringify({
@@ -164,12 +186,8 @@ export const PaymentMethodDialog = ({ open, onOpenChange, totalAmount, onPayment
         <div className="mx-auto max-w-md p-5 space-y-4">
           {!awaitingPayment && !paymentConfirmed && (
             <>
-              <div className="grid grid-cols-3 gap-2">
-                {[
-                  { key: 'cash' as const, icon: Banknote, label: 'Taslimu' },
-                  { key: 'mobile' as const, icon: Smartphone, label: 'Simu' },
-                  { key: 'bank' as const, icon: CreditCard, label: 'Benki' },
-                ].map(opt => (
+              <div className={`grid gap-2 ${methodOptions.length === 1 ? 'grid-cols-1' : methodOptions.length === 2 ? 'grid-cols-2' : 'grid-cols-3'}`}>
+                {methodOptions.map(opt => (
                   <Card
                     key={opt.key}
                     className={`cursor-pointer rounded-3xl transition-all ${selectedMethod === opt.key ? 'border-primary ring-2 ring-primary/20 bg-primary/5' : 'hover:bg-muted/50'}`}
@@ -183,32 +201,33 @@ export const PaymentMethodDialog = ({ open, onOpenChange, totalAmount, onPayment
                 ))}
               </div>
 
-              {selectedMethod !== 'cash' && (
-                activeNumber ? (
-                  <Card className="rounded-3xl border-primary/30">
-                    <CardContent className="p-4 flex items-center gap-4">
-                      <div className="rounded-2xl bg-white p-2 shrink-0">
-                        <QRCodeCanvas value={qrPayload} size={96} includeMargin={false} />
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-[11px] text-muted-foreground uppercase tracking-wide">Mteja achanue (scan) alipe</p>
-                        <p className="font-bold truncate">{activeNumber.network?.toUpperCase()}</p>
-                        <p className="text-lg font-bold text-primary">{activeNumber.lipa_namba}</p>
-                        {activeNumber.account_name && (
-                          <p className="text-xs text-muted-foreground truncate">{activeNumber.account_name}</p>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                ) : (
-                  <Card className="rounded-3xl border-dashed">
-                    <CardContent className="p-4 flex items-center gap-3 text-sm text-muted-foreground">
-                      <QrCode className="h-5 w-5 shrink-0" />
-                      <span>Hujaweka namba za malipo bado. Nenda <b>Lipa Namba</b> kuongeza namba na QR code ya biashara yako.</span>
-                    </CardContent>
-                  </Card>
-                )
+              {ownerNumbers.length === 0 && (
+                <Card className="rounded-3xl border-dashed">
+                  <CardContent className="p-4 flex items-center gap-3 text-sm text-muted-foreground">
+                    <QrCode className="h-5 w-5 shrink-0" />
+                    <span>Bado hujaweka njia za malipo. Nenda <b>Mipangilio › Malipo</b> kuongeza namba za simu au benki na QR code.</span>
+                  </CardContent>
+                </Card>
               )}
+
+              {selectedMethod !== 'cash' && activeNumber && (
+                <Card className="rounded-3xl border-primary/30">
+                  <CardContent className="p-4 flex items-center gap-4">
+                    <div className="rounded-2xl bg-white p-2 shrink-0">
+                      <QRCodeCanvas value={qrPayload} size={96} includeMargin={false} />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-[11px] text-muted-foreground uppercase tracking-wide">Mteja achanue (scan) alipe</p>
+                      <p className="font-bold truncate">{NETWORK_LABELS[activeNumber.network?.toLowerCase()] || activeNumber.network?.toUpperCase()}</p>
+                      <p className="text-lg font-bold text-primary">{activeNumber.lipa_namba}</p>
+                      {activeNumber.account_name && (
+                        <p className="text-xs text-muted-foreground truncate">{activeNumber.account_name}</p>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
 
               {selectedMethod === 'mobile' && (
                 <div className="space-y-3">

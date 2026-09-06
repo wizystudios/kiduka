@@ -10,7 +10,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Switch } from '@/components/ui/switch';
-import { Plus, Smartphone, QrCode, Trash2, Star, Sparkles, Share2, Download } from 'lucide-react';
+import { Plus, Smartphone, QrCode, Trash2, Star, Sparkles, Share2, Download, Landmark, Pencil } from 'lucide-react';
 import { toast } from 'sonner';
 import { BackButton } from '@/components/BackButton';
 import { BrandMark } from '@/components/BrandMark';
@@ -29,13 +29,18 @@ interface PaymentNumber {
 }
 
 const NETWORKS = [
-  { value: 'mpesa', label: 'M-Pesa (Vodacom)', color: 'bg-red-500' },
-  { value: 'tigopesa', label: 'Tigo Pesa / Mixx', color: 'bg-blue-500' },
-  { value: 'airtelmoney', label: 'Airtel Money', color: 'bg-red-600' },
-  { value: 'halopesa', label: 'HaloPesa', color: 'bg-orange-500' },
-  { value: 'azampesa', label: 'AzamPesa', color: 'bg-green-600' },
-  { value: 'other', label: 'Nyingine', color: 'bg-gray-500' },
+  { value: 'mpesa', label: 'M-Pesa (Vodacom)', color: 'bg-red-500', kind: 'mobile' as const },
+  { value: 'tigopesa', label: 'Tigo Pesa / Mixx', color: 'bg-blue-500', kind: 'mobile' as const },
+  { value: 'airtelmoney', label: 'Airtel Money', color: 'bg-red-600', kind: 'mobile' as const },
+  { value: 'halopesa', label: 'HaloPesa', color: 'bg-orange-500', kind: 'mobile' as const },
+  { value: 'azampesa', label: 'AzamPesa', color: 'bg-green-600', kind: 'mobile' as const },
+  { value: 'crdb', label: 'CRDB Bank', color: 'bg-green-700', kind: 'bank' as const },
+  { value: 'nmb', label: 'NMB Bank', color: 'bg-blue-700', kind: 'bank' as const },
+  { value: 'nbc', label: 'NBC Bank', color: 'bg-indigo-700', kind: 'bank' as const },
+  { value: 'other_bank', label: 'Benki Nyingine', color: 'bg-slate-600', kind: 'bank' as const },
+  { value: 'other', label: 'Nyingine', color: 'bg-gray-500', kind: 'mobile' as const },
 ];
+
 
 export default function LipaNambaPage() {
   const { user } = useAuth();
@@ -44,6 +49,7 @@ export default function LipaNambaPage() {
   const [items, setItems] = useState<PaymentNumber[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [qrFor, setQrFor] = useState<PaymentNumber | null>(null);
   const [form, setForm] = useState({
     network: 'mpesa',
@@ -77,9 +83,31 @@ export default function LipaNambaPage() {
 
   useEffect(() => { load(); }, [user?.id]);
 
+  const resetForm = () => {
+    setEditingId(null);
+    setForm({ network: 'mpesa', lipa_namba: '', account_name: '', instructions: '', is_default: false });
+  };
+
+  const openCreate = () => {
+    resetForm();
+    setDialogOpen(true);
+  };
+
+  const openEdit = (item: PaymentNumber) => {
+    setEditingId(item.id);
+    setForm({
+      network: item.network,
+      lipa_namba: item.lipa_namba,
+      account_name: item.account_name || '',
+      instructions: item.instructions || '',
+      is_default: item.is_default,
+    });
+    setDialogOpen(true);
+  };
+
   const save = async () => {
     if (!user?.id || !form.lipa_namba.trim()) {
-      toast.error('Jaza Lipa Namba');
+      toast.error('Jaza namba ya malipo');
       return;
     }
     setSaving(true);
@@ -87,18 +115,20 @@ export default function LipaNambaPage() {
       if (form.is_default) {
         await supabase.from('owner_payment_numbers' as any).update({ is_default: false }).eq('owner_id', user.id);
       }
-      const { error } = await supabase.from('owner_payment_numbers' as any).insert({
-        owner_id: user.id,
+      const payload = {
         network: form.network,
         lipa_namba: form.lipa_namba.trim(),
         account_name: form.account_name.trim() || null,
         instructions: form.instructions.trim() || null,
         is_default: form.is_default,
-      });
+      };
+      const { error } = editingId
+        ? await supabase.from('owner_payment_numbers' as any).update(payload).eq('id', editingId)
+        : await supabase.from('owner_payment_numbers' as any).insert({ owner_id: user.id, ...payload });
       if (error) throw error;
-      toast.success('Lipa Namba imehifadhiwa');
+      toast.success(editingId ? 'Njia ya malipo imesasishwa' : 'Njia ya malipo imehifadhiwa');
       setDialogOpen(false);
-      setForm({ network: 'mpesa', lipa_namba: '', account_name: '', instructions: '', is_default: false });
+      resetForm();
       load();
     } catch (e: any) {
       toast.error(e.message || 'Imeshindwa');
@@ -106,6 +136,7 @@ export default function LipaNambaPage() {
       setSaving(false);
     }
   };
+
 
   const setDefault = async (id: string) => {
     if (!user?.id) return;
@@ -209,12 +240,12 @@ export default function LipaNambaPage() {
         <BackButton />
         <div className="flex-1">
           <div className="flex items-center gap-2">
-            <h1 className="text-lg font-bold">Lipa Namba Zangu</h1>
+            <h1 className="text-lg font-bold">Usimamizi wa Malipo</h1>
             <Badge className="bg-gradient-to-r from-amber-500 to-pink-500 text-white border-0 animate-pulse">
               <Sparkles className="h-3 w-3 mr-1" /> MPYA
             </Badge>
           </div>
-          <p className="text-xs text-muted-foreground">Wateja watalipa madeni kwa kutumia Lipa Namba zako</p>
+          <p className="text-xs text-muted-foreground">Chagua njia za malipo unazotumia — simu, benki au taslimu</p>
         </div>
       </div>
 
@@ -225,17 +256,17 @@ export default function LipaNambaPage() {
             <QrCode className="h-5 w-5 text-primary" />
           </div>
           <div className="text-sm">
-            <p className="font-semibold mb-1">Kipengele Kipya — Lipa kwa QR</p>
+            <p className="font-semibold mb-1">Njia za malipo na QR</p>
             <p className="text-xs text-muted-foreground">
-              Ongeza Lipa Namba zako za M-Pesa, Tigo Pesa, Airtel Money n.k. Mteja akiwa anataka kulipa deni,
-              QR code itazalishwa moja kwa moja kulingana na mtandao alionao.
+              Ongeza namba za simu (M-Pesa, Mixx, Airtel, HaloPesa) na akaunti za benki (CRDB, NMB, NBC).
+              Kila njia ina QR code yake, na unaweza kuizima au kuiwasha. Njia ulizozima hazitaonekana wakati wa malipo.
             </p>
           </div>
         </CardContent>
       </Card>
 
-      <Button onClick={() => setDialogOpen(true)} className="rounded-full w-full">
-        <Plus className="h-4 w-4 mr-1" /> Ongeza Lipa Namba
+      <Button onClick={openCreate} className="rounded-full w-full">
+        <Plus className="h-4 w-4 mr-1" /> Ongeza njia ya malipo
       </Button>
 
       {loading ? (
@@ -243,56 +274,72 @@ export default function LipaNambaPage() {
       ) : items.length === 0 ? (
         <Card className="rounded-3xl"><CardContent className="text-center py-10">
           <Smartphone className="h-12 w-12 mx-auto text-muted-foreground mb-2" />
-          <p className="text-sm font-medium">Bado huja-ongeza Lipa Namba</p>
+          <p className="text-sm font-medium">Bado hujaongeza njia ya malipo</p>
           <p className="text-xs text-muted-foreground mt-1">Ongeza ya kwanza ili kuanza kupokea malipo</p>
         </CardContent></Card>
       ) : (
-        <div className="space-y-2">
-          {items.map(item => {
-            const net = NETWORKS.find(n => n.value === item.network);
-            return (
-              <Card key={item.id} className="rounded-2xl overflow-hidden">
-                <CardContent className="p-3 flex items-center gap-3">
-                  <div className={`h-12 w-12 rounded-2xl ${net?.color || 'bg-gray-500'} flex items-center justify-center flex-shrink-0`}>
-                    <Smartphone className="h-5 w-5 text-white" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-semibold text-sm">{net?.label}</span>
-                      {item.is_default && <Badge className="text-[10px] bg-amber-500"><Star className="h-2.5 w-2.5 mr-0.5" />KUU</Badge>}
-                      {!item.is_active && <Badge variant="secondary" className="text-[10px]">Imezimwa</Badge>}
-                    </div>
-                    <p className="text-sm font-mono">{item.lipa_namba}</p>
-                    {item.account_name && <p className="text-xs text-muted-foreground">{item.account_name}</p>}
-                  </div>
-                  <div className="flex flex-col gap-1">
-                    <Button size="sm" variant="ghost" className="h-8 px-2" onClick={() => setQrFor(item)}>
-                      <QrCode className="h-4 w-4" />
-                    </Button>
-                    {!item.is_default && (
-                      <Button size="sm" variant="ghost" className="h-8 px-2" onClick={() => setDefault(item.id)}>
-                        <Star className="h-4 w-4" />
-                      </Button>
-                    )}
-                    <Switch checked={item.is_active} onCheckedChange={() => toggleActive(item)} />
-                    <Button size="sm" variant="ghost" className="h-8 px-2 text-destructive" onClick={() => remove(item.id)}>
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
+        ['mobile', 'bank'].map((kind) => {
+          const group = items.filter(i => (NETWORKS.find(n => n.value === i.network)?.kind || 'mobile') === kind);
+          if (group.length === 0) return null;
+          return (
+            <div key={kind} className="space-y-2">
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground px-1">
+                {kind === 'mobile' ? 'Malipo kwa simu' : 'Malipo kwa benki'}
+              </p>
+              {group.map(item => {
+                const net = NETWORKS.find(n => n.value === item.network);
+                const Icon = net?.kind === 'bank' ? Landmark : Smartphone;
+                return (
+                  <Card key={item.id} className="rounded-2xl overflow-hidden">
+                    <CardContent className="p-3 flex items-center gap-3">
+                      <div className={`h-12 w-12 rounded-2xl ${net?.color || 'bg-gray-500'} flex items-center justify-center flex-shrink-0`}>
+                        <Icon className="h-5 w-5 text-white" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-semibold text-sm">{net?.label || item.network}</span>
+                          {item.is_default && <Badge className="text-[10px] bg-amber-500"><Star className="h-2.5 w-2.5 mr-0.5" />KUU</Badge>}
+                          {!item.is_active && <Badge variant="secondary" className="text-[10px]">Imezimwa</Badge>}
+                        </div>
+                        <p className="text-sm font-mono">{item.lipa_namba}</p>
+                        {item.account_name && <p className="text-xs text-muted-foreground">{item.account_name}</p>}
+                      </div>
+                      <div className="flex flex-col items-center gap-1">
+                        <Switch checked={item.is_active} onCheckedChange={() => toggleActive(item)} />
+                        <div className="flex items-center gap-0.5">
+                          <Button size="sm" variant="ghost" className="h-8 px-2" onClick={() => setQrFor(item)}>
+                            <QrCode className="h-4 w-4" />
+                          </Button>
+                          <Button size="sm" variant="ghost" className="h-8 px-2" onClick={() => openEdit(item)}>
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          {!item.is_default && (
+                            <Button size="sm" variant="ghost" className="h-8 px-2" onClick={() => setDefault(item.id)}>
+                              <Star className="h-4 w-4" />
+                            </Button>
+                          )}
+                          <Button size="sm" variant="ghost" className="h-8 px-2 text-destructive" onClick={() => remove(item.id)}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          );
+        })
       )}
 
-      {/* Add dialog */}
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+
+      {/* Add / edit dialog */}
+      <Dialog open={dialogOpen} onOpenChange={(o) => { setDialogOpen(o); if (!o) resetForm(); }}>
         <DialogContent className="rounded-3xl">
-          <DialogHeader><DialogTitle>Ongeza Lipa Namba</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{editingId ? 'Hariri njia ya malipo' : 'Ongeza njia ya malipo'}</DialogTitle></DialogHeader>
           <div className="space-y-3">
             <div>
-              <Label className="text-xs">Mtandao</Label>
+              <Label className="text-xs">Njia / Mtandao</Label>
               <Select value={form.network} onValueChange={(v) => setForm({ ...form, network: v })}>
                 <SelectTrigger className="rounded-2xl"><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -301,10 +348,13 @@ export default function LipaNambaPage() {
               </Select>
             </div>
             <div>
-              <Label className="text-xs">Lipa Namba</Label>
+              <Label className="text-xs">
+                {NETWORKS.find(n => n.value === form.network)?.kind === 'bank' ? 'Namba ya akaunti ya benki' : 'Lipa Namba'}
+              </Label>
               <Input value={form.lipa_namba} onChange={(e) => setForm({ ...form, lipa_namba: e.target.value })}
                 placeholder="mfano 1234567" className="rounded-2xl" />
             </div>
+
             <div>
               <Label className="text-xs">Jina la Akaunti (hiari)</Label>
               <Input value={form.account_name} onChange={(e) => setForm({ ...form, account_name: e.target.value })}
