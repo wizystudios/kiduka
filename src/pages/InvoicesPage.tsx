@@ -246,6 +246,7 @@ export const InvoicesPage = () => {
     setDraftStatus('paid');
     setDraftItems([emptyItem()]);
     setPreviewDraft(false);
+    setDraftId(null);
   };
 
   return (
