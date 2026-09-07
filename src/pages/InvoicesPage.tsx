@@ -288,9 +288,14 @@ export const InvoicesPage = () => {
                   </button>
                   <div className="text-right shrink-0">
                     <p className="font-bold">TZS {Number(inv.total_amount).toLocaleString()}</p>
-                    <Badge variant={inv.status === 'paid' ? 'default' : 'destructive'} className="text-[10px]">
-                      {inv.status === 'paid' ? 'Amelipa' : inv.status === 'partial' ? 'Nusu' : 'Hajalipa'}
-                    </Badge>
+                    <button
+                      onClick={() => updateInvoiceStatus(inv, inv.status === 'paid' ? 'unpaid' : 'paid')}
+                      aria-label="Badilisha hali ya malipo"
+                    >
+                      <Badge variant={inv.status === 'paid' ? 'default' : 'destructive'} className="text-[10px] cursor-pointer">
+                        {inv.status === 'paid' ? 'Amelipa' : inv.status === 'partial' ? 'Nusu' : 'Hajalipa'}
+                      </Badge>
+                    </button>
                   </div>
                   <Button
                     variant="ghost"
