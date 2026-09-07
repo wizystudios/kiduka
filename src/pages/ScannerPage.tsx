@@ -760,12 +760,12 @@ export const ScannerPage = () => {
         <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/40 pointer-events-none" />
 
         {/* Floating navigation: back + home */}
-        <div className="absolute top-4 left-4 right-4 z-20 flex items-center justify-between pointer-events-none">
+        <div className="absolute top-4 left-4 z-40 flex items-center gap-2 pointer-events-none">
           <Button
             size="icon"
             variant="secondary"
             aria-label="Rudi nyuma"
-            className="pointer-events-auto rounded-full h-11 w-11 bg-black/50 text-white border border-white/20 backdrop-blur hover:bg-black/70"
+            className="pointer-events-auto rounded-full h-11 w-11 bg-black/60 text-white border border-white/20 backdrop-blur hover:bg-black/80"
             onClick={() => (window.history.length > 1 ? navigate(-1) : navigate('/dashboard'))}
           >
             <ArrowLeft className="h-5 w-5" />
@@ -774,7 +774,7 @@ export const ScannerPage = () => {
             size="icon"
             variant="secondary"
             aria-label="Nenda Dashibodi"
-            className="pointer-events-auto rounded-full h-11 w-11 bg-black/50 text-white border border-white/20 backdrop-blur hover:bg-black/70"
+            className="pointer-events-auto rounded-full h-11 w-11 bg-black/60 text-white border border-white/20 backdrop-blur hover:bg-black/80"
             onClick={() => navigate('/dashboard')}
           >
             <Home className="h-5 w-5" />
