@@ -37,6 +37,7 @@ export const primaryNavigationItems: AppNavItem[] = [
   { id: 'groups', label: 'Makundi', icon: Users, href: '/groups', permission: null },
   { id: 'mikopo', label: 'Mikopo', icon: CreditCard, href: '/credit-management', permission: null },
   { id: 'invoices', label: 'Ankara', icon: FileText, href: '/invoices', permission: 'can_view_sales' },
+  { id: 'payments', label: 'Malipo', icon: CreditCard, href: '/lipa-namba', permission: null },
   { id: 'reports', label: 'Ripoti', icon: BarChart3, href: '/reports', permission: 'can_view_reports' },
   { id: 'bookkeeping', label: 'Uhasibu', icon: BookOpen, href: '/bookkeeping', permission: null },
   { id: 'branches', label: 'Matawi', icon: Store, href: '/branches', permission: null },

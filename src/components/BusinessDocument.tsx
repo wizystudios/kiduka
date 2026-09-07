@@ -39,7 +39,11 @@ const methodLabel = (m?: string) => {
 
 const statusLabel = (s?: string) => {
   switch (s) {
-    case 'paid': return 'Amelipa';
+    case 'paid':
+    case 'completed':
+    case 'complete':
+    case 'success':
+    case 'confirmed': return 'Amelipa';
     case 'partial': return 'Nusu';
     case 'unpaid':
     case 'pending': return 'Hajalipa';
