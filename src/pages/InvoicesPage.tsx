@@ -65,6 +65,7 @@ export const InvoicesPage = () => {
   const [draftNotes, setDraftNotes] = useState('');
   const [draftItems, setDraftItems] = useState<DraftItem[]>([emptyItem()]);
   const [previewDraft, setPreviewDraft] = useState(false);
+  const [draftId, setDraftId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
   // Saved invoices
