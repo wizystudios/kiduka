@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { useAuth } from '@/hooks/useAuth';
 import { usePermissions } from '@/hooks/usePermissions';
-import { Bell, Home, LogOut, Menu, Plus, ShoppingCart } from 'lucide-react';
+import { Home, LogOut, Menu, Package, Plus, ShoppingCart } from 'lucide-react';
 import { filterNavigationItems, primaryNavigationItems, superAdminNavigationItem, utilityNavigationItems } from '@/lib/navigation';
 
 export const MobileBottomNav = () => {
@@ -115,9 +115,9 @@ export const MobileBottomNav = () => {
             <span className="mt-0.5 text-[9px] font-medium text-muted-foreground">Ongeza</span>
           </div>
 
-          <button onClick={() => handleNav('/notifications')} className={`flex flex-1 flex-col items-center justify-center rounded-xl p-2 transition-all ${isActive('/notifications') ? 'text-primary' : 'text-muted-foreground'}`}>
-            <Bell className="h-5 w-5" />
-            <span className="mt-0.5 text-[10px] font-medium">Arifa</span>
+          <button onClick={() => handleNav('/products')} className={`flex flex-1 flex-col items-center justify-center rounded-xl p-2 transition-all ${isActive('/products') ? 'text-primary' : 'text-muted-foreground'}`}>
+            <Package className="h-5 w-5" />
+            <span className="mt-0.5 text-[10px] font-medium">Bidhaa</span>
           </button>
 
           <button onClick={() => setMenuOpen(true)} className="flex flex-1 flex-col items-center justify-center rounded-xl p-2 text-muted-foreground transition-all">

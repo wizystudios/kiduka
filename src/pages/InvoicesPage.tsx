@@ -65,6 +65,7 @@ export const InvoicesPage = () => {
   const [draftNotes, setDraftNotes] = useState('');
   const [draftItems, setDraftItems] = useState<DraftItem[]>([emptyItem()]);
   const [previewDraft, setPreviewDraft] = useState(false);
+  const [draftId, setDraftId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
   // Saved invoices
@@ -90,52 +91,95 @@ export const InvoicesPage = () => {
     loadInvoices(dataOwnerId);
   }, [dataOwnerId]);
 
-  const saveDraft = async (): Promise<SavedInvoice | null> => {
+  const buildItems = () =>
+    draftItems
+      .filter((i) => i.name.trim())
+      .map((i) => ({
+        name: i.name,
+        quantity: Number(i.quantity) || 0,
+        unit_price: Number(i.unit_price) || 0,
+        subtotal: (Number(i.quantity) || 0) * (Number(i.unit_price) || 0),
+      }));
+
+  const saveDraft = async (silent = false): Promise<SavedInvoice | null> => {
     if (!dataOwnerId) {
-      toast.error('Hakuna biashara iliyochaguliwa.');
+      if (!silent) toast.error('Hakuna biashara iliyochaguliwa.');
       return null;
     }
     setSaving(true);
     try {
-      const items = draftItems
-        .filter((i) => i.name.trim())
-        .map((i) => ({
-          name: i.name,
-          quantity: Number(i.quantity) || 0,
-          unit_price: Number(i.unit_price) || 0,
-          subtotal: (Number(i.quantity) || 0) * (Number(i.unit_price) || 0),
-        }));
+      const items = buildItems();
+      const payload = {
+        customer_name: draftCustomer.trim(),
+        customer_phone: draftPhone.trim() || null,
+        items,
+        total_amount: draftTotal,
+        payment_method: draftMethod,
+        status: draftStatus,
+        notes: draftNotes.trim() || null,
+      };
+
+      if (draftId) {
+        const { data, error } = await supabase
+          .from('invoices' as any)
+          .update(payload as any)
+          .eq('id', draftId)
+          .select()
+          .single();
+        if (error) throw error;
+        const saved = data as any as SavedInvoice;
+        setInvoices((prev) => prev.map((i) => (i.id === saved.id ? saved : i)));
+        if (!silent) toast.success(`Ankara ${saved.invoice_number} imehifadhiwa`);
+        return saved;
+      }
 
       const { data: numberData } = await supabase.rpc('next_invoice_number' as any, { _owner_id: dataOwnerId } as any);
       const invoiceNumber = (numberData as any as string) || `INV-${Date.now().toString().slice(-8)}`;
 
       const { data, error } = await supabase
         .from('invoices' as any)
-        .insert({
-          owner_id: dataOwnerId,
-          invoice_number: invoiceNumber,
-          customer_name: draftCustomer.trim(),
-          customer_phone: draftPhone.trim() || null,
-          items,
-          total_amount: draftTotal,
-          payment_method: draftMethod,
-          status: draftStatus,
-          notes: draftNotes.trim() || null,
-        } as any)
+        .insert({ owner_id: dataOwnerId, invoice_number: invoiceNumber, ...payload } as any)
         .select()
         .single();
 
       if (error) throw error;
       const saved = data as any as SavedInvoice;
+      setDraftId(saved.id);
       setInvoices((prev) => [saved, ...prev]);
-      toast.success(`Ankara ${saved.invoice_number} imehifadhiwa`);
+      if (!silent) toast.success(`Ankara ${saved.invoice_number} imehifadhiwa`);
       return saved;
     } catch (e: any) {
-      toast.error(`Imeshindikana kuhifadhi: ${e.message || e}`);
+      if (!silent) toast.error(`Imeshindikana kuhifadhi: ${e.message || e}`);
       return null;
     } finally {
       setSaving(false);
     }
+  };
+
+  // Auto-save the draft as the owner types (debounced)
+  useEffect(() => {
+    if (!createOpen || !dataOwnerId) return;
+    if (!draftValid) return;
+    const timer = setTimeout(() => { saveDraft(true); }, 900);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [createOpen, dataOwnerId, draftCustomer, draftPhone, draftMethod, draftStatus, draftNotes, draftItems]);
+
+  const updateInvoiceStatus = async (inv: SavedInvoice, status: string) => {
+    const { data, error } = await supabase
+      .from('invoices' as any)
+      .update({ status } as any)
+      .eq('id', inv.id)
+      .select()
+      .single();
+    if (error) {
+      toast.error(`Imeshindikana kubadilisha hali: ${error.message}`);
+      return;
+    }
+    const saved = data as any as SavedInvoice;
+    setInvoices((prev) => prev.map((i) => (i.id === saved.id ? saved : i)));
+    setSelectedInvoice((cur) => (cur && cur.id === saved.id ? saved : cur));
+    toast.success(status === 'paid' ? 'Imewekwa kama imelipwa' : 'Imewekwa kama haijalipwa');
   };
 
   const deleteInvoice = async (inv: SavedInvoice) => {
@@ -202,6 +246,7 @@ export const InvoicesPage = () => {
     setDraftStatus('paid');
     setDraftItems([emptyItem()]);
     setPreviewDraft(false);
+    setDraftId(null);
   };
 
   return (
@@ -243,9 +288,14 @@ export const InvoicesPage = () => {
                   </button>
                   <div className="text-right shrink-0">
                     <p className="font-bold">TZS {Number(inv.total_amount).toLocaleString()}</p>
-                    <Badge variant={inv.status === 'paid' ? 'default' : 'destructive'} className="text-[10px]">
-                      {inv.status === 'paid' ? 'Amelipa' : inv.status === 'partial' ? 'Nusu' : 'Hajalipa'}
-                    </Badge>
+                    <button
+                      onClick={() => updateInvoiceStatus(inv, inv.status === 'paid' ? 'unpaid' : 'paid')}
+                      aria-label="Badilisha hali ya malipo"
+                    >
+                      <Badge variant={inv.status === 'paid' ? 'default' : 'destructive'} className="text-[10px] cursor-pointer">
+                        {inv.status === 'paid' ? 'Amelipa' : inv.status === 'partial' ? 'Nusu' : 'Hajalipa'}
+                      </Badge>
+                    </button>
                   </div>
                   <Button
                     variant="ghost"
@@ -473,8 +523,11 @@ export const InvoicesPage = () => {
                 }}
               >
                 {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
-                Hifadhi Ankara
+                Maliza Ankara
               </Button>
+              <p className="text-[11px] text-center text-muted-foreground">
+                {saving ? 'Inahifadhi…' : draftId ? 'Imehifadhiwa kiotomatiki' : 'Itahifadhiwa kiotomatiki unapoandika'}
+              </p>
               <Button variant="outline" className="w-full rounded-full h-11" disabled={!draftValid} onClick={() => setPreviewDraft(true)}>
                 Tazama Kwanza
               </Button>
