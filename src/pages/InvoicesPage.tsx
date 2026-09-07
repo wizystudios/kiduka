@@ -518,8 +518,11 @@ export const InvoicesPage = () => {
                 }}
               >
                 {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
-                Hifadhi Ankara
+                Maliza Ankara
               </Button>
+              <p className="text-[11px] text-center text-muted-foreground">
+                {saving ? 'Inahifadhi…' : draftId ? 'Imehifadhiwa kiotomatiki' : 'Itahifadhiwa kiotomatiki unapoandika'}
+              </p>
               <Button variant="outline" className="w-full rounded-full h-11" disabled={!draftValid} onClick={() => setPreviewDraft(true)}>
                 Tazama Kwanza
               </Button>
