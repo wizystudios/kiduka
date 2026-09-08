@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { LogIn, Store } from "lucide-react";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { InstallAppButton } from "@/components/InstallAppButton";
+import { QuickSignIn } from "@/components/QuickSignIn";
 import { useLanguage } from "@/contexts/LanguageContext";
 
 const Index = () => {
@@ -100,6 +101,8 @@ const Index = () => {
             <Store className="h-5 w-5 mr-2" />
             {t('visit_sokoni')}
           </Button>
+
+          <QuickSignIn />
 
           <InstallAppButton variant="secondary" />
         </div>
