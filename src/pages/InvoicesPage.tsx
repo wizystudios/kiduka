@@ -358,6 +358,15 @@ export const InvoicesPage = () => {
                   <Button
                     variant="ghost"
                     size="icon"
+                    aria-label="Hariri ankara"
+                    className="rounded-full shrink-0"
+                    onClick={() => openEditor(inv)}
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
                     aria-label="Futa ankara"
                     className="rounded-full text-destructive shrink-0"
                     onClick={() => deleteInvoice(inv)}
@@ -374,9 +383,14 @@ export const InvoicesPage = () => {
         <SheetContent side="right" className="w-full sm:max-w-lg overflow-y-auto p-4">
           {selectedInvoice && (
             <div className="space-y-3">
-              <Button variant="ghost" size="sm" className="rounded-full" onClick={() => setSelectedInvoice(null)}>
-                <ArrowLeft className="h-4 w-4 mr-1" /> Rudi
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button variant="ghost" size="sm" className="rounded-full" onClick={() => setSelectedInvoice(null)}>
+                  <ArrowLeft className="h-4 w-4 mr-1" /> Rudi
+                </Button>
+                <Button size="sm" className="rounded-full ml-auto" onClick={() => openEditor(selectedInvoice)}>
+                  <Pencil className="h-4 w-4 mr-1" /> Hariri
+                </Button>
+              </div>
               <InvoiceGenerator
                 customer_name={selectedInvoice.customer_name}
                 customer_phone={selectedInvoice.customer_phone || undefined}
@@ -431,9 +445,14 @@ export const InvoicesPage = () => {
         <SheetContent side="right" className="w-full sm:max-w-lg overflow-y-auto p-4">
           {selected && (
             <div className="space-y-3">
-              <Button variant="ghost" size="sm" className="rounded-full" onClick={() => setSelected(null)}>
-                <ArrowLeft className="h-4 w-4 mr-1" /> Rudi
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button variant="ghost" size="sm" className="rounded-full" onClick={() => setSelected(null)}>
+                  <ArrowLeft className="h-4 w-4 mr-1" /> Rudi
+                </Button>
+                <Button size="sm" className="rounded-full ml-auto" disabled={saving} onClick={() => editSaleAsInvoice(selected)}>
+                  <Pencil className="h-4 w-4 mr-1" /> Hariri
+                </Button>
+              </div>
               <InvoiceGenerator
                 customer_name={selected.customers?.name || 'Mteja wa Kawaida'}
                 items={invoiceItems(selected)}
@@ -475,7 +494,7 @@ export const InvoicesPage = () => {
             </div>
           ) : (
             <div className="space-y-4">
-              <h2 className="text-base font-bold">Tengeneza Ankara Mpya</h2>
+              <h2 className="text-base font-bold">{draftId ? 'Hariri Ankara' : 'Tengeneza Ankara Mpya'}</h2>
 
               <div className="space-y-2">
                 <Label className="text-xs">Jina la Mteja</Label>
@@ -581,7 +600,7 @@ export const InvoicesPage = () => {
                 }}
               >
                 {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
-                Maliza Ankara
+                {draftId ? 'Hifadhi Mabadiliko' : 'Maliza Ankara'}
               </Button>
               <p className="text-[11px] text-center text-muted-foreground">
                 {saving ? 'Inahifadhi…' : draftId ? 'Imehifadhiwa kiotomatiki' : 'Itahifadhiwa kiotomatiki unapoandika'}
