@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { InvoiceGenerator } from '@/components/InvoiceGenerator';
-import { FileText, Search, Loader2, ArrowLeft, Plus, Trash2 } from 'lucide-react';
+import { FileText, Search, Loader2, ArrowLeft, Plus, Trash2, Pencil } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 
@@ -180,6 +180,64 @@ export const InvoicesPage = () => {
     setInvoices((prev) => prev.map((i) => (i.id === saved.id ? saved : i)));
     setSelectedInvoice((cur) => (cur && cur.id === saved.id ? saved : cur));
     toast.success(status === 'paid' ? 'Imewekwa kama imelipwa' : 'Imewekwa kama haijalipwa');
+  };
+
+  const openEditor = (inv: SavedInvoice) => {
+    setSelectedInvoice(null);
+    setDraftCustomer(inv.customer_name || '');
+    setDraftPhone(inv.customer_phone || '');
+    setDraftMethod(inv.payment_method || 'cash');
+    setDraftStatus(inv.status || 'paid');
+    setDraftNotes(inv.notes || '');
+    setDraftItems(
+      (inv.items || []).length
+        ? (inv.items || []).map((i) => ({ name: i.name, quantity: Number(i.quantity) || 1, unit_price: Number(i.unit_price) || 0 }))
+        : [emptyItem()]
+    );
+    setDraftId(inv.id);
+    setPreviewDraft(false);
+    setCreateOpen(true);
+  };
+
+  // Turn a sale into a real, editable invoice (once), then open the editor
+  const editSaleAsInvoice = async (sale: SaleRow) => {
+    if (!dataOwnerId) return;
+    const saleNumber = `INV-${sale.id.slice(0, 8).toUpperCase()}`;
+    const existing = invoices.find((i) => i.invoice_number === saleNumber);
+    if (existing) {
+      setSelected(null);
+      openEditor(existing);
+      return;
+    }
+    setSaving(true);
+    try {
+      const items = invoiceItems(sale);
+      const { data, error } = await supabase
+        .from('invoices' as any)
+        .insert({
+          owner_id: dataOwnerId,
+          invoice_number: saleNumber,
+          customer_name: sale.customers?.name || 'Mteja wa Kawaida',
+          customer_phone: null,
+          items,
+          total_amount: Number(sale.total_amount),
+          payment_method: sale.payment_method || 'cash',
+          status: sale.payment_status || 'paid',
+          notes: null,
+          sale_id: sale.id,
+        } as any)
+        .select()
+        .single();
+      if (error) throw error;
+      const saved = data as any as SavedInvoice;
+      setInvoices((prev) => [saved, ...prev]);
+      setSelected(null);
+      openEditor(saved);
+    } catch (e: any) {
+      toast.error(`Imeshindikana kuandaa ankara: ${e.message || e}`);
+    } finally {
+      setSaving(false);
+    }
   };
 
   const deleteInvoice = async (inv: SavedInvoice) => {
