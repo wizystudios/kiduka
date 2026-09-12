@@ -68,8 +68,9 @@ self.addEventListener('install', (event) => {
         `, {
           headers: { 'Content-Type': 'text/html' }
         }));
-      }),
-      self.skipWaiting()
+      })
+      // NOTE: no self.skipWaiting() here — a new version waits until the user
+      // explicitly accepts the update in the app.
     ])
   );
 });

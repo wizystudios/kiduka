@@ -30,7 +30,6 @@ export const BusinessSwitcher = () => {
       <div className="inline-flex items-center gap-2 rounded-full bg-primary/5 px-3 py-1.5 text-xs">
         <Building2 className="h-3.5 w-3.5 text-primary" />
         <span className="font-semibold text-foreground">{current.business_name}</span>
-        <span className="text-muted-foreground">· {roleLabel[current.role]}</span>
       </div>
     );
   }
