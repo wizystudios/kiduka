@@ -2,7 +2,7 @@ import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { TopNavbar } from "@/components/TopNavbar";
-import { UserInfoBar } from "@/components/UserInfoBar";
+
 import OfflineSyncBootstrap from "@/components/OfflineSyncBootstrap";
 import { ContractComplianceGate } from "@/components/ContractComplianceGate";
 import { AdminSessionBanner } from "@/components/AdminSessionBanner";
