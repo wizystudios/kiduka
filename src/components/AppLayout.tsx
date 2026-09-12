@@ -76,7 +76,6 @@ export function AppLayout({ children }: AppLayoutProps) {
           
         </SidebarInset>
       </div>
-      {!isScannerRoute && <UserInfoBar />}
       {!isScannerRoute && <MobileBottomNav />}
     </SidebarProvider>
   );
