@@ -14,6 +14,20 @@ export const useDataAccess = () => {
   const [ownerBusinessName, setOwnerBusinessName] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [isAssistant, setIsAssistant] = useState(false);
+  const [branchId, setBranchId] = useState<string | null>(null);
+  const [branchName, setBranchName] = useState<string | null>(null);
+
+  // Branch staff belong to their branch, not the main shop
+  useEffect(() => {
+    if (!user || userProfile?.role === 'owner' || userProfile?.role === 'super_admin') { setBranchId(null); setBranchName(null); return; }
+    (async () => {
+      const { data } = await supabase.from('branch_staff')
+        .select('branch_id, business_branches(branch_name)')
+        .eq('user_id', user.id).eq('is_active', true).maybeSingle();
+      setBranchId((data as any)?.branch_id ?? null);
+      setBranchName((data as any)?.business_branches?.branch_name ?? null);
+    })();
+  }, [user, userProfile?.role]);
 
   useEffect(() => {
     const fetchDataOwnerId = async () => {
@@ -118,7 +132,10 @@ export const useDataAccess = () => {
 
   return { 
     dataOwnerId, 
-    ownerBusinessName,
+    ownerBusinessName: branchName ? `${ownerBusinessName || ''} · Tawi: ${branchName}` : ownerBusinessName,
+    branchId,
+    branchName,
+    isBranchStaff: !!branchId,
     loading, 
     isAssistant,
     isReady: !loading && (!!dataOwnerId || userProfile?.role === 'assistant')

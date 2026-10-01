@@ -12,6 +12,7 @@ import { useOfflineSync } from '@/hooks/useOfflineSync';
 import { OfflineIndicator } from '@/components/OfflineIndicator';
 import { TopAlertBar } from '@/components/TopAlertBar';
 import { KidukaLogo } from './KidukaLogo';
+import { ProfileMenuSheet } from './ProfileMenuSheet';
 import { LogOut, Bell, Mic } from 'lucide-react';
 import { filterNavigationItems, primaryNavigationItems, superAdminNavigationItem, utilityNavigationItems } from '@/lib/navigation';
 
@@ -24,6 +25,8 @@ export const TopNavbar = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const { branchName } = useDataAccess();
 
   const getUserInitials = () => {
     const displayName = userProfile?.full_name || user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User';
@@ -88,7 +91,7 @@ export const TopNavbar = () => {
                 </Avatar>
                 <div className="text-left">
                   <p className="text-sm font-semibold">{getDisplayName()}</p>
-                  <p className="text-[10px] text-muted-foreground">{getBusinessName()}</p>
+                  <p className="text-[10px] text-muted-foreground">{getBusinessName()}{branchName ? ` · Tawi: ${branchName}` : ''}</p>
                   <Badge variant="outline" className="mt-0.5 text-xs">{getUserRole()}</Badge>
                 </div>
               </SheetTitle>
@@ -164,6 +167,13 @@ export const TopNavbar = () => {
           <Button variant="ghost" size="sm" className="p-1.5 h-8 w-8" onClick={() => navigate('/voice-pos')}>
             <Mic className="h-4 w-4" />
           </Button>
+          <button type="button" onClick={() => setProfileOpen(true)} aria-label="Wasifu" className="ml-0.5 rounded-full ring-2 ring-primary/20 transition hover:ring-primary/50">
+            <Avatar className="h-8 w-8">
+              <AvatarImage src={userProfile?.avatar_url} />
+              <AvatarFallback className="bg-primary text-primary-foreground text-xs">{getUserInitials()}</AvatarFallback>
+            </Avatar>
+          </button>
+          <ProfileMenuSheet open={profileOpen} onOpenChange={setProfileOpen} />
         </div>
       </div>
     </div>

@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Sheet, SheetContent } from '@/components/ui/sheet';
+import { ProfileMenuSheet } from '@/components/ProfileMenuSheet';
 import { useAuth } from '@/hooks/useAuth';
 import { usePermissions } from '@/hooks/usePermissions';
 import { Home, LogOut, Menu, Package, Plus, ShoppingCart } from 'lucide-react';
@@ -127,80 +127,7 @@ export const MobileBottomNav = () => {
         </div>
       </nav>
 
-      <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
-        <SheetContent side="bottom" className="h-[85vh] overflow-y-auto rounded-t-3xl">
-          <div className="mb-4 flex items-center gap-3 border-b border-border pb-4">
-            <Avatar className="h-12 w-12">
-              <AvatarImage src={userProfile?.avatar_url} />
-              <AvatarFallback className="bg-primary text-primary-foreground">{getUserInitials()}</AvatarFallback>
-            </Avatar>
-            <div className="min-w-0 flex-1">
-              <h3 className="truncate font-semibold text-base">{userProfile?.full_name || user?.email?.split('@')[0]}</h3>
-              <div className="flex items-center gap-2">
-                <Badge variant="outline" className="text-xs">{getUserRole()}</Badge>
-                <span className="truncate text-xs text-muted-foreground">{userProfile?.business_name}</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="space-y-5">
-            <div>
-              <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">Menyu kuu</p>
-              <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
-                {menuItems.map((item) => {
-                  const Icon = item.icon;
-                  const active = isActive(item.href);
-                  return (
-                    <button key={item.id} onClick={() => handleNav(item.href)} className={`flex min-w-0 flex-col items-center justify-center rounded-2xl p-3 text-center transition-all ${active ? 'bg-primary/10 text-primary' : 'bg-muted/30 text-foreground hover:bg-muted/60'}`}>
-                      <div className={`mb-1 flex h-10 w-10 items-center justify-center rounded-xl ${active ? 'bg-primary/20' : 'bg-muted/50'}`}>
-                        <Icon className="h-5 w-5" />
-                      </div>
-                      <span className="text-[11px] font-medium leading-tight">{item.label}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {userProfile?.role === 'super_admin' && (
-              <div>
-                <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">Usimamizi</p>
-                <button onClick={() => handleNav(superAdminNavigationItem.href)} className="flex w-full items-center gap-3 rounded-2xl bg-muted/30 p-3 text-left hover:bg-muted/60">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
-                    <superAdminNavigationItem.icon className="h-5 w-5 text-primary" />
-                  </div>
-                  <span className="text-sm font-medium">{superAdminNavigationItem.label}</span>
-                </button>
-              </div>
-            )}
-
-            <div>
-              <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">Huduma</p>
-              <div className="grid grid-cols-2 gap-2">
-                {utilityItems.map((item) => {
-                  const Icon = item.icon;
-                  const active = isActive(item.href);
-                  return (
-                    <button key={item.id} onClick={() => handleNav(item.href)} className={`flex items-center gap-3 rounded-2xl p-3 text-left transition-all ${active ? 'bg-primary/10 text-primary' : 'bg-muted/30 text-foreground hover:bg-muted/60'}`}>
-                      <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${active ? 'bg-primary/20' : 'bg-muted/50'}`}>
-                        <Icon className="h-4 w-4" />
-                      </div>
-                      <span className="min-w-0 text-sm font-medium">{item.label}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-6 border-t border-border pt-4">
-            <Button variant="ghost" className="h-11 w-full justify-start rounded-2xl text-destructive hover:bg-destructive/10 hover:text-destructive" onClick={handleSignOut}>
-              <LogOut className="mr-3 h-4 w-4" />
-              Toka Akaunti
-            </Button>
-          </div>
-        </SheetContent>
-      </Sheet>
+      <ProfileMenuSheet open={menuOpen} onOpenChange={setMenuOpen} />
     </>
   );
 };

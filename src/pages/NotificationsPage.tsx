@@ -125,6 +125,14 @@ export const NotificationsPage = () => {
         newNotifications.push({ id, title: 'Ombi la Kurudisha', message: `${r.customer_phone}: ${r.reason} - ${r.status}`, type: 'return_request', isRead: persisted.find(n => n.id === id)?.isRead ?? (r.status !== 'pending'), timestamp: new Date(r.created_at!), route: '/sokoni-orders' });
       });
 
+      if (userProfile?.role === 'super_admin') {
+        const { data: adminN } = await supabase.from('admin_notifications').select('id, title, message, is_read, created_at').order('created_at', { ascending: false }).limit(30);
+        adminN?.forEach((a) => {
+          const id = `admin-${a.id}`;
+          newNotifications.push({ id, title: a.title, message: a.message, type: 'info', isRead: persisted.find(n => n.id === id)?.isRead ?? !!a.is_read, timestamp: new Date(a.created_at), route: '/super-admin' });
+        });
+      }
+
       newNotifications.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
       setNotifications(newNotifications);
       saveNotifications(newNotifications);
@@ -192,12 +200,23 @@ export const NotificationsPage = () => {
     );
   }
 
+  const groupOf = (d: Date) => {
+    const days = (Date.now() - d.getTime()) / 86400000;
+    if (days < 1) return 'Leo';
+    if (days < 7) return 'Wiki hii';
+    if (days < 14) return 'Wiki iliyopita';
+    return 'Za zamani';
+  };
+  const groups = ['Leo', 'Wiki hii', 'Wiki iliyopita', 'Za zamani']
+    .map((g) => ({ g, items: filtered.filter((n) => groupOf(n.timestamp) === g) }))
+    .filter((x) => x.items.length > 0);
+
   return (
-    <div className="p-2 pb-20 space-y-2">
-      {/* Compact controls */}
-      <div className="flex items-center gap-2">
+    <div className="mx-auto w-full max-w-xl px-3 pb-24 pt-2">
+      <div className="sticky top-0 z-10 -mx-3 flex items-center gap-1 bg-background/95 px-3 py-2 backdrop-blur">
+        <h1 className="flex-1 text-xl font-semibold">Taarifa</h1>
         <Select value={filter} onValueChange={setFilter}>
-          <SelectTrigger className="h-8 text-xs rounded-full w-auto min-w-[100px]">
+          <SelectTrigger aria-label="Chuja" className="h-9 w-auto gap-1 rounded-xl border-primary/30 px-2 text-xs">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -212,50 +231,53 @@ export const NotificationsPage = () => {
             <SelectItem value="return_request">Returns</SelectItem>
           </SelectContent>
         </Select>
-
-        <div className="flex-1" />
-
-        {unreadCount > 0 && (
-          <Button variant="ghost" size="sm" onClick={markAllAsRead} className="h-8 px-2 text-xs rounded-full">
-            <CheckCheck className="h-3 w-3 mr-1" /> Soma zote
-          </Button>
-        )}
-        <Button variant="ghost" size="sm" onClick={loadNotifications} className="h-8 w-8 p-0 rounded-full">
-          <RefreshCw className="h-3.5 w-3.5" />
-        </Button>
+        <Button variant="ghost" size="icon" title="Soma zote" onClick={markAllAsRead} className="h-9 w-9 rounded-xl"><CheckCheck className="h-4 w-4" /></Button>
+        <Button variant="ghost" size="icon" title="Onyesha upya" onClick={loadNotifications} className="h-9 w-9 rounded-xl"><RefreshCw className="h-4 w-4" /></Button>
       </div>
 
-      {/* Flat list */}
-      {filtered.length === 0 ? (
-        <div className="text-center py-12">
-          <Bell className="h-10 w-10 text-muted-foreground mx-auto mb-2 opacity-40" />
-          <p className="text-sm text-muted-foreground">Hakuna arifa</p>
+      {unreadCount === 0 && (
+        <div className="flex flex-col items-center py-6 text-center">
+          <p className="font-semibold">Uko sawa kabisa!</p>
+          <p className="text-xs text-muted-foreground">Huna taarifa mpya kwa sasa</p>
+          <div className="relative mt-4 flex h-24 w-24 items-center justify-center rounded-full bg-primary/10">
+            <Bell className="h-12 w-12 text-primary" />
+            <span className="absolute right-3 top-6 h-4 w-8 rounded-full bg-secondary ring-2 ring-background" />
+          </div>
         </div>
-      ) : (
-        <ScrollArea className="h-[calc(100vh-180px)]">
-          <div className="space-y-1">
-            {filtered.map((notif) => (
+      )}
+
+      {groups.length === 0 ? (
+        <p className="py-8 text-center text-sm text-muted-foreground">Hakuna taarifa</p>
+      ) : groups.map(({ g, items }) => (
+        <section key={g} className="mt-4">
+          <div className="mb-2 flex items-center gap-3">
+            <div className="h-px flex-1 bg-border" />
+            <span className="text-xs font-medium text-primary">{g}</span>
+            <div className="h-px flex-1 bg-border" />
+          </div>
+          <div className="space-y-2">
+            {items.map((notif) => (
               <button
                 key={notif.id}
                 onClick={() => handleClick(notif)}
-                className={`w-full flex items-start gap-3 p-3 rounded-2xl text-left transition-all hover:bg-muted/50 active:scale-[0.99] ${
-                  !notif.isRead ? 'bg-primary/5' : ''
-                }`}
+                className={`flex w-full items-start gap-3 rounded-2xl border p-3 text-left shadow-sm transition hover:shadow-md active:scale-[0.99] ${!notif.isRead ? 'border-primary/30 bg-primary/5' : 'border-border bg-card'}`}
               >
-                <div className="mt-0.5 p-1.5 rounded-xl bg-muted/50 flex-shrink-0">{getTypeIcon(notif.type)}</div>
-                <div className="flex-1 min-w-0">
+                <div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-muted">
+                  {getTypeIcon(notif.type)}
+                  {!notif.isRead && <span className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full bg-primary ring-2 ring-background" />}
+                </div>
+                <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
-                    <h4 className="text-sm font-medium truncate">{notif.title}</h4>
-                    {!notif.isRead && <div className="w-1.5 h-1.5 bg-primary rounded-full flex-shrink-0" />}
+                    <h4 className="flex-1 truncate text-sm font-medium">{notif.title}</h4>
+                    <span className="shrink-0 text-[10px] text-muted-foreground">{formatTime(notif.timestamp)}</span>
                   </div>
-                  <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">{notif.message}</p>
-                  <p className="text-[10px] text-muted-foreground/50 mt-0.5">{formatTime(notif.timestamp)}</p>
+                  <p className="mt-0.5 line-clamp-2 text-sm text-foreground/80">{notif.message}</p>
                 </div>
               </button>
             ))}
           </div>
-        </ScrollArea>
-      )}
+        </section>
+      ))}
 
       {/* Detail Dialog */}
       <Dialog open={!!selectedItem} onOpenChange={() => setSelectedItem(null)}>

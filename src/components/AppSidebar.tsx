@@ -1,140 +1,118 @@
+import { useState } from 'react';
 import { useNavigate, useLocation, NavLink } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { usePermissions } from '@/hooks/usePermissions';
+import { useDataAccess } from '@/hooks/useDataAccess';
 import { KidukaLogo } from '@/components/KidukaLogo';
-import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Button } from '@/components/ui/button';
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  SidebarHeader,
-  SidebarFooter,
-  useSidebar,
-} from '@/components/ui/sidebar';
-import { Shield, LogOut } from 'lucide-react';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Shield, LogOut, PanelLeftOpen, PanelLeftClose, Plus } from 'lucide-react';
 import { primaryNavigationItems, filterNavigationItems } from '@/lib/navigation';
+import { cn } from '@/lib/utils';
 
+/**
+ * Floating rail sidebar: compact icon rail that expands on hover,
+ * or stays open when pinned with the top toggle.
+ */
 export function AppSidebar() {
   const { signOut, userProfile, user } = useAuth();
   const { permissions } = usePermissions();
+  const { branchName } = useDataAccess();
   const navigate = useNavigate();
   const location = useLocation();
-  const { state, toggleSidebar } = useSidebar();
-  const collapsed = state === 'collapsed';
+  const [pinned, setPinned] = useState(() => localStorage.getItem('kiduka-sidebar-pinned') === '1');
+  const [hover, setHover] = useState(false);
+  const open = pinned || hover;
 
   if (!userProfile) return null;
 
-  const hasPermission = (perm: string | null) => {
-    if (userProfile.role === 'owner' || userProfile.role === 'super_admin') return true;
-    if (!perm) return true;
-    return permissions?.[perm as keyof typeof permissions] ?? false;
+  const togglePin = () => {
+    const next = !pinned;
+    setPinned(next);
+    if (!next) setHover(false);
+    localStorage.setItem('kiduka-sidebar-pinned', next ? '1' : '0');
   };
 
-  const isActive = (href: string) => {
-    if (href === '/dashboard') return location.pathname === '/dashboard';
-    return location.pathname.startsWith(href);
-  };
+  const isActive = (href: string) => href === '/dashboard' ? location.pathname === '/dashboard' : location.pathname.startsWith(href);
+  const name = userProfile?.full_name || user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'U';
+  const initials = name.split(' ').map((n: string) => n.charAt(0).toUpperCase()).join('').slice(0, 2);
+  const role = userProfile.role === 'owner' ? 'Mmiliki' : userProfile.role === 'super_admin' ? 'Msimamizi Mkuu' : branchName ? `Tawi: ${branchName}` : 'Msaidizi';
 
-  const handleSignOut = async () => {
-    try { await signOut(); navigate('/auth'); } catch (e) { console.error(e); }
-  };
+  const items = filterNavigationItems(primaryNavigationItems, userProfile.role, permissions as unknown as Record<string, boolean> | null);
+  const all = [
+    ...(userProfile.role === 'super_admin' ? [{ id: 'super-admin', href: '/super-admin', label: 'Super Admin', icon: Shield }] : []),
+    ...items,
+  ];
 
-  const getUserInitials = () => {
-    const name = userProfile?.full_name || user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'U';
-    return name.split(' ').map((n: string) => n.charAt(0).toUpperCase()).join('').slice(0, 2);
-  };
-
-  const getDisplayName = () => userProfile?.full_name || user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User';
-
-  const getUserRole = () => {
-    switch (userProfile?.role) {
-      case 'owner': return 'Mmiliki';
-      case 'assistant': return 'Msaidizi';
-      case 'super_admin': return 'Msimamizi Mkuu';
-      default: return 'Mtumiaji';
-    }
-  };
-
-  const filteredItems = filterNavigationItems(primaryNavigationItems, userProfile?.role, permissions as unknown as Record<string, boolean> | null);
+  const Row = ({ href, label, Icon }: { href: string; label: string; Icon: any }) => (
+    <NavLink
+      to={href}
+      title={open ? undefined : label}
+      className={cn(
+        'group flex h-9 items-center gap-3 rounded-xl border px-2.5 text-sm transition-all duration-200',
+        isActive(href)
+          ? 'border-primary/30 bg-background text-primary shadow-sm'
+          : 'border-transparent text-foreground/80 hover:border-primary/20 hover:bg-background/70',
+      )}
+    >
+      <Icon className="h-4 w-4 shrink-0" />
+      <span className={cn('truncate whitespace-nowrap transition-opacity duration-200', open ? 'opacity-100' : 'pointer-events-none w-0 opacity-0')}>{label}</span>
+    </NavLink>
+  );
 
   return (
-    <Sidebar collapsible="icon" className="border-r border-border/40 bg-background [&_[data-radix-scroll-area-viewport]]:scrollbar-none">
-      <SidebarHeader className="border-b border-border/40 px-2 py-3">
-        <div className={`flex px-2 ${collapsed ? 'flex-col items-center gap-2' : 'items-center justify-between gap-2'}`}>
-          <KidukaLogo size="sm" showText={!collapsed} />
-          <Button
+    <div className="relative hidden w-16 shrink-0 md:block" onMouseLeave={() => !pinned && setHover(false)} style={pinned ? { width: '15rem' } : undefined}>
+      <aside
+        onMouseEnter={() => setHover(true)}
+        className={cn(
+          'fixed left-0 top-0 z-40 flex h-[100dvh] flex-col gap-1 border-r border-primary/10 bg-primary/5 p-2 backdrop-blur-xl transition-[width,box-shadow,border-radius] duration-300 ease-out',
+          open ? 'w-60' : 'w-16',
+          hover && !pinned && 'rounded-r-3xl bg-background/95 shadow-2xl',
+        )}
+      >
+        <div className="flex h-10 items-center justify-between px-1">
+          {open && <KidukaLogo size="sm" showText />}
+          <button
             type="button"
-            variant="ghost"
-            size="sm"
-            onClick={toggleSidebar}
-            aria-label="Fungua au funga menyu"
-            className="h-9 w-9 rounded-xl border border-border bg-background p-0 hover:bg-accent"
+            onClick={togglePin}
+            aria-label={pinned ? 'Funga menyu' : 'Bana menyu wazi'}
+            className="flex h-9 w-9 items-center justify-center rounded-xl text-foreground/70 hover:bg-background"
           >
-            <div className="flex flex-col gap-[3px]">
-              <span className="block h-[2px] w-4 rounded-full bg-foreground" />
-              <span className="block h-[2px] w-3 rounded-full bg-foreground" />
-              <span className="block h-[2px] w-4 rounded-full bg-foreground" />
-            </div>
-          </Button>
+            {pinned ? <PanelLeftClose className="h-4 w-4" /> : <PanelLeftOpen className="h-4 w-4" />}
+          </button>
         </div>
-      </SidebarHeader>
 
-      <SidebarContent className="py-2 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-        <SidebarGroup>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {/* Super Admin */}
-              {userProfile.role === 'super_admin' && (
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild isActive={isActive('/super-admin')}>
-                    <NavLink to="/super-admin" className="flex items-center gap-3 px-3 py-2 rounded-lg">
-                      <Shield className="h-4 w-4" />
-                      {!collapsed && <span>Super Admin</span>}
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              )}
+        <nav className="flex-1 space-y-1 overflow-y-auto overflow-x-hidden py-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          {all.slice(0, 2).map((i) => <Row key={i.id} href={i.href} label={i.label} Icon={i.icon} />)}
+          <div className="mx-2 my-2 h-px bg-border" />
+          {all.slice(2).map((i) => <Row key={i.id} href={i.href} label={i.label} Icon={i.icon} />)}
+        </nav>
 
-              {filteredItems.map((item) => (
-                <SidebarMenuItem key={item.id}>
-                  <SidebarMenuButton asChild isActive={isActive(item.href)}>
-                    <NavLink to={item.href} className="flex items-center gap-3 px-3 py-2 rounded-lg">
-                      <item.icon className="h-4 w-4" />
-                      {!collapsed && <span>{item.label}</span>}
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-      </SidebarContent>
-
-      <SidebarFooter className="border-t border-border/40 p-3">
-        <div className="flex items-center gap-3 mb-2">
-          <Avatar className="h-8 w-8">
-            <AvatarFallback className="bg-gradient-to-br from-emerald-500 to-blue-600 text-white text-xs">
-              {getUserInitials()}
-            </AvatarFallback>
+        <div className="mx-2 my-1 h-px bg-border" />
+        <button
+          type="button"
+          onClick={() => navigate('/quick-sale')}
+          className="flex h-9 items-center justify-center gap-2 rounded-xl bg-background/70 text-sm text-primary hover:bg-background"
+          title="Uza haraka"
+        >
+          <Plus className="h-4 w-4" />{open && <span>Uza haraka</span>}
+        </button>
+        <div className="flex items-center gap-2 rounded-xl px-1 py-1.5">
+          <Avatar className="h-8 w-8 shrink-0">
+            <AvatarFallback className="bg-primary text-primary-foreground text-xs">{initials}</AvatarFallback>
           </Avatar>
-          {!collapsed && (
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-foreground truncate">{getDisplayName()}</p>
-              <Badge variant="outline" className="text-xs">{getUserRole()}</Badge>
+          {open && (
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-medium">{name}</p>
+              <p className="truncate text-[11px] text-muted-foreground">{role}</p>
             </div>
           )}
+          {open && (
+            <button type="button" onClick={async () => { await signOut(); navigate('/auth'); }} aria-label="Toka" className="rounded-lg p-1.5 text-destructive hover:bg-destructive/10">
+              <LogOut className="h-4 w-4" />
+            </button>
+          )}
         </div>
-        <Button variant="outline" onClick={handleSignOut} className="w-full justify-start" size="sm">
-          <LogOut className="h-4 w-4" />
-          {!collapsed && <span className="ml-2">Toka</span>}
-        </Button>
-      </SidebarFooter>
-    </Sidebar>
+      </aside>
+    </div>
   );
 }
