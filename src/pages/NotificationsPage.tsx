@@ -125,6 +125,14 @@ export const NotificationsPage = () => {
         newNotifications.push({ id, title: 'Ombi la Kurudisha', message: `${r.customer_phone}: ${r.reason} - ${r.status}`, type: 'return_request', isRead: persisted.find(n => n.id === id)?.isRead ?? (r.status !== 'pending'), timestamp: new Date(r.created_at!), route: '/sokoni-orders' });
       });
 
+      if (userProfile?.role === 'super_admin') {
+        const { data: adminN } = await supabase.from('admin_notifications').select('id, title, message, is_read, created_at').order('created_at', { ascending: false }).limit(30);
+        adminN?.forEach((a) => {
+          const id = `admin-${a.id}`;
+          newNotifications.push({ id, title: a.title, message: a.message, type: 'info', isRead: persisted.find(n => n.id === id)?.isRead ?? !!a.is_read, timestamp: new Date(a.created_at), route: '/super-admin' });
+        });
+      }
+
       newNotifications.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
       setNotifications(newNotifications);
       saveNotifications(newNotifications);
