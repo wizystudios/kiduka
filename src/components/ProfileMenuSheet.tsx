@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { useAuth } from '@/hooks/useAuth';
+import { useDataAccess } from '@/hooks/useDataAccess';
 import { usePermissions } from '@/hooks/usePermissions';
 import { LogOut, Settings } from 'lucide-react';
 import { filterNavigationItems, primaryNavigationItems, superAdminNavigationItem, utilityNavigationItems } from '@/lib/navigation';
@@ -18,6 +19,7 @@ export const ProfileMenuSheet = ({ open, onOpenChange }: ProfileMenuSheetProps) 
   const location = useLocation();
   const { user, userProfile, signOut } = useAuth();
   const { permissions } = usePermissions();
+  const { branchName } = useDataAccess();
 
   const getUserInitials = () => {
     const name = userProfile?.full_name || user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'U';
@@ -68,7 +70,7 @@ export const ProfileMenuSheet = ({ open, onOpenChange }: ProfileMenuSheetProps) 
             <div className="mt-1 flex flex-wrap items-center gap-2">
               <Badge variant="secondary" className="text-[10px]">{getUserRole()}</Badge>
               {userProfile?.business_name && (
-                <span className="truncate text-xs text-muted-foreground">{userProfile.business_name}</span>
+                <span className="truncate text-xs text-muted-foreground">{userProfile.business_name}{branchName ? ` · Tawi: ${branchName}` : ''}</span>
               )}
             </div>
           </div>
