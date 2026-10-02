@@ -3275,6 +3275,16 @@ export type Database = {
         }
         Returns: Json
       }
+      preview_business_billing: {
+        Args: {
+          p_branch_staff?: number
+          p_branches: number
+          p_customers: number
+          p_products: number
+          p_staff: number
+        }
+        Returns: Json
+      }
       process_sokoni_order_to_sale: {
         Args: { order_id: string }
         Returns: string
