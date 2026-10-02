@@ -74,7 +74,7 @@ export const TopNavbar = () => {
         {/* Hamburger menu */}
         <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
           <SheetTrigger asChild>
-            <Button variant="ghost" size="sm" className="p-1.5 h-8 w-8">
+            <Button variant="ghost" size="sm" className="p-1.5 h-8 w-8" aria-label="Menyu">
               <div className="flex flex-col gap-[3px]">
                 <span className="block w-4 h-[2px] bg-foreground rounded-full" />
                 <span className="block w-3 h-[2px] bg-foreground rounded-full" />
