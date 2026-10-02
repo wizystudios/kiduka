@@ -821,6 +821,10 @@ export const BranchManager = () => {
         </Dialog>
       </div>
 
+      {!isBranchStaffView && <BranchFeeCalculator />}
+
+
+
       {branches.length === 0 ? (
         <div className="text-center py-16">
           <Store className="h-12 w-12 text-muted-foreground mx-auto mb-3 opacity-40" />
