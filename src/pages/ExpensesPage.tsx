@@ -12,6 +12,7 @@ import { useDataAccess } from '@/hooks/useDataAccess';
 import { toast } from 'sonner';
 import { logActivity } from '@/hooks/useActivityLogger';
 import { DataExportButton } from '@/components/DataExportButton';
+import { UnifiedDeleteSheet } from '@/components/UnifiedDeleteSheet';
 import { format } from 'date-fns';
 
 interface Expense {
@@ -41,6 +42,7 @@ export default function ExpensesPage() {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(false);
   const [showForm, setShowForm] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<Expense | null>(null);
   const [formData, setFormData] = useState({
     category: '',
     amount: '',
@@ -115,8 +117,6 @@ export default function ExpensesPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Una uhakika unataka kufuta matumizi haya?')) return;
-
     try {
       const { error } = await supabase
         .from('expenses')
@@ -300,7 +300,7 @@ export default function ExpensesPage() {
                     <Button
                       size="sm"
                       variant="ghost"
-                      onClick={() => handleDelete(expense.id)}
+                      onClick={() => setDeleteTarget(expense)}
                     >
                       <Trash2 className="h-4 w-4 text-destructive" />
                     </Button>
