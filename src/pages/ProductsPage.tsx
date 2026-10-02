@@ -324,7 +324,7 @@ export const ProductsPage = () => {
             >
               <Card className="hover:shadow-sm transition-all">
                 <CardContent className="p-2">
-                  <CollapsibleTrigger className="w-full lg:pointer-events-none">
+                  <CollapsibleTrigger className="w-full">
                     <div className="flex justify-between items-center">
                       <div className="flex-1 min-w-0 text-left">
                         <div className="flex items-center gap-1 mb-0.5">
