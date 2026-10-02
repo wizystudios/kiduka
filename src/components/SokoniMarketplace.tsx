@@ -439,6 +439,12 @@ export const SokoniMarketplace = () => {
       
       const sellerIds = [...new Set(cart.map(i => i.owner_id))];
       for (const sellerId of sellerIds) {
+        // Skip if an un-recovered cart for this phone+seller already exists in the last hour
+        const since = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+        const { data: existing } = await supabase.from('abandoned_carts')
+          .select('id').eq('customer_phone', normalizedPhone).eq('seller_id', sellerId)
+          .eq('recovered', false).gte('created_at', since).limit(1);
+        if (existing && existing.length > 0) continue;
         const sellerItems = cart.filter(i => i.owner_id === sellerId);
         await supabase.from('abandoned_carts').insert({
           customer_phone: normalizedPhone,
@@ -838,7 +844,7 @@ export const SokoniMarketplace = () => {
                 setActiveTab('browse');
               }}
             >
-              <TrendingUp className="h-3 w-3 mr-1" /> Top Deals
+              <TrendingUp className="h-3 w-3 mr-1" /> Ofa Bora
             </Button>
             <Button
               variant={dealFilter === 'top-ranking' ? 'secondary' : 'ghost'} size="sm"
@@ -849,7 +855,7 @@ export const SokoniMarketplace = () => {
                 setActiveTab('browse');
               }}
             >
-              <Star className="h-3 w-3 mr-1" /> Top Ranking
+              <Star className="h-3 w-3 mr-1" /> Bora Zaidi
             </Button>
             <Button
               variant={dealFilter === 'new-products' ? 'secondary' : 'ghost'} size="sm"
@@ -949,7 +955,7 @@ export const SokoniMarketplace = () => {
           {(selectedCategory || dealFilter) && (
             <div className="flex items-center gap-2 mb-3">
               <Badge variant="secondary" className="text-sm rounded-full">
-                {selectedCategory ? `${getCategoryIcon(selectedCategory)} ${selectedCategory}` : dealFilter === 'top-deals' ? 'Top Deals' : dealFilter === 'top-ranking' ? 'Top Ranking' : 'Bidhaa Mpya'}
+                {selectedCategory ? `${getCategoryIcon(selectedCategory)} ${selectedCategory}` : dealFilter === 'top-deals' ? 'Ofa Bora' : dealFilter === 'top-ranking' ? 'Bora Zaidi' : 'Bidhaa Mpya'}
               </Badge>
               <Button variant="ghost" size="sm" onClick={() => { setSelectedCategory(null); setDealFilter(null); }}>
                 Ondoa

@@ -65,15 +65,21 @@ export const ReturnRequestManager = () => {
         if (req?.items && Array.isArray(req.items)) {
           for (const item of req.items) {
             const productName = (item as any).product_name;
+            const productId = (item as any).product_id;
             const qty = (item as any).quantity || 1;
-            
-            // Find product by name and owner
-            const { data: product } = await supabase
-              .from('products')
-              .select('id, stock_quantity')
-              .eq('owner_id', dataOwnerId!)
-              .eq('name', productName)
-              .maybeSingle();
+
+            // Prefer matching by product id; fall back to exact name (first match)
+            let product: { id: string; stock_quantity: number } | null = null;
+            if (productId) {
+              const { data } = await supabase.from('products').select('id, stock_quantity')
+                .eq('id', productId).eq('owner_id', dataOwnerId!).maybeSingle();
+              product = data;
+            }
+            if (!product && productName) {
+              const { data } = await supabase.from('products').select('id, stock_quantity')
+                .eq('owner_id', dataOwnerId!).eq('name', productName).limit(1).maybeSingle();
+              product = data;
+            }
             
             if (product) {
               await supabase
