@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -33,6 +33,10 @@ export const SubscriptionPage = ({ embedded = false }: SubscriptionPageProps) =>
   const [processing, setProcessing] = useState(false);
   const [paymentInitiated, setPaymentInitiated] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
+  const [amountDue, setAmountDue] = useState<number | null>(null);
+  useEffect(() => {
+    supabase.rpc('get_my_billing' as any).then(({ data }) => setAmountDue(Number((data as any)?.amount_due ?? 0)));
+  }, []);
 
   const getRenewalDate = () => {
     if (subscription?.status === 'trial' && subscription.trial_ends_at) {
@@ -50,11 +54,15 @@ export const SubscriptionPage = ({ embedded = false }: SubscriptionPageProps) =>
       return;
     }
 
+    if (!amountDue || amountDue <= 0) {
+      toast.error('Kiasi cha bili hakijapatikana. Jaribu tena.');
+      return;
+    }
     setProcessing(true);
     try {
       const { data, error } = await supabase.functions.invoke('clickpesa-payment', {
         body: {
-          amount: (subscription as any)?.payment_amount || 30000,
+          amount: amountDue,
           phone_number: phoneNumber,
           subscription_id: subscription?.id,
           transaction_type: 'subscription_payment',
@@ -240,7 +248,7 @@ export const SubscriptionPage = ({ embedded = false }: SubscriptionPageProps) =>
                   </Badge>
                 </div>
                 <div className="flex items-baseline gap-1 mt-2">
-                  <span className="text-3xl font-bold text-primary">TSh {((subscription as any)?.payment_amount || 30000).toLocaleString()}</span>
+                  <span className="text-3xl font-bold text-primary">TSh {(amountDue ?? 0).toLocaleString()}</span>
                   <span className="text-sm text-muted-foreground">/mwezi</span>
                 </div>
               </CardHeader>
