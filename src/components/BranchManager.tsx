@@ -18,6 +18,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { UnifiedDeleteSheet } from '@/components/UnifiedDeleteSheet';
 import { DashboardAdCarousel } from '@/components/DashboardAdCarousel';
+import { BranchFeeCalculator } from '@/components/BranchFeeCalculator';
 
 interface Branch {
   id: string;
@@ -821,7 +822,7 @@ export const BranchManager = () => {
         </Dialog>
       </div>
 
-      {!isBranchStaffView && <BranchFeeCalculator />}
+      <BranchFeeCalculator />
 
 
 
