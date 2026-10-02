@@ -210,6 +210,7 @@ export const CustomersPage = () => {
         customer_id: quickPayCustomer.id,
         customer_name: quickPayCustomer.name,
          owner_id: dataOwnerId || user!.id,
+        branch_id: branchId || null,
         transaction_type: 'payment',
         total_amount: amount,
         amount_paid: amount,
