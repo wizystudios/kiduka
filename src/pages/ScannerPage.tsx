@@ -679,12 +679,8 @@ export const ScannerPage = () => {
     }
   };
 
-  const handlePrintComplete = () => {
-    setShowReceipt(false);
-    setShowDigitalReceipt(true);
-  };
-
   const handleDigitalReceiptClose = () => {
+    setShowReceipt(false);
     setShowDigitalReceipt(false);
     setCompletedSale(null);
   };
@@ -727,45 +723,35 @@ export const ScannerPage = () => {
       />
 
       {showReceipt && completedSale && (
-        <div className="fixed inset-x-0 bottom-16 top-12 z-40 overflow-y-auto bg-background p-4 md:inset-y-10 md:left-16">
-          <div className="mx-auto flex min-h-full max-w-md flex-col justify-center py-4">
-            <EnhancedReceiptPrinter
-              items={completedSale.items}
-              subtotal={completedSale.subtotal}
-              vatAmount={completedSale.vatAmount}
-              total={completedSale.total}
-              transactionId={completedSale.id}
-              paymentData={completedSale.paymentData}
-              businessName={completedSale.businessName}
-              onPrint={handlePrintComplete}
-            />
-            <Button
-              onClick={handlePrintComplete}
-              variant="outline"
-              className="mt-4 w-full rounded-full"
-            >
-              Endelea
+        <div className="fixed inset-x-0 bottom-16 top-12 z-[45] flex flex-col bg-background md:inset-y-10 md:left-16">
+          <div className="flex items-center gap-3 border-b border-border bg-card px-4 py-3">
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-bold">Risiti</p>
+              <p className="truncate text-xs text-muted-foreground">{completedSale.businessName}</p>
+            </div>
+            <Button size="icon" variant="ghost" className="rounded-full" aria-label="Funga risiti" onClick={handleDigitalReceiptClose}>
+              <X className="h-5 w-5" />
             </Button>
+          </div>
+          <div className="flex-1 overflow-y-auto p-4">
+            <div className="mx-auto max-w-md pb-4">
+              <EnhancedReceiptPrinter
+                items={completedSale.items}
+                subtotal={completedSale.subtotal}
+                vatAmount={completedSale.vatAmount}
+                total={completedSale.total}
+                transactionId={completedSale.id}
+                paymentData={completedSale.paymentData}
+                businessName={completedSale.businessName}
+              />
+              <Button onClick={handleDigitalReceiptClose} className="mt-3 w-full rounded-full h-11">
+                Mauzo mapya
+              </Button>
+            </div>
           </div>
         </div>
       )}
 
-      {showDigitalReceipt && completedSale && (
-        <div className="fixed inset-x-0 bottom-16 top-12 z-40 bg-background md:inset-y-10 md:left-16">
-          <DigitalReceiptService
-            receiptData={{
-              transactionId: completedSale.id,
-              items: completedSale.items,
-              subtotal: completedSale.subtotal,
-              vatAmount: completedSale.vatAmount,
-              total: completedSale.total,
-              paymentData: completedSale.paymentData,
-              businessName: completedSale.businessName
-            }}
-            onClose={handleDigitalReceiptClose}
-          />
-        </div>
-      )}
 
       {/* Camera / Scan Viewport — LIVE camera, auto-scans immediately */}
       <div className="relative flex-1 min-h-0 bg-black overflow-hidden">
@@ -781,7 +767,7 @@ export const ScannerPage = () => {
         <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/40 pointer-events-none" />
 
         {/* Floating navigation: back + home */}
-        <div className="absolute top-4 left-4 z-40 flex items-center gap-2 pointer-events-none">
+        <div className={`absolute top-4 left-4 z-20 flex items-center gap-2 pointer-events-none ${showReceipt || showPayment ? 'hidden' : ''}`}>
           <Button
             size="icon"
             variant="secondary"
