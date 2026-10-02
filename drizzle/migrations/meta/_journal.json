@@ -43,6 +43,13 @@
       "when": 1790960458128,
       "tag": "0005_billing_preview_and_review_replies_policy",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1790960796972,
+      "tag": "0006_product_images_storage_owner_folder",
+      "breakpoints": true
     }
   ]
 }
