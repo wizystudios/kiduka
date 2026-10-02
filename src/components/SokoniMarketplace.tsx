@@ -919,7 +919,7 @@ export const SokoniMarketplace = () => {
         {/* Home/Deals Tab */}
         <TabsContent value="home" className="p-4 space-y-6">
           {/* Banner row - two equal banners side by side */}
-          <div className="grid grid-cols-2 gap-2 h-32">
+          <div className="grid grid-cols-2 gap-2 h-32 md:h-48 lg:h-56">
             {/* Left: Promo text + image banner */}
             <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-primary to-primary/80">
               <div className="absolute inset-0 flex">
@@ -946,8 +946,20 @@ export const SokoniMarketplace = () => {
             </div>
           </div>
 
-          {/* Sections (Top Deals / Top Ranking / Bidhaa Mpya) removed from center —
-              accessible via top nav pills to avoid duplication. */}
+          {/* Product feed below the banners so the page is never empty on large screens. */}
+          {filteredProducts.length > 0 && (
+            <section className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-bold text-foreground">Bidhaa za Sokoni</h3>
+                <Button variant="ghost" size="sm" className="rounded-full text-xs" onClick={() => setActiveTab('browse')}>Tazama zote</Button>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+                {filteredProducts.slice(0, 20).map(product => (
+                  <ProductCard key={product.id} product={product} />
+                ))}
+              </div>
+            </section>
+          )}
         </TabsContent>
 
         {/* Products Tab */}
