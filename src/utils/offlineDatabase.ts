@@ -4,7 +4,7 @@
  */
 
 const DB_NAME = 'KidukaPOS_Offline';
-const DB_VERSION = 3; // Bumped for transaction_logs store
+const DB_VERSION = 4; // Branch-scoped indexes and cache isolation
 
 interface SyncRecord {
   id: string;
@@ -56,6 +56,8 @@ class OfflineDatabase {
           productsStore.createIndex('owner_id', 'owner_id', { unique: false });
           productsStore.createIndex('barcode', 'barcode', { unique: false });
         }
+        const productsStore = request.transaction?.objectStore('products');
+        if (productsStore && !productsStore.indexNames.contains('branch_id')) productsStore.createIndex('branch_id', 'branch_id', { unique: false });
 
         // Sales store
         if (!db.objectStoreNames.contains('sales')) {
@@ -63,6 +65,8 @@ class OfflineDatabase {
           salesStore.createIndex('owner_id', 'owner_id', { unique: false });
           salesStore.createIndex('created_at', 'created_at', { unique: false });
         }
+        const salesStore = request.transaction?.objectStore('sales');
+        if (salesStore && !salesStore.indexNames.contains('branch_id')) salesStore.createIndex('branch_id', 'branch_id', { unique: false });
 
         // Sales items store
         if (!db.objectStoreNames.contains('sales_items')) {
@@ -75,6 +79,8 @@ class OfflineDatabase {
           const customersStore = db.createObjectStore('customers', { keyPath: 'id' });
           customersStore.createIndex('owner_id', 'owner_id', { unique: false });
         }
+        const customersStore = request.transaction?.objectStore('customers');
+        if (customersStore && !customersStore.indexNames.contains('branch_id')) customersStore.createIndex('branch_id', 'branch_id', { unique: false });
 
         // Sync queue store - for tracking changes to sync
         if (!db.objectStoreNames.contains('sync_queue')) {
@@ -107,7 +113,7 @@ class OfflineDatabase {
   }
 
   // Generic methods for CRUD operations
-  async getAll<T>(storeName: string, ownerId?: string): Promise<T[]> {
+  async getAll<T>(storeName: string, ownerId?: string, branchId?: string | null): Promise<T[]> {
     await this.init();
     return new Promise((resolve, reject) => {
       const transaction = this.db!.transaction(storeName, 'readonly');
@@ -119,6 +125,7 @@ class OfflineDatabase {
         if (ownerId) {
           results = results.filter((item: any) => item.owner_id === ownerId);
         }
+        if (branchId) results = results.filter((item: any) => item.branch_id === branchId);
         resolve(results);
       };
       request.onerror = () => reject(request.error);

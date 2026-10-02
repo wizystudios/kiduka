@@ -12,6 +12,7 @@ interface Product {
   category?: string | null;
   description?: string | null;
   owner_id: string;
+  branch_id?: string | null;
   cost_price?: number | null;
   low_stock_threshold?: number | null;
   is_weight_based?: boolean | null;
@@ -35,7 +36,7 @@ interface UseOfflineProductsResult {
   searchProducts: (query: string) => Promise<Product[]>;
 }
 
-export const useOfflineProducts = (ownerId: string | null): UseOfflineProductsResult => {
+export const useOfflineProducts = (ownerId: string | null, branchId: string | null = null): UseOfflineProductsResult => {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
@@ -66,11 +67,12 @@ export const useOfflineProducts = (ownerId: string | null): UseOfflineProductsRe
     try {
       if (navigator.onLine) {
         // Online: fetch from Supabase and cache locally
-        const { data, error } = await supabase
+        let query = supabase
           .from('products')
           .select('*')
-          .eq('owner_id', ownerId)
-          .order('name');
+          .eq('owner_id', ownerId);
+        if (branchId) query = query.eq('branch_id', branchId);
+        const { data, error } = await query.order('name');
 
         if (error) throw error;
 
@@ -82,7 +84,7 @@ export const useOfflineProducts = (ownerId: string | null): UseOfflineProductsRe
         }
       } else {
         // Offline: load from IndexedDB
-        const localProducts = await offlineDB.getAll<Product>('products', ownerId);
+        const localProducts = await offlineDB.getAll<Product>('products', ownerId, branchId);
         setProducts(localProducts.sort((a, b) => a.name.localeCompare(b.name)));
         console.log(`Loaded ${localProducts.length} products from offline cache`);
       }
@@ -91,7 +93,7 @@ export const useOfflineProducts = (ownerId: string | null): UseOfflineProductsRe
       
       // Fallback to offline data on error
       try {
-        const localProducts = await offlineDB.getAll<Product>('products', ownerId);
+        const localProducts = await offlineDB.getAll<Product>('products', ownerId, branchId);
         setProducts(localProducts.sort((a, b) => a.name.localeCompare(b.name)));
         toast.info('Inapakia data kutoka cache ya offline');
       } catch (offlineError) {
@@ -101,7 +103,7 @@ export const useOfflineProducts = (ownerId: string | null): UseOfflineProductsRe
     } finally {
       setLoading(false);
     }
-  }, [ownerId]);
+  }, [ownerId, branchId]);
 
   // Initial load
   useEffect(() => {
@@ -123,6 +125,7 @@ export const useOfflineProducts = (ownerId: string | null): UseOfflineProductsRe
       ...productData,
       id: crypto.randomUUID(),
       owner_id: ownerId,
+      branch_id: branchId,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     };
@@ -134,7 +137,8 @@ export const useOfflineProducts = (ownerId: string | null): UseOfflineProductsRe
           .from('products')
           .insert({
             ...productData,
-            owner_id: ownerId
+            owner_id: ownerId,
+            branch_id: branchId
           })
           .select()
           .single();
@@ -170,7 +174,7 @@ export const useOfflineProducts = (ownerId: string | null): UseOfflineProductsRe
       toast.error(`Imeshindwa kuongeza bidhaa: ${error.message || 'Unknown error'}`);
       return null;
     }
-  }, [ownerId]);
+  }, [ownerId, branchId]);
 
   // Update product
   const updateProduct = useCallback(async (
@@ -295,12 +299,13 @@ export const useOfflineProducts = (ownerId: string | null): UseOfflineProductsRe
     // If online, also check Supabase in case cache is stale
     if (navigator.onLine && ownerId) {
       try {
-        const { data, error } = await supabase
+        let query = supabase
           .from('products')
           .select('*')
           .eq('barcode', barcode)
-          .eq('owner_id', ownerId)
-          .maybeSingle();
+          .eq('owner_id', ownerId);
+        if (branchId) query = query.eq('branch_id', branchId);
+        const { data, error } = await query.maybeSingle();
 
         if (!error && data) {
           // Update cache
@@ -313,7 +318,7 @@ export const useOfflineProducts = (ownerId: string | null): UseOfflineProductsRe
     }
 
     return null;
-  }, [products, ownerId]);
+  }, [products, ownerId, branchId]);
 
   // Search products
   const searchProducts = useCallback(async (query: string): Promise<Product[]> => {

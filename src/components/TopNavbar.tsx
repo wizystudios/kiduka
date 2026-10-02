@@ -19,9 +19,9 @@ import { filterNavigationItems, primaryNavigationItems, superAdminNavigationItem
 export const TopNavbar = () => {
   const { user, userProfile, signOut } = useAuth();
   const { unreadCount } = useRealTimeNotifications();
-  const { dataOwnerId } = useDataAccess();
+  const { dataOwnerId, branchId } = useDataAccess();
   const { permissions } = usePermissions();
-  const offlineSync = useOfflineSync(dataOwnerId);
+  const offlineSync = useOfflineSync(dataOwnerId, branchId);
   const navigate = useNavigate();
   const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);

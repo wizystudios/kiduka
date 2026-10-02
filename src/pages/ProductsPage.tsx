@@ -40,7 +40,7 @@ export const ProductsPage = () => {
   const [expandedProduct, setExpandedProduct] = useState<string | null>(null);
   const [showArchived, setShowArchived] = useState(false);
   const navigate = useNavigate();
-  const { dataOwnerId, isReady } = useDataAccess();
+  const { dataOwnerId, branchId, isReady } = useDataAccess();
   
   // Use offline-first products hook
   const {
@@ -49,7 +49,7 @@ export const ProductsPage = () => {
     isOffline,
     deleteProduct,
     refreshProducts
-  } = useOfflineProducts(isReady ? dataOwnerId : null);
+  } = useOfflineProducts(isReady ? dataOwnerId : null, branchId);
 
   const [refreshing, setRefreshing] = useState(false);
   const [archiving, setArchiving] = useState<string | null>(null);

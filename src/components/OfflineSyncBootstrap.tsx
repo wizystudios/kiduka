@@ -6,10 +6,10 @@ import { useOfflineSync } from "@/hooks/useOfflineSync";
  * Must be mounted once inside the authenticated app layout.
  */
 export const OfflineSyncBootstrap = () => {
-  const { dataOwnerId, isReady } = useDataAccess();
+  const { dataOwnerId, branchId, isReady } = useDataAccess();
 
   // Activates background sync + initial download when online
-  useOfflineSync(isReady ? dataOwnerId : null);
+  useOfflineSync(isReady ? dataOwnerId : null, branchId);
 
   return null;
 };

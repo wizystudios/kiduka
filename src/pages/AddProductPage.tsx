@@ -26,8 +26,8 @@ export const AddProductPage = () => {
   });
   
   const navigate = useNavigate();
-  const { dataOwnerId, loading: dataLoading, isReady } = useDataAccess();
-  const { createProduct, isOffline } = useOfflineProducts(isReady ? dataOwnerId : null);
+  const { dataOwnerId, branchId, loading: dataLoading, isReady } = useDataAccess();
+  const { createProduct, isOffline } = useOfflineProducts(isReady ? dataOwnerId : null, branchId);
 
   const generateBarcode = () => {
     const barcode = '8' + Date.now().toString().slice(-11);
@@ -50,7 +50,7 @@ export const AddProductPage = () => {
         category: formData.category?.trim() || null, description: formData.description?.trim() || null,
         low_stock_threshold: parseInt(formData.low_stock_threshold), is_weight_based: formData.is_weight_based,
         unit_type: formData.unit_type, min_quantity: parseFloat(formData.min_quantity) || 0.1,
-        image_url: primaryImage?.image_url || null, owner_id: dataOwnerId
+        image_url: primaryImage?.image_url || null, owner_id: dataOwnerId, branch_id: branchId
       };
 
       const result = await createProduct(productData);

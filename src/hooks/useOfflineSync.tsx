@@ -11,7 +11,7 @@ interface SyncStatus {
   lastSync: Date | null;
 }
 
-export const useOfflineSync = (ownerId: string | null) => {
+export const useOfflineSync = (ownerId: string | null, branchId: string | null = null) => {
   const [syncStatus, setSyncStatus] = useState<SyncStatus>({
     isOnline: navigator.onLine,
     isSyncing: false,
@@ -75,10 +75,12 @@ export const useOfflineSync = (ownerId: string | null) => {
       console.log('Downloading data for offline use...');
 
       // Download products
-      const { data: products, error: productsError } = await supabase
+      let productsQuery = supabase
         .from('products')
         .select('*')
         .eq('owner_id', ownerId);
+      if (branchId) productsQuery = productsQuery.eq('branch_id', branchId);
+      const { data: products, error: productsError } = await productsQuery;
 
       if (productsError) throw productsError;
 
@@ -96,10 +98,12 @@ export const useOfflineSync = (ownerId: string | null) => {
       }
 
       // Download customers
-      const { data: customers, error: customersError } = await supabase
+      let customersQuery = supabase
         .from('customers')
         .select('*')
         .eq('owner_id', ownerId);
+      if (branchId) customersQuery = customersQuery.eq('branch_id', branchId);
+      const { data: customers, error: customersError } = await customersQuery;
 
       if (customersError) throw customersError;
 
@@ -120,11 +124,13 @@ export const useOfflineSync = (ownerId: string | null) => {
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
       
-      const { data: sales, error: salesError } = await supabase
+      let salesQuery = supabase
         .from('sales')
         .select('*')
         .eq('owner_id', ownerId)
         .gte('created_at', thirtyDaysAgo.toISOString());
+      if (branchId) salesQuery = salesQuery.eq('branch_id', branchId);
+      const { data: sales, error: salesError } = await salesQuery;
 
       if (salesError) throw salesError;
 
@@ -158,7 +164,7 @@ export const useOfflineSync = (ownerId: string | null) => {
       });
       await refreshHistory();
     }
-  }, [ownerId, refreshHistory]);
+  }, [ownerId, branchId, refreshHistory]);
 
   // Sync pending changes to Supabase
   const syncData = useCallback(async () => {

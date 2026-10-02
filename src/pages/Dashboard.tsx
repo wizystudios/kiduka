@@ -11,7 +11,7 @@ import { BusinessSwitcher } from '@/components/BusinessSwitcher';
 
 export const Dashboard = () => {
   const { user, userProfile, loading: authLoading } = useAuth();
-  const { dataOwnerId, isReady } = useDataAccess();
+  const { dataOwnerId, branchId, isReady } = useDataAccess();
   const navigate = useNavigate();
   const [metrics, setMetrics] = useState({
     todaysSales: 0, totalProducts: 0, todaysTransactions: 0,
@@ -25,7 +25,7 @@ export const Dashboard = () => {
       const interval = setInterval(fetchDashboardData, 30000);
       return () => clearInterval(interval);
     }
-  }, [isReady, dataOwnerId, authLoading]);
+  }, [isReady, dataOwnerId, branchId, authLoading]);
 
   const fetchDashboardData = async () => {
     if (!dataOwnerId) return setLoading(false);
@@ -34,10 +34,16 @@ export const Dashboard = () => {
       const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
       const endOfDay = new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000);
 
+      let salesQuery = supabase.from('sales').select('total_amount').eq('owner_id', dataOwnerId)
+        .gte('created_at', startOfDay.toISOString()).lt('created_at', endOfDay.toISOString());
+      let productsQuery = supabase.from('products').select('*').eq('owner_id', dataOwnerId);
+      if (branchId) {
+        salesQuery = salesQuery.eq('branch_id', branchId);
+        productsQuery = productsQuery.eq('branch_id', branchId);
+      }
       const [salesRes, productsRes, ordersRes] = await Promise.all([
-        supabase.from('sales').select('total_amount').eq('owner_id', dataOwnerId)
-          .gte('created_at', startOfDay.toISOString()).lt('created_at', endOfDay.toISOString()),
-        supabase.from('products').select('*').eq('owner_id', dataOwnerId),
+        salesQuery,
+        productsQuery,
         supabase.from('sokoni_orders').select('id').eq('seller_id', dataOwnerId)
           .in('order_status', ['new', 'confirmed', 'preparing'])
       ]);
