@@ -19,6 +19,7 @@ import { useNavigate } from 'react-router-dom';
 import { KidukaLogo } from '@/components/KidukaLogo';
 import { SubscriptionCountdown } from '@/components/SubscriptionCountdown';
 import { HelpSupportWidget } from '@/components/HelpSupportWidget';
+import { BillingSummary } from '@/components/BillingSummary';
 
 interface SubscriptionPageProps {
   embedded?: boolean;
@@ -115,20 +116,20 @@ export const SubscriptionPage = ({ embedded = false }: SubscriptionPageProps) =>
 
   // Free plan features
   const trialFeatures = [
-    { icon: Package, text: 'Bidhaa hadi 50' },
+    { icon: Package, text: 'Bidhaa hadi 20' },
     { icon: TrendingUp, text: 'Mauzo ya kawaida' },
-    { icon: Users, text: 'Wateja hadi 20' },
-    { icon: Clock, text: 'Siku 30 za majaribio' },
+    { icon: Users, text: 'Wateja hadi 10' },
+    { icon: Clock, text: 'Wafanyakazi 2 (pamoja na wewe)' },
   ];
 
   // Premium plan features
   const premiumFeatures = [
-    { icon: Infinity, text: 'Bidhaa zisizo na kikomo' },
-    { icon: TrendingUp, text: 'Mauzo yasiye na kikomo' },
+    { icon: Infinity, text: 'Bidhaa 100 (zaidi zinalipiwa)' },
+    { icon: TrendingUp, text: 'Kila tawi TSh 20,000 (wafanyakazi 3)' },
     { icon: BarChart3, text: 'Ripoti za kina' },
     { icon: Store, text: 'Sokoni Marketplace' },
     { icon: Shield, text: 'Msaada wa kiufundi' },
-    { icon: Users, text: 'Wateja wasio na kikomo' },
+    { icon: Users, text: 'Wateja 200, wafanyakazi 5' },
     { icon: Sparkles, text: 'Discount & Offers' },
     { icon: Crown, text: 'Kipengele vyote' },
   ];
@@ -146,6 +147,11 @@ export const SubscriptionPage = ({ embedded = false }: SubscriptionPageProps) =>
             {userProfile?.full_name || 'Mtumiaji'} • {userProfile?.business_name || 'Biashara'}
           </p>
         </div>
+
+        <div className="mx-auto mb-6 max-w-md">
+          <BillingSummary />
+        </div>
+
 
         {/* Split Layout - ChatGPT Style Plan Cards */}
         <div className="flex flex-col lg:flex-row gap-6 relative min-h-0">

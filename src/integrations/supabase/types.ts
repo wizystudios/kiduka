@@ -257,6 +257,66 @@ export type Database = {
         }
         Relationships: []
       }
+      billing_settings: {
+        Row: {
+          base_customer_limit: number
+          base_fee: number
+          base_product_limit: number
+          base_staff_limit: number
+          branch_fee: number
+          branch_staff_limit: number
+          extra_customer_block: number
+          extra_customer_block_fee: number
+          extra_product_block: number
+          extra_product_block_fee: number
+          extra_staff_fee: number
+          free_customer_limit: number
+          free_product_limit: number
+          free_staff_limit: number
+          id: number
+          sokoni_fee: number
+          updated_at: string
+        }
+        Insert: {
+          base_customer_limit?: number
+          base_fee?: number
+          base_product_limit?: number
+          base_staff_limit?: number
+          branch_fee?: number
+          branch_staff_limit?: number
+          extra_customer_block?: number
+          extra_customer_block_fee?: number
+          extra_product_block?: number
+          extra_product_block_fee?: number
+          extra_staff_fee?: number
+          free_customer_limit?: number
+          free_product_limit?: number
+          free_staff_limit?: number
+          id?: number
+          sokoni_fee?: number
+          updated_at?: string
+        }
+        Update: {
+          base_customer_limit?: number
+          base_fee?: number
+          base_product_limit?: number
+          base_staff_limit?: number
+          branch_fee?: number
+          branch_staff_limit?: number
+          extra_customer_block?: number
+          extra_customer_block_fee?: number
+          extra_product_block?: number
+          extra_product_block_fee?: number
+          extra_staff_fee?: number
+          free_customer_limit?: number
+          free_product_limit?: number
+          free_staff_limit?: number
+          id?: number
+          sokoni_fee?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       branch_staff: {
         Row: {
           assigned_at: string
@@ -1662,6 +1722,7 @@ export type Database = {
           lipa_namba: string
           network: string
           owner_id: string
+          qr_image_url: string | null
           updated_at: string
         }
         Insert: {
@@ -1674,6 +1735,7 @@ export type Database = {
           lipa_namba: string
           network: string
           owner_id: string
+          qr_image_url?: string | null
           updated_at?: string
         }
         Update: {
@@ -1686,6 +1748,7 @@ export type Database = {
           lipa_namba?: string
           network?: string
           owner_id?: string
+          qr_image_url?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -2771,6 +2834,7 @@ export type Database = {
           has_sokoni: boolean
           id: string
           notes: string | null
+          paid_entitlements: Json | null
           payment_amount: number | null
           payment_reference: string | null
           sokoni_fee: number
@@ -2798,6 +2862,7 @@ export type Database = {
           has_sokoni?: boolean
           id?: string
           notes?: string | null
+          paid_entitlements?: Json | null
           payment_amount?: number | null
           payment_reference?: string | null
           sokoni_fee?: number
@@ -2825,6 +2890,7 @@ export type Database = {
           has_sokoni?: boolean
           id?: string
           notes?: string | null
+          paid_entitlements?: Json | null
           payment_amount?: number | null
           payment_reference?: string | null
           sokoni_fee?: number
@@ -3121,6 +3187,7 @@ export type Database = {
         Returns: boolean
       }
       check_user_subscription: { Args: { p_user_id: string }; Returns: Json }
+      compute_business_billing: { Args: { p_owner_id: string }; Returns: Json }
       delete_email: {
         Args: { message_id: number; queue_name: string }
         Returns: boolean
@@ -3136,6 +3203,7 @@ export type Database = {
         Returns: Json
       }
       generate_tracking_code: { Args: never; Returns: string }
+      get_my_billing: { Args: never; Returns: Json }
       get_primary_business_id: { Args: { _user_id?: string }; Returns: string }
       get_user_business_ids: { Args: { _user_id?: string }; Returns: string[] }
       get_user_role: { Args: { _user_id: string }; Returns: string }
