@@ -109,7 +109,7 @@ export const DigitalReceiptService = ({ receiptData, onClose }: DigitalReceiptSe
   };
 
   return (
-    <div className="fixed inset-0 z-[60] bg-background overflow-y-auto">
+    <div className="absolute inset-0 z-[60] bg-background overflow-y-auto">
       <div className="sticky top-0 z-10 flex items-center justify-between border-b bg-background/95 px-4 py-3 backdrop-blur">
         <div>
           <h1 className="text-lg font-bold">Tuma Risiti</h1>
