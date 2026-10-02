@@ -8,4 +8,7 @@
 - [x] Save every sale as an editable invoice with payment state and branch/payment details.
 - [x] Finish Sheria/right-side registration and Arabic RTL alignment for dashboard, receipts, and payments.
 - [x] Validate signed-in page access, branch management loading, payments, invoice editing, scanner navigation, profile placement, and Arabic RTL.
-- [ ] Perform destructive branch create/staff transfer/deactivation and device-only PIN/fingerprint sign-in checks with a designated disposable staff account and supported physical device.
+- [x] Branch walkthrough (TEST Tawi / TEST Tawi 2, Wigan): assign, transfer, deactivate, audit log, staff isolation.
+- [x] Real sale receipt flow, profile menu -> notifications, Arabic RTL fixes (bars, switches, admin width, search icons).
+- [ ] Fingerprint/PIN sign-in on the owner's physical phone (needs the user's device).
+- [ ] New business self-signup end to end (needs a real inbox to confirm the email).
