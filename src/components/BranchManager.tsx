@@ -445,22 +445,23 @@ export const BranchManager = () => {
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-3 gap-2">
+        <div className="text-center">
+          <p className="text-xs uppercase tracking-wider text-muted-foreground">Mauzo Leo</p>
+          <p className="text-3xl font-black tracking-tight">TSh {branchStats.totalRevenue.toLocaleString()}</p>
+          <p className="text-xs text-muted-foreground">{branchStats.totalSales} miamala</p>
+        </div>
+        <div className="flex items-center justify-around border-y border-border/50 py-2">
           {[
-            { label: 'Mauzo Leo', value: `TSh ${branchStats.totalRevenue.toLocaleString()}`, icon: DollarSign, color: 'text-green-600' },
-            { label: 'Miamala', value: branchStats.totalSales, icon: ShoppingCart, color: 'text-primary' },
-            { label: 'Bidhaa', value: branchStats.totalProducts, icon: Package, color: 'text-blue-600' },
-            { label: 'Stock Ndogo', value: branchStats.lowStockItems, icon: AlertTriangle, color: 'text-orange-500' },
-            { label: 'Wateja', value: branchStats.totalCustomers, icon: Users, color: 'text-purple-600' },
-            { label: 'Matumizi', value: `TSh ${branchStats.totalExpenses.toLocaleString()}`, icon: Wallet, color: 'text-red-500' },
+            { label: 'Bidhaa', value: branchStats.totalProducts, icon: Package, color: 'text-success' },
+            { label: 'Stock Ndogo', value: branchStats.lowStockItems, icon: AlertTriangle, color: 'text-primary' },
+            { label: 'Wateja', value: branchStats.totalCustomers, icon: Users, color: 'text-primary' },
+            { label: 'Matumizi', value: branchStats.totalExpenses.toLocaleString(), icon: Wallet, color: 'text-destructive' },
           ].map((s, i) => (
-            <Card key={i} className="rounded-2xl">
-              <CardContent className="p-3 text-center">
-                <s.icon className={`h-4 w-4 mx-auto mb-1 ${s.color}`} />
-                <p className="text-sm font-bold">{s.value}</p>
-                <p className="text-[10px] text-muted-foreground">{s.label}</p>
-              </CardContent>
-            </Card>
+            <div key={i} className="text-center space-y-0.5">
+              <s.icon className={`h-4 w-4 mx-auto ${s.color}`} />
+              <p className="text-base font-bold">{s.value}</p>
+              <p className="text-[10px] text-muted-foreground">{s.label}</p>
+            </div>
           ))}
         </div>
 
@@ -789,13 +790,11 @@ export const BranchManager = () => {
 
   // ========== BRANCHES LIST VIEW ==========
   return (
-    <div className="space-y-4 pb-24">
-      <div className="flex items-center justify-between">
+    <div className="space-y-4 px-1 pb-24">
+      <div className="flex items-center justify-between pt-1">
         <div>
-          <h1 className="text-xl font-bold flex items-center gap-2">
-            <Store className="h-5 w-5 text-primary" /> Matawi ya Biashara
-          </h1>
-          <p className="text-xs text-muted-foreground">Bofya tawi kuona maelezo yake yote. Kila tawi: TSh 20,000/mwezi</p>
+          <h1 className="text-lg font-bold">Matawi</h1>
+          <p className="text-[11px] text-muted-foreground">{branches.length} matawi · TSh 20,000 kila moja kwa mwezi</p>
         </div>
         <Dialog open={dialogOpen} onOpenChange={(o) => { setDialogOpen(o); if (!o) resetForm(); }}>
           <DialogTrigger asChild>
@@ -855,47 +854,29 @@ export const BranchManager = () => {
           <p className="text-xs text-muted-foreground mt-1">Ongeza matawi ya biashara yako ili usimamie kila eneo</p>
         </div>
       ) : (
-        <div className="space-y-2">
+        <div className="divide-y divide-border/50 border-y border-border/50">
           {branches.map(b => (
-            <Card key={b.id} className="rounded-2xl border-border/50 cursor-pointer hover:border-primary/50 transition-colors active:scale-[0.98]"
+            <div key={b.id} role="button" tabIndex={0}
+              className="flex items-center gap-3 py-3 transition-colors active:bg-muted/40"
               onClick={() => setSelectedBranch(b)}>
-              <CardContent className="p-3">
-                <div className="flex items-center gap-3">
-                  <div className={`h-10 w-10 rounded-xl flex items-center justify-center flex-shrink-0 ${b.is_active ? 'bg-primary/10' : 'bg-muted'}`}>
-                    <Store className={`h-4 w-4 ${b.is_active ? 'text-primary' : 'text-muted-foreground'}`} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold truncate">{b.branch_name}</p>
-                    <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                      <Badge variant={b.is_active ? 'default' : 'secondary'} className="text-[10px] rounded-full">
-                        {b.is_active ? 'Hai' : 'Imezimwa'}
-                      </Badge>
-                      <Badge variant="outline" className="text-[10px] rounded-full">
-                        {BRANCH_TYPES.find(t => t.value === b.branch_type)?.label.split(' - ')[0] || b.branch_type}
-                      </Badge>
-                      {b.region && (
-                        <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
-                          <MapPin className="h-2.5 w-2.5" /> {b.district || b.region}
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex gap-1 mt-1">
-                      {FEATURE_LIST.filter(f => b.features[f.key]).map(f => (
-                        <f.icon key={f.key} className="h-3 w-3 text-muted-foreground" />
-                      ))}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
-                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(b)}>
-                      <Edit2 className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => deleteBranch(b)}>
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+              <Store className={`h-5 w-5 shrink-0 ${b.is_active ? 'text-primary' : 'text-muted-foreground'}`} />
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-semibold">{b.branch_name}</p>
+                <p className="truncate text-[11px] text-muted-foreground">
+                  <span className={b.is_active ? 'text-success' : ''}>{b.is_active ? 'Hai' : 'Imezimwa'}</span>
+                  {' · '}{BRANCH_TYPES.find(t => t.value === b.branch_type)?.label.split(' - ')[0] || b.branch_type}
+                  {(b.district || b.region) ? ` · ${b.district || b.region}` : ''}
+                </p>
+              </div>
+              <div className="flex items-center" onClick={e => e.stopPropagation()}>
+                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onClick={() => openEdit(b)}>
+                  <Edit2 className="h-4 w-4" />
+                </Button>
+                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onClick={() => deleteBranch(b)}>
+                  <Trash2 className="h-4 w-4 text-destructive" />
+                </Button>
+              </div>
+            </div>
           ))}
         </div>
       )}
