@@ -556,16 +556,23 @@ export const ScannerPage = () => {
 
     setLoading(true);
     try {
+      const paymentDetails: Record<string, string> = {
+        method: paymentData.method,
+        ...(paymentData.provider ? { provider: paymentData.provider } : {}),
+        ...(paymentData.phoneNumber ? { phoneNumber: paymentData.phoneNumber } : {}),
+        ...(paymentData.accountNumber ? { accountNumber: paymentData.accountNumber } : {}),
+        ...(paymentData.transactionId ? { transactionId: paymentData.transactionId } : {}),
+      };
       const { data: sale, error: saleError } = await supabase
         .from('sales')
-        .insert({
+        .insert([{
           owner_id: dataOwnerId,
-          branch_id: branchId,
+          branch_id: branchId || undefined,
           total_amount: getSubtotal(),
           payment_method: paymentData.method,
           payment_status: 'paid',
-          payment_details: paymentData
-        })
+          payment_details: paymentDetails
+        }])
         .select()
         .single();
 
@@ -579,7 +586,7 @@ export const ScannerPage = () => {
       }));
       const { error: invoiceError } = await supabase.from('invoices').upsert({
         owner_id: dataOwnerId,
-        branch_id: branchId,
+        branch_id: branchId || undefined,
         invoice_number: `INV-${sale.id.slice(0, 8).toUpperCase()}`,
         customer_name: 'Mteja wa Kawaida',
         items: invoiceItems,

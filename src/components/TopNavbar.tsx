@@ -146,7 +146,7 @@ export const TopNavbar = () => {
         <TopAlertBar />
 
         {/* Right side: offline + notification */}
-        <div className="flex items-center gap-0.5 flex-shrink-0">
+        <div className="ml-auto flex flex-shrink-0 items-center gap-0.5">
           <OfflineIndicator
             isOnline={offlineSync.isOnline}
             isSyncing={offlineSync.isSyncing}

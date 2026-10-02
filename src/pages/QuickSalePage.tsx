@@ -50,12 +50,12 @@ export const QuickSalePage = () => {
 
       const { data: sale, error: saleError } = await supabase.from('sales').insert({
         owner_id: dataOwnerId,
-        branch_id: branchId,
+        branch_id: branchId || undefined,
         customer_id: formData.customer_id || null,
         total_amount,
         payment_method: formData.payment_method,
         payment_status: formData.payment_status,
-        payment_details: { amount_paid, balance, notes: formData.notes || null },
+        payment_details: { amount_paid, balance, notes: formData.notes || '' },
       }).select('id,created_at').single();
       if (saleError) throw saleError;
 
@@ -71,7 +71,7 @@ export const QuickSalePage = () => {
       const invoiceNumber = `INV-${sale.id.slice(0, 8).toUpperCase()}`;
       const { error: invoiceError } = await supabase.from('invoices').upsert({
         owner_id: dataOwnerId,
-        branch_id: branchId,
+        branch_id: branchId || undefined,
         invoice_number: invoiceNumber,
         customer_name: formData.customer_name || 'Mteja wa Kawaida',
         items: [{ name: formData.product_name, quantity, unit_price, subtotal: total_amount }],
