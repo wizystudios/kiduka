@@ -194,6 +194,11 @@ export const CustomersPage = () => {
 
   const handleQuickPay = async () => {
     if (!quickPayCustomer || !quickPayAmount) return;
+    const paymentOwnerId = dataOwnerId || user?.id;
+    if (!paymentOwnerId) {
+      toast({ title: 'Hitilafu', description: 'Biashara haijapatikana', variant: 'destructive' });
+      return;
+    }
     const amount = parseFloat(quickPayAmount);
     if (isNaN(amount) || amount <= 0) return;
     setSavingPayment(true);
@@ -209,7 +214,7 @@ export const CustomersPage = () => {
       await supabase.from('customer_transactions').insert({
         customer_id: quickPayCustomer.id,
         customer_name: quickPayCustomer.name,
-         owner_id: dataOwnerId || user!.id,
+        owner_id: paymentOwnerId,
         branch_id: branchId || null,
         transaction_type: 'payment',
         total_amount: amount,
