@@ -648,7 +648,7 @@ export const BranchManager = () => {
         {/* Feature Settings Dialog */}
         {settingsDialog && (
           <Dialog open={!!settingsDialog} onOpenChange={() => setSettingsDialog(null)}>
-            <DialogContent className="max-w-sm rounded-3xl">
+            <DialogContent className="max-w-sm rounded-3xl max-h-[85vh] overflow-y-auto">
               <DialogHeader><DialogTitle className="text-sm">Huduma - {settingsDialog.branch_name}</DialogTitle></DialogHeader>
               <div className="space-y-3">
                 {FEATURE_LIST.map(f => (
