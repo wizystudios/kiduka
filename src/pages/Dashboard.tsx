@@ -41,13 +41,12 @@ export const Dashboard = () => {
         salesQuery = salesQuery.eq('branch_id', branchId);
         productsQuery = productsQuery.eq('branch_id', branchId);
       }
-      let ordersQuery = supabase.from('sokoni_orders').select('id').eq('seller_id', dataOwnerId)
-        .in('order_status', ['new', 'confirmed', 'preparing']);
-      if (branchId) ordersQuery = ordersQuery.eq('branch_id', branchId);
+      // sokoni_orders has no branch_id column — marketplace orders stay owner-level
       const [salesRes, productsRes, ordersRes] = await Promise.all([
         salesQuery,
         productsQuery,
-        ordersQuery
+        supabase.from('sokoni_orders').select('id').eq('seller_id', dataOwnerId)
+          .in('order_status', ['new', 'confirmed', 'preparing'])
       ]);
 
       const totalSales = salesRes.data?.reduce((sum, s) => sum + Number(s.total_amount || 0), 0) || 0;
