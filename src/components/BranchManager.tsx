@@ -17,6 +17,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { UnifiedDeleteSheet } from '@/components/UnifiedDeleteSheet';
+import { DashboardAdCarousel } from '@/components/DashboardAdCarousel';
 
 interface Branch {
   id: string;
@@ -92,6 +93,7 @@ export const BranchManager = () => {
   const [branchProducts, setBranchProducts] = useState<any[]>([]);
   const [showPassword, setShowPassword] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<{ type: 'branch' | 'branch_staff'; id: string; name: string } | null>(null);
+  const [staffAction, setStaffAction] = useState<BranchStaff | null>(null);
 
   const [staffForm, setStaffForm] = useState({ 
     full_name: '', email: '', phone: '', password: '', role: 'staff', notes: '',
@@ -465,113 +467,57 @@ export const BranchManager = () => {
           ))}
         </div>
 
-        {/* Active Features */}
-        <div>
-          <p className="text-xs font-semibold text-muted-foreground mb-2">HUDUMA ZILIZOWASHWA</p>
-          <div className="flex flex-wrap gap-1.5">
-            {FEATURE_LIST.map(f => (
-              <Badge key={f.key} variant={selectedBranch.features[f.key] ? 'default' : 'outline'} 
-                className={`text-[10px] rounded-full ${!selectedBranch.features[f.key] ? 'opacity-40' : ''}`}>
-                <f.icon className="h-3 w-3 mr-1" />
-                {f.label}
-              </Badge>
-            ))}
-          </div>
-        </div>
+        {/* Ads — same as the home page */}
+        <DashboardAdCarousel />
 
-        {/* Staff Section */}
-        <div>
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-xs font-semibold text-muted-foreground">WAFANYAKAZI ({branchStaff.length})</p>
-            <Button size="sm" variant="outline" className="rounded-full h-7 text-xs" onClick={() => {
-              setAddStaffDialog(true);
-              setStaffForm({ full_name: '', email: '', phone: '', password: '', role: 'staff', notes: '', mode: 'new' });
-            }}>
-              <UserPlus className="h-3 w-3 mr-1" /> Ongeza
-            </Button>
-          </div>
+        <Button variant="outline" className="w-full rounded-full" onClick={() => setSettingsDialog(selectedBranch)}>
+          <Settings className="h-4 w-4 mr-2" /> Mipangilio · Huduma na Wafanyakazi ({branchStaff.length})
+        </Button>
 
-          {staffLoading ? (
-            <div className="flex justify-center py-4"><Loader2 className="h-4 w-4 animate-spin" /></div>
-          ) : branchStaff.length === 0 ? (
-            <Card className="rounded-2xl"><CardContent className="p-4 text-center">
-              <p className="text-xs text-muted-foreground">Hakuna wafanyakazi bado</p>
-            </CardContent></Card>
-          ) : (
-            <div className="space-y-1.5">
-              {branchStaff.map(s => (
-                <Card key={s.id} className="rounded-2xl">
-                  <CardContent className="p-2.5">
-                    <div className="flex items-center gap-2.5">
-                      <div className={`h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${s.role === 'manager' ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'}`}>
-                        {(s.full_name || '?')[0].toUpperCase()}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-1.5">
-                          <p className="text-xs font-medium truncate">{s.full_name}</p>
-                          <Badge variant={s.role === 'manager' ? 'default' : 'outline'} className="text-[9px] rounded-full px-1.5">
-                            {s.role === 'manager' ? 'Meneja' : 'Staff'}
-                          </Badge>
-                          {!s.is_active && <Badge variant="secondary" className="text-[9px]">Imezimwa</Badge>}
-                        </div>
-                        <p className="text-[10px] text-muted-foreground truncate">{s.email} {s.phone ? `• ${s.phone}` : ''}</p>
-                      </div>
-                      <div className="flex items-center gap-0.5 flex-shrink-0">
-                        <Select value={s.role} onValueChange={v => handleChangeStaffRole(s.id, v)}>
-                          <SelectTrigger className="h-6 w-16 text-[9px] rounded-lg border-0 bg-muted/50"><SelectValue /></SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="manager">Meneja</SelectItem>
-                            <SelectItem value="staff">Staff</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <Button variant="ghost" size="icon" className="h-6 w-6" title="Hamisha" onClick={() => setTransferDialog(s)}>
-                          <ArrowRightLeft className="h-3 w-3" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleToggleStaffActive(s)}>
-                          <Shield className={`h-3 w-3 ${s.is_active ? 'text-green-600' : 'text-muted-foreground'}`} />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleRemoveStaff(s)}>
-                          <X className="h-3 w-3 text-destructive" />
-                        </Button>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Products Section */}
-        {selectedBranch.features.products && (
-          <div>
-            <p className="text-xs font-semibold text-muted-foreground mb-2">BIDHAA ZA TAWI ({branchProducts.length})</p>
-            {branchProducts.length === 0 ? (
-              <Card className="rounded-2xl"><CardContent className="p-4 text-center">
-                <p className="text-xs text-muted-foreground">Hakuna bidhaa kwenye tawi hili</p>
-              </CardContent></Card>
-            ) : (
-              <div className="space-y-1">
-                {branchProducts.map(p => (
-                  <Card key={p.id} className="rounded-xl">
-                    <CardContent className="p-2.5 flex items-center justify-between">
-                      <div>
-                        <p className="text-xs font-medium">{p.name}</p>
-                        <p className="text-[10px] text-muted-foreground">{p.category || 'Hakuna kategori'}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-xs font-bold">TSh {Number(p.price).toLocaleString()}</p>
-                        <p className={`text-[10px] ${(p.stock_quantity || 0) <= (p.low_stock_threshold || 10) ? 'text-destructive font-semibold' : 'text-muted-foreground'}`}>
-                          Stock: {p.stock_quantity}
-                        </p>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+        {/* Staff actions — open by tapping a staff member in settings */}
+        <Dialog open={!!staffAction} onOpenChange={(o) => !o && setStaffAction(null)}>
+          <DialogContent className="max-w-sm rounded-3xl">
+            <DialogHeader><DialogTitle className="text-sm">{staffAction?.full_name || 'Mfanyakazi'}</DialogTitle></DialogHeader>
+            {staffAction && (
+              <div className="space-y-3">
+                <p className="text-xs text-muted-foreground break-all">{staffAction.email}{staffAction.phone ? ` · ${staffAction.phone}` : ''}</p>
+                <div>
+                  <Label className="text-xs">Jukumu</Label>
+                  <Select value={staffAction.role} onValueChange={async v => { await handleChangeStaffRole(staffAction.id, v); setStaffAction({ ...staffAction, role: v }); }}>
+                    <SelectTrigger className="rounded-2xl"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="manager">Meneja wa Tawi</SelectItem>
+                      <SelectItem value="staff">Mfanyakazi</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid gap-2">
+                  <Button variant="outline" className="rounded-full justify-start" onClick={() => { setTransferDialog(staffAction); setStaffAction(null); }}>
+                    <ArrowRightLeft className="h-4 w-4 mr-2" /> Hamisha tawi lingine
+                  </Button>
+                  <Button variant="outline" className="rounded-full justify-start" onClick={async () => { await handleToggleStaffActive(staffAction); setStaffAction(null); }}>
+                    <Shield className="h-4 w-4 mr-2" /> {staffAction.is_active ? 'Zima (Gandisha)' : 'Washa tena'}
+                  </Button>
+                  <Button variant="outline" className="rounded-full justify-start text-destructive" onClick={() => { handleRemoveStaff(staffAction); setStaffAction(null); }}>
+                    <Trash2 className="h-4 w-4 mr-2" /> Ondoa kwenye tawi
+                  </Button>
+                </div>
               </div>
             )}
-          </div>
-        )}
+          </DialogContent>
+        </Dialog>
+
+        <UnifiedDeleteSheet
+          open={!!deleteTarget}
+          onOpenChange={(open) => !open && setDeleteTarget(null)}
+          title={deleteTarget?.type === 'branch' ? 'Futa tawi' : 'Ondoa mfanyakazi'}
+          itemName={deleteTarget?.name || ''}
+          description={deleteTarget?.type === 'branch'
+            ? 'Tawi litaondolewa na data zilizokuwa ndani yake zitaachwa salama.'
+            : 'Mfanyakazi ataondolewa kwenye tawi hili bila kufuta akaunti yake.'}
+          confirmLabel={deleteTarget?.type === 'branch' ? 'Futa Tawi' : 'Ondoa'}
+          onConfirm={executeDeleteTarget}
+        />
 
         {/* Add Staff Dialog */}
         <Dialog open={addStaffDialog} onOpenChange={setAddStaffDialog}>
@@ -702,8 +648,8 @@ export const BranchManager = () => {
         {/* Feature Settings Dialog */}
         {settingsDialog && (
           <Dialog open={!!settingsDialog} onOpenChange={() => setSettingsDialog(null)}>
-            <DialogContent className="max-w-sm rounded-3xl">
-              <DialogHeader><DialogTitle className="text-sm">Huduma - {settingsDialog.branch_name}</DialogTitle></DialogHeader>
+            <DialogContent className="max-w-sm rounded-3xl max-h-[85vh] overflow-y-auto">
+              <DialogHeader><DialogTitle className="text-sm">Mipangilio · {settingsDialog.branch_name}</DialogTitle></DialogHeader>
               <div className="space-y-3">
                 {FEATURE_LIST.map(f => (
                   <div key={f.key} className="flex items-center justify-between">
@@ -732,6 +678,34 @@ export const BranchManager = () => {
                     setSaving(false);
                   }
                 }}>{saving ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Hifadhi'}</Button>
+
+                <div className="pt-3 border-t">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-sm font-semibold">Wafanyakazi ({branchStaff.length})</p>
+                    <Button size="sm" variant="outline" className="rounded-full h-7 text-xs" onClick={() => {
+                      setAddStaffDialog(true);
+                      setStaffForm({ full_name: '', email: '', phone: '', password: '', role: 'staff', notes: '', mode: 'new' });
+                    }}><UserPlus className="h-3 w-3 mr-1" /> Ongeza</Button>
+                  </div>
+                  {staffLoading ? <Loader2 className="h-4 w-4 animate-spin mx-auto" /> : branchStaff.length === 0 ? (
+                    <p className="text-xs text-muted-foreground text-center py-2">Hakuna wafanyakazi bado</p>
+                  ) : (
+                    <div className="divide-y divide-border/50">
+                      {branchStaff.map(s => (
+                        <button key={s.id} type="button" onClick={() => setStaffAction(s)} className="flex w-full items-center gap-3 py-2 text-left">
+                          <div className="h-9 w-9 rounded-full bg-primary/10 text-primary flex items-center justify-center text-sm font-bold shrink-0">
+                            {(s.full_name || '?')[0].toUpperCase()}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-medium truncate">{s.full_name}</p>
+                            <p className="text-[11px] text-muted-foreground">{s.role === 'manager' ? 'Meneja' : 'Mfanyakazi'}{!s.is_active ? ' · Imezimwa' : ''}</p>
+                          </div>
+                          <ChevronLeft className="h-4 w-4 rotate-180 text-muted-foreground rtl:rotate-0" />
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             </DialogContent>
           </Dialog>
