@@ -54,14 +54,16 @@ export const MultiImageUpload = ({
       // Create unique filename
       const fileExt = file.name.split('.').pop();
       const fileName = `${productId || 'new'}-${Date.now()}-${Math.random().toString(36).slice(2)}.${fileExt}`;
-      const filePath = `products/${fileName}`;
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      if (!authUser) throw new Error('Not signed in');
+      const filePath = `${authUser.id}/products/${fileName}`;
 
       // Upload to Supabase Storage
       const { error: uploadError } = await supabase.storage
         .from('product-images')
         .upload(filePath, file, {
           cacheControl: '3600',
-          upsert: true
+          upsert: false
         });
 
       if (uploadError) throw uploadError;
