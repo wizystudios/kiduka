@@ -61,7 +61,7 @@ export function AppLayout({ children }: AppLayoutProps) {
       <OfflineSyncBootstrap />
       <div className="flex min-h-screen w-full overflow-x-hidden">
         <AppSidebar />
-        <SidebarInset className="flex-1">
+        <SidebarInset className="flex-1 min-w-0">
           <header className="hidden md:flex h-10 items-center border-b border-border/40 px-2 gap-2">
             <TopAlertBar />
             <Button variant="ghost" size="sm" className="relative p-1.5 h-8 w-8 ml-auto" onClick={() => navigate('/notifications')}>
@@ -80,7 +80,7 @@ export function AppLayout({ children }: AppLayoutProps) {
             </Button>
             <ProfileMenuSheet open={profileOpen} onOpenChange={setProfileOpen} />
           </header>
-          <main className={`w-full ${isDashboardRoute ? 'pt-16 pb-24' : 'pt-16 pb-28'} md:pt-0 md:pb-0 md:min-h-screen`}>
+          <main className={`w-full min-w-0 max-w-full overflow-x-hidden ${isDashboardRoute ? 'pt-16 pb-24' : 'pt-16 pb-28'} md:pt-0 md:pb-0 md:min-h-screen`}>
             <LocationSetupGate>
               <ContractComplianceGate>{children}</ContractComplianceGate>
             </LocationSetupGate>
