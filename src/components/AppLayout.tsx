@@ -80,7 +80,7 @@ export function AppLayout({ children }: AppLayoutProps) {
             </Button>
             <ProfileMenuSheet open={profileOpen} onOpenChange={setProfileOpen} />
           </header>
-          <main className={`w-full ${isDashboardRoute ? 'pt-16 pb-24' : 'pt-16 pb-28'} md:pt-0 md:pb-0 md:min-h-screen`}>
+          <main className={`w-full min-w-0 max-w-full overflow-x-hidden ${isDashboardRoute ? 'pt-16 pb-24' : 'pt-16 pb-28'} md:pt-0 md:pb-0 md:min-h-screen`}>
             <LocationSetupGate>
               <ContractComplianceGate>{children}</ContractComplianceGate>
             </LocationSetupGate>
