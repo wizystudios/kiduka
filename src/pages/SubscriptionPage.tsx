@@ -19,6 +19,7 @@ import { useNavigate } from 'react-router-dom';
 import { KidukaLogo } from '@/components/KidukaLogo';
 import { SubscriptionCountdown } from '@/components/SubscriptionCountdown';
 import { HelpSupportWidget } from '@/components/HelpSupportWidget';
+import { BillingSummary } from '@/components/BillingSummary';
 
 interface SubscriptionPageProps {
   embedded?: boolean;
@@ -146,6 +147,11 @@ export const SubscriptionPage = ({ embedded = false }: SubscriptionPageProps) =>
             {userProfile?.full_name || 'Mtumiaji'} • {userProfile?.business_name || 'Biashara'}
           </p>
         </div>
+
+        <div className="mx-auto mb-6 max-w-md">
+          <BillingSummary />
+        </div>
+
 
         {/* Split Layout - ChatGPT Style Plan Cards */}
         <div className="flex flex-col lg:flex-row gap-6 relative min-h-0">
