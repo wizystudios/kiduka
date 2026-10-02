@@ -25,13 +25,6 @@ export const UsersManagementPage = () => {
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [showAddDialog, setShowAddDialog] = useState(false);
-  const [newUser, setNewUser] = useState({
-    email: '',
-    password: '',
-    full_name: '',
-    role: 'staff'
-  });
   const { userProfile } = useAuth();
   const { toast } = useToast();
 
@@ -80,36 +73,6 @@ export const UsersManagementPage = () => {
     }
   };
 
-  const handleAddUser = async () => {
-    if (!newUser.email || !newUser.password || !newUser.full_name) {
-      toast({
-        title: 'Error',
-        description: 'Please fill in all required fields',
-        variant: 'destructive'
-      });
-      return;
-    }
-
-    try {
-      // In a real app, you'd use an edge function to create users
-      // For now, we'll just show success and refresh
-      toast({
-        title: 'Success',
-        description: 'User invitation sent (feature requires backend implementation)',
-      });
-      
-      setNewUser({ email: '', password: '', full_name: '', role: 'staff' });
-      setShowAddDialog(false);
-      fetchUsers();
-    } catch (error) {
-      console.error('Error adding user:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to add user',
-        variant: 'destructive'
-      });
-    }
-  };
 
   const handleDeleteUser = async (userId: string) => {
     if (!confirm('Are you sure you want to delete this user?')) return;
