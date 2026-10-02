@@ -816,6 +816,7 @@ export const ScannerPage = () => {
           </div>
         )}
 
+        {import.meta.env.DEV && new URLSearchParams(window.location.search).has('camdebug') && (
         <div className="absolute left-3 top-3 z-20 rounded-2xl bg-black/60 px-3 py-2 text-[10px] text-white shadow-lg backdrop-blur pointer-events-none">
           <div className="mb-1 flex items-center gap-1.5 font-semibold">
             <Activity className="h-3 w-3 text-green-400" /> Camera audit
@@ -826,6 +827,7 @@ export const ScannerPage = () => {
           <div>Video: <span className="font-mono">{videoAudit.width}×{videoAudit.height} r{videoAudit.readyState}</span></div>
           {lastCameraErrorName && <div>Error: <span className="font-mono text-red-200">{lastCameraErrorName}</span></div>}
         </div>
+        )}
 
         {/* Green corner brackets */}
         <div className="absolute top-8 left-8 right-8 bottom-28 pointer-events-none">
