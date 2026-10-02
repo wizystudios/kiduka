@@ -1756,13 +1756,16 @@ export type Database = {
       payment_transactions: {
         Row: {
           amount: number
+          confirmed_at: string | null
           created_at: string
           currency: string
           id: string
           metadata: Json | null
           order_id: string | null
+          paid_amount: number | null
           payment_method: string | null
           phone_number: string | null
+          proof_path: string | null
           provider: string | null
           provider_reference: string | null
           status: string
@@ -1773,13 +1776,16 @@ export type Database = {
         }
         Insert: {
           amount: number
+          confirmed_at?: string | null
           created_at?: string
           currency?: string
           id?: string
           metadata?: Json | null
           order_id?: string | null
+          paid_amount?: number | null
           payment_method?: string | null
           phone_number?: string | null
+          proof_path?: string | null
           provider?: string | null
           provider_reference?: string | null
           status?: string
@@ -1790,13 +1796,16 @@ export type Database = {
         }
         Update: {
           amount?: number
+          confirmed_at?: string | null
           created_at?: string
           currency?: string
           id?: string
           metadata?: Json | null
           order_id?: string | null
+          paid_amount?: number | null
           payment_method?: string | null
           phone_number?: string | null
+          proof_path?: string | null
           provider?: string | null
           provider_reference?: string | null
           status?: string
@@ -3187,6 +3196,16 @@ export type Database = {
         Returns: boolean
       }
       check_user_subscription: { Args: { p_user_id: string }; Returns: Json }
+      complete_scanner_sale: {
+        Args: {
+          p_branch_id: string
+          p_items: Json
+          p_owner_id: string
+          p_payment_details: Json
+          p_payment_method: string
+        }
+        Returns: Json
+      }
       compute_business_billing: { Args: { p_owner_id: string }; Returns: Json }
       delete_email: {
         Args: { message_id: number; queue_name: string }
@@ -3296,6 +3315,10 @@ export type Database = {
           msg_id: number
           read_ct: number
         }[]
+      }
+      request_subscription_activation: {
+        Args: { p_proof_path?: string; p_reference?: string }
+        Returns: boolean
       }
       resolve_business_id_from_owner: {
         Args: { _owner_id: string }

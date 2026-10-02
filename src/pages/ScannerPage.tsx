@@ -554,6 +554,12 @@ export const ScannerPage = () => {
   const handlePaymentComplete = async (paymentData: PaymentData) => {
     if (cart.length === 0 || !dataOwnerId) return;
 
+    const receiptBusinessName = ownerBusinessName?.trim() || userProfile?.business_name?.trim();
+    if (!receiptBusinessName) {
+      toast({ title: 'Jina la biashara halipo', description: 'Weka jina la biashara kwenye Wasifu kabla ya kutoa risiti.', variant: 'destructive' });
+      return;
+    }
+
     setLoading(true);
     try {
       const paymentDetails: Record<string, string> = {
@@ -563,81 +569,20 @@ export const ScannerPage = () => {
         ...(paymentData.accountNumber ? { accountNumber: paymentData.accountNumber } : {}),
         ...(paymentData.transactionId ? { transactionId: paymentData.transactionId } : {}),
       };
-      const { data: sale, error: saleError } = await supabase
-        .from('sales')
-        .insert([{
-          owner_id: dataOwnerId,
-          branch_id: branchId || undefined,
-          total_amount: getSubtotal(),
-          payment_method: paymentData.method,
-          payment_status: 'paid',
-          payment_details: paymentDetails
-        }])
-        .select()
-        .single();
-
-      if (saleError) throw saleError;
-
-      const invoiceItems = cart.map(item => ({
-        name: item.name,
-        quantity: item.quantity,
-        unit_price: item.price,
-        subtotal: item.price * item.quantity,
-      }));
-      const { error: invoiceError } = await supabase.from('invoices').upsert({
-        owner_id: dataOwnerId,
-        branch_id: branchId || undefined,
-        invoice_number: `INV-${sale.id.slice(0, 8).toUpperCase()}`,
-        customer_name: 'Mteja wa Kawaida',
-        items: invoiceItems,
-        total_amount: getSubtotal(),
-        payment_method: paymentData.method,
-        status: 'paid',
-        sale_id: sale.id,
-      }, { onConflict: 'sale_id' });
-      if (invoiceError) console.error('Invoice save failed (sale kept):', invoiceError);
-
-      const saleItems = cart.map(item => ({
-        sale_id: sale.id,
+      const { data: result, error: saleError } = await supabase.rpc('complete_scanner_sale' as any, {
+        p_owner_id: dataOwnerId,
+        p_branch_id: branchId || null,
+        p_payment_method: paymentData.method,
+        p_payment_details: paymentDetails,
+        p_items: cart.map(item => ({
         product_id: item.id,
         quantity: item.quantity,
-        unit_price: item.price,
-        subtotal: item.price * item.quantity
-      }));
-
-      const { error: itemsError } = await supabase
-        .from('sales_items')
-        .insert(saleItems);
-
-      if (itemsError) throw itemsError;
-
-      // Update product stock quantities
-      try {
-        const updates = cart.map(async (item) => {
-          const { data: latest, error: fetchErr } = await supabase
-            .from('products')
-            .select('stock_quantity, is_weight_based')
-            .eq('id', item.id)
-            .eq('owner_id', dataOwnerId)
-            .single();
-          if (fetchErr) throw fetchErr;
-
-          const currentQty = Number(latest?.stock_quantity ?? item.stock_quantity);
-          const isWeight = latest?.is_weight_based ?? item.is_weight_based;
-          const deduction = item.quantity as number;
-          const newQty = Math.max(0, isWeight ? Math.floor(currentQty - deduction) : currentQty - deduction);
-
-          const { error: updateErr } = await supabase
-            .from('products')
-            .update({ stock_quantity: newQty })
-            .eq('id', item.id)
-            .eq('owner_id', dataOwnerId);
-          if (updateErr) throw updateErr;
-        });
-        await Promise.all(updates);
-      } catch (e) {
-        console.error('Error updating product stock after sale:', e);
-      }
+          unit_price: item.price
+        }))
+      });
+      if (saleError) throw saleError;
+      const sale = result as unknown as { sale_id: string; total: number };
+      if (!sale?.sale_id) throw new Error('Mauzo hayakuhifadhiwa');
 
       const receiptItems = cart.map(item => ({
         name: item.name,
@@ -647,13 +592,13 @@ export const ScannerPage = () => {
       }));
 
       setCompletedSale({
-        id: sale.id,
+        id: sale.sale_id,
         items: receiptItems,
         subtotal: getSubtotal(),
         vatAmount: 0,
         total: getSubtotal(),
         paymentData,
-        businessName: ownerBusinessName || userProfile?.business_name || 'KIDUKA STORE'
+        businessName: receiptBusinessName
       });
 
       toast({
