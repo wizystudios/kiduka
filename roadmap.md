@@ -7,4 +7,5 @@
 - [x] Enforce branch isolation for products, customers, sales, expenses, inventory, invoices, and offline data in both UI and database access rules.
 - [x] Save every sale as an editable invoice with payment state and branch/payment details.
 - [x] Finish Sheria/right-side registration and Arabic RTL alignment for dashboard, receipts, and payments.
-- [ ] Validate signed-in branch create, staff assignment, transfer, deactivation, activity logs, payments, invoice editing, and PIN/fingerprint sign-in.
+- [x] Validate signed-in page access, branch management loading, payments, invoice editing, scanner navigation, profile placement, and Arabic RTL.
+- [ ] Perform destructive branch create/staff transfer/deactivation and device-only PIN/fingerprint sign-in checks with a designated disposable staff account and supported physical device.
