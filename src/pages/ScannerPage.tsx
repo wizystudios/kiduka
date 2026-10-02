@@ -595,7 +595,7 @@ export const ScannerPage = () => {
         status: 'paid',
         sale_id: sale.id,
       }, { onConflict: 'sale_id' });
-      if (invoiceError) throw invoiceError;
+      if (invoiceError) console.error('Invoice save failed (sale kept):', invoiceError);
 
       const saleItems = cart.map(item => ({
         sale_id: sale.id,
