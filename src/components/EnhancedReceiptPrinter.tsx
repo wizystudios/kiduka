@@ -1,9 +1,7 @@
 import { useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { BusinessDocument } from '@/components/BusinessDocument';
-import { KidukaSuccessAnimation } from '@/components/KidukaSuccessAnimation';
-import { Download, Loader2, Printer, Share2 } from 'lucide-react';
+import { Download, Loader2, MessageCircle, Printer, Share2 } from 'lucide-react';
 import { captureElementAsImage, createPdfFromImage, shareOrDownloadFile } from '@/utils/shareExport';
 import { toast } from 'sonner';
 
@@ -68,16 +66,15 @@ export const EnhancedReceiptPrinter = ({
     }
   };
 
+  const shareWhatsApp = () => {
+    const lines = items.map((i) => `• ${i.name} x${i.quantity} = TSh ${i.total.toLocaleString()}`).join('\n');
+    const text = `*${businessName}*\nRisiti #${receiptNumber}\n${date}\n\n${lines}\n\n*Jumla: TSh ${total.toLocaleString()}*\nAsante kwa biashara yako · Kiduka`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+    onPrint?.();
+  };
+
   return (
     <div className="space-y-4">
-      <div className="rounded-3xl border border-border/60 bg-card px-4 py-1 shadow-sm">
-        <KidukaSuccessAnimation amount={total} label={paymentData.method === 'cash' ? 'Taslimu' : paymentData.method === 'mobile' ? 'Pesa za Simu' : 'Benki'} title="Mauzo Yamekamilika!" />
-        <div className="mb-4 flex items-center justify-center gap-2">
-          <Badge className="rounded-full bg-success text-success-foreground">Amelipa</Badge>
-          <span className="text-xs text-muted-foreground">Muamala #{receiptNumber}</span>
-        </div>
-      </div>
-
       <BusinessDocument
         ref={documentRef}
         kind="receipt"
@@ -95,18 +92,20 @@ export const EnhancedReceiptPrinter = ({
         notes={paymentData.transactionId ? `Rejea: ${paymentData.transactionId}` : undefined}
       />
 
-      <div className="grid grid-cols-3 gap-2 print:hidden">
+      <div className="grid grid-cols-2 gap-2 print:hidden">
+        <Button className="rounded-full" onClick={shareWhatsApp}>
+          <MessageCircle className="mr-1 h-4 w-4" /> WhatsApp
+        </Button>
         <Button variant="outline" className="rounded-full" onClick={() => window.print()}>
           <Printer className="mr-1 h-4 w-4" /> Chapisha
         </Button>
         <Button variant="outline" className="rounded-full" disabled={busy !== null} onClick={() => exportDocument('image')}>
           {busy === 'image' ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <Share2 className="mr-1 h-4 w-4" />} Picha
         </Button>
-        <Button className="rounded-full" disabled={busy !== null} onClick={() => exportDocument('pdf')}>
+        <Button variant="outline" className="rounded-full" disabled={busy !== null} onClick={() => exportDocument('pdf')}>
           {busy === 'pdf' ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <Download className="mr-1 h-4 w-4" />} PDF
         </Button>
       </div>
-      <Button variant="outline" className="w-full rounded-full print:hidden" onClick={onPrint}>Tuma risiti kwa mteja</Button>
     </div>
   );
 };
