@@ -20,3 +20,7 @@
 - [x] Wide screens: side sheets dock as a right pane (list stays visible)
 - [ ] Real payment charging — blocked: payment provider API key + docs
 - [ ] Per-page inline list+detail layout for Bidhaa/Mauzo/Wateja (beyond docked sheets)
+- [x] Overage pricing: TSh 1,000 per extra product and per extra customer
+- [x] Product photo uploads save to the owner's folder and show in Sokoni
+- [x] Super-admin price editor (/billing-plans), linked from Matawi
+- [ ] Full owner/customer/admin audit walk on phone + desktop (Sokoni desktop Deals tab looks empty below the banners — investigate)

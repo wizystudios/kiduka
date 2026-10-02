@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';
@@ -11,6 +12,7 @@ const tsh = (n: number) => `TSh ${Number(n || 0).toLocaleString()}`;
 /** Fee calculator: current bill and what-if preview, both priced by the database. */
 export const BranchFeeCalculator = () => {
   const navigate = useNavigate();
+  const { userProfile } = useAuth();
   const [bill, setBill] = useState<any>(null);
   const [v, setV] = useState({ staff: 1, products: 0, customers: 0, branches: 0, branchStaff: 0 });
   const [preview, setPreview] = useState<{ plan: string; total: number; items: Item[] } | null>(null);
@@ -40,8 +42,8 @@ export const BranchFeeCalculator = () => {
     { k: 'staff', label: 'Wafanyakazi duka kuu (pamoja na wewe)', max: 30, step: 1, min: 1 },
     { k: 'branches', label: 'Matawi', max: 20, step: 1, min: 0 },
     { k: 'branchStaff', label: 'Wafanyakazi wa matawi (jumla)', max: 60, step: 1, min: 0 },
-    { k: 'products', label: 'Bidhaa', max: 2000, step: 10, min: 0 },
-    { k: 'customers', label: 'Wateja', max: 3000, step: 10, min: 0 },
+    { k: 'products', label: 'Bidhaa', max: 2000, step: 1, min: 0 },
+    { k: 'customers', label: 'Wateja', max: 3000, step: 1, min: 0 },
   ];
 
   return (
@@ -54,6 +56,9 @@ export const BranchFeeCalculator = () => {
         </div>
         <div className="flex flex-col gap-2">
           <Button size="sm" className="rounded-full" onClick={() => navigate('/subscription')}>Lipa sasa</Button>
+          {userProfile?.role === 'super_admin' && (
+            <Button size="sm" variant="outline" className="rounded-full" onClick={() => navigate('/billing-plans')}>Weka bei</Button>
+          )}
           <Button size="sm" variant="ghost" className="rounded-full" onClick={() => setOpen(o => !o)}>
             <Calculator className="h-4 w-4 mr-1" />Kikokotoo
           </Button>

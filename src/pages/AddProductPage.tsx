@@ -58,7 +58,8 @@ export const AddProductPage = () => {
 
       if (productImages.length > 0 && result.id) {
         for (const img of productImages) {
-          await supabase.from('product_images').insert({ product_id: result.id, image_url: img.image_url, display_order: img.display_order, is_primary: img.is_primary });
+          const { error: imgErr } = await supabase.from('product_images').insert({ product_id: result.id, image_url: img.image_url, display_order: img.display_order, is_primary: img.is_primary });
+          if (imgErr) { console.error('product image save failed', imgErr); toast.error('Bidhaa imehifadhiwa, lakini picha moja haikuhifadhiwa'); }
         }
       }
 
