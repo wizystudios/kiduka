@@ -19,7 +19,7 @@
 - [x] Matawi fee calculator (database-priced preview) + Malipo charges database amount_due
 - [x] Wide screens: side sheets dock as a right pane (list stays visible)
 - [ ] Real payment charging — blocked: payment provider API key + docs
-- [ ] Per-page inline list+detail layout for Bidhaa/Mauzo/Wateja (beyond docked sheets)
+- [x] Inline list+detail layout for Bidhaa and Mauzo; docked right panes remain available elsewhere
 - [x] Overage pricing: TSh 1,000 per extra product and per extra customer
 - [x] Product photo uploads save to the owner's folder and show in Sokoni
 - [x] Super-admin price editor (/billing-plans), linked from Matawi
