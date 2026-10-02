@@ -30,6 +30,7 @@ export const AuthPage = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
+  const [businessName, setBusinessName] = useState('');
 
   // Lock scroll on auth page
   useEffect(() => {
@@ -215,7 +216,7 @@ export const AuthPage = () => {
 
     setLoading(true);
     try {
-      await signUp(signupEmail, password, fullName);
+      await signUp(signupEmail, password, fullName, businessName.trim() || undefined);
 
       // Save phone to profile (best-effort)
       if (authMethod === 'phone' && normalizedPhone) {
@@ -455,16 +456,25 @@ export const AuthPage = () => {
         )}
 
         {step === 'name' && (
-          <div className="relative">
-            <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+          <div className="space-y-3">
+            <div className="relative">
+              <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+              <Input
+                type="text"
+                placeholder="Jina lako"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                className="pl-10 h-12 bg-transparent border-0 border-b-2 border-border rounded-none text-lg focus:ring-0 focus:border-primary focus-visible:ring-0 focus-visible:ring-offset-0"
+                autoFocus
+              />
+            </div>
             <Input
               type="text"
-              placeholder="Jina lako"
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
+              placeholder="Jina la biashara"
+              value={businessName}
+              onChange={(e) => setBusinessName(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && handleNextStep()}
-              className="pl-10 h-12 bg-transparent border-0 border-b-2 border-border rounded-none text-lg focus:ring-0 focus:border-primary focus-visible:ring-0 focus-visible:ring-offset-0"
-              autoFocus
+              className="h-12 bg-transparent border-0 border-b-2 border-border rounded-none text-lg focus:ring-0 focus:border-primary focus-visible:ring-0 focus-visible:ring-offset-0"
             />
           </div>
         )}

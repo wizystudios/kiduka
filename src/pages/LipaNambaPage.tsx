@@ -1,3 +1,4 @@
+import { LipaNambaCard } from '@/components/LipaNambaCard';
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -379,55 +380,18 @@ export default function LipaNambaPage() {
 
       {/* QR Dialog */}
       <Dialog open={!!qrFor} onOpenChange={(o) => !o && setQrFor(null)}>
-        <DialogContent className="rounded-3xl max-w-sm p-4">
+        <DialogContent className="w-[calc(100vw-1.5rem)] max-w-sm max-h-[90dvh] overflow-y-auto rounded-3xl p-4">
           <DialogHeader><DialogTitle>Shiriki Lipa Namba</DialogTitle></DialogHeader>
           {qrFor && (
             <div className="space-y-3">
-              {/* Branded share card — fixed pixel width so html2canvas exports a full, un-cropped image */}
-              <div
+              <LipaNambaCard
                 ref={shareCardRef}
-                className="rounded-3xl overflow-hidden border shadow-inner mx-auto"
-                style={{
-                  width: 360,
-                  padding: 20,
-                  background: 'linear-gradient(180deg,#ffffff 0%,#f8fafc 100%)',
-                  boxSizing: 'border-box',
-                }}
-              >
-                {/* Brand row: Kiduka logo + business name */}
-                <div className="flex items-center justify-center gap-2 mb-3">
-                  <BrandMark size="md" iconOnly />
-                  <div className="text-left leading-tight">
-                    <p className="text-[15px] font-black text-neutral-900 truncate max-w-[220px]">{businessName}</p>
-                    <p className="text-[10px] text-neutral-500">Kiduka · Biashara Smart</p>
-                  </div>
-                </div>
-
-                <div className={`rounded-2xl ${NETWORKS.find(n => n.value === qrFor.network)?.color || 'bg-gray-500'} text-white text-center py-2 mb-3`}>
-                  <p className="text-xs font-semibold opacity-95">{NETWORKS.find(n => n.value === qrFor.network)?.label}</p>
-                </div>
-
-                <div className="flex flex-col items-center gap-2">
-                  <div className="p-3 bg-white rounded-2xl border-4 border-white shadow-lg">
-                    <QRCodeCanvas
-                      value={buildQrPayload(qrFor)}
-                      size={220}
-                      level="M"
-                      includeMargin={false}
-                    />
-                  </div>
-                  <p className="text-[11px] uppercase tracking-wider text-neutral-500 mt-1">Lipa Namba</p>
-                  <p className="font-mono font-black text-3xl tracking-wide text-neutral-900">{qrFor.lipa_namba}</p>
-                  {qrFor.account_name && (
-                    <p className="text-sm font-semibold text-neutral-700">{qrFor.account_name}</p>
-                  )}
-                </div>
-
-                <div className="text-center mt-3 pt-3 border-t border-dashed border-neutral-300">
-                  <p className="text-[10px] text-neutral-500">Scan QR au ingiza Lipa Namba kulipa</p>
-                  <p className="text-[10px] font-semibold text-neutral-700 mt-0.5">{businessName}</p>
-                </div>
-              </div>
+                businessName={businessName}
+                network={qrFor.network}
+                lipaNamba={qrFor.lipa_namba}
+                accountName={qrFor.account_name}
+                qrValue={buildQrPayload(qrFor)}
+              />
 
               <div className="grid grid-cols-3 gap-2">
                 <Button variant="outline" className="rounded-full" disabled={sharing} onClick={downloadQrImage}>
@@ -436,7 +400,7 @@ export default function LipaNambaPage() {
                 <Button variant="outline" className="rounded-full" disabled={sharing} onClick={shareQrPdf}>
                   <Share2 className="h-4 w-4 mr-1" /> PDF
                 </Button>
-                <Button className="rounded-full" disabled={sharing} onClick={shareQrImage}>
+                <Button className="rounded-full px-2" disabled={sharing} onClick={shareQrImage}>
                   <Share2 className="h-4 w-4 mr-1" /> Picha
                 </Button>
               </div>

@@ -6,7 +6,7 @@ import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { useAuth } from '@/hooks/useAuth';
 import { useDataAccess } from '@/hooks/useDataAccess';
 import { usePermissions } from '@/hooks/usePermissions';
-import { LogOut, Settings } from 'lucide-react';
+import { Bell, LogOut, Settings } from 'lucide-react';
 import { filterNavigationItems, primaryNavigationItems, superAdminNavigationItem, utilityNavigationItems } from '@/lib/navigation';
 
 interface ProfileMenuSheetProps {
@@ -74,6 +74,9 @@ export const ProfileMenuSheet = ({ open, onOpenChange }: ProfileMenuSheetProps) 
               )}
             </div>
           </div>
+          <Button variant="ghost" size="icon" className="rounded-full" onClick={() => handleNav('/notifications')} aria-label="Taarifa">
+            <Bell className="h-5 w-5" />
+          </Button>
           <Button variant="ghost" size="icon" className="rounded-full" onClick={() => handleNav('/settings')} aria-label="Mipangilio">
             <Settings className="h-5 w-5" />
           </Button>

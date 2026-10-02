@@ -36,6 +36,7 @@ interface DraftItem {
 
 interface SavedInvoice {
   id: string;
+  sale_id?: string | null;
   invoice_number: string;
   customer_name: string;
   customer_phone: string | null;
@@ -332,19 +333,17 @@ export const InvoicesPage = () => {
         />
       </div>
 
-      {invoices.length > 0 && (
-        <section className="space-y-2">
-          <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Ankara Zilizohifadhiwa</h2>
+      <section className="flex flex-col gap-2">
           {invoices
             .filter((inv) => {
               const q = query.trim().toLowerCase();
               return !q || inv.customer_name.toLowerCase().includes(q) || inv.invoice_number.toLowerCase().includes(q);
             })
             .map((inv) => (
-              <Card key={inv.id} className="rounded-3xl transition hover:bg-muted/50">
+              <Card key={inv.id} style={{ order: -Math.floor(new Date(inv.created_at).getTime() / 1000) }} className="rounded-3xl transition hover:bg-muted/50">
                 <CardContent className="p-4 flex items-center justify-between gap-3">
                   <button className="min-w-0 text-left flex-1" onClick={() => setSelectedInvoice(inv)}>
-                    <p className="font-semibold truncate">{inv.customer_name}</p>
+                    <p className="font-semibold truncate">{inv.customer_name} <Badge variant="secondary" className="ml-1 text-[9px]">{inv.sale_id ? 'Mauzo' : 'Mwenyewe'}</Badge></p>
                     <p className="text-xs text-muted-foreground">
                       {format(new Date(inv.created_at), 'dd/MM/yyyy HH:mm')} · {inv.invoice_number}
                     </p>
@@ -381,8 +380,35 @@ export const InvoicesPage = () => {
                 </CardContent>
               </Card>
             ))}
-        </section>
-      )}
+          {loading ? (
+            <div className="flex justify-center py-10"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
+          ) : filtered.filter((sale) => !invoices.some((i) => i.sale_id === sale.id)).map((sale) => (
+            <Card
+              key={sale.id}
+              style={{ order: -Math.floor(new Date(sale.created_at).getTime() / 1000) }}
+              className="rounded-3xl cursor-pointer transition hover:bg-muted/50"
+              onClick={() => setSelected(sale)}
+            >
+              <CardContent className="p-4 flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="font-semibold truncate">{sale.customers?.name || 'Mteja wa Kawaida'} <Badge variant="secondary" className="ml-1 text-[9px]">Mauzo</Badge></p>
+                  <p className="text-xs text-muted-foreground">
+                    {format(new Date(sale.created_at), 'dd/MM/yyyy HH:mm')} · INV-{sale.id.slice(0, 8).toUpperCase()}
+                  </p>
+                </div>
+                <div className="text-right shrink-0">
+                  <p className="font-bold">TZS {Number(sale.total_amount).toLocaleString()}</p>
+                  <Badge variant={sale.payment_status === 'paid' ? 'default' : 'destructive'} className="text-[10px]">
+                    {sale.payment_status === 'paid' ? 'Amelipa' : sale.payment_status === 'partial' ? 'Nusu' : 'Hajalipa'}
+                  </Badge>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+          {!loading && invoices.length === 0 && filtered.length === 0 && (
+            <p className="text-sm text-muted-foreground text-center py-10">Hakuna ankara bado.</p>
+          )}
+      </section>
 
       <Sheet open={!!selectedInvoice} onOpenChange={(open) => !open && setSelectedInvoice(null)}>
         <SheetContent side="right" className="w-full sm:max-w-lg overflow-y-auto p-4">
@@ -411,39 +437,6 @@ export const InvoicesPage = () => {
           )}
         </SheetContent>
       </Sheet>
-
-      <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Ankara Kutoka Mauzo</h2>
-
-      {loading ? (
-        <div className="flex justify-center py-10"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
-      ) : filtered.length === 0 ? (
-        <p className="text-sm text-muted-foreground text-center py-10">Hakuna mauzo ya kutengeneza ankara bado.</p>
-      ) : (
-        <div className="space-y-2">
-          {filtered.map((sale) => (
-            <Card
-              key={sale.id}
-              className="rounded-3xl cursor-pointer transition hover:bg-muted/50"
-              onClick={() => setSelected(sale)}
-            >
-              <CardContent className="p-4 flex items-center justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="font-semibold truncate">{sale.customers?.name || 'Mteja wa Kawaida'}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {format(new Date(sale.created_at), 'dd/MM/yyyy HH:mm')} · INV-{sale.id.slice(0, 8).toUpperCase()}
-                  </p>
-                </div>
-                <div className="text-right shrink-0">
-                  <p className="font-bold">TZS {Number(sale.total_amount).toLocaleString()}</p>
-                  <Badge variant={sale.payment_status === 'paid' ? 'default' : 'destructive'} className="text-[10px]">
-                    {sale.payment_status === 'paid' ? 'Amelipa' : sale.payment_status === 'partial' ? 'Nusu' : 'Hajalipa'}
-                  </Badge>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
 
       {/* View invoice from a sale */}
       <Sheet open={!!selected} onOpenChange={(open) => !open && setSelected(null)}>
