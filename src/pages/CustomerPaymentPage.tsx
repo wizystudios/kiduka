@@ -279,7 +279,7 @@ export const CustomerPaymentPage = () => {
                   onClick={handleConfirmReceived}
                   disabled={loading}
                 >
-                  {loading ? 'Inathitibitsha...' : (
+                  {loading ? 'Inathibitisha...' : (
                     <>
                       <CheckCircle className="h-5 w-5 mr-2" />
                       Nimethibitisha Kupokea
