@@ -11,6 +11,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
+import { useDataAccess } from '@/hooks/useDataAccess';
 import { CustomerLedger } from '@/components/CustomerLedger';
 import { exportToExcel, ExportColumn } from '@/utils/exportUtils';
 
@@ -27,6 +28,7 @@ interface Customer {
 export const CustomersPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { dataOwnerId, branchId } = useDataAccess();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
@@ -51,7 +53,7 @@ export const CustomersPage = () => {
 
   useEffect(() => {
     fetchCustomers();
-  }, []);
+  }, [dataOwnerId, branchId]);
 
   const openWhatsApp = (customer: Customer) => {
     if (!customer.phone) {
@@ -95,7 +97,7 @@ export const CustomersPage = () => {
       window.open(`https://wa.me/${phone.replace('+', '')}?text=${encodeURIComponent(whatsappMsg)}`, '_blank');
       if (user) {
         await supabase.from('whatsapp_messages').insert({
-          owner_id: user.id, customer_id: whatsappTarget.id, customer_name: whatsappTarget.name,
+         owner_id: dataOwnerId || user.id, customer_id: whatsappTarget.id, customer_name: whatsappTarget.name,
           phone_number: phone, message: whatsappMsg, message_type: 'general', status: 'sent_wa_link',
         });
       }
@@ -107,9 +109,13 @@ export const CustomersPage = () => {
 
   const fetchCustomers = async () => {
     try {
-      const { data, error } = await supabase
+      if (!dataOwnerId) return;
+      let query = supabase
         .from('customers')
         .select('*')
+        .eq('owner_id', dataOwnerId);
+      if (branchId) query = query.eq('branch_id', branchId);
+      const { data, error } = await query
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -139,7 +145,7 @@ export const CustomersPage = () => {
       } else {
         const { error } = await supabase
           .from('customers')
-          .insert({ name: customerData.name, email: customerData.email || null, phone: customerData.phone || null, owner_id: (await supabase.auth.getUser()).data.user?.id });
+          .insert({ name: customerData.name, email: customerData.email || null, phone: customerData.phone || null, owner_id: dataOwnerId, branch_id: branchId });
         if (error) throw error;
         toast({ title: 'Mafanikio', description: 'Mteja ameongezwa' });
       }
@@ -203,7 +209,7 @@ export const CustomersPage = () => {
       await supabase.from('customer_transactions').insert({
         customer_id: quickPayCustomer.id,
         customer_name: quickPayCustomer.name,
-        owner_id: user!.id,
+         owner_id: dataOwnerId || user!.id,
         transaction_type: 'payment',
         total_amount: amount,
         amount_paid: amount,

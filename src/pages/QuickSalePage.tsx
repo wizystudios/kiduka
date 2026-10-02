@@ -18,7 +18,7 @@ export const QuickSalePage = () => {
   const [loading, setLoading] = useState(false);
   const [showInvoice, setShowInvoice] = useState(false);
   const [lastSaleData, setLastSaleData] = useState<any>(null);
-  const { dataOwnerId, ownerBusinessName, loading: dataLoading } = useDataAccess();
+  const { dataOwnerId, branchId, ownerBusinessName, loading: dataLoading } = useDataAccess();
 
   const [formData, setFormData] = useState({
     customer_name: '', customer_id: '', product_name: '', quantity: '',
@@ -30,7 +30,9 @@ export const QuickSalePage = () => {
 
   const fetchCustomers = async () => {
     if (!dataOwnerId) return;
-    const { data } = await supabase.from('customers').select('id, name').eq('owner_id', dataOwnerId).order('name');
+    let query = supabase.from('customers').select('id, name').eq('owner_id', dataOwnerId);
+    if (branchId) query = query.eq('branch_id', branchId);
+    const { data } = await query.order('name');
     setCustomers(data || []);
   };
 
@@ -45,6 +47,41 @@ export const QuickSalePage = () => {
       const total_amount = quantity * unit_price;
       const amount_paid = formData.payment_status === 'paid' ? total_amount : parseFloat(formData.amount_paid || '0');
       const balance = total_amount - amount_paid;
+
+      const { data: sale, error: saleError } = await supabase.from('sales').insert({
+        owner_id: dataOwnerId,
+        branch_id: branchId,
+        customer_id: formData.customer_id || null,
+        total_amount,
+        payment_method: formData.payment_method,
+        payment_status: formData.payment_status,
+        payment_details: { amount_paid, balance, notes: formData.notes || null },
+      }).select('id,created_at').single();
+      if (saleError) throw saleError;
+
+      const { error: itemError } = await supabase.from('sales_items').insert({
+        sale_id: sale.id,
+        product_id: null,
+        quantity: Math.max(1, Math.round(quantity)),
+        unit_price,
+        subtotal: total_amount,
+      });
+      if (itemError) throw itemError;
+
+      const invoiceNumber = `INV-${sale.id.slice(0, 8).toUpperCase()}`;
+      const { error: invoiceError } = await supabase.from('invoices').upsert({
+        owner_id: dataOwnerId,
+        branch_id: branchId,
+        invoice_number: invoiceNumber,
+        customer_name: formData.customer_name || 'Mteja wa Kawaida',
+        items: [{ name: formData.product_name, quantity, unit_price, subtotal: total_amount }],
+        total_amount,
+        payment_method: formData.payment_method,
+        status: formData.payment_status,
+        notes: formData.notes || null,
+        sale_id: sale.id,
+      }, { onConflict: 'sale_id' });
+      if (invoiceError) throw invoiceError;
 
       const { error } = await supabase.from('customer_transactions').insert([{
         owner_id: dataOwnerId, customer_id: formData.customer_id || null, customer_name: formData.customer_name,
@@ -63,7 +100,7 @@ export const QuickSalePage = () => {
         customer_name: formData.customer_name,
         items: [{ name: formData.product_name, quantity, unit_price, subtotal: total_amount }],
         total_amount, payment_method: formData.payment_method, payment_status: formData.payment_status,
-        invoice_number: `INV-${Date.now()}`, date: new Date().toLocaleDateString('sw-TZ')
+         invoice_number: invoiceNumber, date: new Date(sale.created_at).toLocaleDateString('sw-TZ')
       });
 
       logActivity('sale_create', `Mauzo ya TSh ${total_amount.toLocaleString()}`, { amount: total_amount, product: formData.product_name });
