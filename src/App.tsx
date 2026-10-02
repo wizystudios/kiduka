@@ -546,6 +546,12 @@ export default function App() {
                 </ProtectedRoute>
               } />
               
+              <Route path="/billing-plans" element={
+                <ProtectedRoute requiredRole="super_admin">
+                  <AppLayout><BillingPlansPage /></AppLayout>
+                </ProtectedRoute>
+              } />
+
               {/* Subscription */}
               <Route path="/subscription" element={
                 <ProtectedRoute>
