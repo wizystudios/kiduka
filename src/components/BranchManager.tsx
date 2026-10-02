@@ -678,6 +678,34 @@ export const BranchManager = () => {
                     setSaving(false);
                   }
                 }}>{saving ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Hifadhi'}</Button>
+
+                <div className="pt-3 border-t">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-sm font-semibold">Wafanyakazi ({branchStaff.length})</p>
+                    <Button size="sm" variant="outline" className="rounded-full h-7 text-xs" onClick={() => {
+                      setAddStaffDialog(true);
+                      setStaffForm({ full_name: '', email: '', phone: '', password: '', role: 'staff', notes: '', mode: 'new' });
+                    }}><UserPlus className="h-3 w-3 mr-1" /> Ongeza</Button>
+                  </div>
+                  {staffLoading ? <Loader2 className="h-4 w-4 animate-spin mx-auto" /> : branchStaff.length === 0 ? (
+                    <p className="text-xs text-muted-foreground text-center py-2">Hakuna wafanyakazi bado</p>
+                  ) : (
+                    <div className="divide-y divide-border/50">
+                      {branchStaff.map(s => (
+                        <button key={s.id} type="button" onClick={() => setStaffAction(s)} className="flex w-full items-center gap-3 py-2 text-left">
+                          <div className="h-9 w-9 rounded-full bg-primary/10 text-primary flex items-center justify-center text-sm font-bold shrink-0">
+                            {(s.full_name || '?')[0].toUpperCase()}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-medium truncate">{s.full_name}</p>
+                            <p className="text-[11px] text-muted-foreground">{s.role === 'manager' ? 'Meneja' : 'Mfanyakazi'}{!s.is_active ? ' · Imezimwa' : ''}</p>
+                          </div>
+                          <ChevronLeft className="h-4 w-4 rotate-180 text-muted-foreground rtl:rotate-0" />
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             </DialogContent>
           </Dialog>
