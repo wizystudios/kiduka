@@ -305,7 +305,7 @@ export const SokoniMarketplace = () => {
           ...product,
           branch_id: (product as any).branch_id || null,
           branch_name: branch?.branch_name || undefined,
-          owner_business_name: seller?.business_name || 'Duka',
+          owner_business_name: seller?.business_name?.trim() || 'Biashara ya Sokoni',
           owner_phone: seller?.phone || undefined,
           owner_region: seller?.region || undefined,
           owner_district: seller?.district || undefined,
@@ -499,7 +499,7 @@ export const SokoniMarketplace = () => {
     const sellerId = product.owner_id;
     if (!acc[sellerId]) {
       acc[sellerId] = {
-        seller: sellers.find(s => s.id === sellerId) || { id: sellerId, business_name: 'Duka', phone: null, region: null, district: null },
+        seller: sellers.find(s => s.id === sellerId) || { id: sellerId, business_name: 'Biashara ya Sokoni', phone: null, region: null, district: null },
         products: []
       };
     }
@@ -1038,7 +1038,7 @@ export const SokoniMarketplace = () => {
                           <Store className="h-7 w-7 text-primary" />
                         </div>
                         <div className="min-w-0 flex-1">
-                          <h3 className="font-bold text-primary-foreground truncate text-sm">{seller.business_name || 'Duka'}</h3>
+                          <h3 className="font-bold text-primary-foreground truncate text-sm">{seller.business_name?.trim() || 'Biashara ya Sokoni'}</h3>
                           {seller.region && (
                             <p className="text-xs text-primary-foreground/80 flex items-center gap-1 truncate">
                               <MapPin className="h-3 w-3 flex-shrink-0" />

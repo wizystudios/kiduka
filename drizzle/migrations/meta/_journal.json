@@ -50,6 +50,13 @@
       "when": 1790960796972,
       "tag": "0006_product_images_storage_owner_folder",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1790964199204,
+      "tag": "0007_include_named_businesses_in_public_storefronts",
+      "breakpoints": true
     }
   ]
 }
