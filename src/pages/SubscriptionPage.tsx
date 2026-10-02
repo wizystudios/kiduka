@@ -8,7 +8,7 @@ import {
   Crown, Check, CreditCard, Phone, Loader2, CheckCircle, 
   AlertTriangle, Sparkles, Package, TrendingUp, Shield,
   Users, BarChart3, Store, Infinity, Clock, ArrowUpRight,
-  HelpCircle
+  HelpCircle, Upload, ReceiptText
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -34,9 +34,17 @@ export const SubscriptionPage = ({ embedded = false }: SubscriptionPageProps) =>
   const [paymentInitiated, setPaymentInitiated] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
   const [amountDue, setAmountDue] = useState<number | null>(null);
+  const [proofFile, setProofFile] = useState<File | null>(null);
+  const [payments, setPayments] = useState<any[]>([]);
+  const loadPayments = async () => {
+    if (!user?.id) return;
+    const { data } = await supabase.from('payment_transactions').select('id,amount,paid_amount,status,provider_reference,proof_path,created_at,confirmed_at').eq('user_id', user.id).eq('transaction_type', 'subscription_payment').order('created_at', { ascending: false }).limit(10);
+    setPayments(data || []);
+  };
   useEffect(() => {
     supabase.rpc('get_my_billing' as any).then(({ data }) => setAmountDue(Number((data as any)?.amount_due ?? 0)));
-  }, []);
+    loadPayments();
+  }, [user?.id]);
 
   const getRenewalDate = () => {
     if (subscription?.status === 'trial' && subscription.trial_ends_at) {
@@ -76,7 +84,7 @@ export const SubscriptionPage = ({ embedded = false }: SubscriptionPageProps) =>
       if (data?.success) {
         setPaymentInitiated(true);
         toast.success('Malipo yameanzishwa! Tafadhali kamilisha kwenye simu yako.');
-        await requestActivation(data.reference);
+        await loadPayments();
       } else {
         toast.error(data?.error || 'Imeshindwa kuanzisha malipo');
       }
@@ -86,6 +94,30 @@ export const SubscriptionPage = ({ embedded = false }: SubscriptionPageProps) =>
     } finally {
       setProcessing(false);
     }
+  };
+
+  const uploadPaymentProof = async () => {
+    if (!user?.id || !subscription?.id || !proofFile || !amountDue) {
+      toast.error('Chagua picha au PDF ya uthibitisho');
+      return;
+    }
+    if (proofFile.size > 5 * 1024 * 1024) { toast.error('Faili isiwe zaidi ya MB 5'); return; }
+    setProcessing(true);
+    try {
+      const { data: tx, error: txError } = await supabase.from('payment_transactions').insert({ user_id: user.id, subscription_id: subscription.id, transaction_type: 'subscription_payment', amount: amountDue, currency: 'TZS', payment_method: 'manual_proof', provider: 'manual', status: 'pending' }).select('id').single();
+      if (txError || !tx) throw txError || new Error('Muamala haukuhifadhiwa');
+      const ext = proofFile.name.split('.').pop()?.toLowerCase() || 'jpg';
+      const path = `${user.id}/${tx.id}.${ext}`;
+      const { error: uploadError } = await supabase.storage.from('payment-proofs').upload(path, proofFile, { upsert: false, contentType: proofFile.type });
+      if (uploadError) throw uploadError;
+      const ok = await requestActivation(tx.id, path);
+      if (!ok) throw new Error('Ombi halikutumwa');
+      setProofFile(null);
+      await loadPayments();
+      toast.success('Uthibitisho umetumwa kwa ukaguzi');
+    } catch (error: any) {
+      toast.error(error?.message || 'Uthibitisho haujatumwa');
+    } finally { setProcessing(false); }
   };
 
   const handleManualRequest = async () => {
@@ -330,14 +362,13 @@ export const SubscriptionPage = ({ embedded = false }: SubscriptionPageProps) =>
                         </div>
                       </div>
 
-                      <Button 
-                        variant="outline" 
-                        className="w-full"
-                        onClick={handleManualRequest}
-                        disabled={processing}
-                      >
-                        Omba Idhini ya Admin
-                      </Button>
+                      <div className="space-y-2 rounded-2xl border border-border/60 p-3">
+                        <Label htmlFor="payment-proof" className="text-xs">Uthibitisho wa malipo (picha au PDF)</Label>
+                        <Input id="payment-proof" type="file" accept="image/*,.pdf" onChange={(event) => setProofFile(event.target.files?.[0] || null)} className="rounded-2xl" />
+                        <Button variant="outline" className="w-full" onClick={uploadPaymentProof} disabled={processing || !proofFile}>
+                          <Upload className="mr-2 h-4 w-4" /> Tuma uthibitisho
+                        </Button>
+                      </div>
                     </div>
                   </>
                 )}
@@ -404,6 +435,24 @@ export const SubscriptionPage = ({ embedded = false }: SubscriptionPageProps) =>
             </CardContent>
           </Card>
         )}
+
+        <section className="mx-auto mt-6 max-w-3xl space-y-3">
+          <div className="flex items-center gap-2"><ReceiptText className="h-4 w-4 text-primary" /><h2 className="text-sm font-bold">Historia ya Malipo</h2></div>
+          {payments.length === 0 ? <p className="text-sm text-muted-foreground">Bado hakuna malipo yaliyotumwa.</p> : (
+            <div className="divide-y divide-border/50 border-y border-border/50">
+              {payments.map((payment) => {
+                const paid = Number(payment.paid_amount || 0);
+                const expected = Number(payment.amount || 0);
+                return <div key={payment.id} className="grid gap-1 py-3 text-sm md:grid-cols-4 md:items-center">
+                  <div><p className="font-semibold">TSh {expected.toLocaleString()}</p><p className="text-xs text-muted-foreground">{new Date(payment.created_at).toLocaleDateString('sw-TZ')}</p></div>
+                  <div><p className="text-xs text-muted-foreground">Imelipwa</p><p>{paid ? `TSh ${paid.toLocaleString()}` : 'Inasubiri'}</p></div>
+                  <div><p className="text-xs text-muted-foreground">Salio</p><p className={expected - paid > 0 ? 'text-destructive' : 'text-success'}>TSh {Math.max(0, expected - paid).toLocaleString()}</p></div>
+                  <Badge variant={payment.status === 'completed' ? 'default' : 'secondary'} className="w-fit rounded-full">{payment.status === 'completed' ? 'Imethibitishwa' : payment.status === 'failed' ? 'Imeshindikana' : 'Inasubiri'}</Badge>
+                </div>;
+              })}
+            </div>
+          )}
+        </section>
 
         {/* Help Button */}
         <div className="mt-6 text-center">
