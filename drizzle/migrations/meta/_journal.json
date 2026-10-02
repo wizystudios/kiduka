@@ -8,6 +8,13 @@
       "when": 1790952080637,
       "tag": "0000_enforce_branch_scoping_and_sale_invoice_details",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1790952103254,
+      "tag": "0001_auto_assign_branch_to_staff_records",
+      "breakpoints": true
     }
   ]
 }
