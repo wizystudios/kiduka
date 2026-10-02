@@ -296,6 +296,10 @@ h3 { font-size: 1.1rem !important; line-height: 1.3 !important; font-weight: 600
 [dir='rtl'] .pl-3 { padding-left: 0.75rem; padding-right: 0.75rem; }
 [dir='rtl'] .pl-10 { padding-left: 0.75rem; padding-right: 2.5rem; }
 [dir='rtl'] .pr-10 { padding-right: 0.75rem; padding-left: 2.5rem; }
+[dir='rtl'] .pl-8 { padding-left: 0.75rem; padding-right: 2rem; }
+[dir='rtl'] .pl-9 { padding-left: 0.75rem; padding-right: 2.25rem; }
+[dir='rtl'] .pl-11 { padding-left: 0.75rem; padding-right: 2.75rem; }
+[dir='rtl'] .pl-12 { padding-left: 0.75rem; padding-right: 3rem; }
 
 /* Absolute positioning (icons inside inputs, badges) */
 [dir='rtl'] .left-0 { left: auto; right: 0; }
