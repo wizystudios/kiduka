@@ -649,7 +649,7 @@ export const BranchManager = () => {
         {settingsDialog && (
           <Dialog open={!!settingsDialog} onOpenChange={() => setSettingsDialog(null)}>
             <DialogContent className="max-w-sm rounded-3xl max-h-[85vh] overflow-y-auto">
-              <DialogHeader><DialogTitle className="text-sm">Huduma - {settingsDialog.branch_name}</DialogTitle></DialogHeader>
+              <DialogHeader><DialogTitle className="text-sm">Mipangilio · {settingsDialog.branch_name}</DialogTitle></DialogHeader>
               <div className="space-y-3">
                 {FEATURE_LIST.map(f => (
                   <div key={f.key} className="flex items-center justify-between">
