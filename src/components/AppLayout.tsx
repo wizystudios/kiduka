@@ -61,7 +61,7 @@ export function AppLayout({ children }: AppLayoutProps) {
       <OfflineSyncBootstrap />
       <div className="flex min-h-screen w-full overflow-x-hidden">
         <AppSidebar />
-        <SidebarInset className="flex-1">
+        <SidebarInset className="flex-1 min-w-0">
           <header className="hidden md:flex h-10 items-center border-b border-border/40 px-2 gap-2">
             <TopAlertBar />
             <Button variant="ghost" size="sm" className="relative p-1.5 h-8 w-8 ml-auto" onClick={() => navigate('/notifications')}>
