@@ -36,6 +36,7 @@ interface DraftItem {
 
 interface SavedInvoice {
   id: string;
+  sale_id?: string | null;
   invoice_number: string;
   customer_name: string;
   customer_phone: string | null;
