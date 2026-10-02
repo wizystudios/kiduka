@@ -36,6 +36,7 @@ interface OwnerNumber {
   account_name: string | null;
   is_default: boolean;
   instructions: string | null;
+  qr_image_url?: string | null;
 }
 
 export const PaymentMethodDialog = ({ open, onOpenChange, totalAmount, onPaymentComplete }: PaymentMethodDialogProps) => {
@@ -71,7 +72,7 @@ export const PaymentMethodDialog = ({ open, onOpenChange, totalAmount, onPayment
     (async () => {
       const { data } = await supabase
         .from('owner_payment_numbers')
-        .select('id,network,lipa_namba,account_name,is_default,instructions')
+        .select('id,network,lipa_namba,account_name,is_default,instructions,qr_image_url')
         .eq('owner_id', dataOwnerId)
         .eq('is_active', true)
         .order('is_default', { ascending: false });
@@ -225,6 +226,7 @@ export const PaymentMethodDialog = ({ open, onOpenChange, totalAmount, onPayment
                     accountName={activeNumber.account_name}
                     amount={totalAmount}
                     qrValue={qrPayload}
+                    qrImageUrl={activeNumber.qr_image_url}
                   />
                   <div className="grid grid-cols-2 gap-2">
                     <Button variant="outline" className="rounded-full" onClick={copyPaymentNumber}><Copy className="mr-1 h-4 w-4" /> Nakili</Button>
