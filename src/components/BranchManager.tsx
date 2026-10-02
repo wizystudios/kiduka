@@ -17,6 +17,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { UnifiedDeleteSheet } from '@/components/UnifiedDeleteSheet';
+import { DashboardAdCarousel } from '@/components/DashboardAdCarousel';
 
 interface Branch {
   id: string;
@@ -92,6 +93,7 @@ export const BranchManager = () => {
   const [branchProducts, setBranchProducts] = useState<any[]>([]);
   const [showPassword, setShowPassword] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<{ type: 'branch' | 'branch_staff'; id: string; name: string } | null>(null);
+  const [staffAction, setStaffAction] = useState<BranchStaff | null>(null);
 
   const [staffForm, setStaffForm] = useState({ 
     full_name: '', email: '', phone: '', password: '', role: 'staff', notes: '',
