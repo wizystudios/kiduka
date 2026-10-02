@@ -23,4 +23,6 @@
 - [x] Overage pricing: TSh 1,000 per extra product and per extra customer
 - [x] Product photo uploads save to the owner's folder and show in Sokoni
 - [x] Super-admin price editor (/billing-plans), linked from Matawi
-- [ ] Full owner/customer/admin audit walk on phone + desktop (Sokoni desktop Deals tab looks empty below the banners — investigate)
+- [x] Sokoni desktop Deals tab: product feed added below banners
+- [ ] Extra staff price — waiting for the real amount from the user
+- [ ] Full audit walk on the user's own phone + computer
