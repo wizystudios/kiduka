@@ -57,6 +57,13 @@
       "when": 1790964199204,
       "tag": "0007_include_named_businesses_in_public_storefronts",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1790965008138,
+      "tag": "0008_secure_sales_billing_and_payment_proofs",
+      "breakpoints": true
     }
   ]
 }
