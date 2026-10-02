@@ -81,7 +81,7 @@ export const QuickSalePage = () => {
         notes: formData.notes || null,
         sale_id: sale.id,
       }, { onConflict: 'sale_id' });
-      if (invoiceError) throw invoiceError;
+      if (invoiceError) console.error('Invoice save failed (sale kept):', invoiceError);
 
       const { error } = await supabase.from('customer_transactions').insert([{
         owner_id: dataOwnerId, customer_id: formData.customer_id || null, customer_name: formData.customer_name,

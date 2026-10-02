@@ -15,6 +15,13 @@
       "when": 1790952103254,
       "tag": "0001_auto_assign_branch_to_staff_records",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1790953422495,
+      "tag": "0002_invoices_sale_id_unique",
+      "breakpoints": true
     }
   ]
 }
