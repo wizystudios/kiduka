@@ -31,6 +31,7 @@ import { ReportsPage } from '@/pages/ReportsPage';
 import { SettingsPage } from '@/pages/SettingsPage';
 import { UsersPage } from '@/pages/UsersPage';
 import { SubscriptionPage } from '@/pages/SubscriptionPage';
+import BillingPlansPage from '@/pages/BillingPlansPage';
 import { SubscriptionGuard } from '@/components/SubscriptionGuard';
 import { InventorySnapshotPage } from '@/pages/InventorySnapshotPage';
 import { PWAInstallerPage } from '@/pages/PWAInstallerPage';
