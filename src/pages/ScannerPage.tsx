@@ -80,7 +80,7 @@ export const ScannerPage = () => {
   } | null>(null);
   const { toast } = useToast();
   const { user, userProfile } = useAuth();
-  const { dataOwnerId, ownerBusinessName, loading: dataLoading } = useDataAccess();
+  const { dataOwnerId, ownerBusinessName, branchId, loading: dataLoading } = useDataAccess();
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
   const location = useLocation();
   const skipNextSearchRef = useRef(false);
@@ -121,15 +121,6 @@ export const ScannerPage = () => {
     if (paymentOrReceiptOpen && cameraOn) setCameraOn(false);
     if (!paymentOrReceiptOpen && !cameraOn) setCameraOn(true);
   }, [showPayment, showReceipt, showDigitalReceipt, showReview, showWeightSelector]);
-
-  useEffect(() => {
-    document.body.classList.add('scanner-active');
-    document.documentElement.classList.add('scanner-active');
-    return () => {
-      document.body.classList.remove('scanner-active');
-      document.documentElement.classList.remove('scanner-active');
-    };
-  }, []);
 
   useEffect(() => {
     if (!cameraOn) {
@@ -357,12 +348,13 @@ export const ScannerPage = () => {
     try {
       console.log('Searching for products with dataOwnerId:', dataOwnerId);
       const trimmed = query.trim();
-      const { data: barcodeMatches, error: barcodeError } = await supabase
+      let barcodeQuery = supabase
         .from('products')
         .select('*')
         .eq('barcode', trimmed)
-        .eq('owner_id', dataOwnerId)
-        .limit(1);
+        .eq('owner_id', dataOwnerId);
+      if (branchId) barcodeQuery = barcodeQuery.eq('branch_id', branchId);
+      const { data: barcodeMatches, error: barcodeError } = await barcodeQuery.limit(1);
 
       if (barcodeError) throw barcodeError;
 
@@ -381,12 +373,13 @@ export const ScannerPage = () => {
         return;
       }
 
-      const { data: nameMatches, error: nameError } = await supabase
+      let nameQuery = supabase
         .from('products')
         .select('*')
         .ilike('name', `%${trimmed}%`)
-        .eq('owner_id', dataOwnerId)
-        .limit(10);
+        .eq('owner_id', dataOwnerId);
+      if (branchId) nameQuery = nameQuery.eq('branch_id', branchId);
+      const { data: nameMatches, error: nameError } = await nameQuery.limit(10);
 
       if (nameError) throw nameError;
 
@@ -567,13 +560,35 @@ export const ScannerPage = () => {
         .from('sales')
         .insert({
           owner_id: dataOwnerId,
+          branch_id: branchId,
           total_amount: getSubtotal(),
-          payment_method: paymentData.method
+          payment_method: paymentData.method,
+          payment_status: 'paid',
+          payment_details: paymentData
         })
         .select()
         .single();
 
       if (saleError) throw saleError;
+
+      const invoiceItems = cart.map(item => ({
+        name: item.name,
+        quantity: item.quantity,
+        unit_price: item.price,
+        subtotal: item.price * item.quantity,
+      }));
+      const { error: invoiceError } = await supabase.from('invoices').upsert({
+        owner_id: dataOwnerId,
+        branch_id: branchId,
+        invoice_number: `INV-${sale.id.slice(0, 8).toUpperCase()}`,
+        customer_name: 'Mteja wa Kawaida',
+        items: invoiceItems,
+        total_amount: getSubtotal(),
+        payment_method: paymentData.method,
+        status: 'paid',
+        sale_id: sale.id,
+      }, { onConflict: 'sale_id' });
+      if (invoiceError) throw invoiceError;
 
       const saleItems = cart.map(item => ({
         sale_id: sale.id,
@@ -676,7 +691,7 @@ export const ScannerPage = () => {
   }
 
   return (
-    <div className="fixed inset-0 z-30 bg-black flex flex-col overflow-hidden scanner-page-root">
+    <div className="fixed inset-x-0 bottom-16 top-12 z-30 flex flex-col overflow-hidden bg-foreground md:inset-y-10 md:left-16 md:right-0 scanner-page-root">
     {/*
       z-30 keeps this BELOW radix Dialog/Sheet portals (z-50) so PaymentMethodDialog,
       Review sheet, History sheet, and WeightSelector actually render on top.
@@ -705,9 +720,8 @@ export const ScannerPage = () => {
       />
 
       {showReceipt && completedSale && (
-        <div className="fixed inset-0 z-[100] overflow-y-auto bg-background p-4">
-          <div className="mx-auto flex min-h-[100dvh] max-w-md flex-col justify-center py-6">
-            <h3 className="mb-4 text-center text-lg font-bold text-foreground">Mauzo Yamekamilika!</h3>
+        <div className="fixed inset-x-0 bottom-16 top-12 z-40 overflow-y-auto bg-background p-4 md:inset-y-10 md:left-16">
+          <div className="mx-auto flex min-h-full max-w-md flex-col justify-center py-4">
             <EnhancedReceiptPrinter
               items={completedSale.items}
               subtotal={completedSale.subtotal}
@@ -730,7 +744,7 @@ export const ScannerPage = () => {
       )}
 
       {showDigitalReceipt && completedSale && (
-        <div className="fixed inset-0 z-[100] bg-background">
+        <div className="fixed inset-x-0 bottom-16 top-12 z-40 bg-background md:inset-y-10 md:left-16">
           <DigitalReceiptService
             receiptData={{
               transactionId: completedSale.id,
@@ -1026,7 +1040,7 @@ export const ScannerPage = () => {
 
       {/* Review Order Full Page */}
       {showReview && (
-        <div className="fixed inset-0 z-[110] flex h-[100dvh] w-screen flex-col overflow-hidden bg-background">
+        <div className="fixed inset-x-0 bottom-16 top-12 z-40 flex flex-col overflow-hidden bg-background md:inset-y-10 md:left-16">
           <div className="flex items-center justify-between border-b border-border px-4 py-3">
             <h1 className="text-lg font-bold">Review Order</h1>
             <Button variant="ghost" size="icon" className="rounded-full" onClick={() => setShowReview(false)}>

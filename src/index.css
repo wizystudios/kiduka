@@ -135,19 +135,6 @@ body::-webkit-scrollbar,
   letter-spacing: 0;
 }
 
-html.scanner-active,
-body.scanner-active,
-body.scanner-active #root {
-  overflow: hidden !important;
-  padding-bottom: 0 !important;
-  height: 100dvh !important;
-}
-
-body.scanner-active main,
-body.scanner-active .scanner-page-root {
-  padding: 0 !important;
-}
-
 /* Compact typography */
 h1 { font-size: 1.5rem !important; line-height: 1.3 !important; font-weight: 700 !important; }
 h2 { font-size: 1.25rem !important; line-height: 1.3 !important; font-weight: 600 !important; }
@@ -169,12 +156,12 @@ h3 { font-size: 1.1rem !important; line-height: 1.3 !important; font-weight: 600
   .gap-4 { gap: 0.75rem !important; }
   
   /* Bottom nav spacing */
-  body:not(.scanner-active),
-  body:not(.scanner-active) #root {
+  body,
+  body #root {
     padding-bottom: 140px !important;
   }
   
-  body:not(.scanner-active) main {
+  body main {
     padding-bottom: 5rem !important;
   }
   

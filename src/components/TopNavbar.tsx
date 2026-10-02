@@ -13,7 +13,7 @@ import { OfflineIndicator } from '@/components/OfflineIndicator';
 import { TopAlertBar } from '@/components/TopAlertBar';
 import { KidukaLogo } from './KidukaLogo';
 import { ProfileMenuSheet } from './ProfileMenuSheet';
-import { LogOut, Bell, Mic } from 'lucide-react';
+import { LogOut, Bell } from 'lucide-react';
 import { filterNavigationItems, primaryNavigationItems, superAdminNavigationItem, utilityNavigationItems } from '@/lib/navigation';
 
 export const TopNavbar = () => {
@@ -164,10 +164,7 @@ export const TopNavbar = () => {
               </span>
             )}
           </Button>
-          <Button variant="ghost" size="sm" className="p-1.5 h-8 w-8" onClick={() => navigate('/voice-pos')}>
-            <Mic className="h-4 w-4" />
-          </Button>
-          <button type="button" onClick={() => setProfileOpen(true)} aria-label="Wasifu" className="ml-0.5 rounded-full ring-2 ring-primary/20 transition hover:ring-primary/50">
+          <button type="button" onClick={() => setProfileOpen(true)} aria-label="Wasifu" className="ml-auto rounded-full ring-2 ring-primary/20 transition hover:ring-primary/50">
             <Avatar className="h-8 w-8">
               <AvatarImage src={userProfile?.avatar_url} />
               <AvatarFallback className="bg-primary text-primary-foreground text-xs">{getUserInitials()}</AvatarFallback>
