@@ -83,25 +83,26 @@ export const BusinessDocument = forwardRef<HTMLDivElement, BusinessDocumentProps
         className="mx-auto overflow-hidden rounded-3xl border shadow-sm"
         style={{ width, maxWidth: '100%', background: '#ffffff', color: '#111827' }}
       >
-        <div style={{ padding: 20 }}>
-          {/* Header */}
-          <div
-            className="flex items-center justify-center gap-2 text-center"
-            style={{ borderBottom: '1px solid #e5e7eb', paddingBottom: 16 }}
-          >
-            <BrandMark size="md" iconOnly />
-            <div className="text-left leading-tight">
-              <p style={{ fontSize: 16, fontWeight: 900, color: '#111827', maxWidth: 230 }} className="truncate">
+        <div className="bg-primary px-5 pb-16 pt-5 text-primary-foreground">
+          <div className="flex items-center gap-2">
+            <div className="rounded-2xl bg-background p-1"><BrandMark size="md" iconOnly /></div>
+            <div className="min-w-0 text-left leading-tight">
+              <p className="truncate text-base font-black" style={{ maxWidth: 230 }}>
                 {businessName}
               </p>
-              <p style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', color: '#6b7280' }}>
+              <p className="text-[10px] font-semibold uppercase opacity-80">
                 {title} · Kiduka
               </p>
             </div>
           </div>
+          <p className="mt-5 text-sm font-medium opacity-90">Muamala {statusLabel(paymentStatus).toLowerCase()}</p>
+          <p className="text-3xl font-black">TSh {total.toLocaleString()}</p>
+        </div>
+
+        <div className="relative -mt-11 rounded-t-3xl bg-background p-5 text-foreground">
 
           {/* Meta grid */}
-          <div className="grid grid-cols-2 gap-3" style={{ padding: '16px 0', fontSize: 12 }}>
+           <div className="grid grid-cols-2 gap-3 pb-4 text-xs">
             <div>
               <p style={{ color: '#6b7280' }}>{kind === 'receipt' ? 'Risiti' : 'Ankara'}</p>
               <p className="font-mono" style={{ fontWeight: 700, color: '#111827' }}>#{documentNumber}</p>
@@ -133,7 +134,7 @@ export const BusinessDocument = forwardRef<HTMLDivElement, BusinessDocumentProps
           </div>
 
           {/* Items */}
-          <div style={{ borderTop: '1px solid #e5e7eb', borderBottom: '1px solid #e5e7eb' }}>
+          <div className="border-y border-border">
             {items.map((item, index) => (
               <div
                 key={`${item.name}-${index}`}
@@ -180,10 +181,7 @@ export const BusinessDocument = forwardRef<HTMLDivElement, BusinessDocumentProps
 
           {notes && <p style={{ fontSize: 12, color: '#6b7280', paddingBottom: 12 }}>{notes}</p>}
 
-          <div
-            className="text-center"
-            style={{ borderRadius: 16, background: '#f9fafb', padding: 12, fontSize: 11, color: '#4b5563' }}
-          >
+          <div className="rounded-2xl bg-muted p-3 text-center text-[11px] text-muted-foreground">
             Asante kwa biashara yako · Powered by Kiduka
           </div>
         </div>

@@ -13,7 +13,10 @@ import { useRealTimeNotifications } from "@/hooks/useRealTimeNotifications";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useEffect } from "react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { ProfileMenuSheet } from "@/components/ProfileMenuSheet";
+import { useAuth } from "@/hooks/useAuth";
+import { useEffect, useState } from "react";
 
 
 interface AppLayoutProps {
@@ -22,9 +25,12 @@ interface AppLayoutProps {
 
 export function AppLayout({ children }: AppLayoutProps) {
   const { unreadCount } = useRealTimeNotifications();
+  const { user, userProfile } = useAuth();
+  const [profileOpen, setProfileOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   const isDashboardRoute = location.pathname === "/dashboard";
+  const initials = (userProfile?.full_name || user?.email || 'U').split(/\s|@/).filter(Boolean).map((part) => part[0]?.toUpperCase()).join('').slice(0, 2);
 
   useEffect(() => {
     const mobileLockedRoutes = new Set([
@@ -66,6 +72,13 @@ export function AppLayout({ children }: AppLayoutProps) {
                 </span>
               )}
             </Button>
+            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onClick={() => setProfileOpen(true)} aria-label="Wasifu">
+              <Avatar className="h-7 w-7">
+                <AvatarImage src={userProfile?.avatar_url} />
+                <AvatarFallback className="bg-primary text-[10px] text-primary-foreground">{initials}</AvatarFallback>
+              </Avatar>
+            </Button>
+            <ProfileMenuSheet open={profileOpen} onOpenChange={setProfileOpen} />
           </header>
           <main className={`w-full ${isDashboardRoute ? 'pt-16 pb-24' : 'pt-16 pb-28'} md:pt-0 md:pb-0 md:min-h-screen`}>
             <LocationSetupGate>
