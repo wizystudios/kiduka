@@ -5,7 +5,23 @@ import * as React from "react"
 
 import { cn } from "@/lib/utils"
 
-const Sheet = SheetPrimitive.Root
+// On wide screens (>=1024px) sheets act as a docked side pane: no dimmed overlay,
+// the page behind stays visible, and tapping another row swaps the pane content.
+const useWideScreen = () => {
+  const [wide, setWide] = React.useState(() => typeof window !== "undefined" && window.matchMedia("(min-width: 1024px)").matches)
+  React.useEffect(() => {
+    const m = window.matchMedia("(min-width: 1024px)")
+    const on = () => setWide(m.matches)
+    m.addEventListener("change", on)
+    return () => m.removeEventListener("change", on)
+  }, [])
+  return wide
+}
+
+const Sheet = ({ modal, ...props }: React.ComponentProps<typeof SheetPrimitive.Root>) => {
+  const wide = useWideScreen()
+  return <SheetPrimitive.Root modal={modal ?? !wide} {...props} />
+}
 
 const SheetTrigger = SheetPrimitive.Trigger
 

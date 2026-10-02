@@ -16,3 +16,7 @@
 - [ ] Real card payments in Malipo (waiting for the payment API key + docs from the user).
 - [ ] Admin panel to edit billing_settings prices (currently database-only).
 - [ ] Server-side purchase verification for product reviews.
+- [x] Matawi fee calculator (database-priced preview) + Malipo charges database amount_due
+- [x] Wide screens: side sheets dock as a right pane (list stays visible)
+- [ ] Real payment charging — blocked: payment provider API key + docs
+- [ ] Per-page inline list+detail layout for Bidhaa/Mauzo/Wateja (beyond docked sheets)
