@@ -10,6 +10,7 @@ import { useDataAccess } from '@/hooks/useDataAccess';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { exportToExcel, exportToPDF, createPrintableTable, ExportColumn } from '@/utils/exportUtils';
+import { MasterDetailLayout } from '@/components/MasterDetailLayout';
 
 interface Sale {
   id: string;
@@ -225,6 +226,27 @@ export const SalesPage = () => {
   const yearOptions: number[] = [];
   for (let y = new Date().getFullYear(); y >= 2023; y--) yearOptions.push(y);
 
+  const saleDetail = selectedSale ? (
+    <div className="space-y-4">
+      <div className="grid grid-cols-2 gap-3 text-sm">
+        <div><p className="text-xs text-muted-foreground">Tarehe</p><p className="font-medium">{formatDate(selectedSale.created_at)}</p></div>
+        <div><p className="text-xs text-muted-foreground">Njia</p><p className="font-medium">{selectedSale.payment_method || 'Taslimu'}</p></div>
+        {isOwner && <div><p className="text-xs text-muted-foreground">Muuzaji</p><p className="font-medium">{selectedSale.seller_name}</p></div>}
+        {selectedSale.branch_name && <div><p className="text-xs text-muted-foreground">Tawi</p><p className="font-medium">{selectedSale.branch_name}</p></div>}
+      </div>
+      <div className="space-y-2">
+        <h4 className="font-semibold">Bidhaa</h4>
+        {selectedSale.sales_items.map((item, index) => (
+          <div key={index} className="flex justify-between border-b border-border py-3 text-sm">
+            <div><p className="font-medium">{item.products.name}</p><p className="text-xs text-muted-foreground">{item.quantity} × TSh {item.unit_price.toLocaleString()}</p></div>
+            <p className="font-medium">TSh {item.subtotal.toLocaleString()}</p>
+          </div>
+        ))}
+      </div>
+      <div className="flex justify-between border-t border-border pt-4 text-lg font-bold"><span>Jumla</span><span className="text-primary">TSh {selectedSale.total_amount.toLocaleString()}</span></div>
+    </div>
+  ) : null;
+
   return (
     <div className="p-4 space-y-4 pb-24">
       {/* Header */}
@@ -315,11 +337,11 @@ export const SalesPage = () => {
         </div>
       </div>
 
-      {/* Sales list */}
-      <div className="space-y-2">
+      {/* Sales list + desktop details */}
+      <MasterDetailLayout hasSelection={!!selectedSale} list={<div className="space-y-2">
         {filteredSales.map(sale => (
           <div key={sale.id} className="p-3 border border-border/50 rounded-2xl hover:bg-muted/30 cursor-pointer"
-            onClick={() => { setSelectedSale(sale); setDialogOpen(true); }}>
+            onClick={() => { setSelectedSale(sale); if (window.innerWidth < 1024) setDialogOpen(true); }}>
             <div className="flex items-center justify-between mb-1">
               <div className="flex items-center gap-2 flex-wrap">
                 <h3 className="font-semibold text-sm">#{sale.id.slice(0, 8).toUpperCase()}</h3>
@@ -349,7 +371,7 @@ export const SalesPage = () => {
             <p className="text-xs text-muted-foreground">{periodLabel()}</p>
           </div>
         )}
-      </div>
+      </div>} detail={<div className="sticky top-14 p-5"><h3 className="mb-5 text-lg font-bold">Muamala #{selectedSale?.id.slice(0, 8).toUpperCase()}</h3>{saleDetail}</div>} />
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
@@ -357,7 +379,7 @@ export const SalesPage = () => {
             <DialogTitle>Muamala #{selectedSale?.id.slice(0, 8).toUpperCase()}</DialogTitle>
           </DialogHeader>
           {selectedSale && (
-            <div className="space-y-4">
+            <div className="space-y-4 lg:hidden">
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <div><p className="text-xs text-muted-foreground">Tarehe</p><p className="font-medium">{formatDate(selectedSale.created_at)}</p></div>
                 <div><p className="text-xs text-muted-foreground">Njia</p><p className="font-medium">{selectedSale.payment_method || 'Taslimu'}</p></div>

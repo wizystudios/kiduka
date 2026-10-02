@@ -14,15 +14,17 @@
 - [ ] Fingerprint/PIN sign-in on the owner's physical phone (needs the user's device).
 - [ ] New business self-signup end to end (needs a real inbox to confirm the email).
 - [ ] Real card payments in Malipo (waiting for the payment API key + docs from the user).
-- [ ] Admin panel to edit billing_settings prices (currently database-only).
+- [x] Admin panel to edit billing_settings prices.
 - [ ] Server-side purchase verification for product reviews.
 - [x] Matawi fee calculator (database-priced preview) + Malipo charges database amount_due
 - [x] Wide screens: side sheets dock as a right pane (list stays visible)
 - [ ] Real payment charging — blocked: payment provider API key + docs
-- [ ] Per-page inline list+detail layout for Bidhaa/Mauzo/Wateja (beyond docked sheets)
+- [x] Inline list+detail layout for Bidhaa and Mauzo; docked right panes remain available elsewhere
 - [x] Overage pricing: TSh 1,000 per extra product and per extra customer
 - [x] Product photo uploads save to the owner's folder and show in Sokoni
 - [x] Super-admin price editor (/billing-plans), linked from Matawi
 - [x] Sokoni desktop Deals tab: product feed added below banners
-- [ ] Extra staff price — waiting for the real amount from the user
-- [ ] Full audit walk on the user's own phone + computer
+- [x] Extra staff price confirmed at TSh 5,000 and shared by Matawi/Malipo database billing
+- [x] Full phone + computer audit in the test preview; physical-device-only checks remain with the owner
+- [x] Sokoni test product photo stored in the owner's folder and linked to the product gallery
+- [x] Sokoni cards resolve the real business name through the public storefront view

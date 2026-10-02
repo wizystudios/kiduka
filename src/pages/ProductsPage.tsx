@@ -12,6 +12,7 @@ import { logActivity } from '@/hooks/useActivityLogger';
 import * as XLSX from 'xlsx';
 import { WeightQuantitySelector } from '@/components/WeightQuantitySelector';
 import { UnifiedDeleteSheet } from '@/components/UnifiedDeleteSheet';
+import { MasterDetailLayout } from '@/components/MasterDetailLayout';
 
 import {
   Collapsible,
@@ -32,6 +33,7 @@ interface ProductLocal {
   unit_type?: string | null;
   min_quantity?: number | null;
   is_archived?: boolean | null;
+  image_url?: string | null;
 }
 
 export const ProductsPage = () => {
@@ -187,6 +189,10 @@ export const ProductsPage = () => {
   }, [products, searchTerm, showArchived]);
 
   const archivedCount = useMemo(() => products.filter(p => p.is_archived).length, [products]);
+  const selectedProduct = useMemo(
+    () => filteredProducts.find(product => product.id === expandedProduct) ?? null,
+    [filteredProducts, expandedProduct]
+  );
 
   const getStockStatus = (stock: number, threshold: number) => {
     if (stock <= 0) return { color: 'bg-red-100 text-red-800', label: 'Stock Imeisha' };
@@ -299,8 +305,10 @@ export const ProductsPage = () => {
         </Button>
       </div>
 
-      {/* Products List */}
-      <div className="space-y-1">
+      {/* Products list + desktop details */}
+      <MasterDetailLayout
+        hasSelection={!!selectedProduct}
+        list={<div className="space-y-1">
         {filteredProducts.map((product) => {
           const stockStatus = getStockStatus(
             product.stock_quantity || 0, 
@@ -344,7 +352,7 @@ export const ProductsPage = () => {
                     </div>
                   </CollapsibleTrigger>
                   
-                  <CollapsibleContent>
+                  <CollapsibleContent className="lg:hidden">
                     <div className="mt-2 pt-2 border-t space-y-1">
                       {/* Details */}
                       {product.barcode && (
@@ -447,7 +455,43 @@ export const ProductsPage = () => {
             </Collapsible>
           );
         })}
-      </div>
+        </div>}
+        detail={selectedProduct && (() => {
+          const stockStatus = getStockStatus(selectedProduct.stock_quantity || 0, selectedProduct.low_stock_threshold || 10);
+          return (
+            <div className="sticky top-14 space-y-5 p-5">
+              <div className="flex items-start gap-5">
+                <div className="h-36 w-36 flex-shrink-0 overflow-hidden bg-muted">
+                  {selectedProduct.image_url ? (
+                    <img src={selectedProduct.image_url} alt={selectedProduct.name} className="h-full w-full object-cover" loading="lazy" />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center"><Package className="h-10 w-10 text-muted-foreground" /></div>
+                  )}
+                </div>
+                <div className="min-w-0 flex-1 space-y-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h3 className="text-xl font-bold text-foreground">{selectedProduct.name}</h3>
+                    <Badge className={stockStatus.color}>{stockStatus.label}</Badge>
+                  </div>
+                  <p className="text-2xl font-bold text-success">TSh {(selectedProduct.price || 0).toLocaleString()}</p>
+                  <p className="text-sm text-muted-foreground">Stock: {selectedProduct.stock_quantity || 0}</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4 border-y border-border py-4 text-sm">
+                <div><p className="text-xs text-muted-foreground">Kategoria</p><p className="font-medium">{selectedProduct.category || '—'}</p></div>
+                <div><p className="text-xs text-muted-foreground">Barcode</p><p className="font-medium">{selectedProduct.barcode || '—'}</p></div>
+              </div>
+              {selectedProduct.description && <p className="text-sm text-muted-foreground">{selectedProduct.description}</p>}
+              <div className="flex flex-wrap gap-2">
+                <Button onClick={() => handleSellProduct(selectedProduct)} className="rounded-full"><ShoppingCart className="mr-2 h-4 w-4" />Uza</Button>
+                <Button variant="outline" onClick={() => navigate(`/products/edit/${selectedProduct.id}`)} className="rounded-full"><Edit className="mr-2 h-4 w-4" />Hariri</Button>
+                <Button variant="outline" onClick={() => handleArchiveProduct(selectedProduct.id, selectedProduct.name, selectedProduct.is_archived || false)} className="rounded-full"><Archive className="mr-2 h-4 w-4" />{selectedProduct.is_archived ? 'Rejesha' : 'Hifadhi'}</Button>
+                <Button variant="outline" onClick={() => setDeleteTarget(selectedProduct)} className="rounded-full text-destructive"><Trash2 className="mr-2 h-4 w-4" />Futa</Button>
+              </div>
+            </div>
+          );
+        })()}
+      />
 
       {/* Empty State */}
       {filteredProducts.length === 0 && !loading && (
