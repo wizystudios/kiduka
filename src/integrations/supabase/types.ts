@@ -1270,6 +1270,7 @@ export type Database = {
       }
       invoices: {
         Row: {
+          branch_id: string | null
           business_id: string | null
           created_at: string
           customer_name: string
@@ -1287,6 +1288,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          branch_id?: string | null
           business_id?: string | null
           created_at?: string
           customer_name: string
@@ -1304,6 +1306,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          branch_id?: string | null
           business_id?: string | null
           created_at?: string
           customer_name?: string
@@ -1320,7 +1323,15 @@ export type Database = {
           total_amount?: number
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "invoices_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "business_branches"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       journal_entries: {
         Row: {
@@ -2250,6 +2261,7 @@ export type Database = {
           discount_amount: number | null
           id: string
           owner_id: string
+          payment_details: Json
           payment_method: string | null
           payment_status: string | null
           total_amount: number
@@ -2264,6 +2276,7 @@ export type Database = {
           discount_amount?: number | null
           id?: string
           owner_id: string
+          payment_details?: Json
           payment_method?: string | null
           payment_status?: string | null
           total_amount: number
@@ -2278,6 +2291,7 @@ export type Database = {
           discount_amount?: number | null
           id?: string
           owner_id?: string
+          payment_details?: Json
           payment_method?: string | null
           payment_status?: string | null
           total_amount?: number
@@ -3094,6 +3108,10 @@ export type Database = {
         Returns: undefined
       }
       can_access_branch: { Args: { p_branch_id: string }; Returns: boolean }
+      can_access_branch_data: {
+        Args: { _branch_id: string; _business_id: string; _owner_id: string }
+        Returns: boolean
+      }
       can_access_business_data: {
         Args: { _business_id: string }
         Returns: boolean

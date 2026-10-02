@@ -1,0 +1,13 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1790952080637,
+      "tag": "0000_enforce_branch_scoping_and_sale_invoice_details",
+      "breakpoints": true
+    }
+  ]
+}
