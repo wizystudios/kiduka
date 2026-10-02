@@ -51,7 +51,7 @@ export const SalesPage = () => {
   const [selYear, setSelYear] = useState<number>(new Date().getFullYear());
   const [selMonth, setSelMonth] = useState<number>(new Date().getMonth());
 
-  const { dataOwnerId, loading: dataLoading } = useDataAccess();
+  const { dataOwnerId, branchId, isBranchStaff, loading: dataLoading } = useDataAccess();
   const { userProfile } = useAuth();
   const isOwner = userProfile?.role === 'owner' || userProfile?.role === 'super_admin';
 
@@ -101,7 +101,8 @@ export const SalesPage = () => {
       const { start, end } = computeRange();
       if (start) query = query.gte('created_at', start.toISOString());
       if (end) query = query.lt('created_at', end.toISOString());
-      if (selectedBranchId !== 'all') query = query.eq('branch_id', selectedBranchId);
+      if (branchId) query = query.eq('branch_id', branchId);
+      else if (selectedBranchId !== 'all') query = query.eq('branch_id', selectedBranchId);
 
       const { data, error } = await query;
       if (error) throw error;
@@ -130,7 +131,7 @@ export const SalesPage = () => {
     } finally {
       setLoading(false);
     }
-  }, [dataOwnerId, computeRange, selectedBranchId]);
+  }, [dataOwnerId, branchId, computeRange, selectedBranchId]);
 
   useEffect(() => { if (dataOwnerId) fetchSales(); }, [fetchSales]);
 

@@ -8,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Plus, Trash2, Download } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useDataAccess } from '@/hooks/useDataAccess';
 import { toast } from 'sonner';
 import { logActivity } from '@/hooks/useActivityLogger';
 import { DataExportButton } from '@/components/DataExportButton';
@@ -36,6 +37,7 @@ const expenseCategories = [
 
 export default function ExpensesPage() {
   const { user } = useAuth();
+  const { dataOwnerId, branchId } = useDataAccess();
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(false);
   const [showForm, setShowForm] = useState(false);
@@ -49,16 +51,18 @@ export default function ExpensesPage() {
 
   useEffect(() => {
     fetchExpenses();
-  }, [user?.id]);
+  }, [dataOwnerId, branchId]);
 
   const fetchExpenses = async () => {
-    if (!user?.id) return;
+    if (!dataOwnerId) return;
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('expenses')
         .select('*')
-        .eq('owner_id', user.id)
+        .eq('owner_id', dataOwnerId);
+      if (branchId) query = query.eq('branch_id', branchId);
+      const { data, error } = await query
         .order('expense_date', { ascending: false });
 
       if (error) throw error;
@@ -73,14 +77,15 @@ export default function ExpensesPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user?.id) return;
+    if (!dataOwnerId) return;
 
     try {
       setLoading(true);
       const { error } = await supabase
         .from('expenses')
         .insert([{
-          owner_id: user.id,
+          owner_id: dataOwnerId,
+          branch_id: branchId,
           category: formData.category,
           amount: parseFloat(formData.amount),
           description: formData.description || null,

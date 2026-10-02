@@ -13,7 +13,10 @@ import { useRealTimeNotifications } from "@/hooks/useRealTimeNotifications";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useEffect } from "react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { ProfileMenuSheet } from "@/components/ProfileMenuSheet";
+import { useAuth } from "@/hooks/useAuth";
+import { useEffect, useState } from "react";
 
 
 interface AppLayoutProps {
@@ -22,10 +25,12 @@ interface AppLayoutProps {
 
 export function AppLayout({ children }: AppLayoutProps) {
   const { unreadCount } = useRealTimeNotifications();
+  const { user, userProfile } = useAuth();
+  const [profileOpen, setProfileOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   const isDashboardRoute = location.pathname === "/dashboard";
-  const isScannerRoute = location.pathname === "/scanner";
+  const initials = (userProfile?.full_name || user?.email || 'U').split(/\s|@/).filter(Boolean).map((part) => part[0]?.toUpperCase()).join('').slice(0, 2);
 
   useEffect(() => {
     const mobileLockedRoutes = new Set([
@@ -52,12 +57,12 @@ export function AppLayout({ children }: AppLayoutProps) {
     <SidebarProvider>
       <AdminSessionBanner />
       <AdminConsentRequest />
-      {!isScannerRoute && <TopNavbar />}
+      <TopNavbar />
       <OfflineSyncBootstrap />
       <div className="flex min-h-screen w-full overflow-x-hidden">
-        {!isScannerRoute && <AppSidebar />}
+        <AppSidebar />
         <SidebarInset className="flex-1">
-          {!isScannerRoute && <header className="hidden md:flex h-10 items-center border-b border-border/40 px-2 gap-2">
+          <header className="hidden md:flex h-10 items-center border-b border-border/40 px-2 gap-2">
             <TopAlertBar />
             <Button variant="ghost" size="sm" className="relative p-1.5 h-8 w-8 ml-auto" onClick={() => navigate('/notifications')}>
               <Bell className="h-4 w-4" />
@@ -67,8 +72,15 @@ export function AppLayout({ children }: AppLayoutProps) {
                 </span>
               )}
             </Button>
-          </header>}
-          <main className={isScannerRoute ? 'w-full min-h-screen p-0' : `w-full ${isDashboardRoute ? 'pt-16 pb-24' : 'pt-16 pb-28'} md:pt-0 md:pb-0 md:min-h-screen`}>
+            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onClick={() => setProfileOpen(true)} aria-label="Wasifu">
+              <Avatar className="h-7 w-7">
+                <AvatarImage src={userProfile?.avatar_url} />
+                <AvatarFallback className="bg-primary text-[10px] text-primary-foreground">{initials}</AvatarFallback>
+              </Avatar>
+            </Button>
+            <ProfileMenuSheet open={profileOpen} onOpenChange={setProfileOpen} />
+          </header>
+          <main className={`w-full ${isDashboardRoute ? 'pt-16 pb-24' : 'pt-16 pb-28'} md:pt-0 md:pb-0 md:min-h-screen`}>
             <LocationSetupGate>
               <ContractComplianceGate>{children}</ContractComplianceGate>
             </LocationSetupGate>
@@ -76,7 +88,7 @@ export function AppLayout({ children }: AppLayoutProps) {
           
         </SidebarInset>
       </div>
-      {!isScannerRoute && <MobileBottomNav />}
+      <MobileBottomNav />
     </SidebarProvider>
   );
 }

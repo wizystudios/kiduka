@@ -50,7 +50,7 @@ interface SavedInvoice {
 const emptyItem = (): DraftItem => ({ name: '', quantity: 1, unit_price: 0 });
 
 export const InvoicesPage = () => {
-  const { dataOwnerId } = useDataAccess();
+  const { dataOwnerId, branchId } = useDataAccess();
   const [sales, setSales] = useState<SaleRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState('');
@@ -73,10 +73,12 @@ export const InvoicesPage = () => {
   const [selectedInvoice, setSelectedInvoice] = useState<SavedInvoice | null>(null);
 
   const loadInvoices = async (ownerId: string) => {
-    const { data, error } = await supabase
+    let query = supabase
       .from('invoices' as any)
       .select('*')
-      .eq('owner_id', ownerId)
+      .eq('owner_id', ownerId);
+    if (branchId) query = query.eq('branch_id', branchId);
+    const { data, error } = await query
       .order('created_at', { ascending: false })
       .limit(200);
     if (error) {
@@ -138,7 +140,7 @@ export const InvoicesPage = () => {
 
       const { data, error } = await supabase
         .from('invoices' as any)
-        .insert({ owner_id: dataOwnerId, invoice_number: invoiceNumber, ...payload } as any)
+        .insert({ owner_id: dataOwnerId, branch_id: branchId, invoice_number: invoiceNumber, ...payload } as any)
         .select()
         .single();
 
@@ -216,6 +218,7 @@ export const InvoicesPage = () => {
         .from('invoices' as any)
         .insert({
           owner_id: dataOwnerId,
+          branch_id: branchId,
           invoice_number: saleNumber,
           customer_name: sale.customers?.name || 'Mteja wa Kawaida',
           customer_phone: null,
@@ -260,10 +263,12 @@ export const InvoicesPage = () => {
     let active = true;
     (async () => {
       setLoading(true);
-      const { data } = await supabase
+      let salesQuery = supabase
         .from('sales')
         .select('id,total_amount,payment_method,payment_status,created_at,customers(name),sales_items(quantity,unit_price,subtotal,products(name))')
-        .eq('owner_id', dataOwnerId)
+        .eq('owner_id', dataOwnerId);
+      if (branchId) salesQuery = salesQuery.eq('branch_id', branchId);
+      const { data } = await salesQuery
         .order('created_at', { ascending: false })
         .limit(100);
       if (!active) return;
@@ -271,7 +276,7 @@ export const InvoicesPage = () => {
       setLoading(false);
     })();
     return () => { active = false; };
-  }, [dataOwnerId]);
+  }, [dataOwnerId, branchId]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();

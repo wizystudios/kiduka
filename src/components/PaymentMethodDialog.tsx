@@ -4,12 +4,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Card, CardContent } from '@/components/ui/card';
-import { CreditCard, Smartphone, Banknote, CheckCircle, AlertCircle, Loader2, QrCode } from 'lucide-react';
+import { CreditCard, Smartphone, Banknote, CheckCircle, AlertCircle, Loader2, QrCode, Copy, Share2, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useDataAccess } from '@/hooks/useDataAccess';
 import { BrandMark } from '@/components/BrandMark';
+import { PaymentBrandIcon, paymentBrandLabel } from '@/components/PaymentBrandIcon';
+import { KidukaSuccessAnimation } from '@/components/KidukaSuccessAnimation';
+import { toast } from 'sonner';
 
 interface PaymentMethodDialogProps {
   open: boolean;
@@ -34,21 +36,6 @@ interface OwnerNumber {
   is_default: boolean;
   instructions: string | null;
 }
-
-const SuccessAnimation = ({ amount, label }: { amount: number; label: string }) => (
-  <div className="text-center py-8">
-    <div className="relative mx-auto mb-4 h-24 w-24">
-      <span className="absolute inset-0 rounded-full bg-green-500/20 animate-ping" />
-      <span className="absolute inset-2 rounded-full bg-green-500/25 animate-pulse" />
-      <div className="relative flex h-24 w-24 items-center justify-center rounded-full bg-green-600 shadow-lg animate-in zoom-in duration-300">
-        <CheckCircle className="h-12 w-12 text-white" strokeWidth={2.5} />
-      </div>
-    </div>
-    <h3 className="text-xl font-bold text-green-600 animate-in fade-in slide-in-from-bottom-2">Malipo Yamekamilika!</h3>
-    <p className="text-sm text-muted-foreground mt-1">{label}</p>
-    <p className="text-2xl font-bold mt-2">TSh {amount.toLocaleString()}</p>
-  </div>
-);
 
 export const PaymentMethodDialog = ({ open, onOpenChange, totalAmount, onPaymentComplete }: PaymentMethodDialogProps) => {
   const { dataOwnerId } = useDataAccess();
@@ -162,6 +149,22 @@ export const PaymentMethodDialog = ({ open, onOpenChange, totalAmount, onPayment
     setProcessing(false);
   };
 
+  const copyPaymentNumber = async () => {
+    if (!activeNumber) return;
+    await navigator.clipboard.writeText(activeNumber.lipa_namba);
+    toast.success('Namba imenakiliwa');
+  };
+
+  const sharePaymentDetails = async () => {
+    if (!activeNumber) return;
+    const text = `${paymentBrandLabel(activeNumber.network)}\n${activeNumber.account_name || ''}\nNamba: ${activeNumber.lipa_namba}\nKiasi: TSh ${totalAmount.toLocaleString()}`;
+    if (navigator.share) await navigator.share({ title: 'Lipa Kiduka', text });
+    else {
+      await navigator.clipboard.writeText(text);
+      toast.success('Maelezo yamenakiliwa');
+    }
+  };
+
   const isValidPayment = () => {
     if (selectedMethod === 'cash') return true;
     if (selectedMethod === 'mobile') return mobileProvider && phoneNumber.length >= 9;
@@ -169,17 +172,19 @@ export const PaymentMethodDialog = ({ open, onOpenChange, totalAmount, onPayment
     return false;
   };
 
+  if (!open) return null;
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="h-[100dvh] w-screen max-w-none translate-x-[-50%] translate-y-[-50%] overflow-y-auto rounded-none border-0 p-0 sm:rounded-none">
+      <div role="dialog" aria-modal="true" className="fixed inset-x-0 bottom-16 top-12 z-50 overflow-y-auto bg-background md:inset-y-10 md:left-16">
         {/* Header — matches app brand styling */}
         <div className="bg-gradient-to-br from-primary/10 via-background to-secondary/10 p-5 border-b border-border">
           <div className="mx-auto flex max-w-md items-center justify-between gap-3">
             <BrandMark size="sm" subtitle="Malipo" />
-            <div className="text-right">
+            <div className="ml-auto text-right">
               <p className="text-[11px] text-muted-foreground">Jumla</p>
               <p className="text-2xl font-bold text-primary leading-tight">TSh {totalAmount.toLocaleString()}</p>
             </div>
+            <Button variant="ghost" size="icon" className="rounded-full" onClick={() => onOpenChange(false)} aria-label="Funga malipo"><X className="h-5 w-5" /></Button>
           </div>
         </div>
 
@@ -211,18 +216,26 @@ export const PaymentMethodDialog = ({ open, onOpenChange, totalAmount, onPayment
               )}
 
               {selectedMethod !== 'cash' && activeNumber && (
-                <Card className="rounded-3xl border-primary/30">
-                  <CardContent className="p-4 flex items-center gap-4">
-                    <div className="rounded-2xl bg-white p-2 shrink-0">
-                      <QRCodeCanvas value={qrPayload} size={96} includeMargin={false} />
+                <Card className="overflow-hidden rounded-3xl border-primary/30">
+                  <CardContent className="space-y-4 p-5 text-center">
+                    <div className="flex items-center justify-center gap-3">
+                      <PaymentBrandIcon network={activeNumber.network} size="lg" />
+                      <div className="text-left">
+                        <p className="text-[11px] uppercase text-muted-foreground">Changanua ulipe</p>
+                        <p className="font-bold">{paymentBrandLabel(activeNumber.network)}</p>
+                      </div>
                     </div>
-                    <div className="min-w-0">
-                      <p className="text-[11px] text-muted-foreground uppercase tracking-wide">Mteja achanue (scan) alipe</p>
-                      <p className="font-bold truncate">{NETWORK_LABELS[activeNumber.network?.toLowerCase()] || activeNumber.network?.toUpperCase()}</p>
-                      <p className="text-lg font-bold text-primary">{activeNumber.lipa_namba}</p>
-                      {activeNumber.account_name && (
-                        <p className="text-xs text-muted-foreground truncate">{activeNumber.account_name}</p>
-                      )}
+                    <div className="mx-auto w-fit rounded-3xl border border-border bg-card p-4 shadow-sm">
+                      <QRCodeCanvas value={qrPayload} size={190} includeMargin={false} />
+                    </div>
+                    <div>
+                      <p className="text-3xl font-black text-primary">{activeNumber.lipa_namba}</p>
+                      {activeNumber.account_name && <p className="mt-1 font-medium">{activeNumber.account_name}</p>}
+                      <p className="mt-1 text-sm text-muted-foreground">TSh {totalAmount.toLocaleString()}</p>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <Button variant="outline" className="rounded-full" onClick={copyPaymentNumber}><Copy className="mr-1 h-4 w-4" /> Nakili</Button>
+                      <Button variant="outline" className="rounded-full" onClick={sharePaymentDetails}><Share2 className="mr-1 h-4 w-4" /> Tuma</Button>
                     </div>
                   </CardContent>
                 </Card>
@@ -299,13 +312,12 @@ export const PaymentMethodDialog = ({ open, onOpenChange, totalAmount, onPayment
           )}
 
           {paymentConfirmed && (
-            <SuccessAnimation
+            <KidukaSuccessAnimation
               amount={totalAmount}
               label={selectedMethod === 'cash' ? 'Taslimu' : selectedMethod === 'mobile' ? 'Pesa za Simu' : 'Benki'}
             />
           )}
         </div>
-      </DialogContent>
-    </Dialog>
+      </div>
   );
 };
