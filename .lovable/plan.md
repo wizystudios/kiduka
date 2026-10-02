@@ -1,58 +1,51 @@
-# Mpango wa Kazi
+# Finish Kiduka’s open workflows and redesign transaction screens
 
-## 1. Rekebisha Admin Password (siyo kuiondoa)
-- **Tatizo**: `AdminPasswordDialog.tsx` ina nenosiri lililo hardcoded (`5112Kharif@1`) na halifanyi kazi tena.
-- **Suluhisho**:
-  - Ondoa hardcoded string. Tumia Supabase RPC mpya `verify_admin_password(p_password)` ambayo huangalia hash iliyohifadhiwa kwenye jedwali jipya `admin_secrets` (super_admin pekee anaweza ku-set).
-  - Ikiwa admin (super_admin) hajaweka nenosiri bado, dialog itaonyesha "Weka nenosiri jipya" badala ya kuomba la zamani (first-time setup).
-  - Onyesha "Sahau nenosiri?" link inayowezesha super_admin kureset kupitia email OTP.
-  - Andika rekodi kwenye `admin_audit_log` kila jaribio (mafanikio/kushindwa) ili kuzuia brute-force (lockout baada ya majaribio 5 kwa dakika 15).
-- **Mahali pa kutumia**: Mahali pote ambapo `AdminPasswordDialog` huitwa sasa hivi (kufuta user/biashara, vitendo nyeti vya super-admin).
+## What will change
 
-## 2. Popups zote ziwe Sheet ya kulia (kufanana na Deletion)
-- **Lengo**: Kila modal/dialog katika app iwe `Sheet side="right"` badala ya centered `Dialog`.
-- **Mtindo wa kawaida**:
-  - `w-full sm:max-w-md`, `rounded-l-3xl`, header yenye border, footer yenye action buttons.
-- **Files za kubadilisha** (zenye `<Dialog>` au `<AlertDialog>` zinazotumika kama fomu/uthibitisho):
-  - `AdminPasswordDialog.tsx`
-  - `BusinessDeletionDialog.tsx` (tayari iko sawa)
-  - Dialogs nyingine zote zinazotumika ndani ya `src/components/` na `src/pages/` (nitafanya scan na kubadilisha zote zinazotumika kama panel za vitendo). Toast notifications na inline confirmations hazitabadilishwa.
-- **Isipokuwa**: Onboarding modal (tayari ni centered backdrop kwa design system) na top alert banners hazibadiliki.
+### 1. Navigation and profile
+- Keep Kiduka’s top and bottom navigation visible on the scanner, payment, completed-sale, receipt, and invoice views.
+- Fit those screens between the two bars instead of covering the entire phone display.
+- Place the profile avatar at the far-right edge of the top bar and open the existing curved profile menu from it.
+- Remove the microphone button from the top bar because Nurath is disabled.
 
-## 3. Maliza kazi zilizosalia (kwa mpangilio)
+### 2. Completed sale, receipt, and invoice design
+- Replace the current sparse “Mauzo Yamekamilika” screen with a compact Kiduka transaction summary: branded header, customer greeting, prominent amount and payment state, transaction details, purchased items, totals, and clear print/download/share/continue actions.
+- Use the first supplied image’s strong hierarchy without copying Vodacom branding: Kiduka blue/green, real business name, payment provider identity, clear rows, and payment-state treatment.
+- Use one shared document design for receipts and invoices; only the title, number, due information, and payment state change.
+- Support visually distinct `Amelipa`, `Sehemu`, and `Hajalipa` states.
+- Replace the old English “Receipt Options” card and HTML download with the existing Kiduka document renderer and actual print/PDF/image sharing paths.
 
-### 3a. PDF/Printable Receipt (Awamu 2)
-- Route mpya `/risiti/:trackingCode` (`ReceiptPrintPage.tsx`) yenye:
-  - Layout yenye logo, jina la biashara, items, jumla, QR code ya tracking.
-  - Print button (`window.print()`) + "Pakua PDF" button kupitia `html2canvas` + `jspdf`.
-- Link kutoka ukurasa wa checkout success na OrderTrackingPage.
+### 3. Payments and Lipa Namba
+- Wire the existing real mobile-network/bank marks into the live checkout.
+- Redesign the customer payment panel around a large scannable QR, provider, account holder, Lipa Namba/account number, amount, copy, share, and confirmation actions.
+- Use the Kiduka shopping-bag success animation for cash, mobile, and bank payments.
+- Save payment status, provider, account/reference, and transaction identifier with the sale instead of discarding them.
 
-### 3b. OrderTrackingPage refresh polish
-- Tayari ina auto-refresh; ongeza:
-  - Visual countdown ya next refresh (mfano "Inasasishwa kwa 24s").
-  - Exponential backoff retry ikiwa fetch inashindwa (1s → 2s → 4s, max 30s) na toast ya kosa baada ya majaribio 3.
+### 4. Branch data isolation
+- Restrict branch staff to their assigned branch across products, sales, customers, expenses, inventory movements, dashboard totals, invoices, scanner searches, and offline downloads/cache.
+- Stamp the assigned branch on new data created by branch staff.
+- Enforce the same restriction in database access rules so it cannot be bypassed from the browser.
+- Owners, approved business-wide roles, and the super admin retain the appropriate wider view.
 
-### 3c. Super Admin "Logi" tab UI (Awamu 6 sehemu)
-- Tab mpya katika `SuperAdminDashboard` "Logi za Biashara":
-  - Inaonyesha `business_audit_logs` per biashara iliyochaguliwa.
-  - Filters: table_name, action (INSERT/UPDATE/DELETE), date range.
-  - Export to CSV button.
-- Real-time subscription kwa logs mpya.
+### 5. Sales become editable invoices
+- Create one real invoice for each completed sale and link it to that sale.
+- Reuse the existing invoice editor and autosave so customer, items, status, and notes remain editable after checkout.
+- Bring Quick Sale onto the same sales/inventory/invoice path so stock and reports remain consistent.
 
-### 3d. Per-business view kwa kila tab ya admin (Watumiaji/Usajili/Bidhaa, n.k.)
-- Wakati biashara imechaguliwa kwenye Combobox, kila tab ndani ya `SuperAdminDashboard` itaonyesha data ya biashara hiyo tu (sio global).
-- Kuwa na toggle "Biashara hii tu / Mfumo mzima" juu ya kila tab.
+### 6. Registration and Arabic
+- Confirm Sheria continues opening as a right-side panel and connect any missing new-business registration/sign-in entry points.
+- Correct right-to-left spacing and alignment on dashboard, payment, receipt, and invoice screens; preserve Swahili content where Arabic translations do not yet exist rather than showing broken layouts.
 
-## Technical Details
-- Migration mpya: `admin_secrets(id, password_hash, updated_by, updated_at)`, `admin_password_attempts(id, admin_id, success, attempted_at, ip)`, RPC `verify_admin_password`, `set_admin_password`, `reset_admin_password_request`.
-- Bcrypt hashing kupitia `pgcrypto` (`crypt`, `gen_salt('bf')`).
-- Dependencies mpya: `jspdf`, `html2canvas` kwa PDF generation.
-- Hakuna mabadiliko kwenye RLS za biashara — admin password ni layer ya ziada juu ya super_admin role check.
+## Technical details
+- Add one branch-aware access helper and replace business-wide member policies on branch-owned tables.
+- Add or normalize sale payment-detail fields and enforce one invoice per sale.
+- Upgrade IndexedDB stores and queries with branch filtering; clear incompatible whole-business caches for branch staff during upgrade.
+- Reuse `BusinessDocument`, `PaymentBrandIcon`, and `KidukaSuccessAnimation` as the shared visual sources instead of maintaining duplicate receipt/payment implementations.
+- Keep all app colors in semantic design tokens and preserve the existing rounded Kiduka design language.
 
-## Mpangilio wa utekelezaji
-1. Migration ya admin_secrets + RPCs
-2. Rewrite `AdminPasswordDialog` kuwa Sheet ya kulia + first-time setup flow
-3. Convert dialogs nyingine za vitendo kuwa Sheet ya kulia
-4. PDF Receipt page + route
-5. OrderTracking countdown + backoff
-6. Super Admin Logi tab + per-business filtering kwa tabs zote
+## Verification
+- Check mobile and desktop layouts with the scanner, payment, completed-sale, receipt, and invoice screens open; confirm both navigation bars remain usable.
+- Sign into the preview, then create a branch, add staff, transfer them, deactivate them, and verify matching activity entries and branch-only data.
+- Complete cash, mobile, and bank sales; confirm payment visuals, receipt/PDF output, invoice autosave/editing, stock changes, and payment states.
+- Switch to Arabic and inspect dashboard, payment, receipt, and invoice alignment.
+- Walk PIN/fingerprint sign-in where the browser/device supports it; report any hardware-only limitation clearly.
