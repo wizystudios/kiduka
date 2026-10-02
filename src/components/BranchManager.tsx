@@ -467,7 +467,57 @@ export const BranchManager = () => {
           ))}
         </div>
 
-__DETAIL__
+        {/* Ads — same as the home page */}
+        <DashboardAdCarousel />
+
+        <Button variant="outline" className="w-full rounded-full" onClick={() => setSettingsDialog(selectedBranch)}>
+          <Settings className="h-4 w-4 mr-2" /> Mipangilio · Huduma na Wafanyakazi ({branchStaff.length})
+        </Button>
+
+        {/* Staff actions — open by tapping a staff member in settings */}
+        <Dialog open={!!staffAction} onOpenChange={(o) => !o && setStaffAction(null)}>
+          <DialogContent className="max-w-sm rounded-3xl">
+            <DialogHeader><DialogTitle className="text-sm">{staffAction?.full_name || 'Mfanyakazi'}</DialogTitle></DialogHeader>
+            {staffAction && (
+              <div className="space-y-3">
+                <p className="text-xs text-muted-foreground break-all">{staffAction.email}{staffAction.phone ? ` · ${staffAction.phone}` : ''}</p>
+                <div>
+                  <Label className="text-xs">Jukumu</Label>
+                  <Select value={staffAction.role} onValueChange={async v => { await handleChangeStaffRole(staffAction.id, v); setStaffAction({ ...staffAction, role: v }); }}>
+                    <SelectTrigger className="rounded-2xl"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="manager">Meneja wa Tawi</SelectItem>
+                      <SelectItem value="staff">Mfanyakazi</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid gap-2">
+                  <Button variant="outline" className="rounded-full justify-start" onClick={() => { setTransferDialog(staffAction); setStaffAction(null); }}>
+                    <ArrowRightLeft className="h-4 w-4 mr-2" /> Hamisha tawi lingine
+                  </Button>
+                  <Button variant="outline" className="rounded-full justify-start" onClick={async () => { await handleToggleStaffActive(staffAction); setStaffAction(null); }}>
+                    <Shield className="h-4 w-4 mr-2" /> {staffAction.is_active ? 'Zima (Gandisha)' : 'Washa tena'}
+                  </Button>
+                  <Button variant="outline" className="rounded-full justify-start text-destructive" onClick={() => { handleRemoveStaff(staffAction); setStaffAction(null); }}>
+                    <Trash2 className="h-4 w-4 mr-2" /> Ondoa kwenye tawi
+                  </Button>
+                </div>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
+
+        <UnifiedDeleteSheet
+          open={!!deleteTarget}
+          onOpenChange={(open) => !open && setDeleteTarget(null)}
+          title={deleteTarget?.type === 'branch' ? 'Futa tawi' : 'Ondoa mfanyakazi'}
+          itemName={deleteTarget?.name || ''}
+          description={deleteTarget?.type === 'branch'
+            ? 'Tawi litaondolewa na data zilizokuwa ndani yake zitaachwa salama.'
+            : 'Mfanyakazi ataondolewa kwenye tawi hili bila kufuta akaunti yake.'}
+          confirmLabel={deleteTarget?.type === 'branch' ? 'Futa Tawi' : 'Ondoa'}
+          onConfirm={executeDeleteTarget}
+        />
 
         {/* Add Staff Dialog */}
         <Dialog open={addStaffDialog} onOpenChange={setAddStaffDialog}>
