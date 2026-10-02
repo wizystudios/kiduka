@@ -59,14 +59,30 @@ export const QuickSalePage = () => {
       }).select('id,created_at').single();
       if (saleError) throw saleError;
 
+      // Try to match a real product by name so stock is decremented
+      let matchedProduct: { id: string; stock_quantity: number } | null = null;
+      if (formData.product_name?.trim()) {
+        let pq = supabase.from('products').select('id,stock_quantity')
+          .eq('owner_id', dataOwnerId).ilike('name', formData.product_name.trim()).limit(1);
+        if (branchId) pq = pq.eq('branch_id', branchId);
+        const { data: prods } = await pq;
+        matchedProduct = prods?.[0] || null;
+      }
+
       const { error: itemError } = await supabase.from('sales_items').insert({
         sale_id: sale.id,
-        product_id: null,
+        product_id: matchedProduct?.id || null,
         quantity: Math.max(1, Math.round(quantity)),
         unit_price,
         subtotal: total_amount,
       });
       if (itemError) throw itemError;
+
+      if (matchedProduct) {
+        await supabase.from('products')
+          .update({ stock_quantity: Math.max(0, (matchedProduct.stock_quantity || 0) - Math.round(quantity)) })
+          .eq('id', matchedProduct.id);
+      }
 
       const invoiceNumber = `INV-${sale.id.slice(0, 8).toUpperCase()}`;
       const { error: invoiceError } = await supabase.from('invoices').upsert({
@@ -84,7 +100,7 @@ export const QuickSalePage = () => {
       if (invoiceError) console.error('Invoice save failed (sale kept):', invoiceError);
 
       const { error } = await supabase.from('customer_transactions').insert([{
-        owner_id: dataOwnerId, customer_id: formData.customer_id || null, customer_name: formData.customer_name,
+        owner_id: dataOwnerId, branch_id: branchId || null, customer_id: formData.customer_id || null, customer_name: formData.customer_name,
         transaction_type: 'sale', product_name: formData.product_name, quantity, unit_price, total_amount,
         amount_paid, balance, payment_status: formData.payment_status, payment_method: formData.payment_method,
         notes: formData.notes || null

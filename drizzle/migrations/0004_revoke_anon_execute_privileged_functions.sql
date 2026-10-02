@@ -1,0 +1,13 @@
+REVOKE EXECUTE ON FUNCTION public.admin_deactivate_user(uuid, text) FROM anon;
+REVOKE EXECUTE ON FUNCTION public.admin_reactivate_user(uuid) FROM anon;
+REVOKE EXECUTE ON FUNCTION public.admin_delete_entity(text, uuid, text) FROM anon;
+REVOKE EXECUTE ON FUNCTION public.set_admin_password(text, text) FROM anon;
+REVOKE EXECUTE ON FUNCTION public.verify_admin_password(text) FROM anon;
+REVOKE EXECUTE ON FUNCTION public.owner_assign_branch_staff(uuid, uuid, text, text) FROM anon;
+REVOKE EXECUTE ON FUNCTION public.owner_update_branch_staff(uuid, boolean, text) FROM anon;
+REVOKE EXECUTE ON FUNCTION public.owner_delete_entity(text, uuid, text) FROM anon;
+REVOKE EXECUTE ON FUNCTION public.owner_hard_delete_product(uuid) FROM anon;
+REVOKE EXECUTE ON FUNCTION public.compute_business_billing(uuid) FROM anon;
+REVOKE EXECUTE ON FUNCTION public.get_my_billing() FROM anon;
+REVOKE EXECUTE ON FUNCTION public.check_user_subscription(uuid) FROM anon;
+REVOKE EXECUTE ON FUNCTION public.ensure_owner_business(uuid) FROM anon;

@@ -10,5 +10,9 @@
 - [x] Validate signed-in page access, branch management loading, payments, invoice editing, scanner navigation, profile placement, and Arabic RTL.
 - [x] Branch walkthrough (TEST Tawi / TEST Tawi 2, Wigan): assign, transfer, deactivate, audit log, staff isolation.
 - [x] Real sale receipt flow, profile menu -> notifications, Arabic RTL fixes (bars, switches, admin width, search icons).
+- [x] Full audit (owner, customer/Sokoni, admin, global UI/UX) and fixes: branch scoping on quick-sale/debt transactions, quick-sale stock decrement, abandoned-cart dedupe, return stock restore by product id, dead Add User removed, dark-mode nav bars, legacy scanner page removed, typos and Swahili labels.
 - [ ] Fingerprint/PIN sign-in on the owner's physical phone (needs the user's device).
 - [ ] New business self-signup end to end (needs a real inbox to confirm the email).
+- [ ] Real card payments in Malipo (waiting for the payment API key + docs from the user).
+- [ ] Admin panel to edit billing_settings prices (currently database-only).
+- [ ] Server-side purchase verification for product reviews.

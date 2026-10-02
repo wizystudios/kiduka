@@ -68,13 +68,13 @@ export const TopNavbar = () => {
   if (!user) return null;
 
   return (
-    <div className="fixed top-0 left-0 right-0 z-50 border-b border-border/60 bg-white text-foreground shadow-[0_1px_8px_rgba(0,0,0,0.04)] md:hidden">
+    <div className="fixed top-0 left-0 right-0 z-50 border-b border-border/60 bg-background text-foreground shadow-[0_1px_8px_rgba(0,0,0,0.04)] md:hidden">
       {/* Main row: hamburger + logo + alerts + notification */}
       <div className="flex items-center gap-1.5 px-2 py-1.5">
         {/* Hamburger menu */}
         <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
           <SheetTrigger asChild>
-            <Button variant="ghost" size="sm" className="p-1.5 h-8 w-8">
+            <Button variant="ghost" size="sm" className="p-1.5 h-8 w-8" aria-label="Menyu">
               <div className="flex flex-col gap-[3px]">
                 <span className="block w-4 h-[2px] bg-foreground rounded-full" />
                 <span className="block w-3 h-[2px] bg-foreground rounded-full" />

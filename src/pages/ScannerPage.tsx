@@ -269,7 +269,7 @@ export const ScannerPage = () => {
           } else if (name === 'NotFoundError' || name === 'DevicesNotFoundError') {
             setCameraError('Hakuna kamera imepatikana kwenye kifaa hiki.');
           } else if (name === 'NotReadableError' || name === 'TrackStartError') {
-            setCameraError('Kamera inatumika na app nyingine au browser imeizua. Funga app nyingine kisha jaribu tena.');
+            setCameraError('Kamera inatumika na app nyingine au browser imeizuia. Funga app nyingine kisha jaribu tena.');
           } else if (name === 'OverconstrainedError' || name === 'ConstraintNotSatisfiedError') {
             setCameraError('Kamera haikubali mipangilio ya scan. Jaribu tena au tumia input chini kuandika barcode/jina.');
           } else {

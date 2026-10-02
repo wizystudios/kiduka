@@ -41,6 +41,7 @@ export const Dashboard = () => {
         salesQuery = salesQuery.eq('branch_id', branchId);
         productsQuery = productsQuery.eq('branch_id', branchId);
       }
+      // sokoni_orders has no branch_id column — marketplace orders stay owner-level
       const [salesRes, productsRes, ordersRes] = await Promise.all([
         salesQuery,
         productsQuery,

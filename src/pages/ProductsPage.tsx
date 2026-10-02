@@ -189,7 +189,7 @@ export const ProductsPage = () => {
   const archivedCount = useMemo(() => products.filter(p => p.is_archived).length, [products]);
 
   const getStockStatus = (stock: number, threshold: number) => {
-    if (stock <= 0) return { color: 'bg-red-100 text-red-800', label: 'Hazipatikani' };
+    if (stock <= 0) return { color: 'bg-red-100 text-red-800', label: 'Stock Imeisha' };
     if (stock <= threshold) return { color: 'bg-red-100 text-red-800', label: 'Stock Ndogo' };
     if (stock <= threshold * 2) return { color: 'bg-yellow-100 text-yellow-800', label: 'Wastani' };
     return { color: 'bg-green-100 text-green-800', label: 'Ipo' };

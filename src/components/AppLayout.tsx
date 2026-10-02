@@ -59,7 +59,7 @@ export function AppLayout({ children }: AppLayoutProps) {
       <AdminConsentRequest />
       <TopNavbar />
       <OfflineSyncBootstrap />
-      <div className="flex min-h-screen w-full overflow-x-hidden">
+      <div className="flex min-h-[100dvh] w-full overflow-x-hidden">
         <AppSidebar />
         <SidebarInset className="flex-1 min-w-0">
           <header className="hidden md:flex h-10 items-center border-b border-border/40 px-2 gap-2">
