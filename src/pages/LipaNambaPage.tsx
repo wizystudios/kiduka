@@ -27,6 +27,7 @@ interface PaymentNumber {
   is_default: boolean;
   is_active: boolean;
   instructions: string | null;
+  qr_image_url?: string | null;
 }
 
 const NETWORKS = [
@@ -58,6 +59,7 @@ export default function LipaNambaPage() {
     account_name: '',
     instructions: '',
     is_default: false,
+    qr_image_url: '',
   });
   const [saving, setSaving] = useState(false);
   const shareCardRef = useRef<HTMLDivElement>(null);
@@ -84,9 +86,28 @@ export default function LipaNambaPage() {
 
   useEffect(() => { load(); }, [user?.id]);
 
+  const [uploadingQr, setUploadingQr] = useState(false);
+  const uploadQr = async (file: File) => {
+    if (!user?.id) return;
+    if (file.size > 5 * 1024 * 1024) { toast.error('Picha isizidi 5MB'); return; }
+    setUploadingQr(true);
+    try {
+      const path = `${user.id}/lipa-qr-${Date.now()}.${file.name.split('.').pop() || 'png'}`;
+      const { error } = await supabase.storage.from('product-images').upload(path, file, { upsert: false });
+      if (error) throw error;
+      const { data } = supabase.storage.from('product-images').getPublicUrl(path);
+      setForm((f) => ({ ...f, qr_image_url: data.publicUrl }));
+      toast.success('QR imepakiwa');
+    } catch (e: any) {
+      toast.error(e?.message || 'Imeshindikana kupakia QR');
+    } finally {
+      setUploadingQr(false);
+    }
+  };
+
   const resetForm = () => {
     setEditingId(null);
-    setForm({ network: 'mpesa', lipa_namba: '', account_name: '', instructions: '', is_default: false });
+    setForm({ network: 'mpesa', lipa_namba: '', account_name: '', instructions: '', is_default: false, qr_image_url: '' });
   };
 
   const openCreate = () => {
@@ -102,6 +123,7 @@ export default function LipaNambaPage() {
       account_name: item.account_name || '',
       instructions: item.instructions || '',
       is_default: item.is_default,
+      qr_image_url: item.qr_image_url || '',
     });
     setDialogOpen(true);
   };
@@ -122,6 +144,7 @@ export default function LipaNambaPage() {
         account_name: form.account_name.trim() || null,
         instructions: form.instructions.trim() || null,
         is_default: form.is_default,
+        qr_image_url: form.qr_image_url || null,
       };
       const { error } = editingId
         ? await supabase.from('owner_payment_numbers' as any).update(payload).eq('id', editingId)
@@ -366,6 +389,19 @@ export default function LipaNambaPage() {
               <Input value={form.instructions} onChange={(e) => setForm({ ...form, instructions: e.target.value })}
                 placeholder="mfano: Tuma uthibitisho baada ya kulipa" className="rounded-2xl" />
             </div>
+            <div>
+              <Label className="text-xs">QR rasmi kutoka mtandao wako (inapendekezwa)</Label>
+              <div className="flex items-center gap-3">
+                {form.qr_image_url && (
+                  <img src={form.qr_image_url} alt="QR" className="h-14 w-14 rounded-xl border border-border object-contain" />
+                )}
+                <Input type="file" accept="image/*" disabled={uploadingQr}
+                  onChange={(e) => e.target.files?.[0] && uploadQr(e.target.files[0])} className="rounded-2xl" />
+              </div>
+              <p className="mt-1 text-[10px] text-muted-foreground">
+                Bila QR rasmi, wateja wataona namba tu — QR ya Kiduka haichukui malipo.
+              </p>
+            </div>
             <div className="flex items-center justify-between">
               <Label className="text-sm">Weka kuwa namba kuu</Label>
               <Switch checked={form.is_default} onCheckedChange={(v) => setForm({ ...form, is_default: v })} />
@@ -391,6 +427,7 @@ export default function LipaNambaPage() {
                 lipaNamba={qrFor.lipa_namba}
                 accountName={qrFor.account_name}
                 qrValue={buildQrPayload(qrFor)}
+                qrImageUrl={qrFor.qr_image_url}
               />
 
               <div className="grid grid-cols-3 gap-2">
