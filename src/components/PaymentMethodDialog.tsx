@@ -11,6 +11,7 @@ import { useDataAccess } from '@/hooks/useDataAccess';
 import { BrandMark } from '@/components/BrandMark';
 import { PaymentBrandIcon, paymentBrandLabel } from '@/components/PaymentBrandIcon';
 import { KidukaSuccessAnimation } from '@/components/KidukaSuccessAnimation';
+import { LipaNambaCard } from '@/components/LipaNambaCard';
 import { toast } from 'sonner';
 
 interface PaymentMethodDialogProps {
@@ -216,29 +217,20 @@ export const PaymentMethodDialog = ({ open, onOpenChange, totalAmount, onPayment
               )}
 
               {selectedMethod !== 'cash' && activeNumber && (
-                <Card className="overflow-hidden rounded-3xl border-primary/30">
-                  <CardContent className="space-y-4 p-5 text-center">
-                    <div className="flex items-center justify-center gap-3">
-                      <PaymentBrandIcon network={activeNumber.network} size="lg" />
-                      <div className="text-left">
-                        <p className="text-[11px] uppercase text-muted-foreground">Changanua ulipe</p>
-                        <p className="font-bold">{paymentBrandLabel(activeNumber.network)}</p>
-                      </div>
-                    </div>
-                    <div className="mx-auto w-fit rounded-3xl border border-border bg-card p-4 shadow-sm">
-                      <QRCodeCanvas value={qrPayload} size={190} includeMargin={false} />
-                    </div>
-                    <div>
-                      <p className="text-3xl font-black text-primary">{activeNumber.lipa_namba}</p>
-                      {activeNumber.account_name && <p className="mt-1 font-medium">{activeNumber.account_name}</p>}
-                      <p className="mt-1 text-sm text-muted-foreground">TSh {totalAmount.toLocaleString()}</p>
-                    </div>
-                    <div className="grid grid-cols-2 gap-2">
-                      <Button variant="outline" className="rounded-full" onClick={copyPaymentNumber}><Copy className="mr-1 h-4 w-4" /> Nakili</Button>
-                      <Button variant="outline" className="rounded-full" onClick={sharePaymentDetails}><Share2 className="mr-1 h-4 w-4" /> Tuma</Button>
-                    </div>
-                  </CardContent>
-                </Card>
+                <div className="space-y-3">
+                  <LipaNambaCard
+                    businessName={activeNumber.account_name || 'Kiduka'}
+                    network={activeNumber.network}
+                    lipaNamba={activeNumber.lipa_namba}
+                    accountName={activeNumber.account_name}
+                    amount={totalAmount}
+                    qrValue={qrPayload}
+                  />
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button variant="outline" className="rounded-full" onClick={copyPaymentNumber}><Copy className="mr-1 h-4 w-4" /> Nakili</Button>
+                    <Button variant="outline" className="rounded-full" onClick={sharePaymentDetails}><Share2 className="mr-1 h-4 w-4" /> Tuma</Button>
+                  </div>
+                </div>
               )}
 
 
