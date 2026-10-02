@@ -10,8 +10,8 @@ import { primaryNavigationItems, filterNavigationItems } from '@/lib/navigation'
 import { cn } from '@/lib/utils';
 
 /**
- * Floating rail sidebar: compact icon rail that expands on hover,
- * or stays open when pinned with the top toggle.
+ * Compact sidebar rail that expands only when pinned, so it never covers
+ * or blocks the desktop list pane while the pointer crosses the page.
  */
 export function AppSidebar() {
   const { signOut, userProfile, user } = useAuth();
@@ -20,15 +20,13 @@ export function AppSidebar() {
   const navigate = useNavigate();
   const location = useLocation();
   const [pinned, setPinned] = useState(() => localStorage.getItem('kiduka-sidebar-pinned') === '1');
-  const [hover, setHover] = useState(false);
-  const open = pinned || hover;
+  const open = pinned;
 
   if (!userProfile) return null;
 
   const togglePin = () => {
     const next = !pinned;
     setPinned(next);
-    if (!next) setHover(false);
     localStorage.setItem('kiduka-sidebar-pinned', next ? '1' : '0');
   };
 
@@ -60,13 +58,11 @@ export function AppSidebar() {
   );
 
   return (
-    <div className="relative hidden w-16 shrink-0 md:block" onMouseLeave={() => !pinned && setHover(false)} style={pinned ? { width: '15rem' } : undefined}>
+    <div className={cn('relative hidden shrink-0 md:block', pinned ? 'w-60' : 'w-16')}>
       <aside
-        onMouseEnter={() => setHover(true)}
         className={cn(
-          'fixed left-0 top-0 z-40 flex h-[100dvh] flex-col gap-1 border-r border-primary/10 bg-primary/5 p-2 backdrop-blur-xl transition-[width,box-shadow,border-radius] duration-300 ease-out',
+          'fixed left-0 top-0 z-40 flex h-[100dvh] flex-col gap-1 border-r border-primary/10 bg-primary/5 p-2 backdrop-blur-xl transition-[width] duration-300 ease-out',
           open ? 'w-60' : 'w-16',
-          hover && !pinned && 'rounded-r-3xl bg-background/95 shadow-2xl',
         )}
       >
         <div className="flex h-10 items-center justify-between px-1">
