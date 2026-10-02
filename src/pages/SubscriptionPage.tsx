@@ -120,23 +120,6 @@ export const SubscriptionPage = ({ embedded = false }: SubscriptionPageProps) =>
     } finally { setProcessing(false); }
   };
 
-  const handleManualRequest = async () => {
-    setProcessing(true);
-    try {
-      const success = await requestActivation();
-      if (success) {
-        toast.success('Ombi lako limetumwa kwa admin. Utaarifiwa ukikubaliwa.');
-        await checkSubscription();
-      } else {
-        toast.error('Imeshindwa kutuma ombi');
-      }
-    } catch (error) {
-      toast.error('Tatizo. Jaribu tena.');
-    } finally {
-      setProcessing(false);
-    }
-  };
-
   if (subLoading) {
     return (
       <div className={`${embedded ? 'min-h-[40vh]' : 'min-h-screen'} flex items-center justify-center`}>
@@ -412,7 +395,7 @@ export const SubscriptionPage = ({ embedded = false }: SubscriptionPageProps) =>
                     )}
                     <div className="border-t pt-1.5 flex justify-between text-xs font-bold">
                       <span>Jumla</span>
-                      <span className="text-primary">TSh {Number((subscription as any).fee_breakdown.total || (subscription as any)?.payment_amount || 30000).toLocaleString()}</span>
+                      <span className="text-primary">TSh {Number((subscription as any).fee_breakdown.total || amountDue || 0).toLocaleString()}</span>
                     </div>
                   </div>
                 )}

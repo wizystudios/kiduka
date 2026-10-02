@@ -245,10 +245,14 @@ export const SuperAdminDashboard = () => {
   const [banDialog, setBanDialog] = useState<{userId: string; userName: string; duration: string} | null>(null);
   const [feeDialog, setFeeDialog] = useState<Subscription | null>(null);
   const [feeForm, setFeeForm] = useState({ custom_fee: '', assistant_count: 0, has_sokoni: false, branch_count: 0, admin_fee_notes: '' });
+  const [billingPrices, setBillingPrices] = useState({ base_fee: 0, extra_staff_fee: 0, branch_fee: 0, sokoni_fee: 0 });
   
   useEffect(() => {
     fetchAllData();
     testAdminPermissions();
+    supabase.from('billing_settings').select('base_fee,extra_staff_fee,branch_fee,sokoni_fee').eq('id', 1).single().then(({ data }) => {
+      if (data) setBillingPrices({ base_fee: Number(data.base_fee), extra_staff_fee: Number(data.extra_staff_fee), branch_fee: Number(data.branch_fee), sokoni_fee: Number(data.sokoni_fee) });
+    });
   }, []);
 
   useEffect(() => { setListPage(0); }, [activeTab, selectedBusiness, searchQuery]);
@@ -1609,26 +1613,26 @@ export const SuperAdminDashboard = () => {
                 <div className="space-y-1">
                   <Label className="text-xs">Wasaidizi</Label>
                   <Input type="number" min={0} value={feeForm.assistant_count} onChange={e => setFeeForm(f => ({...f, assistant_count: Number(e.target.value)}))} />
-                  <p className="text-[10px] text-muted-foreground">× TSh 5,000 kila mmoja</p>
+                  <p className="text-[10px] text-muted-foreground">× TSh {billingPrices.extra_staff_fee.toLocaleString()} kila mmoja</p>
                 </div>
                 <div className="space-y-1">
                   <Label className="text-xs">Matawi</Label>
                   <Input type="number" min={0} value={feeForm.branch_count} onChange={e => setFeeForm(f => ({...f, branch_count: Number(e.target.value)}))} />
-                  <p className="text-[10px] text-muted-foreground">× TSh 15,000 kila tawi</p>
+                  <p className="text-[10px] text-muted-foreground">× TSh {billingPrices.branch_fee.toLocaleString()} kila tawi</p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
                 <input type="checkbox" id="hasSokoni" checked={feeForm.has_sokoni} onChange={e => setFeeForm(f => ({...f, has_sokoni: e.target.checked}))} className="rounded" />
-                <Label htmlFor="hasSokoni" className="text-sm">Sokoni Marketplace (+TSh 50,000)</Label>
+                <Label htmlFor="hasSokoni" className="text-sm">Sokoni Marketplace (+TSh {billingPrices.sokoni_fee.toLocaleString()})</Label>
               </div>
               <div className="p-3 bg-muted/50 rounded-2xl space-y-1 text-xs">
-                <div className="flex justify-between"><span>Ada ya msingi</span><span>TSh 30,000</span></div>
-                {feeForm.assistant_count > 0 && <div className="flex justify-between"><span>Wasaidizi ({feeForm.assistant_count})</span><span>TSh {(feeForm.assistant_count * 5000).toLocaleString()}</span></div>}
-                {feeForm.has_sokoni && <div className="flex justify-between"><span>Sokoni</span><span>TSh 50,000</span></div>}
-                {feeForm.branch_count > 0 && <div className="flex justify-between"><span>Matawi ({feeForm.branch_count})</span><span>TSh {(feeForm.branch_count * 15000).toLocaleString()}</span></div>}
+                <div className="flex justify-between"><span>Ada ya msingi</span><span>TSh {billingPrices.base_fee.toLocaleString()}</span></div>
+                {feeForm.assistant_count > 0 && <div className="flex justify-between"><span>Wasaidizi ({feeForm.assistant_count})</span><span>TSh {(feeForm.assistant_count * billingPrices.extra_staff_fee).toLocaleString()}</span></div>}
+                {feeForm.has_sokoni && <div className="flex justify-between"><span>Sokoni</span><span>TSh {billingPrices.sokoni_fee.toLocaleString()}</span></div>}
+                {feeForm.branch_count > 0 && <div className="flex justify-between"><span>Matawi ({feeForm.branch_count})</span><span>TSh {(feeForm.branch_count * billingPrices.branch_fee).toLocaleString()}</span></div>}
                 <div className="border-t pt-1 flex justify-between font-bold">
                   <span>Jumla (auto)</span>
-                  <span>TSh {(30000 + feeForm.assistant_count * 5000 + (feeForm.has_sokoni ? 50000 : 0) + feeForm.branch_count * 15000).toLocaleString()}</span>
+                  <span>TSh {(billingPrices.base_fee + feeForm.assistant_count * billingPrices.extra_staff_fee + (feeForm.has_sokoni ? billingPrices.sokoni_fee : 0) + feeForm.branch_count * billingPrices.branch_fee).toLocaleString()}</span>
                 </div>
               </div>
               <div className="space-y-1">
