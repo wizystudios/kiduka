@@ -309,6 +309,15 @@ export default function ExpensesPage() {
               ))}
             </div>
           )}
+
+        <UnifiedDeleteSheet
+          open={!!deleteTarget}
+          onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}
+          title="Futa Matumizi"
+          itemName={deleteTarget ? `${deleteTarget.category} — TSh ${Number(deleteTarget.amount).toLocaleString()}` : ''}
+          description="Matumizi haya yatafutwa kabisa. Hatua hii haiwezi kurejeshwa."
+          onConfirm={async () => { if (deleteTarget) await handleDelete(deleteTarget.id); }}
+        />
       </div>
     </div>
   );
