@@ -448,12 +448,12 @@ export const BranchManager = () => {
         </div>
 
         {/* Stats Grid */}
-        <div className="text-center">
+        <div className="text-center md:text-left">
           <p className="text-xs uppercase tracking-wider text-muted-foreground">Mauzo Leo</p>
           <p className="text-3xl font-black tracking-tight">TSh {branchStats.totalRevenue.toLocaleString()}</p>
           <p className="text-xs text-muted-foreground">{branchStats.totalSales} miamala</p>
         </div>
-        <div className="flex items-center justify-around border-y border-border/50 py-2">
+        <div className="grid grid-cols-2 gap-2 border-y border-border/50 py-3 md:grid-cols-4">
           {[
             { label: 'Bidhaa', value: branchStats.totalProducts, icon: Package, color: 'text-success' },
             { label: 'Stock Ndogo', value: branchStats.lowStockItems, icon: AlertTriangle, color: 'text-primary' },
@@ -765,7 +765,7 @@ export const BranchManager = () => {
 
   // ========== BRANCHES LIST VIEW ==========
   return (
-    <div className="space-y-4 px-1 pb-24">
+    <div className="mx-auto max-w-7xl space-y-4 px-1 pb-24 md:px-5">
       <div className="flex items-center justify-between pt-1">
         <div>
           <h1 className="text-lg font-bold">Matawi</h1>
@@ -833,10 +833,10 @@ export const BranchManager = () => {
           <p className="text-xs text-muted-foreground mt-1">Ongeza matawi ya biashara yako ili usimamie kila eneo</p>
         </div>
       ) : (
-        <div className="divide-y divide-border/50 border-y border-border/50">
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
           {branches.map(b => (
             <div key={b.id} role="button" tabIndex={0}
-              className="flex items-center gap-3 py-3 transition-colors active:bg-muted/40"
+              className="flex items-center gap-3 rounded-3xl border border-border/60 p-4 transition-colors hover:bg-muted/40 active:bg-muted/60"
               onClick={() => setSelectedBranch(b)}>
               <Store className={`h-5 w-5 shrink-0 ${b.is_active ? 'text-primary' : 'text-muted-foreground'}`} />
               <div className="min-w-0 flex-1">

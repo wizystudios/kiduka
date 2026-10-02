@@ -259,7 +259,7 @@ export default function LipaNambaPage() {
 
 
   return (
-    <div className="p-4 pb-24 space-y-4 max-w-3xl mx-auto">
+    <div className="mx-auto max-w-6xl space-y-4 p-4 pb-24 md:p-6">
       <div className="flex items-center gap-2">
         <BackButton />
         <div className="flex-1">
@@ -310,6 +310,7 @@ export default function LipaNambaPage() {
               <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground px-1">
                 {kind === 'mobile' ? 'Malipo kwa simu' : 'Malipo kwa benki'}
               </p>
+              <div className="grid gap-3 md:grid-cols-2">
               {group.map(item => {
                 const net = NETWORKS.find(n => n.value === item.network);
                 const Icon = net?.kind === 'bank' ? Landmark : Smartphone;
@@ -351,6 +352,7 @@ export default function LipaNambaPage() {
                   </Card>
                 );
               })}
+              </div>
             </div>
           );
         })

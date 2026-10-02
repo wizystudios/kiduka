@@ -76,34 +76,16 @@ export const useSubscription = () => {
     checkSubscription();
   }, [checkSubscription]);
 
-  const requestActivation = useCallback(async (paymentReference?: string) => {
+  const requestActivation = useCallback(async (paymentReference?: string, proofPath?: string) => {
     if (!user?.id || !subscription?.id) return false;
 
     try {
-      const { error } = await supabase
-        .from('user_subscriptions')
-        .update({
-          status: 'pending_approval',
-          payment_reference: paymentReference,
-          updated_at: new Date().toISOString()
-        })
-        .eq('user_id', user.id);
+      const { error } = await supabase.rpc('request_subscription_activation' as any, {
+        p_reference: paymentReference || null,
+        p_proof_path: proofPath || null,
+      });
 
       if (error) throw error;
-
-      // Create admin notification
-      await supabase.from('admin_notifications').insert({
-        notification_type: 'subscription_request',
-        title: 'Ombi la Kuendelea',
-        message: `Mtumiaji ${userProfile?.business_name || userProfile?.email} anaomba kuendelea kutumia mfumo.`,
-        data: {
-          user_id: user.id,
-          subscription_id: subscription.id,
-          payment_reference: paymentReference,
-          email: userProfile?.email,
-          business_name: userProfile?.business_name
-        }
-      });
 
       await checkSubscription();
       return true;
@@ -111,7 +93,7 @@ export const useSubscription = () => {
       console.error('Activation request failed:', error);
       return false;
     }
-  }, [user?.id, subscription?.id, userProfile, checkSubscription]);
+  }, [user?.id, subscription?.id, checkSubscription]);
 
   return {
     subscription,

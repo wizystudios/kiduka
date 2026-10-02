@@ -13,12 +13,12 @@
 - [x] Full audit (owner, customer/Sokoni, admin, global UI/UX) and fixes: branch scoping on quick-sale/debt transactions, quick-sale stock decrement, abandoned-cart dedupe, return stock restore by product id, dead Add User removed, dark-mode nav bars, legacy scanner page removed, typos and Swahili labels.
 - [ ] Fingerprint/PIN sign-in on the owner's physical phone (needs the user's device).
 - [ ] New business self-signup end to end (needs a real inbox to confirm the email).
-- [ ] Real card payments in Malipo (waiting for the payment API key + docs from the user).
+- [x] ClickPesa mobile-money flow uses configured credentials and official provider confirmation.
 - [x] Admin panel to edit billing_settings prices.
 - [ ] Server-side purchase verification for product reviews.
 - [x] Matawi fee calculator (database-priced preview) + Malipo charges database amount_due
 - [x] Wide screens: side sheets dock as a right pane (list stays visible)
-- [ ] Real payment charging — blocked: payment provider API key + docs
+- [ ] Complete one live ClickPesa charge (requires the owner to approve the USSD prompt on their physical phone)
 - [x] Inline list+detail layout for Bidhaa and Mauzo; docked right panes remain available elsewhere
 - [x] Overage pricing: TSh 1,000 per extra product and per extra customer
 - [x] Product photo uploads save to the owner's folder and show in Sokoni
@@ -28,3 +28,6 @@
 - [x] Full phone + computer audit in the test preview; physical-device-only checks remain with the owner
 - [x] Sokoni test product photo stored in the owner's folder and linked to the product gallery
 - [x] Sokoni cards resolve the real business name through the public storefront view
+- [x] Scanner sale, invoice, line items and stock deduction are one atomic database transaction
+- [x] Private payment-proof upload and owner-visible payment ledger
+- [x] Product-image upload ownership rule requires the authenticated object owner
