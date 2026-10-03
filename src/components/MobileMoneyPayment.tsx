@@ -101,7 +101,7 @@ export const MobileMoneyPayment = ({
     const formattedPhone = formatPhoneNumber(phoneNumber);
 
     try {
-      const { data, error } = await supabase.functions.invoke('clickpesa-payment', {
+      const { data, error } = await supabase.functions.invoke('harakapay-payment', {
         body: {
           amount,
           phone_number: formattedPhone,
@@ -145,11 +145,9 @@ export const MobileMoneyPayment = ({
       attempts++;
       
       try {
-        const { data } = await supabase
-          .from('payment_transactions')
-          .select('status')
-          .or(`provider_reference.eq.${txnId},id.eq.${txnId}`)
-          .maybeSingle();
+        const { data } = await supabase.functions.invoke('harakapay-payment', {
+          body: { action: 'status', transaction_id: txnId },
+        });
 
         if (data?.status === 'completed' || data?.status === 'success') {
           setStatus('success');

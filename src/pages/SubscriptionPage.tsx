@@ -56,6 +56,34 @@ export const SubscriptionPage = ({ embedded = false }: SubscriptionPageProps) =>
     return null;
   };
 
+  const refreshBilling = () =>
+    supabase.rpc('get_my_billing' as any).then(({ data }) => setAmountDue(Number((data as any)?.amount_due ?? 0)));
+
+  // Ask the server (which asks HarakaPay) until the payment is confirmed or fails.
+  const pollPayment = (transactionId: string) => {
+    let attempts = 0;
+    const tick = async () => {
+      attempts++;
+      const { data } = await supabase.functions.invoke('harakapay-payment', { body: { action: 'status', transaction_id: transactionId } });
+      const status = data?.status;
+      if (status === 'completed') {
+        setPaymentInitiated(false);
+        toast.success('Malipo yamethibitishwa. Ada ya mwezi imelipwa.');
+        await Promise.all([loadPayments(), checkSubscription?.(), refreshBilling()]);
+        return;
+      }
+      if (status === 'failed' || status === 'amount_mismatch') {
+        setPaymentInitiated(false);
+        toast.error(status === 'failed' ? 'Malipo yameshindikana au yameghairiwa' : 'Kiasi kilicholipwa hakilingani na bili');
+        await loadPayments();
+        return;
+      }
+      if (attempts < 36) setTimeout(tick, 5000);
+      else { setPaymentInitiated(false); toast.info('Bado tunasubiri uthibitisho. Historia itasasishwa malipo yakithibitishwa.'); await loadPayments(); }
+    };
+    setTimeout(tick, 5000);
+  };
+
   const handlePayment = async () => {
     if (!phoneNumber || phoneNumber.length < 9) {
       toast.error('Tafadhali weka namba ya simu sahihi');
@@ -68,23 +96,17 @@ export const SubscriptionPage = ({ embedded = false }: SubscriptionPageProps) =>
     }
     setProcessing(true);
     try {
-      const { data, error } = await supabase.functions.invoke('clickpesa-payment', {
-        body: {
-          amount: amountDue,
-          phone_number: phoneNumber,
-          subscription_id: subscription?.id,
-          transaction_type: 'subscription_payment',
-          user_id: user?.id,
-          description: 'Kiduka Monthly Subscription'
-        }
+      const { data, error } = await supabase.functions.invoke('harakapay-payment', {
+        body: { action: 'initiate', phone_number: phoneNumber, transaction_type: 'subscription_payment' }
       });
 
       if (error) throw error;
 
       if (data?.success) {
         setPaymentInitiated(true);
-        toast.success('Malipo yameanzishwa! Tafadhali kamilisha kwenye simu yako.');
+        toast.success(`Ombi la TSh ${Number(data.amount).toLocaleString()} limetumwa. Ingiza PIN kwenye simu yako.`);
         await loadPayments();
+        pollPayment(data.transaction_id);
       } else {
         toast.error(data?.error || 'Imeshindwa kuanzisha malipo');
       }
@@ -95,6 +117,11 @@ export const SubscriptionPage = ({ embedded = false }: SubscriptionPageProps) =>
       setProcessing(false);
     }
   };
+
+  const confirmedPayments = payments.filter((p) => p.status === 'completed');
+  const lastPaid = confirmedPayments[0];
+  const paidThisPeriod = lastPaid && subscription?.current_period_end && new Date(subscription.current_period_end) > new Date() ? Number(lastPaid.paid_amount || 0) : 0;
+  const ownerBalance = Math.max(0, Number(amountDue || 0) - paidThisPeriod);
 
   const uploadPaymentProof = async () => {
     if (!user?.id || !subscription?.id || !proofFile || !amountDue) {
@@ -173,6 +200,12 @@ export const SubscriptionPage = ({ embedded = false }: SubscriptionPageProps) =>
 
         <div className="mx-auto mb-6 max-w-md">
           <BillingSummary />
+          <div className="mt-4 grid grid-cols-3 gap-2 border-y border-border/50 py-3 text-center">
+            <div><p className="text-[11px] text-muted-foreground">Bili ya mwezi</p><p className="text-sm font-bold">TSh {Number(amountDue || 0).toLocaleString()}</p></div>
+            <div><p className="text-[11px] text-muted-foreground">Umelipa</p><p className="text-sm font-bold text-success">TSh {paidThisPeriod.toLocaleString()}</p></div>
+            <div><p className="text-[11px] text-muted-foreground">Salio</p><p className={`text-sm font-bold ${ownerBalance > 0 ? 'text-destructive' : 'text-success'}`}>TSh {ownerBalance.toLocaleString()}</p></div>
+          </div>
+          {lastPaid && <p className="mt-2 text-center text-xs text-muted-foreground">Malipo ya mwisho: {new Date(lastPaid.confirmed_at || lastPaid.created_at).toLocaleDateString('sw-TZ')} • Kumbukumbu {lastPaid.provider_reference || '—'}</p>}
         </div>
 
 
@@ -430,7 +463,7 @@ export const SubscriptionPage = ({ embedded = false }: SubscriptionPageProps) =>
                   <div><p className="font-semibold">TSh {expected.toLocaleString()}</p><p className="text-xs text-muted-foreground">{new Date(payment.created_at).toLocaleDateString('sw-TZ')}</p></div>
                   <div><p className="text-xs text-muted-foreground">Imelipwa</p><p>{paid ? `TSh ${paid.toLocaleString()}` : 'Inasubiri'}</p></div>
                   <div><p className="text-xs text-muted-foreground">Salio</p><p className={expected - paid > 0 ? 'text-destructive' : 'text-success'}>TSh {Math.max(0, expected - paid).toLocaleString()}</p></div>
-                  <Badge variant={payment.status === 'completed' ? 'default' : 'secondary'} className="w-fit rounded-full">{payment.status === 'completed' ? 'Imethibitishwa' : payment.status === 'failed' ? 'Imeshindikana' : 'Inasubiri'}</Badge>
+                  <Badge variant={payment.status === 'completed' ? 'default' : payment.status === 'failed' || payment.status === 'amount_mismatch' ? 'destructive' : 'secondary'} className="w-fit rounded-full">{payment.status === 'completed' ? 'Imethibitishwa' : payment.status === 'failed' ? 'Imeshindikana' : payment.status === 'amount_mismatch' ? 'Kiasi hakilingani' : 'Inasubiri'}</Badge>
                 </div>;
               })}
             </div>

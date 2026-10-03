@@ -64,6 +64,13 @@
       "when": 1790965008138,
       "tag": "0008_secure_sales_billing_and_payment_proofs",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1791022175989,
+      "tag": "0009_harakapay_and_billing_hardening",
+      "breakpoints": true
     }
   ]
 }

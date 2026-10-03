@@ -138,7 +138,7 @@ export const PaymentGateway = () => {
 
       if (selectedMethod.type === 'mobile_money' && phoneNumber) {
         // Use ClickPesa for mobile money
-        const { data, error } = await supabase.functions.invoke('clickpesa-payment', {
+        const { data, error } = await supabase.functions.invoke('harakapay-payment', {
           body: {
             amount: paymentAmount,
             phone_number: phoneNumber,
