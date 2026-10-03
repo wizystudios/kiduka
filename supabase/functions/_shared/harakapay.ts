@@ -68,7 +68,7 @@ export async function verifyAndApply(admin: SupabaseClient, tx: any) {
     const start = new Date();
     const end = new Date(start); end.setMonth(end.getMonth() + 1);
     await admin.from('user_subscriptions').update({
-      status: 'active', requires_payment: false,
+      status: 'active',
       current_period_start: start.toISOString(), current_period_end: end.toISOString(),
       calculated_fee: tx.amount, payment_amount: paidAmount, payment_reference: tx.provider_reference,
       fee_breakdown: bill, updated_at: now,
