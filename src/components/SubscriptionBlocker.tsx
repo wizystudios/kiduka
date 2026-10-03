@@ -50,23 +50,24 @@ export const SubscriptionBlocker = ({ children }: SubscriptionBlockerProps) => {
 
     setProcessing(true);
     try {
-      const { data, error } = await supabase.functions.invoke('clickpesa-payment', {
-        body: {
-          amount: subscription?.payment_amount || 30000,
-          phone_number: phoneNumber,
-          subscription_id: subscription?.id,
-          transaction_type: 'subscription_payment',
-          user_id: userProfile?.id,
-          description: 'Kiduka Monthly Subscription'
-        }
+      const { data, error } = await supabase.functions.invoke('harakapay-payment', {
+        body: { action: 'initiate', phone_number: phoneNumber, transaction_type: 'subscription_payment' }
       });
 
       if (error) throw error;
 
       if (data?.success) {
         setPaymentInitiated(true);
-        toast.success('Malipo yameanzishwa! Tafadhali kamilisha kwenye simu yako.');
-        await requestActivation(data.reference);
+        toast.success(`Ombi la TSh ${Number(data.amount).toLocaleString()} limetumwa. Ingiza PIN kwenye simu yako.`);
+        let attempts = 0;
+        const tick = async () => {
+          attempts++;
+          const { data: st } = await supabase.functions.invoke('harakapay-payment', { body: { action: 'status', transaction_id: data.transaction_id } });
+          if (st?.status === 'completed') { toast.success('Malipo yamethibitishwa'); window.location.reload(); return; }
+          if (st?.status === 'failed' || st?.status === 'amount_mismatch') { setPaymentInitiated(false); toast.error('Malipo hayakukamilika'); return; }
+          if (attempts < 36) setTimeout(tick, 5000); else setPaymentInitiated(false);
+        };
+        setTimeout(tick, 5000);
       } else {
         toast.error(data?.error || 'Imeshindwa kuanzisha malipo');
       }

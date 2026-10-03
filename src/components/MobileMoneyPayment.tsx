@@ -101,7 +101,7 @@ export const MobileMoneyPayment = ({
     const formattedPhone = formatPhoneNumber(phoneNumber);
 
     try {
-      const { data, error } = await supabase.functions.invoke('clickpesa-payment', {
+      const { data, error } = await supabase.functions.invoke('harakapay-payment', {
         body: {
           amount,
           phone_number: formattedPhone,
