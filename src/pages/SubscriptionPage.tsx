@@ -200,6 +200,12 @@ export const SubscriptionPage = ({ embedded = false }: SubscriptionPageProps) =>
 
         <div className="mx-auto mb-6 max-w-md">
           <BillingSummary />
+          <div className="mt-4 grid grid-cols-3 gap-2 border-y border-border/50 py-3 text-center">
+            <div><p className="text-[11px] text-muted-foreground">Bili ya mwezi</p><p className="text-sm font-bold">TSh {Number(amountDue || 0).toLocaleString()}</p></div>
+            <div><p className="text-[11px] text-muted-foreground">Umelipa</p><p className="text-sm font-bold text-success">TSh {paidThisPeriod.toLocaleString()}</p></div>
+            <div><p className="text-[11px] text-muted-foreground">Salio</p><p className={`text-sm font-bold ${ownerBalance > 0 ? 'text-destructive' : 'text-success'}`}>TSh {ownerBalance.toLocaleString()}</p></div>
+          </div>
+          {lastPaid && <p className="mt-2 text-center text-xs text-muted-foreground">Malipo ya mwisho: {new Date(lastPaid.confirmed_at || lastPaid.created_at).toLocaleDateString('sw-TZ')} • Kumbukumbu {lastPaid.provider_reference || '—'}</p>}
         </div>
 
 
@@ -457,7 +463,7 @@ export const SubscriptionPage = ({ embedded = false }: SubscriptionPageProps) =>
                   <div><p className="font-semibold">TSh {expected.toLocaleString()}</p><p className="text-xs text-muted-foreground">{new Date(payment.created_at).toLocaleDateString('sw-TZ')}</p></div>
                   <div><p className="text-xs text-muted-foreground">Imelipwa</p><p>{paid ? `TSh ${paid.toLocaleString()}` : 'Inasubiri'}</p></div>
                   <div><p className="text-xs text-muted-foreground">Salio</p><p className={expected - paid > 0 ? 'text-destructive' : 'text-success'}>TSh {Math.max(0, expected - paid).toLocaleString()}</p></div>
-                  <Badge variant={payment.status === 'completed' ? 'default' : 'secondary'} className="w-fit rounded-full">{payment.status === 'completed' ? 'Imethibitishwa' : payment.status === 'failed' ? 'Imeshindikana' : 'Inasubiri'}</Badge>
+                  <Badge variant={payment.status === 'completed' ? 'default' : payment.status === 'failed' || payment.status === 'amount_mismatch' ? 'destructive' : 'secondary'} className="w-fit rounded-full">{payment.status === 'completed' ? 'Imethibitishwa' : payment.status === 'failed' ? 'Imeshindikana' : payment.status === 'amount_mismatch' ? 'Kiasi hakilingani' : 'Inasubiri'}</Badge>
                 </div>;
               })}
             </div>
