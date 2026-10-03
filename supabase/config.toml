@@ -29,3 +29,5 @@ project_id = "lufuusufaijuvekkcqgv"
     verify_jwt = true
   [functions.owner-email-history]
     verify_jwt = true
+  [functions.harakapay-webhook]
+    verify_jwt = false
