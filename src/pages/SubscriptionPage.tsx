@@ -56,6 +56,34 @@ export const SubscriptionPage = ({ embedded = false }: SubscriptionPageProps) =>
     return null;
   };
 
+  const refreshBilling = () =>
+    supabase.rpc('get_my_billing' as any).then(({ data }) => setAmountDue(Number((data as any)?.amount_due ?? 0)));
+
+  // Ask the server (which asks HarakaPay) until the payment is confirmed or fails.
+  const pollPayment = (transactionId: string) => {
+    let attempts = 0;
+    const tick = async () => {
+      attempts++;
+      const { data } = await supabase.functions.invoke('harakapay-payment', { body: { action: 'status', transaction_id: transactionId } });
+      const status = data?.status;
+      if (status === 'completed') {
+        setPaymentInitiated(false);
+        toast.success('Malipo yamethibitishwa. Ada ya mwezi imelipwa.');
+        await Promise.all([loadPayments(), checkSubscription?.(), refreshBilling()]);
+        return;
+      }
+      if (status === 'failed' || status === 'amount_mismatch') {
+        setPaymentInitiated(false);
+        toast.error(status === 'failed' ? 'Malipo yameshindikana au yameghairiwa' : 'Kiasi kilicholipwa hakilingani na bili');
+        await loadPayments();
+        return;
+      }
+      if (attempts < 36) setTimeout(tick, 5000);
+      else { setPaymentInitiated(false); toast.info('Bado tunasubiri uthibitisho. Historia itasasishwa malipo yakithibitishwa.'); await loadPayments(); }
+    };
+    setTimeout(tick, 5000);
+  };
+
   const handlePayment = async () => {
     if (!phoneNumber || phoneNumber.length < 9) {
       toast.error('Tafadhali weka namba ya simu sahihi');
@@ -68,23 +96,17 @@ export const SubscriptionPage = ({ embedded = false }: SubscriptionPageProps) =>
     }
     setProcessing(true);
     try {
-      const { data, error } = await supabase.functions.invoke('clickpesa-payment', {
-        body: {
-          amount: amountDue,
-          phone_number: phoneNumber,
-          subscription_id: subscription?.id,
-          transaction_type: 'subscription_payment',
-          user_id: user?.id,
-          description: 'Kiduka Monthly Subscription'
-        }
+      const { data, error } = await supabase.functions.invoke('harakapay-payment', {
+        body: { action: 'initiate', phone_number: phoneNumber, transaction_type: 'subscription_payment' }
       });
 
       if (error) throw error;
 
       if (data?.success) {
         setPaymentInitiated(true);
-        toast.success('Malipo yameanzishwa! Tafadhali kamilisha kwenye simu yako.');
+        toast.success(`Ombi la TSh ${Number(data.amount).toLocaleString()} limetumwa. Ingiza PIN kwenye simu yako.`);
         await loadPayments();
+        pollPayment(data.transaction_id);
       } else {
         toast.error(data?.error || 'Imeshindwa kuanzisha malipo');
       }
@@ -95,6 +117,11 @@ export const SubscriptionPage = ({ embedded = false }: SubscriptionPageProps) =>
       setProcessing(false);
     }
   };
+
+  const confirmedPayments = payments.filter((p) => p.status === 'completed');
+  const lastPaid = confirmedPayments[0];
+  const paidThisPeriod = lastPaid && subscription?.current_period_end && new Date(subscription.current_period_end) > new Date() ? Number(lastPaid.paid_amount || 0) : 0;
+  const ownerBalance = Math.max(0, Number(amountDue || 0) - paidThisPeriod);
 
   const uploadPaymentProof = async () => {
     if (!user?.id || !subscription?.id || !proofFile || !amountDue) {
