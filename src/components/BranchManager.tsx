@@ -448,7 +448,7 @@ export const BranchManager = () => {
         </div>
 
         {/* Stats Grid */}
-        <div className="text-center md:text-left">
+        <div className="text-center">
           <p className="text-xs uppercase tracking-wider text-muted-foreground">Mauzo Leo</p>
           <p className="text-3xl font-black tracking-tight">TSh {branchStats.totalRevenue.toLocaleString()}</p>
           <p className="text-xs text-muted-foreground">{branchStats.totalSales} miamala</p>

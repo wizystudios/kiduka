@@ -11,7 +11,7 @@ import { BusinessSwitcher } from '@/components/BusinessSwitcher';
 
 export const Dashboard = () => {
   const { user, userProfile, loading: authLoading } = useAuth();
-  const { dataOwnerId, branchId, isReady } = useDataAccess();
+  const { dataOwnerId, branchId, branchName, ownerBusinessName, isReady } = useDataAccess();
   const navigate = useNavigate();
   const [metrics, setMetrics] = useState({
     todaysSales: 0, totalProducts: 0, todaysTransactions: 0,
@@ -40,11 +40,15 @@ export const Dashboard = () => {
       if (branchId) {
         salesQuery = salesQuery.eq('branch_id', branchId);
         productsQuery = productsQuery.eq('branch_id', branchId);
+      } else {
+        // HQ shows only main-shop sales; branch sales belong to their branch
+        salesQuery = salesQuery.is('branch_id', null);
       }
       // sokoni_orders has no branch_id column — marketplace orders stay owner-level
       const [salesRes, productsRes, ordersRes] = await Promise.all([
         salesQuery,
         productsQuery,
+        branchId ? Promise.resolve({ data: [] as { id: string }[] }) :
         supabase.from('sokoni_orders').select('id').eq('seller_id', dataOwnerId)
           .in('order_status', ['new', 'confirmed', 'preparing'])
       ]);
@@ -76,7 +80,11 @@ export const Dashboard = () => {
     <div className="h-[calc(100dvh-8rem)] overflow-y-auto px-4 pt-2 pb-32 space-y-2 md:h-auto md:overflow-visible md:pb-0">
       {/* Business switcher */}
       <div className="flex justify-center pt-1">
-        <BusinessSwitcher />
+        {branchId ? (
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-border/60 px-3 py-1 text-xs font-medium text-foreground">
+            <Store className="h-3.5 w-3.5 text-primary" />{ownerBusinessName?.split(' · ')[0] || 'Duka'} · Tawi: {branchName}
+          </span>
+        ) : <BusinessSwitcher />}
       </div>
 
       {/* Hero Sales Section - centered, no box */}
@@ -92,12 +100,14 @@ export const Dashboard = () => {
 
       {/* Key stats - flat, no containers, centered row */}
       <div className="flex items-center justify-around py-2 border-y border-border/50">
+        {!branchId && (<>
         <button onClick={() => navigate('/sokoni-orders')} className="text-center space-y-0.5">
           <Store className="h-4 w-4 mx-auto text-primary" />
           <p className="text-lg font-bold text-foreground">{metrics.pendingSokoniOrders}</p>
           <p className="text-[10px] text-muted-foreground">Oda Sokoni</p>
         </button>
         <div className="w-px h-8 bg-border/50" />
+        </>)}
         <div className="text-center space-y-0.5">
           <Package className="h-4 w-4 mx-auto text-success" />
           <p className="text-lg font-bold text-foreground">{metrics.totalProducts}</p>

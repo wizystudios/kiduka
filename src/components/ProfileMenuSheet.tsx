@@ -19,7 +19,8 @@ export const ProfileMenuSheet = ({ open, onOpenChange }: ProfileMenuSheetProps) 
   const location = useLocation();
   const { user, userProfile, signOut } = useAuth();
   const { permissions } = usePermissions();
-  const { branchName } = useDataAccess();
+  const { branchName, branchRole, ownerBusinessName } = useDataAccess();
+  const branchRoleLabel: Record<string, string> = { branch_manager: 'Meneja wa Tawi', cashier: 'Keshia', salesperson: 'Muuzaji', inventory_officer: 'Afisa Stoo', accountant: 'Mhasibu', assistant: 'Msaidizi' };
 
   const getUserInitials = () => {
     const name = userProfile?.full_name || user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'U';
@@ -27,6 +28,7 @@ export const ProfileMenuSheet = ({ open, onOpenChange }: ProfileMenuSheetProps) 
   };
 
   const getUserRole = () => {
+    if (branchRole) return branchRoleLabel[branchRole] || branchRole;
     switch (userProfile?.role) {
       case 'owner': return 'Mmiliki';
       case 'assistant': return 'Msaidizi';
@@ -69,8 +71,10 @@ export const ProfileMenuSheet = ({ open, onOpenChange }: ProfileMenuSheetProps) 
             <h3 className="truncate text-base font-semibold">{userProfile?.full_name || user?.email?.split('@')[0]}</h3>
             <div className="mt-1 flex flex-wrap items-center gap-2">
               <Badge variant="secondary" className="text-[10px]">{getUserRole()}</Badge>
-              {userProfile?.business_name && (
-                <span className="truncate text-xs text-muted-foreground">{userProfile.business_name}{branchName ? ` · Tawi: ${branchName}` : ''}</span>
+              {branchName ? (
+                <span className="truncate text-xs text-muted-foreground">Tawi: {branchName}</span>
+              ) : (ownerBusinessName || userProfile?.business_name) && (
+                <span className="truncate text-xs text-muted-foreground">{ownerBusinessName || userProfile?.business_name}</span>
               )}
             </div>
           </div>
