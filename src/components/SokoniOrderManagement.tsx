@@ -42,7 +42,9 @@ export interface SokoniOrder {
 }
 
 export const SokoniOrderManagement = () => {
-  const { dataOwnerId, loading: dataLoading } = useDataAccess();
+  const { dataOwnerId: rawOwnerId, branchId, loading: dataLoading } = useDataAccess();
+  // Sokoni orders belong to the main shop; branch staff never load them
+  const dataOwnerId = branchId ? null : rawOwnerId;
   const { user } = useAuth();
   const [orders, setOrders] = useState<SokoniOrder[]>([]);
   const [selectedOrder, setSelectedOrder] = useState<SokoniOrder | null>(null);
@@ -392,6 +394,10 @@ export const SokoniOrderManagement = () => {
     if (diffMins < 1440) return `Saa ${Math.floor(diffMins / 60)} zilizopita`;
     return date.toLocaleDateString('sw-TZ');
   };
+
+  if (branchId) {
+    return <div className="py-16 text-center text-sm text-muted-foreground">Oda za Sokoni zinashughulikiwa na duka kuu tu, si tawi.</div>;
+  }
 
   if (dataLoading || loading) {
     return (
