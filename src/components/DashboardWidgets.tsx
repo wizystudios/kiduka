@@ -53,6 +53,7 @@ interface ExpenseCategory {
 }
 
 // Branch staff see only their branch; HQ sees only main-shop rows
+const scopeStock = (q: any, branchId: string | null) => branchId ? q.eq('branch_id', branchId) : q;
 const scopeBranch = (q: any, branchId: string | null) => branchId ? q.eq('branch_id', branchId) : q.is('branch_id', null);
 
 // Stock Alert Widget
@@ -68,7 +69,7 @@ export const StockAlertWidget = () => {
 
   const fetchLowStock = async () => {
     if (!dataOwnerId) return;
-    const { data } = await scopeBranch(supabase
+    const { data } = await scopeStock(supabase
       .from('products')
       .select('id, name, stock_quantity, low_stock_threshold, category')
       .eq('owner_id', dataOwnerId), branchId)
@@ -388,7 +389,7 @@ export const ProductsWidget = () => {
 
   const fetchProducts = async () => {
     if (!dataOwnerId) return;
-    const { data } = await scopeBranch(supabase
+    const { data } = await scopeStock(supabase
       .from('products')
       .select('id, name, stock_quantity, price, category')
       .eq('owner_id', dataOwnerId), branchId)
