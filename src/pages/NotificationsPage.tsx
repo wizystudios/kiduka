@@ -212,7 +212,7 @@ export const NotificationsPage = () => {
     .filter((x) => x.items.length > 0);
 
   return (
-    <div className="mx-auto w-full max-w-xl px-3 pb-24 pt-2">
+    <div className="mx-auto w-full max-w-xl px-3 pb-24 pt-2 md:max-w-4xl md:px-6">
       <div className="sticky top-0 z-10 -mx-3 flex items-center gap-1 bg-background/95 px-3 py-2 backdrop-blur">
         <h1 className="flex-1 text-xl font-semibold">Taarifa</h1>
         <Select value={filter} onValueChange={setFilter}>

@@ -341,7 +341,7 @@ export const SalesPage = () => {
       <MasterDetailLayout hasSelection={!!selectedSale} list={<div className="space-y-2">
         {filteredSales.map(sale => (
           <div key={sale.id} className="p-3 border border-border/50 rounded-2xl hover:bg-muted/30 cursor-pointer"
-            onClick={() => { setSelectedSale(sale); if (window.innerWidth < 1024) setDialogOpen(true); }}>
+            onClick={() => { setSelectedSale(sale); if (window.innerWidth < 768) setDialogOpen(true); }}>
             <div className="flex items-center justify-between mb-1">
               <div className="flex items-center gap-2 flex-wrap">
                 <h3 className="font-semibold text-sm">#{sale.id.slice(0, 8).toUpperCase()}</h3>
@@ -379,7 +379,7 @@ export const SalesPage = () => {
             <DialogTitle>Muamala #{selectedSale?.id.slice(0, 8).toUpperCase()}</DialogTitle>
           </DialogHeader>
           {selectedSale && (
-            <div className="space-y-4 lg:hidden">
+            <div className="space-y-4 md:hidden">
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <div><p className="text-xs text-muted-foreground">Tarehe</p><p className="font-medium">{formatDate(selectedSale.created_at)}</p></div>
                 <div><p className="text-xs text-muted-foreground">Njia</p><p className="font-medium">{selectedSale.payment_method || 'Taslimu'}</p></div>

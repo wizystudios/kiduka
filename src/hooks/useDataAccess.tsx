@@ -17,17 +17,19 @@ export const useDataAccess = () => {
   const [branchId, setBranchId] = useState<string | null>(null);
   const [branchName, setBranchName] = useState<string | null>(null);
   const [branchRole, setBranchRole] = useState<string | null>(null);
+  const [branchFeatures, setBranchFeatures] = useState<Record<string, boolean> | null>(null);
 
   // Branch staff belong to their branch, not the main shop
   useEffect(() => {
     if (!user || userProfile?.role === 'owner' || userProfile?.role === 'super_admin') { setBranchId(null); setBranchName(null); return; }
     (async () => {
       const { data } = await supabase.from('branch_staff')
-        .select('branch_id, role, business_branches(branch_name)')
+        .select('branch_id, role, business_branches(branch_name, features, is_active)')
         .eq('user_id', user.id).eq('is_active', true).maybeSingle();
       setBranchId((data as any)?.branch_id ?? null);
       setBranchName((data as any)?.business_branches?.branch_name ?? null);
       setBranchRole((data as any)?.role ?? null);
+      setBranchFeatures((data as any)?.business_branches?.features ?? null);
     })();
   }, [user, userProfile?.role]);
 
@@ -138,6 +140,7 @@ export const useDataAccess = () => {
     branchId,
     branchName,
     branchRole,
+    branchFeatures,
     isBranchStaff: !!branchId,
     loading, 
     isAssistant,

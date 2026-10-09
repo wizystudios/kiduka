@@ -77,7 +77,8 @@ const BRANCH_TYPES = [
 const PASSWORD_REGEX = /^(?=.*[A-Z])(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?])(?=(?:.*\d){3,}).{8,}$/;
 
 export const BranchManager = () => {
-  const { user } = useAuth();
+  const { user, userProfile } = useAuth();
+  const isSystemAdmin = userProfile?.role === 'super_admin';
   const [branches, setBranches] = useState<Branch[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -652,10 +653,11 @@ export const BranchManager = () => {
             <DialogContent className="max-w-sm rounded-3xl max-h-[85vh] overflow-y-auto">
               <DialogHeader><DialogTitle className="text-sm">Mipangilio · {settingsDialog.branch_name}</DialogTitle></DialogHeader>
               <div className="space-y-3">
+                {!isSystemAdmin && <p className="rounded-2xl bg-muted/50 p-2 text-[11px] text-muted-foreground">Huduma na ada za tawi huwekwa na msimamizi wa mfumo.</p>}
                 {FEATURE_LIST.map(f => (
                   <div key={f.key} className="flex items-center justify-between">
                     <div className="flex items-center gap-2"><f.icon className="h-4 w-4 text-muted-foreground" /><span className="text-sm">{f.label}</span></div>
-                    <Switch checked={settingsDialog.features[f.key] ?? true}
+                    <Switch checked={settingsDialog.features[f.key] ?? true} disabled={!isSystemAdmin}
                       onCheckedChange={v => setSettingsDialog(prev => prev ? { ...prev, features: { ...prev.features, [f.key]: v } } : null)} />
                   </div>
                 ))}

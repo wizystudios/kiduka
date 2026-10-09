@@ -352,7 +352,7 @@ export const ProductsPage = () => {
                     </div>
                   </CollapsibleTrigger>
                   
-                  <CollapsibleContent className="lg:hidden">
+                  <CollapsibleContent className="md:hidden">
                     <div className="mt-2 pt-2 border-t space-y-1">
                       {/* Details */}
                       {product.barcode && (

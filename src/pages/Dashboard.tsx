@@ -11,7 +11,16 @@ import { BusinessSwitcher } from '@/components/BusinessSwitcher';
 
 export const Dashboard = () => {
   const { user, userProfile, loading: authLoading } = useAuth();
-  const { dataOwnerId, branchId, branchName, ownerBusinessName, isReady } = useDataAccess();
+  const { dataOwnerId, branchId, branchName, ownerBusinessName, isReady, branchFeatures } = useDataAccess();
+  const allow = (k: string) => !branchId || !branchFeatures || branchFeatures[k] !== false;
+  const [branchCount, setBranchCount] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!dataOwnerId || branchId || userProfile?.role !== 'owner') return;
+    supabase.from('business_branches').select('id', { count: 'exact', head: true })
+      .eq('owner_id', dataOwnerId).is('deleted_at', null)
+      .then(({ count }) => setBranchCount(count ?? 0));
+  }, [dataOwnerId, branchId, userProfile?.role]);
   const navigate = useNavigate();
   const [metrics, setMetrics] = useState({
     todaysSales: 0, totalProducts: 0, todaysTransactions: 0,
@@ -86,6 +95,15 @@ export const Dashboard = () => {
           </span>
         ) : <BusinessSwitcher />}
       </div>
+      {!branchId && branchCount !== null && (
+        <div className="flex justify-center">
+          <button onClick={() => navigate('/branches')} className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-[11px] font-medium text-primary">
+            <Store className="h-3 w-3" />
+            {branchCount > 0 ? `Biashara kuu · Ina matawi ${branchCount}` : 'Biashara kuu · Haina matawi'}
+            <ChevronRight className="h-3 w-3" />
+          </button>
+        </div>
+      )}
 
       {/* Hero Sales Section - centered, no box */}
       <div className="text-center pt-0.5">
@@ -123,12 +141,12 @@ export const Dashboard = () => {
 
       {/* Action widgets - clean grid */}
       <div className="grid grid-cols-2 gap-1.5">
-        <StockAlertWidget />
-        <ExpensesWidget />
-        <TransactionsWidget />
-        <ProductsWidget />
-        <LoansWidget />
-        <DebtorsWidget />
+        {allow('inventory') && <StockAlertWidget />}
+        {allow('expenses') && <ExpensesWidget />}
+        {allow('sales') && <TransactionsWidget />}
+        {allow('products') && <ProductsWidget />}
+        {allow('customers') && <LoansWidget />}
+        {allow('customers') && <DebtorsWidget />}
       </div>
 
       {userProfile?.role === 'super_admin' && (

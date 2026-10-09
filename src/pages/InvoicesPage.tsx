@@ -1,3 +1,4 @@
+import { MasterDetailLayout } from '@/components/MasterDetailLayout';
 import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useDataAccess } from '@/hooks/useDataAccess';
@@ -58,6 +59,8 @@ export const InvoicesPage = () => {
   const [selected, setSelected] = useState<SaleRow | null>(null);
 
   // Manual invoice creation
+  const [isDesktop, setIsDesktop] = useState(() => typeof window !== 'undefined' && window.innerWidth >= 768);
+  useEffect(() => { const f = () => setIsDesktop(window.innerWidth >= 768); window.addEventListener('resize', f); return () => window.removeEventListener('resize', f); }, []);
   const [createOpen, setCreateOpen] = useState(false);
   const [draftCustomer, setDraftCustomer] = useState('');
   const [draftPhone, setDraftPhone] = useState('');
@@ -333,7 +336,10 @@ export const InvoicesPage = () => {
         />
       </div>
 
-      <section className="flex flex-col gap-2">
+      <MasterDetailLayout
+        hasSelection={!!selectedInvoice || !!selected}
+        emptyText="Chagua ankara upande wa kushoto kuiona hapa."
+        list={<section className="flex flex-col gap-2">
           {invoices
             .filter((inv) => {
               const q = query.trim().toLowerCase();
@@ -342,7 +348,7 @@ export const InvoicesPage = () => {
             .map((inv) => (
               <Card key={inv.id} style={{ order: -Math.floor(new Date(inv.created_at).getTime() / 1000) }} className="rounded-3xl transition hover:bg-muted/50">
                 <CardContent className="p-4 flex items-center justify-between gap-3">
-                  <button className="min-w-0 text-left flex-1" onClick={() => setSelectedInvoice(inv)}>
+                  <button className="min-w-0 text-left flex-1" onClick={() => { setSelected(null); setSelectedInvoice(inv); }}>
                     <p className="font-semibold truncate">{inv.customer_name} <Badge variant="secondary" className="ml-1 text-[9px]">{inv.sale_id ? 'Mauzo' : 'Mwenyewe'}</Badge></p>
                     <p className="text-xs text-muted-foreground">
                       {format(new Date(inv.created_at), 'dd/MM/yyyy HH:mm')} · {inv.invoice_number}
@@ -387,7 +393,7 @@ export const InvoicesPage = () => {
               key={sale.id}
               style={{ order: -Math.floor(new Date(sale.created_at).getTime() / 1000) }}
               className="rounded-3xl cursor-pointer transition hover:bg-muted/50"
-              onClick={() => setSelected(sale)}
+              onClick={() => { setSelectedInvoice(null); setSelected(sale); }}
             >
               <CardContent className="p-4 flex items-center justify-between gap-3">
                 <div className="min-w-0">
@@ -408,9 +414,57 @@ export const InvoicesPage = () => {
           {!loading && invoices.length === 0 && filtered.length === 0 && (
             <p className="text-sm text-muted-foreground text-center py-10">Hakuna ankara bado.</p>
           )}
-      </section>
+      </section>}
+        detail={<>
+          {selectedInvoice && (
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <Button variant="ghost" size="sm" className="rounded-full" onClick={() => setSelectedInvoice(null)}>
+                  <ArrowLeft className="h-4 w-4 mr-1" /> Rudi
+                </Button>
+                <Button size="sm" className="rounded-full ml-auto" onClick={() => openEditor(selectedInvoice)}>
+                  <Pencil className="h-4 w-4 mr-1" /> Hariri
+                </Button>
+              </div>
+              <InvoiceGenerator
+                customer_name={selectedInvoice.customer_name}
+                customer_phone={selectedInvoice.customer_phone || undefined}
+                items={selectedInvoice.items || []}
+                total_amount={Number(selectedInvoice.total_amount)}
+                payment_method={selectedInvoice.payment_method || 'cash'}
+                payment_status={selectedInvoice.status}
+                invoice_number={selectedInvoice.invoice_number}
+                notes={selectedInvoice.notes || undefined}
+                date={format(new Date(selectedInvoice.created_at), 'dd/MM/yyyy')}
+              />
+            </div>
+          )}
+        
+          {selected && (
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <Button variant="ghost" size="sm" className="rounded-full" onClick={() => setSelected(null)}>
+                  <ArrowLeft className="h-4 w-4 mr-1" /> Rudi
+                </Button>
+                <Button size="sm" className="rounded-full ml-auto" disabled={saving} onClick={() => editSaleAsInvoice(selected)}>
+                  <Pencil className="h-4 w-4 mr-1" /> Hariri
+                </Button>
+              </div>
+              <InvoiceGenerator
+                customer_name={selected.customers?.name || 'Mteja wa Kawaida'}
+                items={invoiceItems(selected)}
+                total_amount={Number(selected.total_amount)}
+                payment_method={selected.payment_method || 'cash'}
+                payment_status={selected.payment_status || 'paid'}
+                invoice_number={`INV-${selected.id.slice(0, 8).toUpperCase()}`}
+                date={format(new Date(selected.created_at), 'dd/MM/yyyy')}
+              />
+            </div>
+          )}
+        </>}
+      />
 
-      <Sheet open={!!selectedInvoice} onOpenChange={(open) => !open && setSelectedInvoice(null)}>
+      <Sheet open={!isDesktop && !!selectedInvoice} onOpenChange={(open) => !open && setSelectedInvoice(null)}>
         <SheetContent side="right" className="w-full sm:max-w-lg overflow-y-auto p-4">
           {selectedInvoice && (
             <div className="space-y-3">
@@ -439,7 +493,7 @@ export const InvoicesPage = () => {
       </Sheet>
 
       {/* View invoice from a sale */}
-      <Sheet open={!!selected} onOpenChange={(open) => !open && setSelected(null)}>
+      <Sheet open={!isDesktop && !!selected} onOpenChange={(open) => !open && setSelected(null)}>
         <SheetContent side="right" className="w-full sm:max-w-lg overflow-y-auto p-4">
           {selected && (
             <div className="space-y-3">

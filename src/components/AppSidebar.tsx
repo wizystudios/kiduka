@@ -16,7 +16,7 @@ import { cn } from '@/lib/utils';
 export function AppSidebar() {
   const { signOut, userProfile, user } = useAuth();
   const { permissions } = usePermissions();
-  const { branchName } = useDataAccess();
+  const { branchName, branchFeatures } = useDataAccess();
   const navigate = useNavigate();
   const location = useLocation();
   const [pinned, setPinned] = useState(() => localStorage.getItem('kiduka-sidebar-pinned') === '1');
@@ -35,7 +35,7 @@ export function AppSidebar() {
   const initials = name.split(' ').map((n: string) => n.charAt(0).toUpperCase()).join('').slice(0, 2);
   const role = userProfile.role === 'owner' ? 'Mmiliki' : userProfile.role === 'super_admin' ? 'Msimamizi Mkuu' : branchName ? `Tawi: ${branchName}` : 'Msaidizi';
 
-  const items = filterNavigationItems(primaryNavigationItems, userProfile.role, permissions as unknown as Record<string, boolean> | null);
+  const items = filterNavigationItems(primaryNavigationItems, userProfile.role, permissions as unknown as Record<string, boolean> | null, branchFeatures);
   const all = [
     ...(userProfile.role === 'super_admin' ? [{ id: 'super-admin', href: '/super-admin', label: 'Super Admin', icon: Shield }] : []),
     ...items,

@@ -19,7 +19,7 @@ import { filterNavigationItems, primaryNavigationItems, superAdminNavigationItem
 export const TopNavbar = () => {
   const { user, userProfile, signOut } = useAuth();
   const { unreadCount } = useRealTimeNotifications();
-  const { dataOwnerId, branchId } = useDataAccess();
+  const { dataOwnerId, branchId, branchFeatures } = useDataAccess();
   const { permissions } = usePermissions();
   const offlineSync = useOfflineSync(dataOwnerId, branchId);
   const navigate = useNavigate();
@@ -62,8 +62,8 @@ export const TopNavbar = () => {
 
   const isActive = (href: string) => href === '/dashboard' ? location.pathname === '/dashboard' : location.pathname.startsWith(href);
 
-  const primaryItems = filterNavigationItems(primaryNavigationItems, userProfile?.role, permissions as unknown as Record<string, boolean> | null);
-  const utilityItems = filterNavigationItems(utilityNavigationItems, userProfile?.role, permissions as unknown as Record<string, boolean> | null);
+  const primaryItems = filterNavigationItems(primaryNavigationItems, userProfile?.role, permissions as unknown as Record<string, boolean> | null, branchFeatures);
+  const utilityItems = filterNavigationItems(utilityNavigationItems, userProfile?.role, permissions as unknown as Record<string, boolean> | null, branchFeatures);
 
   if (!user) return null;
 

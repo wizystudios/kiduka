@@ -198,7 +198,7 @@ export const SubscriptionPage = ({ embedded = false }: SubscriptionPageProps) =>
           </p>
         </div>
 
-        <div className="mx-auto mb-6 max-w-md">
+        <div className="mx-auto mb-6 max-w-md md:max-w-none">
           <BillingSummary />
           <div className="mt-4 grid grid-cols-3 gap-2 border-y border-border/50 py-3 text-center">
             <div><p className="text-[11px] text-muted-foreground">Bili ya mwezi</p><p className="text-sm font-bold">TSh {Number(amountDue || 0).toLocaleString()}</p></div>
@@ -452,7 +452,7 @@ export const SubscriptionPage = ({ embedded = false }: SubscriptionPageProps) =>
           </Card>
         )}
 
-        <section className="mx-auto mt-6 max-w-3xl space-y-3">
+        <section className="mx-auto mt-6 max-w-none space-y-3">
           <div className="flex items-center gap-2"><ReceiptText className="h-4 w-4 text-primary" /><h2 className="text-sm font-bold">Historia ya Malipo</h2></div>
           {payments.length === 0 ? <p className="text-sm text-muted-foreground">Bado hakuna malipo yaliyotumwa.</p> : (
             <div className="divide-y divide-border/50 border-y border-border/50">
