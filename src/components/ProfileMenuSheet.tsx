@@ -19,7 +19,7 @@ export const ProfileMenuSheet = ({ open, onOpenChange }: ProfileMenuSheetProps) 
   const location = useLocation();
   const { user, userProfile, signOut } = useAuth();
   const { permissions } = usePermissions();
-  const { branchName, branchRole, ownerBusinessName } = useDataAccess();
+  const { branchName, branchRole, ownerBusinessName, branchFeatures } = useDataAccess();
   const branchRoleLabel: Record<string, string> = { branch_manager: 'Meneja wa Tawi', cashier: 'Keshia', salesperson: 'Muuzaji', inventory_officer: 'Afisa Stoo', accountant: 'Mhasibu', assistant: 'Msaidizi' };
 
   const getUserInitials = () => {
@@ -54,8 +54,8 @@ export const ProfileMenuSheet = ({ open, onOpenChange }: ProfileMenuSheetProps) 
     }
   };
 
-  const menuItems = filterNavigationItems(primaryNavigationItems, userProfile?.role, permissions as unknown as Record<string, boolean> | null);
-  const utilityItems = filterNavigationItems(utilityNavigationItems, userProfile?.role, permissions as unknown as Record<string, boolean> | null);
+  const menuItems = filterNavigationItems(primaryNavigationItems, userProfile?.role, permissions as unknown as Record<string, boolean> | null, branchFeatures);
+  const utilityItems = filterNavigationItems(utilityNavigationItems, userProfile?.role, permissions as unknown as Record<string, boolean> | null, branchFeatures);
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>

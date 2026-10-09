@@ -7,6 +7,7 @@ import { ProfileMenuSheet } from '@/components/ProfileMenuSheet';
 import { useAuth } from '@/hooks/useAuth';
 import { usePermissions } from '@/hooks/usePermissions';
 import { Home, LogOut, Menu, Package, Plus, ShoppingCart } from 'lucide-react';
+import { useDataAccess as __uda } from '@/hooks/useDataAccess';
 import { filterNavigationItems, primaryNavigationItems, superAdminNavigationItem, utilityNavigationItems } from '@/lib/navigation';
 
 export const MobileBottomNav = () => {
@@ -15,6 +16,7 @@ export const MobileBottomNav = () => {
   const location = useLocation();
   const { user, userProfile, signOut } = useAuth();
   const { permissions } = usePermissions();
+  const { branchFeatures } = __uda();
 
   const longPressTimer = useRef<NodeJS.Timeout | null>(null);
   const [isLongPressing, setIsLongPressing] = useState(false);
@@ -82,8 +84,8 @@ export const MobileBottomNav = () => {
     setIsLongPressing(false);
   };
 
-  const menuItems = filterNavigationItems(primaryNavigationItems, userProfile?.role, permissions as unknown as Record<string, boolean> | null);
-  const utilityItems = filterNavigationItems(utilityNavigationItems, userProfile?.role, permissions as unknown as Record<string, boolean> | null);
+  const menuItems = filterNavigationItems(primaryNavigationItems, userProfile?.role, permissions as unknown as Record<string, boolean> | null, branchFeatures);
+  const utilityItems = filterNavigationItems(utilityNavigationItems, userProfile?.role, permissions as unknown as Record<string, boolean> | null, branchFeatures);
 
   return (
     <>
