@@ -28,6 +28,7 @@ import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, R
 import { exportToCSV, exportToPDF, createPrintableTable } from '@/utils/exportUtils';
 import { AdminChatPanel } from './AdminChatPanel';
 import { AdminCompliancePanel } from './AdminCompliancePanel';
+import { AdminBranchesPanel } from './AdminBranchesPanel';
 import { AdminEmailsPanel } from './AdminEmailsPanel';
 import { AdminUserActivities } from './AdminUserActivities';
 import { AdminMarketplacePanel } from './AdminMarketplacePanel';
@@ -1465,6 +1466,7 @@ export const SuperAdminDashboard = () => {
                 </Badge>
               )}
             </TabsTrigger>
+            <TabsTrigger value="branches" className="h-8 shrink-0 rounded-full border border-border bg-transparent px-3 text-[11px]">Matawi</TabsTrigger>
             <TabsTrigger value="compliance" className="h-8 shrink-0 rounded-full border border-border bg-transparent px-3 text-[11px]">Sheria</TabsTrigger>
             <TabsTrigger value="users" className="h-8 shrink-0 rounded-full border border-border bg-transparent px-3 text-[11px]">Watumiaji</TabsTrigger>
             <TabsTrigger value="activities" className="h-8 shrink-0 rounded-full border border-border bg-transparent px-3 text-[11px]">Shughuli</TabsTrigger>
@@ -1652,6 +1654,10 @@ export const SuperAdminDashboard = () => {
         </Sheet>
         
         {/* Compliance Tab */}
+        <TabsContent value="branches" className="space-y-4">
+          <AdminBranchesPanel />
+        </TabsContent>
+
         <TabsContent value="compliance" className="space-y-4">
           <AdminCompliancePanel />
         </TabsContent>
