@@ -52,23 +52,26 @@ interface ExpenseCategory {
   count: number;
 }
 
+// Branch staff see only their branch; HQ sees only main-shop rows
+const scopeBranch = (q: any, branchId: string | null) => branchId ? q.eq('branch_id', branchId) : q.is('branch_id', null);
+
 // Stock Alert Widget
 export const StockAlertWidget = () => {
   const navigate = useNavigate();
-  const { dataOwnerId, isReady } = useDataAccess();
+  const { dataOwnerId, isReady, branchId } = useDataAccess();
   const [lowStockProducts, setLowStockProducts] = useState<LowStockProduct[]>([]);
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
     if (isReady && dataOwnerId) fetchLowStock();
-  }, [isReady, dataOwnerId]);
+  }, [isReady, dataOwnerId, branchId]);
 
   const fetchLowStock = async () => {
     if (!dataOwnerId) return;
-    const { data } = await supabase
+    const { data } = await scopeBranch(supabase
       .from('products')
       .select('id, name, stock_quantity, low_stock_threshold, category')
-      .eq('owner_id', dataOwnerId)
+      .eq('owner_id', dataOwnerId), branchId)
       .order('stock_quantity', { ascending: true });
 
     const lowStock = data?.filter(p => p.stock_quantity <= (p.low_stock_threshold || 10)) || [];
@@ -137,6 +140,7 @@ export const StockAlertWidget = () => {
 // Expenses Widget
 export const ExpensesWidget = () => {
   const { user } = useAuth();
+  const { dataOwnerId, branchId } = useDataAccess();
   const navigate = useNavigate();
   const [expenses, setExpenses] = useState<ExpenseCategory[]>([]);
   const [totalExpenses, setTotalExpenses] = useState(0);
@@ -151,18 +155,18 @@ export const ExpensesWidget = () => {
   });
 
   useEffect(() => {
-    if (user?.id) fetchExpenses();
-  }, [user?.id]);
+    if (dataOwnerId) fetchExpenses();
+  }, [dataOwnerId, branchId]);
 
   const fetchExpenses = async () => {
-    if (!user?.id) return;
+    if (!dataOwnerId) return;
     const today = new Date();
     const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
 
-    const { data } = await supabase
+    const { data } = await scopeBranch(supabase
       .from('expenses')
       .select('category, amount')
-      .eq('owner_id', user.id)
+      .eq('owner_id', dataOwnerId), branchId)
       .gte('expense_date', startOfDay.toISOString().split('T')[0]);
 
     const categoryMap = new Map<string, { amount: number; count: number }>();
@@ -295,24 +299,24 @@ export const ExpensesWidget = () => {
 // Transactions Widget
 export const TransactionsWidget = () => {
   const navigate = useNavigate();
-  const { dataOwnerId, isReady } = useDataAccess();
+  const { dataOwnerId, isReady, branchId } = useDataAccess();
   const [transactions, setTransactions] = useState<any[]>([]);
   const [total, setTotal] = useState(0);
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
     if (isReady && dataOwnerId) fetchTransactions();
-  }, [isReady, dataOwnerId]);
+  }, [isReady, dataOwnerId, branchId]);
 
   const fetchTransactions = async () => {
     if (!dataOwnerId) return;
     const today = new Date();
     const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
 
-    const { data } = await supabase
+    const { data } = await scopeBranch(supabase
       .from('sales')
       .select('id, total_amount, payment_method, created_at')
-      .eq('owner_id', dataOwnerId)
+      .eq('owner_id', dataOwnerId), branchId)
       .gte('created_at', startOfDay.toISOString())
       .order('created_at', { ascending: false })
       .limit(10);
@@ -374,20 +378,20 @@ export const TransactionsWidget = () => {
 // Products Widget
 export const ProductsWidget = () => {
   const navigate = useNavigate();
-  const { dataOwnerId, isReady } = useDataAccess();
+  const { dataOwnerId, isReady, branchId } = useDataAccess();
   const [products, setProducts] = useState<any[]>([]);
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
     if (isReady && dataOwnerId) fetchProducts();
-  }, [isReady, dataOwnerId]);
+  }, [isReady, dataOwnerId, branchId]);
 
   const fetchProducts = async () => {
     if (!dataOwnerId) return;
-    const { data } = await supabase
+    const { data } = await scopeBranch(supabase
       .from('products')
       .select('id, name, stock_quantity, price, category')
-      .eq('owner_id', dataOwnerId)
+      .eq('owner_id', dataOwnerId), branchId)
       .order('updated_at', { ascending: false })
       .limit(10);
 
