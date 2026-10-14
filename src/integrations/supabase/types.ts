@@ -264,16 +264,21 @@ export type Database = {
           base_product_limit: number
           base_staff_limit: number
           branch_fee: number
+          branch_fee_large: number
+          branch_fee_small: number
           branch_staff_limit: number
           extra_customer_block: number
           extra_customer_block_fee: number
           extra_product_block: number
           extra_product_block_fee: number
           extra_staff_fee: number
+          extra_staff_fee_large: number
+          extra_staff_fee_small: number
           free_customer_limit: number
           free_product_limit: number
           free_staff_limit: number
           id: number
+          large_business_product_threshold: number
           sokoni_fee: number
           updated_at: string
         }
@@ -283,16 +288,21 @@ export type Database = {
           base_product_limit?: number
           base_staff_limit?: number
           branch_fee?: number
+          branch_fee_large?: number
+          branch_fee_small?: number
           branch_staff_limit?: number
           extra_customer_block?: number
           extra_customer_block_fee?: number
           extra_product_block?: number
           extra_product_block_fee?: number
           extra_staff_fee?: number
+          extra_staff_fee_large?: number
+          extra_staff_fee_small?: number
           free_customer_limit?: number
           free_product_limit?: number
           free_staff_limit?: number
           id?: number
+          large_business_product_threshold?: number
           sokoni_fee?: number
           updated_at?: string
         }
@@ -302,16 +312,21 @@ export type Database = {
           base_product_limit?: number
           base_staff_limit?: number
           branch_fee?: number
+          branch_fee_large?: number
+          branch_fee_small?: number
           branch_staff_limit?: number
           extra_customer_block?: number
           extra_customer_block_fee?: number
           extra_product_block?: number
           extra_product_block_fee?: number
           extra_staff_fee?: number
+          extra_staff_fee_large?: number
+          extra_staff_fee_small?: number
           free_customer_limit?: number
           free_product_limit?: number
           free_staff_limit?: number
           id?: number
+          large_business_product_threshold?: number
           sokoni_fee?: number
           updated_at?: string
         }

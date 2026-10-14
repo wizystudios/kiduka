@@ -78,6 +78,13 @@
       "when": 1791567988220,
       "tag": "0010_admin_controls_branch_settings",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1791971404384,
+      "tag": "0011_tiered_staff_branch_fees",
+      "breakpoints": true
     }
   ]
 }
