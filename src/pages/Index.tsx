@@ -102,6 +102,7 @@ const Index = () => {
             {t('visit_sokoni')}
           </Button>
 
+          <Button variant="ghost" className="h-10 w-full rounded-full" onClick={() => navigate("/huduma")}>Huduma na Bei</Button>
           <QuickSignIn />
 
           <InstallAppButton variant="secondary" />
