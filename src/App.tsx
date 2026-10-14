@@ -15,6 +15,7 @@ import { GlobalNurathFloat } from '@/components/GlobalNurathFloat';
 
 // Pages
 import Index from '@/pages/Index';
+import HudumaPage from '@/pages/HudumaPage';
 import { AuthPage } from '@/pages/AuthPage';
 import { ResetPasswordPage } from '@/pages/ResetPasswordPage';
 import { EmailVerificationStatus } from '@/components/EmailVerificationStatus';
@@ -113,6 +114,7 @@ export default function App() {
               {/* Public Routes */}
               <Route path="/" element={<Index />} />
               <Route path="/auth" element={<AuthPage />} />
+              <Route path="/huduma" element={<HudumaPage />} />
               <Route path="/reset-password" element={<ResetPasswordPage />} />
               <Route path="/forgot-password" element={<ForgotPasswordPage />} />
               <Route path="/verify-email" element={<EmailVerificationStatus />} />
