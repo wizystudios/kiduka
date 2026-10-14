@@ -251,8 +251,8 @@ export const SuperAdminDashboard = () => {
   useEffect(() => {
     fetchAllData();
     testAdminPermissions();
-    supabase.from('billing_settings').select('base_fee,extra_staff_fee,branch_fee,sokoni_fee').eq('id', 1).single().then(({ data }) => {
-      if (data) setBillingPrices({ base_fee: Number(data.base_fee), extra_staff_fee: Number(data.extra_staff_fee), branch_fee: Number(data.branch_fee), sokoni_fee: Number(data.sokoni_fee) });
+    supabase.from('billing_settings').select('base_fee,extra_staff_fee_small,branch_fee_small,sokoni_fee').eq('id', 1).single().then(({ data }) => {
+      if (data) setBillingPrices({ base_fee: Number(data.base_fee), extra_staff_fee: Number(data.extra_staff_fee_small), branch_fee: Number(data.branch_fee_small), sokoni_fee: Number(data.sokoni_fee) });
     });
   }, []);
 

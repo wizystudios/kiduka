@@ -21,12 +21,17 @@ const GROUPS: { title: string; fields: { key: string; label: string }[] }[] = [
     { key: 'base_product_limit', label: 'Bidhaa' },
     { key: 'base_customer_limit', label: 'Wateja' },
   ] },
+  { title: 'Ukubwa wa biashara', fields: [
+    { key: 'large_business_product_threshold', label: 'Biashara kubwa kuanzia bidhaa' },
+  ] },
   { title: 'Tawi (kila moja, mwezi)', fields: [
-    { key: 'branch_fee', label: 'Ada (TSh)' },
+    { key: 'branch_fee_small', label: 'Ada — biashara ndogo (TSh)' },
+    { key: 'branch_fee_large', label: 'Ada — biashara kubwa (TSh)' },
     { key: 'branch_staff_limit', label: 'Wafanyakazi kwa tawi' },
   ] },
   { title: 'Ziada', fields: [
-    { key: 'extra_staff_fee', label: 'Kila mfanyakazi wa ziada (TSh)' },
+    { key: 'extra_staff_fee_small', label: 'Mfanyakazi wa ziada — biashara ndogo (TSh)' },
+    { key: 'extra_staff_fee_large', label: 'Mfanyakazi wa ziada — biashara kubwa (TSh)' },
     { key: 'extra_product_block', label: 'Bidhaa kwa kila kifurushi' },
     { key: 'extra_product_block_fee', label: 'Ada ya kifurushi cha bidhaa (TSh)' },
     { key: 'extra_customer_block', label: 'Wateja kwa kila kifurushi' },
