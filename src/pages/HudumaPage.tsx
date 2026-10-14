@@ -1,87 +1,171 @@
+import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { Slider } from '@/components/ui/slider';
 import { KidukaLogo } from '@/components/KidukaLogo';
-import { ArrowLeft, LogIn, Share2 } from 'lucide-react';
-import { primaryNavigationItems } from '@/lib/navigation';
+import {
+  ArrowLeft, Share2, ScanLine, Package, ClipboardList, Receipt, Users, CreditCard, BarChart3, BookOpen,
+  Store, GitBranch, Wallet, MessageCircle, Mic, Sparkles, WifiOff, Shield, Gift, Truck, Tag, Wallet2,
+} from 'lucide-react';
+import { cn } from '@/lib/utils';
 
-const details: Record<string, { kazi: string; faida: string }> = {
-  dashboard: { kazi: 'Inaonyesha mauzo ya leo, faida, stoo inayoisha na wadaiwa kwa muonekano mmoja.', faida: 'Unajua hali ya biashara ndani ya sekunde chache, popote ulipo.' },
-  products: { kazi: 'Ongeza bidhaa kwa picha, barcode, bei ya kununua na kuuza, na punguzo lenye tarehe.', faida: 'Bei sahihi kila mara na bidhaa zako zinaonekana pia Sokoni.' },
-  sales: { kazi: 'Uza kwa kuscani barcode kwa kamera ya simu; risiti yenye jina la duka hutoka papo hapo.', faida: 'Mauzo haraka, hakuna makosa ya hesabu, risiti inatumwa WhatsApp.' },
-  stock: { kazi: 'Stoo hujikata kila mauzo; unahesabu stoo na kuona tofauti.', faida: 'Unazuia wizi na upotevu, unajua lini kuagiza mzigo.' },
-  orders: { kazi: 'Oda kutoka duka lako la mtandaoni (Sokoni) zinaingia hapa na hali ya usafirishaji.', faida: 'Unauza mtandaoni kwa wateja wa mbali bila kufungua tovuti yako mwenyewe.' },
-  rewards: { kazi: 'Wateja hupata pointi kila wanaponunua na kuzitumia baadaye.', faida: 'Wateja hurudi tena na tena.' },
-  groups: { kazi: 'Panga wateja kwa makundi, fuatilia madeni na lipa kwa kitufe kimoja.', faida: 'Unatuma ujumbe wa kikundi na kukumbusha wadaiwa kwa WhatsApp.' },
-  mikopo: { kazi: 'Rekodi mikopo kwa wateja, tarehe za kulipa na marejesho.', faida: 'Hakuna deni linalosahaulika; arifa nyekundu kwa waliochelewa.' },
-  invoices: { kazi: 'Kila mauzo yanakuwa ankara inayoweza kuhaririwa, kuprintiwa au kutumwa.', faida: 'Kumbukumbu rasmi kwa wateja wa jumla na mamlaka za kodi.' },
-  payments: { kazi: 'Weka picha ya Lipa Namba yako rasmi na fuatilia malipo ya simu.', faida: 'Wateja wanalipa kwa M-Pesa, Tigo, Airtel, HaloPesa bila pesa taslimu.' },
-  reports: { kazi: 'Ripoti za mauzo, faida na hasara, bidhaa zinazouzwa zaidi na wateja.', faida: 'Unafanya maamuzi kwa takwimu halisi, sio kukisia.' },
-  bookkeeping: { kazi: 'Uhasibu wa kuingiza mapato na matumizi kwa mfumo wa double-entry.', faida: 'Vitabu safi vya hesabu kwa benki, mkopo au mhasibu.' },
-  settings: { kazi: 'Taarifa za duka, wafanyakazi na ruhusa zao, matawi na malipo ya mfumo.', faida: 'Unadhibiti nani anaona nini, na unaongeza matawi bila kikomo.' },
-};
-
-const pricing = [
-  ['Kifurushi cha msingi', 'TSh 30,000 / mwezi'],
-  ['Mfanyakazi wa ziada', 'TSh 5,000 / mwezi kila mmoja'],
-  ['Tawi la ziada', 'TSh 15,000 / mwezi kila tawi'],
-  ['Duka la Sokoni (mtandaoni)', 'TSh 50,000 / mwezi'],
+type F = { icon: any; title: string; kazi: string; faida: string };
+const groups: { name: string; lead: string; items: F[] }[] = [
+  { name: 'Uza', lead: 'Kila mauzo, haraka na sahihi.', items: [
+    { icon: ScanLine, title: 'Scanner ya kamera', kazi: 'Scan barcode kwa simu, ongeza kwenye kikapu, badilisha bei papo hapo.', faida: 'Foleni hakuna, makosa ya hesabu hakuna.' },
+    { icon: Receipt, title: 'Risiti na Ankara', kazi: 'Kila mauzo yanakuwa ankara yenye jina la duka, QR na link.', faida: 'Tuma WhatsApp au printi — kumbukumbu rasmi.' },
+    { icon: Mic, title: 'Uza kwa sauti', kazi: 'Sema "uza sukari kilo mbili" na mfumo unarekodi.', faida: 'Mikono huru wakati wa msongamano.' },
+    { icon: Tag, title: 'Punguzo', kazi: 'Weka punguzo lenye tarehe ya kuanza na kuisha.', faida: 'Ofa zinajizima zenyewe — hakuna hasara.' },
+  ]},
+  { name: 'Simamia', lead: 'Stoo, bidhaa na matumizi kwa mtazamo mmoja.', items: [
+    { icon: Package, title: 'Bidhaa', kazi: 'Picha, barcode, bei ya kununua na kuuza, kuingiza kwa Excel.', faida: 'Faida ya kila bidhaa inaonekana.' },
+    { icon: ClipboardList, title: 'Stock', kazi: 'Stoo inajikata kila mauzo; hesabu na rekebisha.', faida: 'Arifa kabla bidhaa haijaisha — zuia upotevu.' },
+    { icon: Truck, title: 'Wasambazaji', kazi: 'Hifadhi wasambazaji na manunuzi yako.', faida: 'Agiza mzigo kwa wakati na bei bora.' },
+    { icon: Wallet2, title: 'Matumizi', kazi: 'Rekodi kodi ya pango, umeme, mishahara.', faida: 'Faida halisi baada ya gharama zote.' },
+  ]},
+  { name: 'Wateja', lead: 'Wateja wanarudi, madeni yanalipwa.', items: [
+    { icon: Users, title: 'Makundi na madeni', kazi: 'Panga wateja, fuatilia wadaiwa, pokea malipo kwa kitufe kimoja.', faida: 'Hakuna deni linalosahaulika.' },
+    { icon: CreditCard, title: 'Mikopo', kazi: 'Tarehe za kulipa na arifa za waliochelewa.', faida: 'Pesa yako inarudi kwa wakati.' },
+    { icon: Gift, title: 'Tuzo', kazi: 'Pointi kila ununuzi, zinatumika baadaye.', faida: 'Uaminifu wa wateja unaongezeka.' },
+    { icon: MessageCircle, title: 'WhatsApp', kazi: 'Kumbusho za madeni, risiti na ujumbe uliopangwa.', faida: 'Mawasiliano bila gharama ya SMS.' },
+  ]},
+  { name: 'Kua', lead: 'Kutoka duka moja hadi matawi mengi na mtandaoni.', items: [
+    { icon: GitBranch, title: 'Matawi', kazi: 'Kila tawi lina mauzo, stoo na wafanyakazi wake; unaona yote.', faida: 'Matawi bila kikomo kwa akaunti moja.' },
+    { icon: Store, title: 'Sokoni', kazi: 'Duka lako mtandaoni lenye link yako, oda na ufuatiliaji wa usafirishaji.', faida: 'Wateja wa mbali wanakununua saa 24.' },
+    { icon: Wallet, title: 'Lipa Namba', kazi: 'Weka QR yako rasmi; wateja walipe M-Pesa, Tigo, Airtel, HaloPesa.', faida: 'Pesa taslimu kidogo, usalama zaidi.' },
+    { icon: Shield, title: 'Wafanyakazi na ruhusa', kazi: 'Kila mfanyakazi anaona tu ulichomruhusu.', faida: 'Udhibiti kamili, kumbukumbu ya kila hatua.' },
+  ]},
+  { name: 'Elewa', lead: 'Takwimu halisi, maamuzi bora.', items: [
+    { icon: BarChart3, title: 'Ripoti', kazi: 'Mauzo, faida na hasara, bidhaa bora, wateja bora.', faida: 'Jua kinacholeta pesa.' },
+    { icon: BookOpen, title: 'Uhasibu', kazi: 'Mapato na matumizi kwa mfumo wa double-entry.', faida: 'Vitabu safi kwa benki na TRA.' },
+    { icon: Sparkles, title: 'Mshauri wa AI', kazi: 'Utabiri wa mauzo na ushauri wa biashara.', faida: 'Panga mzigo kabla ya msimu.' },
+    { icon: WifiOff, title: 'Bila mtandao', kazi: 'Uza hata mtandao ukikatika; inasawazisha ukirudi.', faida: 'Biashara haisimami kamwe.' },
+  ]},
 ];
+
+const fmt = (n: number) => `TSh ${n.toLocaleString('en-US')}`;
 
 const HudumaPage = () => {
   const navigate = useNavigate();
-  const share = () => {
-    const url = `${window.location.origin}/huduma`;
-    window.open(`https://wa.me/?text=${encodeURIComponent('Jionee huduma za Kiduka: ' + url)}`, '_blank');
-  };
+  const [tab, setTab] = useState(0);
+  const [staff, setStaff] = useState(3);
+  const [branches, setBranches] = useState(0);
+  const [large, setLarge] = useState(false);
+
+  const bill = useMemo(() => {
+    const staffFee = large ? 500 : 2000;
+    const branchFee = large ? 15000 : 10000;
+    const extra = Math.max(0, staff - 3);
+    return { extra, staffFee, branchFee, total: 30000 + extra * staffFee + branches * branchFee };
+  }, [staff, branches, large]);
+
+  const share = () => window.open(`https://wa.me/?text=${encodeURIComponent('Jionee huduma za Kiduka: ' + window.location.origin + '/huduma')}`, '_blank');
+  const g = groups[tab];
+
   return (
-    <div className="min-h-[100dvh] bg-background">
-      <header className="sticky top-0 z-10 flex items-center justify-between border-b bg-background/90 px-4 py-3 backdrop-blur">
-        <button onClick={() => navigate(-1)} aria-label="Rudi" className="rounded-full p-2 hover:bg-muted"><ArrowLeft className="h-5 w-5" /></button>
-        <KidukaLogo size="sm" showText />
-        <button onClick={share} aria-label="Shiriki" className="rounded-full p-2 text-primary hover:bg-muted"><Share2 className="h-5 w-5" /></button>
-      </header>
-      <main className="mx-auto max-w-5xl space-y-10 px-4 py-8">
-        <section className="text-center">
-          <h1 className="text-3xl font-bold md:text-4xl">Huduma za Kiduka</h1>
-          <p className="mx-auto mt-2 max-w-xl text-muted-foreground">Kila sehemu ya mfumo, inavyofanya kazi na faida yake kwa biashara yako. Inafanya kazi hata bila mtandao.</p>
-        </section>
-        <section className="grid gap-4 md:grid-cols-2">
-          {primaryNavigationItems.map((i) => {
-            const d = details[i.id];
-            if (!d) return null;
-            const Icon = i.icon;
-            return (
-              <article key={i.id} className="rounded-3xl border bg-card p-5">
-                <div className="flex items-center gap-3">
-                  <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/10 text-primary"><Icon className="h-5 w-5" /></span>
-                  <h2 className="text-lg font-semibold">{i.label === 'Dashboard' ? 'Dashibodi' : i.label}</h2>
-                </div>
-                <p className="mt-3 text-sm"><span className="font-medium">Inafanyaje kazi: </span>{d.kazi}</p>
-                <p className="mt-2 text-sm text-secondary-foreground"><span className="font-medium text-primary">Faida: </span>{d.faida}</p>
-              </article>
-            );
-          })}
-        </section>
-        <section className="rounded-3xl border bg-primary/5 p-6">
-          <h2 className="text-xl font-bold">Maduka mengi, akaunti moja</h2>
-          <p className="mt-2 text-sm text-muted-foreground">Mmiliki mmoja anaweza kusimamia matawi 4 au zaidi bila kikomo. Kila tawi lina mauzo, stoo na wafanyakazi wake; mmiliki anaona yote kutoka biashara kuu.</p>
-        </section>
-        <section>
-          <h2 className="mb-4 text-xl font-bold">Bei</h2>
-          <div className="divide-y rounded-3xl border">
-            {pricing.map(([k, v]) => (
-              <div key={k} className="flex justify-between gap-4 px-5 py-3 text-sm"><span>{k}</span><span className="font-semibold">{v}</span></div>
-            ))}
-          </div>
-          <p className="mt-2 text-xs text-muted-foreground">Malipo kwa simu: M-Pesa, Tigo Pesa, Airtel Money, HaloPesa — huduma inawaka papo hapo.</p>
-        </section>
-        <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
-          <Button className="h-12 rounded-full px-8" onClick={() => navigate('/auth')}><LogIn className="mr-2 h-5 w-5" />Jisajili sasa</Button>
-          <Button variant="outline" className="h-12 rounded-full px-8" onClick={share}><Share2 className="mr-2 h-5 w-5" />Tuma kwa WhatsApp</Button>
+    <div className="min-h-[100dvh] bg-background text-foreground">
+      <header className="sticky top-0 z-20 border-b border-border/50 bg-background/80 backdrop-blur-xl">
+        <div className="mx-auto flex h-12 max-w-5xl items-center justify-between px-4">
+          <button onClick={() => navigate(-1)} aria-label="Rudi" className="rounded-full p-2 hover:bg-muted"><ArrowLeft className="h-4 w-4" /></button>
+          <KidukaLogo size="sm" showText />
+          <button onClick={share} aria-label="Shiriki" className="rounded-full p-2 text-primary hover:bg-muted"><Share2 className="h-4 w-4" /></button>
         </div>
-      </main>
+      </header>
+
+      <section className="mx-auto max-w-3xl px-6 pb-12 pt-16 text-center">
+        <p className="text-sm font-medium text-primary">Kiduka · Biashara Smart</p>
+        <h1 className="mt-3 text-4xl font-semibold tracking-tight md:text-6xl">Duka lako lote.<br /><span className="text-muted-foreground">Mfukoni mwako.</span></h1>
+        <p className="mx-auto mt-5 max-w-xl text-lg text-muted-foreground">Uza, simamia stoo, fuatilia madeni, fungua matawi na duka la mtandaoni — kwenye mfumo mmoja.</p>
+        <div className="mt-8 flex justify-center gap-3">
+          <Button className="h-11 rounded-full px-7" onClick={() => navigate('/auth')}>Anza sasa</Button>
+          <Button variant="ghost" className="h-11 rounded-full px-7 text-primary" onClick={() => document.getElementById('bei')?.scrollIntoView({ behavior: 'smooth' })}>Angalia bei ›</Button>
+        </div>
+      </section>
+
+      <section className="mx-auto max-w-5xl px-4 pb-20">
+        <div className="mx-auto mb-8 flex w-fit gap-1 rounded-full bg-muted p-1">
+          {groups.map((x, i) => (
+            <button key={x.name} onClick={() => setTab(i)} className={cn('rounded-full px-4 py-1.5 text-sm transition-all', i === tab ? 'bg-background font-medium shadow-sm' : 'text-muted-foreground')}>{x.name}</button>
+          ))}
+        </div>
+        <h2 className="text-center text-2xl font-semibold tracking-tight md:text-3xl">{g.lead}</h2>
+        <div key={tab} className="mt-8 grid animate-fade-in gap-4 sm:grid-cols-2">
+          {g.items.map(({ icon: Icon, title, kazi, faida }) => (
+            <article key={title} className="rounded-3xl bg-muted/50 p-6 transition-transform hover:-translate-y-0.5">
+              <Icon className="h-7 w-7 text-primary" strokeWidth={1.6} />
+              <h3 className="mt-4 text-lg font-semibold">{title}</h3>
+              <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">{kazi}</p>
+              <p className="mt-3 text-sm font-medium text-secondary">{faida}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section id="bei" className="bg-muted/40 py-20">
+        <div className="mx-auto max-w-5xl px-4">
+          <h2 className="text-center text-3xl font-semibold tracking-tight md:text-4xl">Bei iliyo wazi.</h2>
+          <p className="mt-2 text-center text-muted-foreground">Unalipa kulingana na ukubwa wa biashara yako.</p>
+
+          <div className="mt-10 grid gap-6 md:grid-cols-2">
+            <div className="space-y-7 rounded-3xl bg-background p-7">
+              <div>
+                <p className="mb-3 text-sm font-medium">Ukubwa wa biashara</p>
+                <div className="grid grid-cols-2 gap-1 rounded-full bg-muted p-1">
+                  {[['Ndogo', false], ['Kubwa', true]].map(([l, v]) => (
+                    <button key={String(l)} onClick={() => setLarge(v as boolean)} className={cn('rounded-full py-2 text-sm', large === v ? 'bg-background font-medium shadow-sm' : 'text-muted-foreground')}>{l as string}</button>
+                  ))}
+                </div>
+                <p className="mt-2 text-xs text-muted-foreground">Kubwa = bidhaa 500 au zaidi.</p>
+              </div>
+              <div>
+                <div className="mb-3 flex justify-between text-sm"><span className="font-medium">Wafanyakazi duka kuu</span><span>{staff}</span></div>
+                <Slider min={1} max={30} step={1} value={[staff]} onValueChange={([v]) => setStaff(v)} />
+              </div>
+              <div>
+                <div className="mb-3 flex justify-between text-sm"><span className="font-medium">Matawi</span><span>{branches}</span></div>
+                <Slider min={0} max={20} step={1} value={[branches]} onValueChange={([v]) => setBranches(v)} />
+              </div>
+            </div>
+
+            <div className="flex flex-col rounded-3xl bg-background p-7">
+              <div className="space-y-3 text-sm">
+                <Row l="Kifurushi cha msingi (wafanyakazi 3 bure)" v={fmt(30000)} />
+                {bill.extra > 0 && <Row l={`Wafanyakazi wa ziada ${bill.extra} × ${fmt(bill.staffFee)}`} v={fmt(bill.extra * bill.staffFee)} />}
+                {branches > 0 && <Row l={`Matawi ${branches} × ${fmt(bill.branchFee)}`} v={fmt(branches * bill.branchFee)} />}
+              </div>
+              <div className="mt-auto border-t pt-5">
+                <p className="text-sm text-muted-foreground">Jumla kwa mwezi</p>
+                <p className="text-4xl font-semibold tracking-tight">{fmt(bill.total)}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-6 grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
+            <Info t="Wafanyakazi 3" d="Wamo ndani ya TSh 30,000" />
+            <Info t="Mfanyakazi wa ziada" d="TSh 2,000 (ndogo) · TSh 500 (kubwa)" />
+            <Info t="Tawi" d="TSh 10,000 (ndogo) · TSh 15,000 (kubwa) — linajumuisha wafanyakazi 3" />
+            <Info t="Sokoni" d="TSh 50,000 / mwezi" />
+          </div>
+          <p className="mt-6 text-center text-xs text-muted-foreground">Lipa kwa M-Pesa, Tigo Pesa, Airtel Money au HaloPesa — huduma inawaka papo hapo.</p>
+        </div>
+      </section>
+
+      <section className="px-6 py-20 text-center">
+        <h2 className="text-3xl font-semibold tracking-tight">Tayari kuanza?</h2>
+        <div className="mt-6 flex flex-col justify-center gap-3 sm:flex-row">
+          <Button className="h-11 rounded-full px-8" onClick={() => navigate('/auth')}>Jisajili sasa</Button>
+          <Button variant="outline" className="h-11 rounded-full px-8" onClick={share}><Share2 className="mr-2 h-4 w-4" />Tuma kwa WhatsApp</Button>
+        </div>
+      </section>
     </div>
   );
 };
+
+const Row = ({ l, v }: { l: string; v: string }) => (
+  <div className="flex justify-between gap-4"><span className="text-muted-foreground">{l}</span><span className="font-medium">{v}</span></div>
+);
+const Info = ({ t, d }: { t: string; d: string }) => (
+  <div className="rounded-2xl bg-background p-4"><p className="font-medium">{t}</p><p className="mt-1 text-xs text-muted-foreground">{d}</p></div>
+);
 
 export default HudumaPage;
