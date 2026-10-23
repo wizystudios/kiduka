@@ -64,7 +64,6 @@ import { VoicePOSPage } from '@/pages/VoicePOSPage';
 import { SuperAdminPage } from '@/pages/SuperAdminPage';
 import { WhatsAppPage } from '@/pages/WhatsAppPage';
 import { WhatsAppHistoryPage } from '@/pages/WhatsAppHistoryPage';
-import { HelpPage } from '@/pages/HelpPage';
 
 // New Feature Pages
 import SalesForecastingPage from '@/pages/SalesForecastingPage';
@@ -497,11 +496,7 @@ export default function App() {
               
               {/* Help */}
               <Route path="/help" element={
-                <ProtectedRoute>
-                  <AppLayout>
-                    <HelpPage />
-                  </AppLayout>
-                </ProtectedRoute>
+                <Navigate to="/servicehub" replace />
               } />
               
               {/* Ads Manager */}

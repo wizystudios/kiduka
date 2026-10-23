@@ -27,6 +27,7 @@ import { useAdminNotifications } from '@/hooks/useAdminNotifications';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 import { exportToCSV, exportToPDF, createPrintableTable } from '@/utils/exportUtils';
 import { AdminChatPanel } from './AdminChatPanel';
+import { ServiceHubAdminPanel } from './ServiceHubAdminPanel';
 import { AdminCompliancePanel } from './AdminCompliancePanel';
 import { AdminBranchesPanel } from './AdminBranchesPanel';
 import { AdminEmailsPanel } from './AdminEmailsPanel';
@@ -1447,6 +1448,7 @@ export const SuperAdminDashboard = () => {
             { value: 'marketplace', label: 'Sokoni' },
             { value: 'ads', label: 'Matangazo' },
             { value: 'chat', label: 'Mazungumzo' },
+            { value: 'servicehub', label: 'ServiceHUB' },
             { value: 'emails', label: 'Barua' },
             { value: 'logs', label: 'Logi' },
             { value: 'more', label: 'Zaidi' },
@@ -1478,6 +1480,7 @@ export const SuperAdminDashboard = () => {
             <TabsTrigger value="marketplace" className="h-8 shrink-0 rounded-full border border-border bg-transparent px-3 text-[11px]">Sokoni</TabsTrigger>
             <TabsTrigger value="ads" className="h-8 shrink-0 rounded-full border border-border bg-transparent px-3 text-[11px]">Matangazo</TabsTrigger>
             <TabsTrigger value="chat" className="h-8 shrink-0 rounded-full border border-border bg-transparent px-3 text-[11px]">Mazungumzo</TabsTrigger>
+            <TabsTrigger value="servicehub" className="h-8 shrink-0 rounded-full border border-border bg-transparent px-3 text-[11px]">ServiceHUB</TabsTrigger>
             <TabsTrigger value="emails" className="h-8 shrink-0 rounded-full border border-border bg-transparent px-3 text-[11px]">Barua</TabsTrigger>
             <TabsTrigger value="logs" className="h-8 shrink-0 rounded-full border border-border bg-transparent px-3 text-[11px]">Logi</TabsTrigger>
             <TabsTrigger value="more" className="h-8 shrink-0 rounded-full border border-border bg-transparent px-3 text-[11px]">Zaidi</TabsTrigger>
@@ -1990,6 +1993,9 @@ export const SuperAdminDashboard = () => {
 
         <TabsContent value="chat" className="space-y-4">
           <AdminChatPanel />
+        </TabsContent>
+        <TabsContent value="servicehub" className="space-y-4">
+          <ServiceHubAdminPanel />
         </TabsContent>
 
         <TabsContent value="emails" className="space-y-4">

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import { InstructionMedia, InstructionCards } from '@/components/InstructionMedia';
+import { InstructionMedia } from '@/components/InstructionMedia';
+import { ServiceHubGuide } from '@/components/ServiceHubGuide';
 import { ServiceHubContact } from '@/components/ServiceHubContact';
 import { ServiceHubCards } from '@/components/ServiceHubCards';
 import { hubWhatsAppLink, serviceHubMessage } from '@/lib/serviceHub';
@@ -106,9 +107,9 @@ const HudumaPage = () => {
       <section className="mx-auto max-w-5xl px-4 pb-16">
         <h2 className="mb-6 text-center font-semibold">Jionee Kiduka</h2>
         <InstructionMedia video />
-        <p className="mt-2 text-center text-xs text-muted-foreground">Video ya AI ya shughuli dukani; picha za mfumo hapa chini ni Kiduka halisi.</p>
-        <div className="mx-auto mt-8 max-w-2xl"><InstructionCards /></div>
+        <p className="mt-2 text-center text-xs text-muted-foreground">Video iliyotengenezwa kwa AI; si picha ya biashara ya mteja wala rekodi ya mfumo.</p>
       </section>
+      <ServiceHubGuide />
 
       <section className="mx-auto max-w-5xl px-4 pb-20">
         <div className="mx-auto mb-8 flex max-w-full flex-wrap justify-center gap-1 rounded-full bg-muted p-1">

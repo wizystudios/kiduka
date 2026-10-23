@@ -528,14 +528,6 @@ export const AuthPage = () => {
         {mode === 'signin' ? 'Unda akaunti mpya' : 'Tayari una akaunti? Ingia'}
       </button>
 
-      {/* Sokoni Link */}
-      <Link
-        to="/sokoni"
-        className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground transition-colors hover:text-primary"
-      >
-        <Store className="h-3.5 w-3.5" />
-        Tembelea Sokoni
-      </Link>
     </div>
   );
 };

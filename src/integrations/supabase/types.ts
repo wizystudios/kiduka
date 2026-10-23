@@ -2564,6 +2564,44 @@ export type Database = {
           },
         ]
       }
+      servicehub_replies: {
+        Row: {
+          admin_id: string
+          channel: string
+          created_at: string
+          delivery_status: string
+          id: string
+          message: string
+          request_id: string
+        }
+        Insert: {
+          admin_id: string
+          channel: string
+          created_at?: string
+          delivery_status?: string
+          id?: string
+          message: string
+          request_id: string
+        }
+        Update: {
+          admin_id?: string
+          channel?: string
+          created_at?: string
+          delivery_status?: string
+          id?: string
+          message?: string
+          request_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "servicehub_replies_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "servicehub_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       servicehub_requests: {
         Row: {
           appointment_at: string | null

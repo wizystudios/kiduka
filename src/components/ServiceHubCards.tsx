@@ -1,15 +1,13 @@
 import { useRef, useState } from 'react';
 import { Share2, Download, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { instructionSlides } from '@/components/InstructionMedia';
 import hero from '@/assets/huduma-hero.jpg';
-import { assetUrl } from '@/lib/assetUrl';
 import { hubWhatsAppLink, serviceHubMessage } from '@/lib/serviceHub';
 import { toast } from 'sonner';
 const cards = [
  { id: 'tumerudi', title: 'Tumerudi na nguvu mpya.', text: 'Kiduka inapatikana tena! Tuko tayari kukuhudumia: mauzo, stoo, madeni, matawi na Sokoni. Karibu tuendelee kuikuza biashara yako.', image: hero, caption: 'Picha ya AI · Kiduka' },
- { id: 'mauzo', title: 'Mauzo yenye kumbukumbu.', text: 'Scan bidhaa, hakiki kikapu na fungua risiti yenye jina la duka. Omba miadi ya kuoneshwa Kiduka kupitia ServiceHUB.', image: assetUrl(instructionSlides[2].image), caption: 'Kiduka halisi · Ripoti za biashara' },
- { id: 'biashara', title: 'Biashara yako, pamoja.', text: 'Panga bidhaa na stoo, fuatilia taarifa za biashara na simamia matawi yako. Tupo kukusaidia kuanza na kutumia Kiduka.', image: assetUrl(instructionSlides[1].image), caption: 'Kiduka halisi · Bidhaa na stoo' },
+ { id: 'mauzo', title: 'Mauzo yenye kumbukumbu.', text: 'Scan bidhaa, hakiki kikapu na fungua risiti yenye jina la duka. Omba miadi ya kuoneshwa Kiduka kupitia ServiceHUB.', image: hero, caption: 'Picha ya AI · Si biashara ya mteja' },
+ { id: 'biashara', title: 'Biashara yako, pamoja.', text: 'Panga bidhaa na stoo, fuatilia taarifa za biashara na simamia matawi yako. Tupo kukusaidia kuanza na kutumia Kiduka.', image: hero, caption: 'Picha ya AI · Si biashara ya mteja' },
 ];
 function ShareCard({ card }: { card: typeof cards[number] }) {
  const ref = useRef<HTMLDivElement>(null); const [busy, setBusy] = useState(false);

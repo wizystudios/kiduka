@@ -11,6 +11,7 @@ export interface TemplateEntry {
 
 import { template as ownerLoginAlert } from './owner-login-alert.tsx'
 import { template as serviceHubRequest } from './servicehub-request.tsx'
+import { template as serviceHubReply } from './servicehub-reply.tsx'
 import { template as ownerSettingsChanged } from './owner-settings-changed.tsx'
 import { template as ownerSubscriptionRequest } from './owner-subscription-request.tsx'
 import { template as ownerLargeTransaction } from './owner-large-transaction.tsx'
@@ -29,6 +30,7 @@ import { template as ownerSubscriptionReminder } from './owner-subscription-remi
 
 export const TEMPLATES: Record<string, TemplateEntry> = {
   'servicehub-request': serviceHubRequest,
+  'servicehub-reply': serviceHubReply,
   'owner-login-alert': ownerLoginAlert,
   'owner-settings-changed': ownerSettingsChanged,
   'owner-subscription-request': ownerSubscriptionRequest,
