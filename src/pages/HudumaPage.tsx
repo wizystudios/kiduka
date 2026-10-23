@@ -1,5 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { InstructionMedia, InstructionCards } from '@/components/InstructionMedia';
+import { ServiceHubContact } from '@/components/ServiceHubContact';
+import { ServiceHubCards } from '@/components/ServiceHubCards';
+import { hubWhatsAppLink, serviceHubMessage } from '@/lib/serviceHub';
 import { supabase } from '@/integrations/supabase/client';
 import { calculateBillingPreview } from '@/lib/billingPreview';
 import { Input } from '@/components/ui/input';
@@ -69,30 +72,39 @@ const HudumaPage = () => {
   useEffect(() => { supabase.rpc('get_public_billing_settings').then(({ data }) => setPrices(data as Record<string, number> | null)); }, []);
   const bill = useMemo(() => prices ? calculateBillingPreview(prices, { staff, branches, products, customers, branchStaff, sokoni }) : null, [prices, staff, branches, products, customers, branchStaff, sokoni]);
 
-  const share = () => window.open(`https://wa.me/?text=${encodeURIComponent('Jionee huduma za Kiduka: ' + window.location.origin + '/huduma')}`, '_blank');
+  const share = () => window.open(hubWhatsAppLink(serviceHubMessage()), '_blank', 'noopener,noreferrer');
   const g = groups[tab];
 
   return (
-    <div className="min-h-[100dvh] bg-background text-foreground">
+    <div className="min-h-[100dvh] bg-background pb-20 text-foreground">
       <header className="sticky top-0 z-20 border-b border-border/50 bg-background/80 backdrop-blur-xl">
         <div className="mx-auto flex h-12 max-w-5xl items-center justify-between px-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate(-1)} aria-label="Rudi"><ArrowLeft className="h-4 w-4" /></Button>
-          <KidukaLogo size="sm" showText />
+          <Button variant="ghost" size="icon" onClick={() => navigate('/')} aria-label="Rudi"><ArrowLeft className="h-4 w-4" /></Button>
+          <span className="font-semibold text-primary">ServiceHUB</span>
           <Button variant="ghost" size="icon" onClick={share} aria-label="Shiriki"><Share2 className="h-4 w-4" /></Button>
         </div>
       </header>
 
-      <section className="mx-auto max-w-3xl px-6 pb-12 pt-16 text-center">
-        <p className="text-sm font-medium text-primary">Kiduka · Biashara Smart</p>
-        <h1 className="mt-3 text-4xl font-semibold tracking-tight md:text-6xl">Kiduka<br /><span className="text-muted-foreground text-3xl">Biashara Smart</span></h1>
-        <p className="mx-auto mt-5 max-w-xl text-lg text-muted-foreground">Uza, simamia stoo, fuatilia madeni, fungua matawi na duka la mtandaoni — kwenye mfumo mmoja.</p>
-        <div className="mt-8 flex justify-center gap-3">
-          <Button className="h-11 rounded-full px-7" onClick={() => navigate('/auth')}>Anza sasa</Button>
-          <Button variant="ghost" className="h-11 rounded-full px-7 text-primary" onClick={() => document.getElementById('bei')?.scrollIntoView({ behavior: 'smooth' })}>Angalia bei ›</Button>
+      <section className="relative isolate flex min-h-[430px] items-end overflow-hidden md:min-h-[520px]">
+        <img src={hudumaHero} alt="Picha ya AI ya huduma dukani" className="absolute inset-0 -z-20 h-full w-full object-cover" />
+        <div className="absolute inset-0 -z-10 bg-foreground/75" />
+        <div className="mx-auto w-full max-w-5xl px-6 py-10 text-background">
+          <p className="text-sm font-medium">Kiduka · Biashara Smart</p>
+          <h1 className="mt-3 font-semibold">Kiduka ServiceHUB</h1>
+          <p className="mt-3 text-2xl font-semibold">Tumerudi na nguvu mpya.</p>
+          <p className="mt-4 max-w-lg text-base leading-relaxed">Tuko tayari kukuhudumia tena. Endelea na biashara yako, pata msaada na tuijenge hatua inayofuata pamoja.</p>
+          <div className="mt-6 flex flex-wrap gap-3">
+            <Button className="h-11 px-6" onClick={() => document.getElementById('mawasiliano')?.scrollIntoView({ behavior: 'smooth' })}>Weka miadi / Uliza swali</Button>
+            <Button variant="secondary" className="h-11 px-6" onClick={() => document.getElementById('bei')?.scrollIntoView({ behavior: 'smooth' })}>Huduma na bei</Button>
+          </div>
         </div>
       </section>
 
+      <ServiceHubCards />
+      <ServiceHubContact />
+
       <section className="mx-auto max-w-5xl px-4 pb-16">
+        <h2 className="mb-6 text-center font-semibold">Jionee Kiduka</h2>
         <InstructionMedia video />
         <p className="mt-2 text-center text-xs text-muted-foreground">Video ya AI ya shughuli dukani; picha za mfumo hapa chini ni Kiduka halisi.</p>
         <div className="mx-auto mt-8 max-w-2xl"><InstructionCards /></div>
@@ -112,6 +124,7 @@ const HudumaPage = () => {
               <h3 className="mt-4 text-lg font-semibold">{title}</h3>
               <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">{kazi}</p>
               <p className="mt-3 text-sm font-medium text-success">{faida}</p>
+              <Button variant="ghost" size="sm" className="mt-3 px-0 text-primary" onClick={() => window.open(hubWhatsAppLink(serviceHubMessage(title, `${kazi} ${faida}`)), '_blank', 'noopener,noreferrer')}><Share2 className="h-4 w-4" />Shiriki huduma</Button>
             </article>
           ))}
         </div>
