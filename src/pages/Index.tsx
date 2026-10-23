@@ -18,18 +18,6 @@ const Index = () => {
   const [showOnboarding, setShowOnboarding] = useState(false);
 
 
-  // Lock scroll while on landing/onboarding
-  useEffect(() => {
-    const prev = document.body.style.overflow;
-    const prevHtml = document.documentElement.style.overflow;
-    document.body.style.overflow = 'hidden';
-    document.documentElement.style.overflow = 'hidden';
-    return () => {
-      document.body.style.overflow = prev;
-      document.documentElement.style.overflow = prevHtml;
-    };
-  }, []);
-
   useEffect(() => {
     if (loading) return;
     if (user?.email_confirmed_at) {
@@ -74,7 +62,7 @@ const Index = () => {
         <LanguageSwitcher variant="full" />
       </div>
 
-      <div className="relative z-10 flex w-full max-w-sm flex-col items-center gap-4">
+      <div className="relative z-10 flex w-full max-w-sm flex-col items-center gap-4 md:gap-6">
         <KidukaLogo size="xl" />
         
         <div className="text-center">
@@ -82,9 +70,9 @@ const Index = () => {
           <p className="text-sm text-muted-foreground mt-1">{t('tagline')}</p>
         </div>
 
-        <div className="mt-2 w-full space-y-2.5">
+        <div className="mt-2 w-full space-y-2.5 md:mt-4 md:space-y-3">
           <Button
-            className="h-12 w-full rounded-full text-base font-semibold"
+            className="h-12 w-full rounded-full text-base font-semibold md:h-14"
             size="lg"
             onClick={() => navigate('/auth')}
           >
@@ -94,7 +82,7 @@ const Index = () => {
 
           <Button
             variant="outline"
-            className="h-12 w-full rounded-full text-base font-semibold"
+            className="h-12 w-full rounded-full text-base font-semibold md:h-14"
             size="lg"
             onClick={() => navigate('/sokoni')}
           >
