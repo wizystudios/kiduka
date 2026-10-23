@@ -1,5 +1,7 @@
 # Project Architecture Rules
 
+- Render the public welcome page directly for first-time visitors; never replace it with automatic onboarding, because instructional media belongs in ServiceHUB rather than blocking entry.
+
 - Keep ServiceHUB publicly routable outside operational access gates; validate submissions server-side into a private request table and send through the shared email sender, because guests need support without exposing inquiries or choosing email recipients.
 - Manage ServiceHUB inquiries and durable replies through a server-verified super-admin endpoint; email recipients come from stored requests and WhatsApp opening is not proof of sending, because support records and communications require private, accurate tracking.
 - Keep branch feature updates in the shared branchFeaturePayload helper, because ordinary identity edits must not submit admin-managed entitlements or fail their database guard.

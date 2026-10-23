@@ -1,6 +1,7 @@
 # Kiduka completion roadmap
 
 ## Current requested corrections
+- [x] Remove automatic first-visit onboarding from Nyumbani so the approved welcome page, not scanner instructional media, is the public entry screen.
 - [x] Restore the existing desktop welcome design without redesigning it: original two left / three right decorative cards and desktop spacing restored.
 - [x] Add the Kiduka logo, distinct full-frame images and speaking videos of at least five seconds to ServiceHUB cards: three 1080p six-second clips, MP4/WebM playback, branded downloaded cards.
 - [x] Change the large-business extra employee fee from TSh 500 to TSh 5,000 in live billing and tests: public live pricing displays 5,000 and concrete tests pass.
