@@ -20,6 +20,7 @@ import { UnifiedDeleteSheet } from '@/components/UnifiedDeleteSheet';
 import { DashboardAdCarousel } from '@/components/DashboardAdCarousel';
 import { MasterDetailLayout } from '@/components/MasterDetailLayout';
 import { BranchFeeCalculator } from '@/components/BranchFeeCalculator';
+import { branchFeaturePayload } from '@/lib/branchSettings';
 
 interface Branch {
   id: string;
@@ -227,7 +228,7 @@ export const BranchManager = () => {
       const payload = {
         branch_name: form.branch_name.trim(), branch_type: form.branch_type,
         region: form.region || null, district: form.district || null, ward: form.ward || null, street: form.street || null,
-        ...(isSystemAdmin ? { features: form.features } : {}),
+        ...branchFeaturePayload(isSystemAdmin, form.features),
       };
       if (editing) {
         const { data, error } = await supabase.from('business_branches').update(payload).eq('id', editing.id).select('id').maybeSingle();
@@ -676,7 +677,7 @@ export const BranchManager = () => {
                 <Button className="w-full rounded-full" disabled={saving} onClick={async () => {
                   setSaving(true);
                   try {
-                    const { data, error } = await supabase.from('business_branches').update({ features: settingsDialog.features, is_active: settingsDialog.is_active }).eq('id', settingsDialog.id).select('id').maybeSingle();
+                    const { data, error } = await supabase.from('business_branches').update({ ...branchFeaturePayload(isSystemAdmin, settingsDialog.features), is_active: settingsDialog.is_active }).eq('id', settingsDialog.id).select('id').maybeSingle();
                     if (error) throw error;
                     if (!data) throw new Error('Mipangilio haijahifadhiwa. Huna ruhusa au tawi halipo.');
                     toast.success('Imesasishwa');

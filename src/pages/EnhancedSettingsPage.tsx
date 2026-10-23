@@ -650,13 +650,13 @@ export const EnhancedSettingsPage = () => {
               <CardHeader>
                 <CardTitle className="flex items-center">
                   <HelpCircle className="h-5 w-5 mr-2" />
-                  {t('help_support')}
+                  ServiceHUB
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <Button onClick={() => setShowHelp(true)} variant="outline" className="w-full">
+                <Button onClick={() => window.location.assign('/servicehub')} variant="outline" className="w-full">
                   <HelpCircle className="h-4 w-4 mr-2" />
-                  {t('help_center')}
+                  ServiceHUB
                 </Button>
               </CardContent>
             </Card>
