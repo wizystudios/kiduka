@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import clip from '@/assets/huduma-shop.mp4.asset.json';
+import clip from '@/assets/huduma-shop.webm.asset.json';
 import products from '@/assets/huduma-products.jpg.asset.json';
 import reports from '@/assets/huduma-reports.jpg.asset.json';
 import scanner from '@/assets/huduma-scanner.jpg.asset.json';

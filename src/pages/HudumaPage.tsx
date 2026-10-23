@@ -36,7 +36,7 @@ const groups: { name: string; lead: string; items: F[] }[] = [
     { icon: MessageCircle, title: 'WhatsApp', kazi: 'Kumbusho za madeni, risiti na ujumbe uliopangwa.', faida: 'Mawasiliano bila gharama ya SMS.' },
   ]},
   { name: 'Kua', lead: 'Kutoka duka moja hadi matawi mengi na mtandaoni.', items: [
-    { icon: GitBranch, title: 'Matawi', kazi: 'Kila tawi lina mauzo, stoo na wafanyakazi wake; unaona yote.', faida: 'Matawi bila kikomo kwa akaunti moja.' },
+    { icon: GitBranch, title: 'Matawi', kazi: 'Kila tawi lina mauzo, stoo na wafanyakazi wake; unaona yote.', faida: 'Maduka mengi kama matawi ya biashara kuu; kila tawi lina ada yake.' },
     { icon: Store, title: 'Sokoni', kazi: 'Duka lako mtandaoni lenye link yako, oda na ufuatiliaji wa usafirishaji.', faida: 'Wateja wa mbali wanakununua saa 24.' },
     { icon: Wallet, title: 'Lipa Namba', kazi: 'Weka QR yako rasmi; wateja walipe M-Pesa, Tigo, Airtel, HaloPesa.', faida: 'Pesa taslimu kidogo, usalama zaidi.' },
     { icon: Shield, title: 'Wafanyakazi na ruhusa', kazi: 'Kila mfanyakazi anaona tu ulichomruhusu.', faida: 'Udhibiti kamili, kumbukumbu ya kila hatua.' },
@@ -45,7 +45,12 @@ const groups: { name: string; lead: string; items: F[] }[] = [
     { icon: BarChart3, title: 'Ripoti', kazi: 'Mauzo, faida na hasara, bidhaa bora, wateja bora.', faida: 'Jua kinacholeta pesa.' },
     { icon: BookOpen, title: 'Uhasibu', kazi: 'Mapato na matumizi kwa mfumo wa double-entry.', faida: 'Vitabu safi kwa benki na TRA.' },
     { icon: Sparkles, title: 'Mshauri wa AI', kazi: 'Utabiri wa mauzo na ushauri wa biashara.', faida: 'Panga mzigo kabla ya msimu.' },
-    { icon: WifiOff, title: 'Bila mtandao', kazi: 'Uza hata mtandao ukikatika; inasawazisha ukirudi.', faida: 'Biashara haisimami kamwe.' },
+    { icon: WifiOff, title: 'Bila mtandao', kazi: 'Bidhaa na rekodi zinazoungwa mkono huhifadhiwa kwenye kifaa; husawazishwa mtandao ukirudi.', faida: 'Hupunguza usumbufu wa mtandao; malipo ya simu yanahitaji mtandao.' },
+    { icon: ClipboardList, title: 'Dashboard', kazi: 'Muhtasari wa mauzo ya leo, bidhaa na madeni kwa duka au tawi husika.', faida: 'Ona hali ya biashara kwa haraka.' },
+    { icon: Truck, title: 'Oda za Sokoni', kazi: 'Duka kuu hukubali oda, huweka mpelekaji na kufuatilia hadi kuwasilishwa.', faida: 'Ununuzi wa mtandaoni una kumbukumbu.' },
+    { icon: Wallet, title: 'Malipo ya mfumo', kazi: 'Angalia bili, tuma uthibitisho au lipa kwa simu; salio hubadilika malipo yakithibitishwa.', faida: 'Jua kiasi kinachodaiwa kabla ya kulipa.' },
+    { icon: Shield, title: 'Mipangilio na Sheria', kazi: 'Jina, nembo, mawasiliano, nyaraka za biashara na njia rasmi za malipo.', faida: 'Risiti na taarifa huwakilisha biashara yako.' },
+    { icon: MessageCircle, title: 'Arifa na Msaada', kazi: 'Arifa za biashara, mazungumzo ya msaada na kusakinisha Kiduka kwenye kifaa.', faida: 'Habari muhimu na msaada vinapatikana karibu.' },
   ]},
 ];
 
