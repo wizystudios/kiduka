@@ -1,16 +1,16 @@
 # Kiduka completion roadmap
 
 ## Current requested corrections
-- [ ] Restore the existing desktop welcome design without redesigning it.
-- [ ] Add the Kiduka logo, distinct full-frame images and speaking videos of at least five seconds to ServiceHUB cards.
-- [ ] Change the large-business extra employee fee from TSh 500 to TSh 5,000 in live billing and tests.
-- [ ] Diagnose and fix navigation freezes; verify repeated page changes.
+- [x] Restore the existing desktop welcome design without redesigning it: original two left / three right decorative cards and desktop spacing restored.
+- [x] Add the Kiduka logo, distinct full-frame images and speaking videos of at least five seconds to ServiceHUB cards: three 1080p six-second clips, MP4/WebM playback, branded downloaded cards.
+- [x] Change the large-business extra employee fee from TSh 500 to TSh 5,000 in live billing and tests: public live pricing displays 5,000 and concrete tests pass.
+- [x] Diagnose and fix navigation freeze risks: remove landing global scroll lock, add actual worker fetch aborts and exclude private/media caching; repeated public route changes pass without runtime errors. Authenticated reproduction remains blocked below.
 
 ## ServiceHUB
 - [x] Remove customer captures and authentication Sokoni button; consolidate internal support into ServiceHUB.
 - [x] Add private admin inquiry management, status tracking and durable email/WhatsApp replies; unauthenticated access rejected.
 - [x] Verify booking and question submissions: two unique emails recorded sent; recipient inbox is not accessible.
-- [ ] Verify signed-in admin inquiry, reply and resolution flow (requires the user to sign in as system admin in preview; session mint has no matching account).
+- [ ] Verify signed-in admin inquiry, reply and resolution flow (self-session mint again returned no matching account; requires user sign-in as system admin). Receiving email in the recipient inbox remains unverified; only sender acceptance is verified.
 - [x] Resolve Project monitoring branch finding: owner edits omit admin-managed features, all feature/type controls consistently restricted; concrete payload tests pass.
 - [x] Public ServiceHUB navigation on mobile and desktop, signed in or out.
 - [x] Return announcement, existing visual media and WhatsApp-shareable service cards.
