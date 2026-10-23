@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import hudumaHero from '@/assets/huduma-hero.jpg';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
@@ -82,6 +83,10 @@ const HudumaPage = () => {
         </div>
       </section>
 
+      <section className="mx-auto max-w-5xl px-4 pb-16">
+        <img src={hudumaHero} alt="Muuzaji akiscan bidhaa kwa simu dukani" width={1600} height={912} className="w-full rounded-3xl object-cover shadow-lg" />
+      </section>
+
       <section className="mx-auto max-w-5xl px-4 pb-20">
         <div className="mx-auto mb-8 flex w-fit gap-1 rounded-full bg-muted p-1">
           {groups.map((x, i) => (
@@ -115,7 +120,7 @@ const HudumaPage = () => {
                     <button key={String(l)} onClick={() => setLarge(v as boolean)} className={cn('rounded-full py-2 text-sm', large === v ? 'bg-background font-medium shadow-sm' : 'text-muted-foreground')}>{l as string}</button>
                   ))}
                 </div>
-                <p className="mt-2 text-xs text-muted-foreground">Kubwa = bidhaa 500 au zaidi.</p>
+                <p className="mt-2 text-xs text-muted-foreground">Kubwa = bidhaa 5,000 au zaidi.</p>
               </div>
               <div>
                 <div className="mb-3 flex justify-between text-sm"><span className="font-medium">Wafanyakazi duka kuu</span><span>{staff}</span></div>

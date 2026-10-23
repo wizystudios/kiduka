@@ -5,6 +5,7 @@ import { LoadingScreen } from './LoadingScreen';
 import { useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { NavAccessGuard } from './NavAccessGuard';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -56,5 +57,5 @@ export const ProtectedRoute = ({ children, requiredRole, allowedRoles }: Protect
     return <Navigate to="/" replace />;
   }
 
-  return <>{children}</>;
+  return <NavAccessGuard>{children}</NavAccessGuard>;
 };
