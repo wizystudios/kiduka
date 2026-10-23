@@ -15,10 +15,10 @@
 - [ ] New business self-signup end to end (needs a real inbox to confirm the email).
 - [x] ClickPesa mobile-money flow uses configured credentials and official provider confirmation.
 - [x] Admin panel to edit billing_settings prices.
-- [ ] Server-side purchase verification for product reviews.
+- [x] Server-side purchase verification for product reviews; customer PIN and delivered-order items checked, public inserts cannot claim verification.
 - [x] Matawi fee calculator (database-priced preview) + Malipo charges database amount_due
 - [x] Wide screens: side sheets dock as a right pane (list stays visible)
-- [ ] Complete one live ClickPesa charge (requires the owner to approve the USSD prompt on their physical phone)
+- [ ] Complete one live HarakaPay charge (requires the owner to approve the USSD prompt on their physical phone)
 - [x] Inline list+detail layout for Bidhaa and Mauzo; docked right panes remain available elsewhere
 - [x] Overage pricing: TSh 1,000 per extra product and per extra customer
 - [x] Product photo uploads save to the owner's folder and show in Sokoni
@@ -33,10 +33,11 @@
 - [x] Product-image upload ownership rule requires the authenticated object owner
 
 ## Current completion
-- [ ] Verify 5,000-product threshold and live pricing consistency.
-- [ ] Complete customer and Sokoni order desktop list/detail views.
-- [ ] Add visual onboarding, real app captures, and a short AI clip to Huduma.
-- [ ] Verify branch permissions and repair remaining route/data-loading gaps.
-- [ ] Verify branch heading, status, settings, and spacing.
-- [ ] Check scanner receipts and payment balance with signed-in browser access.
+- [x] Verify 5,000-product threshold and live pricing consistency; public preview, Matawi and admin bills use current rules; branch employees excluded from HQ count.
+- [x] Complete customer and Sokoni order desktop list/detail views; verified signed-in with real records.
+- [x] Add visual onboarding, real app captures, and a 3.03-second AI clip to Huduma; playback verified.
+- [x] Repair staff route, menu and data-loading gaps; fail-closed access tests pass.
+- [ ] Signed-in branch-staff end-to-end verification (needs approval to use a specific staff account; current session is system admin).
+- [x] Verify centered branch name, adjacent Hai badge, location in settings, spacing and persistent desktop branch list.
+- [x] Scanner sale Ttt, TSh 250; ShopWithUs receipt, linked invoice and stock 25→24 verified; current unpaid balance displayed.
 - [ ] Physical-phone payment approval, fingerprint and camera scan (owner device required).
