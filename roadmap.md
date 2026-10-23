@@ -52,9 +52,9 @@
 ## Current completion
 - [x] Verify 5,000-product threshold and live pricing consistency; public preview, Matawi and admin bills use current rules; branch employees excluded from HQ count.
 - [x] Complete customer and Sokoni order desktop list/detail views; verified signed-in with real records.
-- [x] Add visual onboarding, real app captures, and a 3.03-second AI clip to Huduma; playback verified.
+- [x] Add visual onboarding; replace the old short public Huduma clip with the current three six-second fictional speaking ServiceHUB videos, without customer records.
 - [x] Repair staff route, menu and data-loading gaps; fail-closed access tests pass.
-- [ ] Signed-in branch-staff end-to-end verification (needs approval to use a specific staff account; current session is system admin).
+- [ ] Signed-in branch-staff end-to-end verification (needs a selected staff account and approval; current session is signed out and self-session mint has no match).
 - [x] Verify centered branch name, adjacent Hai badge, location in settings, spacing and persistent desktop branch list.
 - [x] Scanner sale Ttt, TSh 250; ShopWithUs receipt, linked invoice and stock 25→24 verified; current unpaid balance displayed.
 - [ ] Physical-phone payment approval, fingerprint and camera scan (owner device required).
