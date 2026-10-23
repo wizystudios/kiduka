@@ -3176,6 +3176,10 @@ export type Database = {
         }
         Returns: Json
       }
+      admin_get_business_billing: {
+        Args: { p_owner_id: string }
+        Returns: Json
+      }
       admin_reactivate_user: { Args: { p_user_id: string }; Returns: Json }
       approve_user_subscription: {
         Args: {
