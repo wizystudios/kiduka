@@ -7,6 +7,7 @@ import { LanguageProvider } from '@/contexts/LanguageContext';
 
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { AppLayout } from '@/components/AppLayout';
+import { PublicHubNav } from '@/components/PublicHubNav';
 import { NotificationSettingsPage } from '@/pages/NotificationSettingsPage';
 import { CustomerReportsPage } from '@/pages/CustomerReportsPage';
 import { ProductReportsPage } from '@/pages/ProductReportsPage';
@@ -115,6 +116,7 @@ export default function App() {
               <Route path="/" element={<Index />} />
               <Route path="/auth" element={<AuthPage />} />
               <Route path="/huduma" element={<HudumaPage />} />
+              <Route path="/servicehub" element={<HudumaPage />} />
               <Route path="/reset-password" element={<ResetPasswordPage />} />
               <Route path="/forgot-password" element={<ForgotPasswordPage />} />
               <Route path="/verify-email" element={<EmailVerificationStatus />} />
@@ -583,6 +585,7 @@ export default function App() {
               {/* Catch all route */}
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
+            <PublicHubNav />
             <GlobalNurathFloat />
             <Toaster />
           </div>

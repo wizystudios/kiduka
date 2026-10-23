@@ -2564,6 +2564,45 @@ export type Database = {
           },
         ]
       }
+      servicehub_requests: {
+        Row: {
+          appointment_at: string | null
+          created_at: string
+          email: string
+          id: string
+          kind: string
+          message: string
+          name: string
+          notification_status: string
+          phone: string
+          status: string
+        }
+        Insert: {
+          appointment_at?: string | null
+          created_at?: string
+          email: string
+          id?: string
+          kind: string
+          message: string
+          name: string
+          notification_status?: string
+          phone: string
+          status?: string
+        }
+        Update: {
+          appointment_at?: string | null
+          created_at?: string
+          email?: string
+          id?: string
+          kind?: string
+          message?: string
+          name?: string
+          notification_status?: string
+          phone?: string
+          status?: string
+        }
+        Relationships: []
+      }
       sokoni_customers: {
         Row: {
           country: string | null

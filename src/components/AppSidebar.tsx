@@ -6,7 +6,7 @@ import { useDataAccess } from '@/hooks/useDataAccess';
 import { KidukaLogo } from '@/components/KidukaLogo';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Shield, LogOut, PanelLeftOpen, PanelLeftClose, Plus } from 'lucide-react';
-import { primaryNavigationItems, filterNavigationItems } from '@/lib/navigation';
+import { primaryNavigationItems, filterNavigationItems, utilityNavigationItems } from '@/lib/navigation';
 import { cn } from '@/lib/utils';
 
 /**
@@ -39,6 +39,7 @@ export function AppSidebar() {
   const all = [
     ...(userProfile.role === 'super_admin' ? [{ id: 'super-admin', href: '/super-admin', label: 'Super Admin', icon: Shield }] : []),
     ...items,
+    ...utilityNavigationItems.filter(item => item.id === 'servicehub'),
   ];
 
   const Row = ({ href, label, Icon }: { href: string; label: string; Icon: any }) => (

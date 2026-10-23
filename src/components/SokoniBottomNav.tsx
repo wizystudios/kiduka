@@ -1,8 +1,9 @@
 import { useNavigate, useLocation } from 'react-router-dom';
 import { 
-  Home, Package, ShoppingCart, User
+  Home, Package, ShoppingCart, User, Headphones
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { useWishlist } from '@/hooks/useWishlist';
 import { useSokoniCustomer } from '@/hooks/useSokoniCustomer';
 import { useState } from 'react';
@@ -28,22 +29,23 @@ export const SokoniBottomNav = ({ cartCount, onCartClick }: SokoniBottomNavProps
     { id: 'home', label: 'Nyumbani', icon: Home, path: '/sokoni' },
     { id: 'products', label: 'Bidhaa', icon: Package, path: '/sokoni', tab: 'browse' },
     { id: 'cart', label: 'Kikapu', icon: ShoppingCart, onClick: onCartClick, badge: cartCount },
+    { id: 'servicehub', label: 'ServiceHUB', icon: Headphones, path: '/servicehub' },
     { id: 'profile', label: 'Mimi', icon: User, isProfile: true },
   ];
 
   return (
     <>
-      <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-border/50 safe-area-pb shadow-[0_-2px_8px_rgba(0,0,0,0.04)]">
-        <div className="grid grid-cols-4 h-16">
+      <div className="fixed bottom-0 left-0 right-0 z-50 bg-background border-t border-border/50 safe-area-pb">
+        <div className="grid grid-cols-5 h-16">
           {navItems.map((item) => {
             const Icon = item.icon;
             
             if (item.isProfile) {
               return (
-                <button
+                <Button variant="ghost"
                   key={item.id}
                   onClick={() => setDashboardOpen(true)}
-                  className="flex flex-col items-center justify-center gap-0.5 text-muted-foreground hover:text-primary transition-colors relative"
+                  className="h-full px-1 flex flex-col items-center justify-center gap-0.5 text-muted-foreground hover:text-primary transition-colors relative"
                 >
                   <div className="relative">
                     <Icon className="h-5 w-5" />
@@ -54,15 +56,15 @@ export const SokoniBottomNav = ({ cartCount, onCartClick }: SokoniBottomNavProps
                     )}
                   </div>
                   <span className="text-[10px]">{item.label}</span>
-                </button>
+                </Button>
               );
             }
 
             return (
-              <button
+              <Button variant="ghost"
                 key={item.id}
-                onClick={item.onClick || (() => navigate(item.path!))}
-                className={`flex flex-col items-center justify-center gap-0.5 transition-colors relative ${
+                onClick={item.onClick || (() => { if (item.path) navigate(item.path); })}
+                className={`h-full px-1 flex flex-col items-center justify-center gap-0.5 transition-colors relative ${
                   isActive(item.path || '') ? 'text-primary' : 'text-muted-foreground hover:text-primary'
                 }`}
               >
@@ -75,7 +77,7 @@ export const SokoniBottomNav = ({ cartCount, onCartClick }: SokoniBottomNavProps
                   )}
                 </div>
                 <span className="text-[10px]">{item.label}</span>
-              </button>
+              </Button>
             );
           })}
         </div>

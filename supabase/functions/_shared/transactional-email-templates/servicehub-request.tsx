@@ -1,0 +1,6 @@
+import * as React from 'npm:react@18.3.1';
+import { Body, Container, Head, Heading, Html, Preview, Text } from 'npm:@react-email/components@0.0.22';
+import type { TemplateEntry } from './registry.ts';
+interface Props { kind?: string; name?: string; email?: string; phone?: string; message?: string; appointment_at?: string; reference?: string }
+const Email = (p: Props) => <Html lang="sw"><Head /><Preview>Ombi jipya kutoka Kiduka ServiceHUB</Preview><Body style={{ backgroundColor: '#ffffff', fontFamily: 'Arial, sans-serif' }}><Container style={{ padding: '28px' }}><Heading>Kiduka ServiceHUB · {p.kind === 'booking' ? 'Ombi la miadi' : 'Swali'}</Heading><Text>Jina: {p.name}</Text><Text>Email: {p.email}</Text><Text>Simu: {p.phone}</Text>{p.appointment_at && <Text>Muda unaoombwa (Dar es Salaam): {new Date(p.appointment_at).toLocaleString('en-GB', { timeZone: 'Africa/Dar_es_Salaam' })}</Text>}<Text style={{ whiteSpace: 'pre-wrap' }}>{p.message}</Text><Text>Kumbukumbu: {p.reference}</Text><Text>Miadi hii ni ombi; wasiliana na mteja kuthibitisha muda.</Text></Container></Body></Html>;
+export const template = { component: Email, subject: 'Ombi jipya — Kiduka ServiceHUB', to: 'smartshoppos795@gmail.com', displayName: 'ServiceHUB — Miadi na maswali' } satisfies TemplateEntry;
