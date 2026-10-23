@@ -1,5 +1,11 @@
 # Kiduka completion roadmap
 
+## ServiceHUB
+- [ ] Public ServiceHUB navigation on mobile and desktop, signed in or out.
+- [ ] Return announcement, existing visual media and WhatsApp-shareable service cards.
+- [ ] Persist appointment requests/questions and notify the confirmed business email.
+- [ ] Verify public form and navigation on phone and desktop.
+
 - [x] Keep top and bottom navigation visible on scanner, completed-sale, payment, and receipt screens.
 - [x] Redesign completed-sale and receipt/invoice surfaces from the supplied transaction references while preserving Kiduka branding.
 - [x] Connect payment provider icons, large QR/Lipa Namba presentation, and Kiduka success animation to live checkout.
