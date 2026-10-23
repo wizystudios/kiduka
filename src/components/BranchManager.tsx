@@ -416,27 +416,20 @@ export const BranchManager = () => {
   // ========== BRANCH DETAIL VIEW ==========
   if (selectedBranch) {
     return (
-      <div className="space-y-4 pb-24">
+      <div className="space-y-7 px-4 py-5 pb-24">
         {/* Back button + branch header */}
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full" onClick={() => setSelectedBranch(null)}>
             <ChevronLeft className="h-5 w-5" />
           </Button>
-          <div className="flex-1">
-            <h1 className="text-lg font-bold flex items-center gap-2">
-              <Store className="h-5 w-5 text-primary" />
-              {selectedBranch.branch_name}
-            </h1>
-            <div className="flex items-center gap-2 mt-0.5">
+          <div className="min-w-0 flex-1 text-center">
+            <h1 className="flex flex-wrap items-center justify-center gap-2 text-lg font-bold">
+              <Store className="h-5 w-5 shrink-0 text-primary" />
+              <span className="break-words">{selectedBranch.branch_name}</span>
               <Badge variant={selectedBranch.is_active ? 'default' : 'secondary'} className="text-[10px] rounded-full">
                 {selectedBranch.is_active ? 'Hai' : 'Imezimwa'}
               </Badge>
-              {selectedBranch.region && (
-                <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
-                  <MapPin className="h-2.5 w-2.5" /> {selectedBranch.district || selectedBranch.region}
-                </span>
-              )}
-            </div>
+            </h1>
           </div>
           <div className="flex gap-1">
             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setSettingsDialog(selectedBranch)}>
@@ -652,7 +645,12 @@ export const BranchManager = () => {
           <Dialog open={!!settingsDialog} onOpenChange={() => setSettingsDialog(null)}>
             <DialogContent className="max-w-sm rounded-3xl max-h-[85vh] overflow-y-auto">
               <DialogHeader><DialogTitle className="text-sm">Mipangilio · {settingsDialog.branch_name}</DialogTitle></DialogHeader>
-              <div className="space-y-3">
+              <div className="space-y-5">
+                <div className="border-b border-border pb-4">
+                  <p className="text-xs text-muted-foreground">Mahali pa tawi</p>
+                  <p className="mt-1 flex items-center gap-2 text-sm"><MapPin className="h-4 w-4 text-primary" />{[settingsDialog.street, settingsDialog.ward, settingsDialog.district, settingsDialog.region].filter(Boolean).join(', ') || 'Mahali bado hapajawekwa'}</p>
+                  <Button variant="ghost" size="sm" onClick={() => { openEdit(settingsDialog); setSettingsDialog(null); }}>Hariri mahali</Button>
+                </div>
                 {!isSystemAdmin && <p className="rounded-2xl bg-muted/50 p-2 text-[11px] text-muted-foreground">Huduma na ada za tawi huwekwa na msimamizi wa mfumo.</p>}
                 {FEATURE_LIST.map(f => (
                   <div key={f.key} className="flex items-center justify-between">
@@ -846,7 +844,6 @@ export const BranchManager = () => {
                 <p className="truncate text-[11px] text-muted-foreground">
                   <span className={b.is_active ? 'text-success' : ''}>{b.is_active ? 'Hai' : 'Imezimwa'}</span>
                   {' · '}{BRANCH_TYPES.find(t => t.value === b.branch_type)?.label.split(' - ')[0] || b.branch_type}
-                  {(b.district || b.region) ? ` · ${b.district || b.region}` : ''}
                 </p>
               </div>
               <div className="flex items-center" onClick={e => e.stopPropagation()}>

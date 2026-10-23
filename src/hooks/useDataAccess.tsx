@@ -19,7 +19,31 @@ export const useDataAccess = () => {
   const [branchRole, setBranchRole] = useState<string | null>(null);
   const [branchFeatures, setBranchFeatures] = useState<Record<string, boolean> | null>(null);
 
-  // Branch staff belong to their branch, not the main shop
+  const [branchLoading, setBranchLoading] = useState(true);
+  // Do not render/query operational data until the current user's scope resolves.
+  useEffect(() => {
+    let current = true;
+    setBranchId(null); setBranchName(null); setBranchRole(null); setBranchFeatures(null);
+    setBranchLoading(true);
+    if (!user || !userProfile) { setBranchLoading(false); return; }
+    if (userProfile.role === 'owner' || userProfile.role === 'super_admin') {
+      setBranchLoading(false); return;
+    }
+    (async () => {
+      const { data, error } = await supabase.from('branch_staff')
+        .select('branch_id, role, business_branches(branch_name, features, is_active)')
+        .eq('user_id', user.id).eq('is_active', true).maybeSingle();
+      if (!current) return;
+      if (error) { console.error('Branch scope lookup failed', error); return; }
+      setBranchId((data as any)?.branch_id ?? null);
+      setBranchName((data as any)?.business_branches?.branch_name ?? null);
+      setBranchRole((data as any)?.role ?? null);
+      setBranchFeatures((data as any)?.business_branches?.features ?? null);
+      setBranchLoading(false);
+    })();
+    return () => { current = false; };
+  }, [user?.id, userProfile?.role]);
+
   useEffect(() => {
     if (!user || userProfile?.role === 'owner' || userProfile?.role === 'super_admin') { setBranchId(null); setBranchName(null); return; }
     (async () => {
@@ -35,6 +59,9 @@ export const useDataAccess = () => {
 
   useEffect(() => {
     const fetchDataOwnerId = async () => {
+      setLoading(true);
+      setDataOwnerId(null);
+      setOwnerBusinessName(null);
       if (!user || !userProfile) {
         console.log('useDataAccess: No user or profile yet');
         setLoading(false);
@@ -142,8 +169,8 @@ export const useDataAccess = () => {
     branchRole,
     branchFeatures,
     isBranchStaff: !!branchId,
-    loading, 
+    loading: loading || branchLoading, 
     isAssistant,
-    isReady: !loading && (!!dataOwnerId || userProfile?.role === 'assistant')
+    isReady: !loading && !branchLoading && !!dataOwnerId
   };
 };

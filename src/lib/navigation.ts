@@ -36,20 +36,20 @@ export const primaryNavigationItems: AppNavItem[] = [
   { id: 'products', feature: 'products', label: 'Bidhaa', icon: Package, href: '/products', permission: 'can_view_products' },
   { id: 'sales', feature: 'sales', label: 'Mauzo', icon: ShoppingCart, href: '/sales', permission: 'can_view_sales' },
   { id: 'stock', feature: 'inventory', label: 'Stock', icon: ClipboardList, href: '/inventory-snapshots', permission: 'can_view_inventory' },
-  { id: 'orders', feature: 'sales', label: 'Oda', icon: Crown, href: '/sokoni-orders', permission: 'can_view_sales' },
-  { id: 'rewards', label: 'Tuzo', icon: Gift, href: '/rewards', permission: null },
-  { id: 'groups', feature: 'customers', label: 'Makundi', icon: Users, href: '/groups', permission: null },
-  { id: 'mikopo', feature: 'customers', label: 'Mikopo', icon: CreditCard, href: '/credit-management', permission: null },
+  { id: 'orders', ownerOnly: true, feature: 'sales', label: 'Oda', icon: Crown, href: '/sokoni-orders', permission: 'can_view_sales' },
+  { id: 'rewards', ownerOnly: true, label: 'Tuzo', icon: Gift, href: '/rewards', permission: null },
+  { id: 'groups', feature: 'customers', label: 'Makundi', icon: Users, href: '/groups', permission: 'can_view_customers' },
+  { id: 'mikopo', feature: 'customers', label: 'Mikopo', icon: CreditCard, href: '/credit-management', permission: 'can_edit_customers' },
   { id: 'invoices', feature: 'sales', label: 'Ankara', icon: FileText, href: '/invoices', permission: 'can_view_sales' },
-  { id: 'payments', feature: 'sales', label: 'Malipo', icon: Wallet, href: '/lipa-namba', permission: null },
+  { id: 'payments', ownerOnly: true, feature: 'sales', label: 'Malipo', icon: Wallet, href: '/lipa-namba', permission: null },
   { id: 'reports', feature: 'reports', label: 'Ripoti', icon: BarChart3, href: '/reports', permission: 'can_view_reports' },
-  { id: 'bookkeeping', feature: 'reports', label: 'Uhasibu', icon: BookOpen, href: '/bookkeeping', permission: null },
+  { id: 'bookkeeping', feature: 'reports', label: 'Uhasibu', icon: BookOpen, href: '/bookkeeping', permission: 'can_view_reports' },
     { id: 'settings', label: 'Mipangilio', icon: Settings, href: '/settings', permission: null },
 ];
 
 export const utilityNavigationItems: AppNavItem[] = [
   { id: 'notifications', label: 'Arifa', icon: Bell, href: '/notifications', permission: null },
-  { id: 'subscription', label: 'Michango', icon: Crown, href: '/subscription', permission: null },
+  { id: 'subscription', ownerOnly: true, label: 'Michango', icon: Crown, href: '/subscription', permission: null },
   { id: 'install', label: 'Sakinisha App', icon: Smartphone, href: '/pwa-install', permission: null },
   { id: 'help', label: 'Msaada', icon: HelpCircle, href: '/help', permission: null },
 ];
@@ -71,7 +71,7 @@ export const filterNavigationItems = <T extends AppNavItem>(
   if (role === 'owner' || role === 'super_admin') return true;
   if (item.ownerOnly) return false;
   // Branch staff only see what the owner/admin enabled for their branch
-  if (branchFeatures && item.feature && branchFeatures[item.feature] === false) return false;
+  if (branchFeatures && item.feature && branchFeatures[item.feature] !== true) return false;
   if (!item.permission) return true;
   return permissions?.[item.permission] ?? false;
 });

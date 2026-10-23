@@ -42,7 +42,7 @@ export const BranchFeeCalculator = () => {
     { k: 'staff', label: 'Wafanyakazi duka kuu (pamoja na wewe)', max: 30, step: 1, min: 1 },
     { k: 'branches', label: 'Matawi', max: 20, step: 1, min: 0 },
     { k: 'branchStaff', label: 'Wafanyakazi wa matawi (jumla)', max: 60, step: 1, min: 0 },
-    { k: 'products', label: 'Bidhaa', max: 2000, step: 1, min: 0 },
+    { k: 'products', label: 'Bidhaa', max: 10000, step: 1, min: 0 },
     { k: 'customers', label: 'Wateja', max: 3000, step: 1, min: 0 },
   ];
 
