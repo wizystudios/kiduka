@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'bun:test';
-import { canAccessStaffRoute, staffRouteRules } from './routeAccess';
+import { canAccessStaffRoute, staffRouteRules } from '../src/lib/routeAccess.ts';
 
 describe('Staff are limited to granted pages', () => {
   test('a disabled branch feature blocks reports even with employee permission', () => {
