@@ -8,3 +8,5 @@
 - Confirm ClickPesa payments server-side against the provider and the database-calculated amount before activating service, because client totals and unauthenticated callbacks are not proof of payment.
 - Show a Lipa Namba QR only from an owner-uploaded official image, because a generated QR cannot actually take payments.
 - Keep desktop record pages as a persistent left list and right detail pane, because floating overlays and hover-expanding navigation block work on wide screens.
+- Resolve staff page access through an explicit fail-closed route registry and wait for branch scope before rendering, because hidden menus alone cannot enforce granted access.
+- Keep public instructional media free of customer identifiers and distinguish generated footage from real app captures, because marketing must not expose operational records or misrepresent the interface.
