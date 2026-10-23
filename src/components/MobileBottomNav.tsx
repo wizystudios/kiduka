@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { ProfileMenuSheet } from '@/components/ProfileMenuSheet';
 import { useAuth } from '@/hooks/useAuth';
 import { usePermissions } from '@/hooks/usePermissions';
-import { Home, LogOut, Menu, Package, Plus, ShoppingCart } from 'lucide-react';
+import { Home, LogOut, Menu, Package, Plus, ShoppingCart, Headphones } from 'lucide-react';
 import { useDataAccess as __uda } from '@/hooks/useDataAccess';
 import { filterNavigationItems, primaryNavigationItems, superAdminNavigationItem, utilityNavigationItems } from '@/lib/navigation';
 
@@ -117,10 +117,15 @@ export const MobileBottomNav = () => {
             <span className="mt-0.5 text-[9px] font-medium text-muted-foreground">Ongeza</span>
           </div>
 
-          <button onClick={() => handleNav('/products')} className={`flex flex-1 flex-col items-center justify-center rounded-xl p-2 transition-all ${isActive('/products') ? 'text-primary' : 'text-muted-foreground'}`}>
+          <Button variant="ghost" onClick={() => handleNav('/products')} className={`h-full flex flex-1 flex-col gap-0 items-center justify-center p-1 transition-all ${isActive('/products') ? 'text-primary' : 'text-muted-foreground'}`}>
             <Package className="h-5 w-5" />
             <span className="mt-0.5 text-[10px] font-medium">Bidhaa</span>
-          </button>
+          </Button>
+
+          <Button variant="ghost" onClick={() => handleNav('/servicehub')} className="h-full flex flex-1 flex-col gap-0 p-1 text-muted-foreground">
+            <Headphones className="h-5 w-5" />
+            <span className="mt-0.5 text-[9px] font-medium">ServiceHUB</span>
+          </Button>
 
           <button onClick={() => setMenuOpen(true)} className="flex flex-1 flex-col items-center justify-center rounded-xl p-2 text-muted-foreground transition-all">
             <Menu className="h-5 w-5" />

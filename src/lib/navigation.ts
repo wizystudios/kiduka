@@ -48,6 +48,7 @@ export const primaryNavigationItems: AppNavItem[] = [
 ];
 
 export const utilityNavigationItems: AppNavItem[] = [
+  { id: 'servicehub', label: 'ServiceHUB', icon: HelpCircle, href: '/servicehub', permission: null },
   { id: 'notifications', label: 'Arifa', icon: Bell, href: '/notifications', permission: null },
   { id: 'subscription', ownerOnly: true, label: 'Michango', icon: Crown, href: '/subscription', permission: null },
   { id: 'install', label: 'Sakinisha App', icon: Smartphone, href: '/pwa-install', permission: null },
