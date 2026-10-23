@@ -1,9 +1,11 @@
 # Kiduka completion roadmap
 
 ## ServiceHUB
-- [ ] Remove customer captures and authentication Sokoni button; consolidate internal support into ServiceHUB.
-- [ ] Add private admin inquiry management and email/WhatsApp replies; verify booking, question and reply sends.
-- [ ] Review and resolve the requested Project monitoring finding against current requirements.
+- [x] Remove customer captures and authentication Sokoni button; consolidate internal support into ServiceHUB.
+- [x] Add private admin inquiry management, status tracking and durable email/WhatsApp replies; unauthenticated access rejected.
+- [x] Verify booking and question submissions: two unique emails recorded sent; recipient inbox is not accessible.
+- [ ] Verify signed-in admin inquiry, reply and resolution flow (requires the user to sign in as system admin in preview; session mint has no matching account).
+- [x] Resolve Project monitoring branch finding: owner edits omit admin-managed features, all feature/type controls consistently restricted; concrete payload tests pass.
 - [x] Public ServiceHUB navigation on mobile and desktop, signed in or out.
 - [x] Return announcement, existing visual media and WhatsApp-shareable service cards.
 - [x] Persist appointment requests/questions and notify the confirmed business email; two audit requests recorded as sent.

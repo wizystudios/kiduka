@@ -2,6 +2,7 @@
 
 - Keep ServiceHUB publicly routable outside operational access gates; validate submissions server-side into a private request table and send through the shared email sender, because guests need support without exposing inquiries or choosing email recipients.
 - Manage ServiceHUB inquiries and durable replies through a server-verified super-admin endpoint; email recipients come from stored requests and WhatsApp opening is not proof of sending, because support records and communications require private, accurate tracking.
+- Keep branch feature updates in the shared branchFeaturePayload helper, because ordinary identity edits must not submit admin-managed entitlements or fail their database guard.
 
 - Scope operational records by the active branch in both client queries and database policies, because branch staff must never see or sync another branch's data.
 - Persist every completed sale as a linked editable invoice, because receipts, payment state, and post-sale corrections share one durable source.
