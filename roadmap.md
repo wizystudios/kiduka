@@ -1,5 +1,11 @@
 # Kiduka completion roadmap
 
+## Current requested corrections
+- [ ] Restore the existing desktop welcome design without redesigning it.
+- [ ] Add the Kiduka logo, distinct full-frame images and speaking videos of at least five seconds to ServiceHUB cards.
+- [ ] Change the large-business extra employee fee from TSh 500 to TSh 5,000 in live billing and tests.
+- [ ] Diagnose and fix navigation freezes; verify repeated page changes.
+
 ## ServiceHUB
 - [x] Remove customer captures and authentication Sokoni button; consolidate internal support into ServiceHUB.
 - [x] Add private admin inquiry management, status tracking and durable email/WhatsApp replies; unauthenticated access rejected.
@@ -35,7 +41,7 @@
 - [x] Product photo uploads save to the owner's folder and show in Sokoni
 - [x] Super-admin price editor (/billing-plans), linked from Matawi
 - [x] Sokoni desktop Deals tab: product feed added below banners
-- [x] Extra staff pricing: TSh 2,000 small / TSh 500 large; base includes 3 employees
+- [x] Historical extra staff pricing: TSh 2,000 small / TSh 500 large; superseded by current requested correction above.
 - [x] Full phone + computer audit in the test preview; physical-device-only checks remain with the owner
 - [x] Sokoni test product photo stored in the owner's folder and linked to the product gallery
 - [x] Sokoni cards resolve the real business name through the public storefront view
