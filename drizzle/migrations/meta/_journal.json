@@ -85,6 +85,13 @@
       "when": 1791971404384,
       "tag": "0011_tiered_staff_branch_fees",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1792730415515,
+      "tag": "0012_align_billing_preview_with_tiered_fees",
+      "breakpoints": true
     }
   ]
 }
