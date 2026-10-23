@@ -1,5 +1,5 @@
 
-const CACHE_VERSION = 'v3';
+const CACHE_VERSION = 'v4';
 const CACHE_NAME = `kiduka-pos-${CACHE_VERSION}`;
 const STATIC_CACHE = `kiduka-static-${CACHE_VERSION}`;
 const DYNAMIC_CACHE = `kiduka-dynamic-${CACHE_VERSION}`;
@@ -8,8 +8,7 @@ const IMAGES_CACHE = `kiduka-images-${CACHE_VERSION}`;
 const STATIC_ASSETS = [
   '/',
   '/manifest.json',
-  '/placeholder.svg',
-  '/offline.html'
+  '/placeholder.svg'
 ];
 
 const DEV_RESOURCE_PATTERNS = ['/src/', '/@vite/', '/node_modules/.vite/'];
@@ -109,6 +108,11 @@ self.addEventListener('fetch', (event) => {
 
   const shouldBypassCache =
     request.method !== 'GET' ||
+    url.origin !== self.location.origin ||
+    request.headers.has('authorization') ||
+    request.destination === 'video' ||
+    request.destination === 'audio' ||
+    request.headers.has('range') ||
     request.destination === 'script' ||
     request.destination === 'style' ||
     request.destination === 'worker' ||
@@ -140,10 +144,20 @@ self.addEventListener('fetch', (event) => {
 });
 
 // Enhanced navigation request handler
+async function fetchWithTimeout(request, milliseconds) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), milliseconds);
+  try {
+    return await fetch(request, { signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 async function handleNavigationRequest(request) {
   try {
     // Try network first for navigation
-    const networkResponse = await fetch(request, { timeout: 3000 });
+    const networkResponse = await fetchWithTimeout(request, 3000);
     
     // Cache successful navigation responses
     if (networkResponse.ok) {
@@ -179,7 +193,7 @@ async function handleApiRequest(request) {
   
   try {
     // Always try network first for API requests
-    const networkResponse = await fetch(request, { timeout: 5000 });
+    const networkResponse = await fetchWithTimeout(request, 5000);
     
     // Cache successful GET requests
     if (request.method === 'GET' && networkResponse.ok) {
@@ -274,7 +288,7 @@ async function handleImageRequest(request) {
     }
 
     // Try network
-    const networkResponse = await fetch(request, { timeout: 3000 });
+    const networkResponse = await fetchWithTimeout(request, 3000);
     
     if (networkResponse.ok) {
       // Cache images in separate cache
@@ -285,7 +299,7 @@ async function handleImageRequest(request) {
     return networkResponse;
   } catch (error) {
     // Return placeholder image for failed requests
-    return caches.match('/placeholder.svg') || new Response('', { status: 404 });
+    return await caches.match('/placeholder.svg') || new Response('', { status: 404 });
   }
 }
 
@@ -299,7 +313,7 @@ async function handleResourceRequest(request) {
     }
     
     // Try network with timeout
-    const networkResponse = await fetch(request, { timeout: 3000 });
+    const networkResponse = await fetchWithTimeout(request, 3000);
     
     if (networkResponse.ok) {
       const cache = await caches.open(DYNAMIC_CACHE);

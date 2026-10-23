@@ -1,16 +1,16 @@
 # Kiduka completion roadmap
 
 ## Current requested corrections
-- [ ] Restore the existing desktop welcome design without redesigning it.
-- [ ] Add the Kiduka logo, distinct full-frame images and speaking videos of at least five seconds to ServiceHUB cards.
-- [ ] Change the large-business extra employee fee from TSh 500 to TSh 5,000 in live billing and tests.
-- [ ] Diagnose and fix navigation freezes; verify repeated page changes.
+- [x] Restore the existing desktop welcome design without redesigning it: original two left / three right decorative cards and desktop spacing restored.
+- [x] Add the Kiduka logo, distinct full-frame images and speaking videos of at least five seconds to ServiceHUB cards: three 1080p six-second clips, MP4/WebM playback, branded downloaded cards.
+- [x] Change the large-business extra employee fee from TSh 500 to TSh 5,000 in live billing and tests: public live pricing displays 5,000 and concrete tests pass.
+- [x] Diagnose and fix navigation freeze risks: remove landing global scroll lock, add actual worker fetch aborts and exclude private/media caching; repeated public route changes pass without runtime errors. Authenticated reproduction remains blocked below.
 
 ## ServiceHUB
 - [x] Remove customer captures and authentication Sokoni button; consolidate internal support into ServiceHUB.
 - [x] Add private admin inquiry management, status tracking and durable email/WhatsApp replies; unauthenticated access rejected.
 - [x] Verify booking and question submissions: two unique emails recorded sent; recipient inbox is not accessible.
-- [ ] Verify signed-in admin inquiry, reply and resolution flow (requires the user to sign in as system admin in preview; session mint has no matching account).
+- [ ] Verify signed-in admin inquiry, reply and resolution flow (self-session mint again returned no matching account; requires user sign-in as system admin). Receiving email in the recipient inbox remains unverified; only sender acceptance is verified.
 - [x] Resolve Project monitoring branch finding: owner edits omit admin-managed features, all feature/type controls consistently restricted; concrete payload tests pass.
 - [x] Public ServiceHUB navigation on mobile and desktop, signed in or out.
 - [x] Return announcement, existing visual media and WhatsApp-shareable service cards.
@@ -52,9 +52,9 @@
 ## Current completion
 - [x] Verify 5,000-product threshold and live pricing consistency; public preview, Matawi and admin bills use current rules; branch employees excluded from HQ count.
 - [x] Complete customer and Sokoni order desktop list/detail views; verified signed-in with real records.
-- [x] Add visual onboarding, real app captures, and a 3.03-second AI clip to Huduma; playback verified.
+- [x] Add visual onboarding; replace the old short public Huduma clip with the current three six-second fictional speaking ServiceHUB videos, without customer records.
 - [x] Repair staff route, menu and data-loading gaps; fail-closed access tests pass.
-- [ ] Signed-in branch-staff end-to-end verification (needs approval to use a specific staff account; current session is system admin).
+- [ ] Signed-in branch-staff end-to-end verification (needs a selected staff account and approval; current session is signed out and self-session mint has no match).
 - [x] Verify centered branch name, adjacent Hai badge, location in settings, spacing and persistent desktop branch list.
 - [x] Scanner sale Ttt, TSh 250; ShopWithUs receipt, linked invoice and stock 25→24 verified; current unpaid balance displayed.
 - [ ] Physical-phone payment approval, fingerprint and camera scan (owner device required).

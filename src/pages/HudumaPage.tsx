@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from 'react';
-import { InstructionMedia } from '@/components/InstructionMedia';
 import { ServiceHubGuide } from '@/components/ServiceHubGuide';
 import { ServiceHubContact } from '@/components/ServiceHubContact';
 import { ServiceHubCards } from '@/components/ServiceHubCards';
@@ -81,7 +80,7 @@ const HudumaPage = () => {
       <header className="sticky top-0 z-20 border-b border-border/50 bg-background/80 backdrop-blur-xl">
         <div className="mx-auto flex h-12 max-w-5xl items-center justify-between px-4">
           <Button variant="ghost" size="icon" onClick={() => navigate('/')} aria-label="Rudi"><ArrowLeft className="h-4 w-4" /></Button>
-          <span className="font-semibold text-primary">ServiceHUB</span>
+          <div className="flex items-center gap-3"><KidukaLogo size="sm" showText={false} /><span className="font-semibold text-primary">Kiduka ServiceHUB</span></div>
           <Button variant="ghost" size="icon" onClick={share} aria-label="Shiriki"><Share2 className="h-4 w-4" /></Button>
         </div>
       </header>
@@ -104,11 +103,6 @@ const HudumaPage = () => {
       <ServiceHubCards />
       <ServiceHubContact />
 
-      <section className="mx-auto max-w-5xl px-4 pb-16">
-        <h2 className="mb-6 text-center font-semibold">Jionee Kiduka</h2>
-        <InstructionMedia video />
-        <p className="mt-2 text-center text-xs text-muted-foreground">Video iliyotengenezwa kwa AI; si picha ya biashara ya mteja wala rekodi ya mfumo.</p>
-      </section>
       <ServiceHubGuide />
 
       <section className="mx-auto max-w-5xl px-4 pb-20">

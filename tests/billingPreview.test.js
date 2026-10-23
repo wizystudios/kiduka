@@ -1,10 +1,11 @@
 import { test, expect } from 'bun:test';
 import { calculateBillingPreview } from '../src/lib/billingPreview.ts';
-const s={base_fee:30000,base_staff_limit:3,base_product_limit:100,base_customer_limit:200,free_staff_limit:2,free_product_limit:20,free_customer_limit:10,branch_staff_limit:3,large_business_product_threshold:5000,extra_staff_fee_small:2000,extra_staff_fee_large:500,branch_fee_small:10000,branch_fee_large:15000,extra_product_block:1,extra_product_block_fee:1000,extra_customer_block:1,extra_customer_block_fee:1000,sokoni_fee:50000};
+const s={base_fee:30000,base_staff_limit:3,base_product_limit:100,base_customer_limit:200,free_staff_limit:2,free_product_limit:20,free_customer_limit:10,branch_staff_limit:3,large_business_product_threshold:5000,extra_staff_fee_small:2000,extra_staff_fee_large:5000,branch_fee_small:10000,branch_fee_large:15000,extra_product_block:1,extra_product_block_fee:1000,extra_customer_block:1,extra_customer_block_fee:1000,sokoni_fee:50000};
 const v={staff:3,branches:0,branchStaff:0,products:100,customers:200,sokoni:false};
 test('30000 covers three employees',()=>expect(calculateBillingPreview(s,v).total).toBe(30000));
 test('small extra employee costs 2000',()=>expect(calculateBillingPreview(s,{...v,staff:4}).total).toBe(32000));
-test('5000 products is the large boundary and extra employee costs 500',()=>{expect(calculateBillingPreview(s,{...v,products:4999}).large).toBe(false); expect(calculateBillingPreview(s,{...v,products:5000}).large).toBe(true);expect(calculateBillingPreview(s,{...v,products:5000,staff:4}).staffFee).toBe(500)});
+test('5000 products is the large boundary',()=>{expect(calculateBillingPreview(s,{...v,products:4999}).large).toBe(false); expect(calculateBillingPreview(s,{...v,products:5000}).large).toBe(true)});
+test('large extra employee costs 5000',()=>{const base=calculateBillingPreview(s,{...v,products:5000});const extra=calculateBillingPreview(s,{...v,products:5000,staff:4});expect(extra.staffFee).toBe(5000);expect(extra.total-base.total).toBe(5000)});
 test('small branch covers three workers then charges extra',()=>{expect(calculateBillingPreview(s,{...v,branches:1,branchStaff:3}).total).toBe(40000);expect(calculateBillingPreview(s,{...v,branches:1,branchStaff:4}).total).toBe(42000)});
 test('large branch fee is 15000',()=>expect(calculateBillingPreview(s,{...v,products:5000,branches:1}).branchFee).toBe(15000));
 test('each excess product/customer costs 1000',()=>{expect(calculateBillingPreview(s,{...v,products:101}).total).toBe(31000);expect(calculateBillingPreview(s,{...v,customers:201}).total).toBe(31000)});
