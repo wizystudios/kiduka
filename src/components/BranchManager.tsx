@@ -18,6 +18,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { UnifiedDeleteSheet } from '@/components/UnifiedDeleteSheet';
 import { DashboardAdCarousel } from '@/components/DashboardAdCarousel';
+import { MasterDetailLayout } from '@/components/MasterDetailLayout';
 import { BranchFeeCalculator } from '@/components/BranchFeeCalculator';
 
 interface Branch {
@@ -79,6 +80,9 @@ const PASSWORD_REGEX = /^(?=.*[A-Z])(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?])(
 export const BranchManager = () => {
   const { user, userProfile } = useAuth();
   const isSystemAdmin = userProfile?.role === 'super_admin';
+  const [isDesktop, setIsDesktop] = useState(() => window.innerWidth >= 768);
+  const [branchPrice, setBranchPrice] = useState<number | null>(null);
+  useEffect(() => { const mq = window.matchMedia('(min-width: 768px)'); const update = () => setIsDesktop(mq.matches); mq.addEventListener('change', update); return () => mq.removeEventListener('change', update); }, []);
   const [branches, setBranches] = useState<Branch[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -109,7 +113,14 @@ export const BranchManager = () => {
   });
 
   useEffect(() => {
-    if (user?.id) fetchBranches();
+    if (user?.id) {
+      fetchBranches();
+      Promise.all([supabase.rpc('get_my_billing' as any), supabase.rpc('get_public_billing_settings')]).then(([billing, settings]) => {
+        const large = (billing.data as any)?.usage?.business_size === 'large';
+        const prices = settings.data as any;
+        if (prices) setBranchPrice(Number(large ? prices.branch_fee_large : prices.branch_fee_small));
+      });
+    }
   }, [user?.id]);
 
   useEffect(() => {
@@ -226,7 +237,7 @@ export const BranchManager = () => {
       } else {
         const { error } = await supabase.from('business_branches').insert([{ ...payload, owner_id: user.id }]);
         if (error) throw error;
-        toast.success('Tawi jipya limeundwa! Malipo: TSh 20,000/mwezi');
+        toast.success('Tawi jipya limeundwa! Bili itasasishwa kulingana na matumizi.');
       }
       setDialogOpen(false);
       resetForm();
@@ -414,8 +425,7 @@ export const BranchManager = () => {
   }
 
   // ========== BRANCH DETAIL VIEW ==========
-  if (selectedBranch) {
-    return (
+  const branchDetail = selectedBranch ? (
       <div className="space-y-7 px-4 py-5 pb-24">
         {/* Back button + branch header */}
         <div className="flex items-center gap-3">
@@ -746,7 +756,7 @@ export const BranchManager = () => {
               )}
               {!editing && (
                 <div className="bg-primary/5 rounded-2xl p-3 text-center">
-                  <p className="text-sm font-bold text-primary">TSh 20,000/mwezi</p>
+                  <p className="text-sm font-bold text-primary">TSh {branchPrice?.toLocaleString() ?? '—'}/mwezi</p>
                   <p className="text-[10px] text-muted-foreground">Kila tawi lina gharama ya mwezi</p>
                 </div>
               )}
@@ -760,20 +770,21 @@ export const BranchManager = () => {
           </DialogContent>
         </Dialog>
       </div>
-    );
-  }
+  ) : null;
+  const branchList = <div className="space-y-3">{branches.map(b => <Button key={b.id} variant={selectedBranch?.id === b.id ? 'secondary' : 'ghost'} className="h-auto w-full justify-start gap-3 rounded-2xl p-4 text-left" onClick={() => setSelectedBranch(b)}><Store className="h-5 w-5 shrink-0 text-primary" /><span className="min-w-0 flex-1 break-words">{b.branch_name}</span><Badge variant={b.is_active ? 'default' : 'secondary'}>{b.is_active ? 'Hai' : 'Imezimwa'}</Badge></Button>)}</div>;
+  if (selectedBranch) return isDesktop ? <div className="p-5"><MasterDetailLayout hasSelection list={branchList} detail={branchDetail} /></div> : branchDetail;
 
   // ========== BRANCHES LIST VIEW ==========
   return (
     <div className="mx-auto max-w-7xl space-y-4 px-1 pb-24 md:px-5">
-      <div className="flex items-center justify-between pt-1">
-        <div>
+      <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 pt-3">
+        <div className="col-start-2 text-center">
           <h1 className="text-lg font-bold">Matawi</h1>
-          <p className="text-[11px] text-muted-foreground">{branches.length} matawi · TSh 20,000 kila moja kwa mwezi</p>
+          <p className="text-[11px] text-muted-foreground">{branches.length} matawi · TSh {branchPrice?.toLocaleString() ?? '—'} kila moja kwa mwezi</p>
         </div>
         <Dialog open={dialogOpen} onOpenChange={(o) => { setDialogOpen(o); if (!o) resetForm(); }}>
           <DialogTrigger asChild>
-            <Button className="rounded-full" size="sm"><Plus className="h-4 w-4 mr-1" /> Tawi Jipya</Button>
+            <Button className="justify-self-end rounded-full" size="sm"><Plus className="h-4 w-4 mr-1" /> Tawi Jipya</Button>
           </DialogTrigger>
           <DialogContent className="max-w-md rounded-3xl max-h-[90vh] overflow-y-auto">
             <DialogHeader><DialogTitle>{editing ? 'Hariri Tawi' : 'Ongeza Tawi Jipya'}</DialogTitle></DialogHeader>
@@ -807,7 +818,7 @@ export const BranchManager = () => {
               )}
               {!editing && (
                 <div className="bg-primary/5 rounded-2xl p-3 text-center">
-                  <p className="text-sm font-bold text-primary">TSh 20,000/mwezi</p>
+                  <p className="text-sm font-bold text-primary">TSh {branchPrice?.toLocaleString() ?? '—'}/mwezi</p>
                   <p className="text-[10px] text-muted-foreground">Kila tawi lina gharama ya mwezi</p>
                 </div>
               )}

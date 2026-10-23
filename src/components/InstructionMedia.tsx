@@ -4,6 +4,7 @@ import products from '@/assets/huduma-products.jpg.asset.json';
 import reports from '@/assets/huduma-reports.jpg.asset.json';
 import scanner from '@/assets/huduma-scanner.jpg.asset.json';
 import hero from '@/assets/huduma-hero.jpg';
+import { assetUrl } from '@/lib/assetUrl';
 import { Button } from '@/components/ui/button';
 
 export const instructionSlides = [
@@ -15,9 +16,9 @@ export const instructionSlides = [
 export function InstructionMedia({ index = 0, video = false }: { index?: number; video?: boolean }) {
   const [reduced, setReduced] = useState(true);
   useEffect(() => { const mq = window.matchMedia('(prefers-reduced-motion: reduce)'); setReduced(mq.matches); }, []);
-  if (video) return <video src={clip.url} poster={hero} controls autoPlay={!reduced} muted loop playsInline preload="metadata" aria-label="Muuzaji dukani — video iliyotengenezwa kwa AI" className="aspect-video w-full rounded-3xl object-cover" />;
+  if (video) return <video src={assetUrl(clip.url)} poster={hero} controls autoPlay={!reduced} muted loop playsInline preload="metadata" aria-label="Muuzaji dukani — video iliyotengenezwa kwa AI" className="aspect-video w-full rounded-3xl object-cover" />;
   const slide = instructionSlides[index % instructionSlides.length];
-  return <img src={slide.image} alt={`Picha halisi ya Kiduka: ${slide.title}`} className="aspect-[4/3] w-full rounded-2xl border border-border object-contain bg-background motion-safe:animate-fade-in" />;
+  return <img src={assetUrl(slide.image)} alt={`Picha halisi ya Kiduka: ${slide.title}`} className="aspect-[4/3] w-full rounded-2xl border border-border object-contain bg-background motion-safe:animate-fade-in" />;
 }
 
 export function InstructionCards() {

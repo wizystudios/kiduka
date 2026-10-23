@@ -45,121 +45,23 @@ export const useDataAccess = () => {
   }, [user?.id, userProfile?.role]);
 
   useEffect(() => {
-    if (!user || userProfile?.role === 'owner' || userProfile?.role === 'super_admin') { setBranchId(null); setBranchName(null); return; }
+    let current = true;
+    setLoading(true); setDataOwnerId(null); setOwnerBusinessName(null);
+    setIsAssistant(userProfile?.role === 'assistant');
+    if (!user || !userProfile) { setLoading(false); return; }
+    if (userProfile.role === 'owner' || userProfile.role === 'super_admin') {
+      setDataOwnerId(user.id); setOwnerBusinessName(userProfile.business_name || null); setLoading(false); return;
+    }
     (async () => {
-      const { data } = await supabase.from('branch_staff')
-        .select('branch_id, role, business_branches(branch_name, features, is_active)')
-        .eq('user_id', user.id).eq('is_active', true).maybeSingle();
-      setBranchId((data as any)?.branch_id ?? null);
-      setBranchName((data as any)?.business_branches?.branch_name ?? null);
-      setBranchRole((data as any)?.role ?? null);
-      setBranchFeatures((data as any)?.business_branches?.features ?? null);
+      const { data, error } = await supabase.from('assistant_permissions').select('owner_id').eq('assistant_id', user.id).eq('is_active', true).maybeSingle();
+      if (!current) return;
+      if (error || !data?.owner_id) { setLoading(false); return; }
+      const { data: owner } = await supabase.from('profiles').select('business_name').eq('id', data.owner_id).maybeSingle();
+      if (!current) return;
+      setDataOwnerId(data.owner_id); setOwnerBusinessName(owner?.business_name || null); setLoading(false);
     })();
-  }, [user, userProfile?.role]);
-
-  useEffect(() => {
-    const fetchDataOwnerId = async () => {
-      setLoading(true);
-      setDataOwnerId(null);
-      setOwnerBusinessName(null);
-      if (!user || !userProfile) {
-        console.log('useDataAccess: No user or profile yet');
-        setLoading(false);
-        return;
-      }
-
-      console.log('useDataAccess: User role is', userProfile.role);
-
-      // Owners and super_admins access their own data
-      if (userProfile.role === 'owner' || userProfile.role === 'super_admin') {
-        console.log('useDataAccess: Owner/super_admin - using own ID:', user.id);
-        setDataOwnerId(user.id);
-        setOwnerBusinessName(userProfile.business_name || null);
-        setIsAssistant(false);
-        setLoading(false);
-        return;
-      }
-
-      // Assistants need to fetch their owner_id from assistant_permissions
-      if (userProfile.role === 'assistant') {
-        console.log('useDataAccess: Assistant - fetching owner_id from permissions...');
-        setIsAssistant(true);
-        
-        try {
-          const { data, error } = await supabase
-            .from('assistant_permissions')
-            .select('owner_id')
-            .eq('assistant_id', user.id)
-            .maybeSingle();
-
-          if (error) {
-            console.error('Error fetching assistant owner:', error);
-            // Fallback: check user metadata for owner_id
-            const metadataOwnerId = user.user_metadata?.owner_id;
-            if (metadataOwnerId) {
-              console.log('useDataAccess: Using owner_id from metadata:', metadataOwnerId);
-              setDataOwnerId(metadataOwnerId);
-              
-              // Try to fetch owner's business name
-              const { data: ownerProfile } = await supabase
-                .from('profiles')
-                .select('business_name')
-                .eq('id', metadataOwnerId)
-                .maybeSingle();
-              
-              setOwnerBusinessName(ownerProfile?.business_name || null);
-            } else {
-              console.error('No owner_id found for assistant');
-              setDataOwnerId(null);
-            }
-          } else if (data?.owner_id) {
-            console.log('useDataAccess: Found owner_id in permissions:', data.owner_id);
-            setDataOwnerId(data.owner_id);
-            
-            // Fetch owner's business name
-            const { data: ownerProfile } = await supabase
-              .from('profiles')
-              .select('business_name')
-              .eq('id', data.owner_id)
-              .maybeSingle();
-            
-            setOwnerBusinessName(ownerProfile?.business_name || null);
-          } else {
-            console.log('useDataAccess: No permissions record found for assistant');
-            // Fallback to metadata
-            const metadataOwnerId = user.user_metadata?.owner_id;
-            if (metadataOwnerId) {
-              console.log('useDataAccess: Fallback to metadata owner_id:', metadataOwnerId);
-              setDataOwnerId(metadataOwnerId);
-              
-              // Try to fetch owner's business name
-              const { data: ownerProfile } = await supabase
-                .from('profiles')
-                .select('business_name')
-                .eq('id', metadataOwnerId)
-                .maybeSingle();
-              
-              setOwnerBusinessName(ownerProfile?.business_name || user.user_metadata?.business_name || null);
-            } else {
-              console.log('useDataAccess: No owner_id in metadata either, assistant cannot access data');
-              setDataOwnerId(null);
-            }
-          }
-        } catch (error) {
-          console.error('Error in assistant data access:', error);
-          setDataOwnerId(null);
-        }
-      } else {
-        // Unknown role, use own id
-        console.log('useDataAccess: Unknown role, using own ID');
-        setDataOwnerId(user.id);
-      }
-
-      setLoading(false);
-    };
-
-    fetchDataOwnerId();
-  }, [user, userProfile]);
+    return () => { current = false; };
+  }, [user?.id, userProfile?.role, userProfile?.business_name]);
 
   return { 
     dataOwnerId, 

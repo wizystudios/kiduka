@@ -29,7 +29,7 @@ interface Customer {
 export const CustomersPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { dataOwnerId, branchId } = useDataAccess();
+  const { dataOwnerId, branchId, loading: scopeLoading } = useDataAccess();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [isDesktop, setIsDesktop] = useState(() => window.innerWidth >= 768);
   useEffect(() => { const mq = window.matchMedia('(min-width: 768px)'); const update = () => setIsDesktop(mq.matches); mq.addEventListener('change', update); return () => mq.removeEventListener('change', update); }, []);
@@ -55,8 +55,9 @@ export const CustomersPage = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    fetchCustomers();
-  }, [dataOwnerId, branchId]);
+    setCustomers([]); setSelectedCustomer(null);
+    if (!scopeLoading) fetchCustomers();
+  }, [dataOwnerId, branchId, scopeLoading]);
 
   const openWhatsApp = (customer: Customer) => {
     if (!customer.phone) {
@@ -112,7 +113,7 @@ export const CustomersPage = () => {
 
   const fetchCustomers = async () => {
     try {
-      if (!dataOwnerId) return;
+      if (!dataOwnerId || scopeLoading) return;
       let query = supabase
         .from('customers')
         .select('*')
@@ -137,12 +138,13 @@ export const CustomersPage = () => {
       return;
     }
 
+    if (!dataOwnerId || scopeLoading) return;
     try {
       if (editingCustomer) {
         const { error } = await supabase
           .from('customers')
           .update({ name: customerData.name, email: customerData.email || null, phone: customerData.phone || null })
-          .eq('id', editingCustomer.id);
+          .eq('id', editingCustomer.id).eq('owner_id', dataOwnerId);
         if (error) throw error;
         toast({ title: 'Mafanikio', description: 'Mteja amesasishwa' });
       } else {
@@ -172,7 +174,7 @@ export const CustomersPage = () => {
   const handleDeleteCustomer = async (id: string) => {
     if (!confirm('Una uhakika unataka kufuta mteja huyu?')) return;
     try {
-      const { error } = await supabase.from('customers').delete().eq('id', id);
+      const { error } = await supabase.from('customers').delete().eq('id', id).eq('owner_id', dataOwnerId || '');
       if (error) throw error;
       setCustomers(customers.filter(c => c.id !== id));
       toast({ title: 'Mafanikio', description: 'Mteja amefutwa' });
@@ -249,7 +251,7 @@ export const CustomersPage = () => {
   const totalDebt = customers.reduce((sum, c) => sum + (c.outstanding_balance || 0), 0);
   const customersWithDebt = customers.filter(c => (c.outstanding_balance || 0) > 0).length;
 
-  if (loading) {
+  if (loading || scopeLoading) {
     return (
       <div className="p-4 space-y-4">
         {[...Array(5)].map((_, i) => (
