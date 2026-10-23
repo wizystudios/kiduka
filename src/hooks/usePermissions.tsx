@@ -57,6 +57,7 @@ export const usePermissions = () => {
             .from('assistant_permissions')
             .select('*')
             .eq('assistant_id', user.id)
+            .eq('is_active', true)
             .single();
 
           if (!current) return;
@@ -97,7 +98,7 @@ export const usePermissions = () => {
         }
       }
 
-      setLoading(false);
+      if (current) setLoading(false);
     };
 
     fetchPermissions();

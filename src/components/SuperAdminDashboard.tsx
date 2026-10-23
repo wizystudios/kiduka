@@ -244,6 +244,7 @@ export const SuperAdminDashboard = () => {
   const [approvalDialog, setApprovalDialog] = useState<{subId: string; duration: string} | null>(null);
   const [userPasswordChange, setUserPasswordChange] = useState<{userId: string; userName: string; newPassword: string} | null>(null);
   const [banDialog, setBanDialog] = useState<{userId: string; userName: string; duration: string} | null>(null);
+  const [authoritativeBill, setAuthoritativeBill] = useState<any>(null);
   const [feeDialog, setFeeDialog] = useState<Subscription | null>(null);
   const [feeForm, setFeeForm] = useState({ custom_fee: '', assistant_count: 0, has_sokoni: false, branch_count: 0, admin_fee_notes: '' });
   const [billingPrices, setBillingPrices] = useState({ base_fee: 0, extra_staff_fee: 0, branch_fee: 0, sokoni_fee: 0 });
@@ -559,6 +560,10 @@ export const SuperAdminDashboard = () => {
       branch_count: sub.branch_count || 0,
       admin_fee_notes: sub.admin_fee_notes || ''
     });
+    setAuthoritativeBill(null);
+    supabase.rpc('admin_get_business_billing', { p_owner_id: sub.user_id }).then(({ data, error }) => {
+      if (error) toast.error('Bili haijapatikana'); else setAuthoritativeBill(data);
+    });
     setFeeDialog(sub);
   };
 
@@ -566,9 +571,6 @@ export const SuperAdminDashboard = () => {
     if (!feeDialog) return;
     try {
       const updateData: any = {
-        assistant_count: feeForm.assistant_count,
-        has_sokoni: feeForm.has_sokoni,
-        branch_count: feeForm.branch_count,
         admin_fee_notes: feeForm.admin_fee_notes || null,
         custom_fee: feeForm.custom_fee ? Number(feeForm.custom_fee) : null,
         updated_at: new Date().toISOString()
@@ -1611,32 +1613,13 @@ export const SuperAdminDashboard = () => {
               <SheetDescription>{feeDialog?.user_name || feeDialog?.user_email}</SheetDescription>
             </SheetHeader>
             <div className="space-y-4 py-4">
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <Label className="text-xs">Wasaidizi</Label>
-                  <Input type="number" min={0} value={feeForm.assistant_count} onChange={e => setFeeForm(f => ({...f, assistant_count: Number(e.target.value)}))} />
-                  <p className="text-[10px] text-muted-foreground">× TSh {billingPrices.extra_staff_fee.toLocaleString()} kila mmoja</p>
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Matawi</Label>
-                  <Input type="number" min={0} value={feeForm.branch_count} onChange={e => setFeeForm(f => ({...f, branch_count: Number(e.target.value)}))} />
-                  <p className="text-[10px] text-muted-foreground">× TSh {billingPrices.branch_fee.toLocaleString()} kila tawi</p>
-                </div>
+              <div className="space-y-3 border-y border-border py-4 text-sm">
+                {authoritativeBill ? <>
+                  {authoritativeBill.items.map((item: any) => <div key={item.key} className="flex justify-between gap-4"><span>{item.label}{item.qty > 1 ? ` × ${item.qty}` : ''}</span><span className="shrink-0 font-semibold">TSh {Number(item.amount).toLocaleString()}</span></div>)}
+                  <div className="flex justify-between border-t border-border pt-3 font-bold"><span>Jumla halisi</span><span>TSh {Number(authoritativeBill.total).toLocaleString()}</span></div>
+                </> : <p className="text-muted-foreground">Inapakia bili...</p>}
               </div>
-              <div className="flex items-center gap-2">
-                <input type="checkbox" id="hasSokoni" checked={feeForm.has_sokoni} onChange={e => setFeeForm(f => ({...f, has_sokoni: e.target.checked}))} className="rounded" />
-                <Label htmlFor="hasSokoni" className="text-sm">Sokoni Marketplace (+TSh {billingPrices.sokoni_fee.toLocaleString()})</Label>
-              </div>
-              <div className="p-3 bg-muted/50 rounded-2xl space-y-1 text-xs">
-                <div className="flex justify-between"><span>Ada ya msingi</span><span>TSh {billingPrices.base_fee.toLocaleString()}</span></div>
-                {feeForm.assistant_count > 0 && <div className="flex justify-between"><span>Wasaidizi ({feeForm.assistant_count})</span><span>TSh {(feeForm.assistant_count * billingPrices.extra_staff_fee).toLocaleString()}</span></div>}
-                {feeForm.has_sokoni && <div className="flex justify-between"><span>Sokoni</span><span>TSh {billingPrices.sokoni_fee.toLocaleString()}</span></div>}
-                {feeForm.branch_count > 0 && <div className="flex justify-between"><span>Matawi ({feeForm.branch_count})</span><span>TSh {(feeForm.branch_count * billingPrices.branch_fee).toLocaleString()}</span></div>}
-                <div className="border-t pt-1 flex justify-between font-bold">
-                  <span>Jumla (auto)</span>
-                  <span>TSh {(billingPrices.base_fee + feeForm.assistant_count * billingPrices.extra_staff_fee + (feeForm.has_sokoni ? billingPrices.sokoni_fee : 0) + feeForm.branch_count * billingPrices.branch_fee).toLocaleString()}</span>
-                </div>
-              </div>
+              <Button variant="outline" onClick={() => navigate('/billing-plans')}>Mipango na bei</Button>
               <div className="space-y-1">
                 <Label className="text-xs">Ada Maalum (override, weka tupu kwa auto)</Label>
                 <Input type="number" placeholder="Acha tupu kwa auto" value={feeForm.custom_fee} onChange={e => setFeeForm(f => ({...f, custom_fee: e.target.value}))} />
