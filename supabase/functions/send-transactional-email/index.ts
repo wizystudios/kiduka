@@ -86,7 +86,7 @@ Deno.serve(async (req) => {
 
   // 1. Look up template from registry (early — needed to resolve recipient)
   // Public hub requests must first pass validation and durable storage.
-  if (templateName === 'servicehub-request' && req.headers.get('Authorization') !== `Bearer ${supabaseServiceKey}`) {
+  if ((templateName === 'servicehub-request' || templateName === 'servicehub-reply') && req.headers.get('Authorization') !== `Bearer ${supabaseServiceKey}`) {
     return new Response(JSON.stringify({ error: 'Use the ServiceHUB submission form' }), {
       status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })

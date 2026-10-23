@@ -227,7 +227,7 @@ export const BranchManager = () => {
       const payload = {
         branch_name: form.branch_name.trim(), branch_type: form.branch_type,
         region: form.region || null, district: form.district || null, ward: form.ward || null, street: form.street || null,
-        features: form.features,
+        ...(isSystemAdmin ? { features: form.features } : {}),
       };
       if (editing) {
         const { data, error } = await supabase.from('business_branches').update(payload).eq('id', editing.id).select('id').maybeSingle();
@@ -730,7 +730,7 @@ export const BranchManager = () => {
               <div><Label className="text-xs">Jina la Tawi *</Label><Input value={form.branch_name} onChange={e => setForm({ ...form, branch_name: e.target.value })} className="rounded-2xl" required /></div>
               <div>
                 <Label className="text-xs">Aina ya Tawi</Label>
-                <Select value={form.branch_type} onValueChange={applyTypeDefaults}>
+                <Select value={form.branch_type} onValueChange={applyTypeDefaults} disabled={!isSystemAdmin}>
                   <SelectTrigger className="rounded-2xl"><SelectValue /></SelectTrigger>
                   <SelectContent>{BRANCH_TYPES.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}</SelectContent>
                 </Select>
@@ -748,7 +748,7 @@ export const BranchManager = () => {
                     {FEATURE_LIST.map(f => (
                       <div key={f.key} className="flex items-center justify-between py-1">
                         <div className="flex items-center gap-2"><f.icon className="h-3.5 w-3.5 text-muted-foreground" /><span className="text-xs">{f.label}</span></div>
-                        <Switch checked={form.features[f.key] ?? true} onCheckedChange={v => setForm(prev => ({ ...prev, features: { ...prev.features, [f.key]: v } }))} />
+                        <Switch checked={form.features[f.key] ?? true} disabled={!isSystemAdmin} onCheckedChange={v => setForm(prev => ({ ...prev, features: { ...prev.features, [f.key]: v } }))} />
                       </div>
                     ))}
                   </div>
@@ -792,7 +792,7 @@ export const BranchManager = () => {
               <div><Label className="text-xs">Jina la Tawi *</Label><Input value={form.branch_name} onChange={e => setForm({ ...form, branch_name: e.target.value })} className="rounded-2xl" required /></div>
               <div>
                 <Label className="text-xs">Aina ya Tawi</Label>
-                <Select value={form.branch_type} onValueChange={applyTypeDefaults}>
+                <Select value={form.branch_type} onValueChange={applyTypeDefaults} disabled={!isSystemAdmin}>
                   <SelectTrigger className="rounded-2xl"><SelectValue /></SelectTrigger>
                   <SelectContent>{BRANCH_TYPES.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}</SelectContent>
                 </Select>
@@ -810,7 +810,7 @@ export const BranchManager = () => {
                     {FEATURE_LIST.map(f => (
                       <div key={f.key} className="flex items-center justify-between py-1">
                         <div className="flex items-center gap-2"><f.icon className="h-3.5 w-3.5 text-muted-foreground" /><span className="text-xs">{f.label}</span></div>
-                        <Switch checked={form.features[f.key] ?? true} onCheckedChange={v => setForm(prev => ({ ...prev, features: { ...prev.features, [f.key]: v } }))} />
+                        <Switch checked={form.features[f.key] ?? true} disabled={!isSystemAdmin} onCheckedChange={v => setForm(prev => ({ ...prev, features: { ...prev.features, [f.key]: v } }))} />
                       </div>
                     ))}
                   </div>

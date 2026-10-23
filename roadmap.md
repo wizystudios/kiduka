@@ -1,6 +1,9 @@
 # Kiduka completion roadmap
 
 ## ServiceHUB
+- [ ] Remove customer captures and authentication Sokoni button; consolidate internal support into ServiceHUB.
+- [ ] Add private admin inquiry management and email/WhatsApp replies; verify booking, question and reply sends.
+- [ ] Review and resolve the requested Project monitoring finding against current requirements.
 - [x] Public ServiceHUB navigation on mobile and desktop, signed in or out.
 - [x] Return announcement, existing visual media and WhatsApp-shareable service cards.
 - [x] Persist appointment requests/questions and notify the confirmed business email; two audit requests recorded as sent.

@@ -52,7 +52,6 @@ export const utilityNavigationItems: AppNavItem[] = [
   { id: 'notifications', label: 'Arifa', icon: Bell, href: '/notifications', permission: null },
   { id: 'subscription', ownerOnly: true, label: 'Michango', icon: Crown, href: '/subscription', permission: null },
   { id: 'install', label: 'Sakinisha App', icon: Smartphone, href: '/pwa-install', permission: null },
-  { id: 'help', label: 'Msaada', icon: HelpCircle, href: '/help', permission: null },
 ];
 
 export const superAdminNavigationItem: AppNavItem = {

@@ -38,7 +38,7 @@ export const UnifiedSettingsPage = () => {
     { id: 'ads', label: 'Matangazo', icon: Megaphone },
     { id: 'install', label: 'App', icon: Smartphone },
     { id: 'qa', label: 'Mobile QA', icon: ClipboardCheck },
-    { id: 'help', label: 'Msaada', icon: Headphones },
+    { id: 'help', label: 'ServiceHUB', icon: Headphones },
   ];
 
   useEffect(() => {
@@ -70,6 +70,7 @@ export const UnifiedSettingsPage = () => {
   }, [activeTab]);
 
   const handleTabChange = (tabId: string) => {
+    if (tabId === 'help') { navigate('/servicehub'); return; }
     if (tabId === 'qa') {
       navigate('/mobile-qa');
       return;
