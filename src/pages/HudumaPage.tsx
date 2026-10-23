@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import hudumaHero from '@/assets/huduma-hero.jpg';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
@@ -80,6 +81,10 @@ const HudumaPage = () => {
           <Button className="h-11 rounded-full px-7" onClick={() => navigate('/auth')}>Anza sasa</Button>
           <Button variant="ghost" className="h-11 rounded-full px-7 text-primary" onClick={() => document.getElementById('bei')?.scrollIntoView({ behavior: 'smooth' })}>Angalia bei ›</Button>
         </div>
+      </section>
+
+      <section className="mx-auto max-w-5xl px-4 pb-16">
+        <img src={hudumaHero} alt="Muuzaji akiscan bidhaa kwa simu dukani" width={1600} height={912} className="w-full rounded-3xl object-cover shadow-lg" />
       </section>
 
       <section className="mx-auto max-w-5xl px-4 pb-20">
