@@ -8,7 +8,7 @@ import { hubWhatsAppLink, serviceHubMessage } from '@/lib/serviceHub';
 import { toast } from 'sonner';
 const cards = [
  { id: 'tumerudi', title: 'Tumerudi na nguvu mpya.', text: 'Kiduka inapatikana tena! Tuko tayari kukuhudumia: mauzo, stoo, madeni, matawi na Sokoni. Karibu tuendelee kuikuza biashara yako.', image: hero, caption: 'Picha ya AI · Kiduka' },
- { id: 'mauzo', title: 'Mauzo yenye kumbukumbu.', text: 'Scan bidhaa, hakiki kikapu na fungua risiti yenye jina la duka. Omba miadi ya kuoneshwa Kiduka kupitia ServiceHUB.', image: assetUrl(instructionSlides[0].image), caption: 'Kiduka halisi · Scanner na risiti' },
+ { id: 'mauzo', title: 'Mauzo yenye kumbukumbu.', text: 'Scan bidhaa, hakiki kikapu na fungua risiti yenye jina la duka. Omba miadi ya kuoneshwa Kiduka kupitia ServiceHUB.', image: assetUrl(instructionSlides[2].image), caption: 'Kiduka halisi · Ripoti za biashara' },
  { id: 'biashara', title: 'Biashara yako, pamoja.', text: 'Panga bidhaa na stoo, fuatilia taarifa za biashara na simamia matawi yako. Tupo kukusaidia kuanza na kutumia Kiduka.', image: assetUrl(instructionSlides[1].image), caption: 'Kiduka halisi · Bidhaa na stoo' },
 ];
 function ShareCard({ card }: { card: typeof cards[number] }) {
