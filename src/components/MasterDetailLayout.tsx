@@ -20,7 +20,7 @@ export function MasterDetailLayout({ list, detail, hasSelection, className, empt
     <div
       className={cn(
         'min-w-0 md:grid md:grid-cols-[minmax(300px,380px)_minmax(0,1fr)] md:gap-0 xl:grid-cols-[minmax(340px,420px)_minmax(0,1fr)]',
-        'md:h-[calc(100dvh-11rem)] md:overflow-hidden md:rounded-3xl md:border md:border-border/60 md:bg-card',
+        'md:h-[calc(100dvh-11rem)] md:overflow-hidden md:border-y md:border-border/60 md:bg-background',
         className,
       )}
     >

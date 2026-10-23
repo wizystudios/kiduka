@@ -12,6 +12,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { useDataAccess } from '@/hooks/useDataAccess';
+import { MasterDetailLayout } from '@/components/MasterDetailLayout';
 import { CustomerLedger } from '@/components/CustomerLedger';
 import { exportToExcel, ExportColumn } from '@/utils/exportUtils';
 
@@ -30,6 +31,8 @@ export const CustomersPage = () => {
   const { user } = useAuth();
   const { dataOwnerId, branchId } = useDataAccess();
   const [customers, setCustomers] = useState<Customer[]>([]);
+  const [isDesktop, setIsDesktop] = useState(() => window.innerWidth >= 768);
+  useEffect(() => { const mq = window.matchMedia('(min-width: 768px)'); const update = () => setIsDesktop(mq.matches); mq.addEventListener('change', update); return () => mq.removeEventListener('change', update); }, []);
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -325,11 +328,12 @@ export const CustomersPage = () => {
         <Input placeholder="Tafuta mteja..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10" />
       </div>
 
+      <MasterDetailLayout hasSelection={!!selectedCustomer} list={<>
       {/* Customer List */}
       <div className="space-y-2">
         {filteredCustomers.map((customer) => (
-          <div key={customer.id} className="p-3 border border-border/50 rounded-2xl hover:bg-muted/30 transition-all">
-            <div className="flex items-start justify-between gap-3">
+          <div key={customer.id} onClick={() => setSelectedCustomer({ id: customer.id, name: customer.name })} className="cursor-pointer p-3 border border-border/50 rounded-2xl hover:bg-muted/30 transition-all">
+            <div className="flex flex-col gap-3">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
                   <h3 className="font-semibold text-sm truncate">{customer.name}</h3>
@@ -339,13 +343,13 @@ export const CustomersPage = () => {
                     </Badge>
                   )}
                 </div>
-                <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
+                <div className="flex flex-wrap break-all items-center gap-3 text-xs text-muted-foreground mt-0.5">
                   {customer.phone && <span>{customer.phone}</span>}
                   {customer.email && <span>{customer.email}</span>}
                 </div>
               </div>
               
-              <div className="flex gap-1 flex-shrink-0">
+              <div className="flex flex-wrap gap-1 flex-shrink-0">
                 {(customer.outstanding_balance || 0) > 0 && (
                   <Button variant="default" size="sm" className="h-7 px-2 text-xs gap-1 rounded-xl" onClick={() => { setQuickPayCustomer(customer); setQuickPayOpen(true); }}>
                     <Wallet className="h-3 w-3" />
@@ -389,8 +393,10 @@ export const CustomersPage = () => {
         </div>
       )}
 
+      </>} detail={selectedCustomer ? <CustomerLedger key={selectedCustomer.id} customerId={selectedCustomer.id} customerName={selectedCustomer.name} open inline onOpenChange={() => setSelectedCustomer(null)} /> : null} />
+
       {/* Ledger Dialog */}
-      {selectedCustomer && (
+      {selectedCustomer && !isDesktop && (
         <CustomerLedger
           customerId={selectedCustomer.id}
           customerName={selectedCustomer.name}
