@@ -115,7 +115,7 @@ const HudumaPage = () => {
                     <button key={String(l)} onClick={() => setLarge(v as boolean)} className={cn('rounded-full py-2 text-sm', large === v ? 'bg-background font-medium shadow-sm' : 'text-muted-foreground')}>{l as string}</button>
                   ))}
                 </div>
-                <p className="mt-2 text-xs text-muted-foreground">Kubwa = bidhaa 500 au zaidi.</p>
+                <p className="mt-2 text-xs text-muted-foreground">Kubwa = bidhaa 5,000 au zaidi.</p>
               </div>
               <div>
                 <div className="mb-3 flex justify-between text-sm"><span className="font-medium">Wafanyakazi duka kuu</span><span>{staff}</span></div>
