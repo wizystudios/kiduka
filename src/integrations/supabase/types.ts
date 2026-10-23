@@ -3356,6 +3356,18 @@ export type Database = {
         Args: { p_phone: string; p_pin: string }
         Returns: Json
       }
+      submit_verified_order_review: {
+        Args: {
+          p_customer_name?: string
+          p_order_id: string
+          p_phone: string
+          p_pin: string
+          p_product_id: string
+          p_rating: number
+          p_review_text?: string
+        }
+        Returns: Json
+      }
       track_sokoni_order: {
         Args: { p_phone: string; p_tracking_code: string }
         Returns: {
