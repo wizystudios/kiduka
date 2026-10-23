@@ -27,17 +27,22 @@ export const OrderReviewForm = ({ orderId, items, customerPhone }: OrderReviewFo
 
     setSubmitting(true);
     try {
-      // Submit review for each product that has a product_id
+      const phone = localStorage.getItem('sokoni_customer_phone');
+      const pin = localStorage.getItem('sokoni_customer_pin');
+      if (!phone || !pin || phone !== customerPhone) throw new Error('Ingia kwenye akaunti yako ya Sokoni kwanza.');
+      if (!items.some(item => item.product_id)) throw new Error('Bidhaa za oda hii hazijapatikana.');
       for (const item of items) {
         if (item.product_id) {
-          await supabase.from('product_reviews').insert({
-            product_id: item.product_id,
-            customer_phone: customerPhone,
-            customer_name: customerName || null,
-            rating,
-            review_text: reviewText || null,
-            is_verified_purchase: true,
+          const { data, error } = await supabase.rpc('submit_verified_order_review', {
+            p_order_id: orderId,
+            p_product_id: item.product_id,
+            p_phone: phone,
+            p_pin: pin,
+            p_customer_name: customerName || null,
+            p_rating: rating,
+            p_review_text: reviewText || null,
           });
+          if (error || !(data as any)?.success) throw new Error('Ununuzi haujathibitishwa au maoni tayari yametumwa.');
         }
       }
       
@@ -45,7 +50,7 @@ export const OrderReviewForm = ({ orderId, items, customerPhone }: OrderReviewFo
       setSubmitted(true);
     } catch (error) {
       console.error('Error submitting review:', error);
-      toast.error('Imeshindwa kutuma maoni. Jaribu tena.');
+      toast.error(error instanceof Error ? error.message : 'Imeshindwa kutuma maoni. Jaribu tena.');
     } finally {
       setSubmitting(false);
     }

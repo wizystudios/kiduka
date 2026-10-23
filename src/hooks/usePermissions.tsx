@@ -23,6 +23,8 @@ export const usePermissions = () => {
   const [ownerId, setOwnerId] = useState<string | null>(null);
 
   useEffect(() => {
+    let current = true;
+    setPermissions(null); setOwnerId(null); setLoading(true);
     const fetchPermissions = async () => {
       if (!user || !userProfile) {
         setLoading(false);
@@ -55,8 +57,10 @@ export const usePermissions = () => {
             .from('assistant_permissions')
             .select('*')
             .eq('assistant_id', user.id)
+            .eq('is_active', true)
             .single();
 
+          if (!current) return;
           if (error) throw error;
 
           if (data) {
@@ -94,10 +98,11 @@ export const usePermissions = () => {
         }
       }
 
-      setLoading(false);
+      if (current) setLoading(false);
     };
 
     fetchPermissions();
+    return () => { current = false; };
   }, [user, userProfile]);
 
   // Helper function to get the effective owner_id for data queries

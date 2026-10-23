@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, type ReactNode } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -42,9 +42,10 @@ interface CustomerLedgerProps {
   customerName: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  inline?: boolean;
 }
 
-export const CustomerLedger = ({ customerId, customerName, open, onOpenChange }: CustomerLedgerProps) => {
+export const CustomerLedger = ({ customerId, customerName, open, onOpenChange, inline = false }: CustomerLedgerProps) => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
@@ -152,14 +153,13 @@ export const CustomerLedger = ({ customerId, customerName, open, onOpenChange }:
 
   return (
     <>
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
+      <LedgerFrame inline={inline} open={open} onOpenChange={onOpenChange}>
+          <div>
+            <h2 className="flex items-center gap-2 font-semibold">
               <FileText className="h-5 w-5" />
               Leja ya {customerName}
-            </DialogTitle>
-          </DialogHeader>
+            </h2>
+          </div>
 
           {loading ? (
             <div className="flex items-center justify-center py-12">
@@ -298,8 +298,7 @@ export const CustomerLedger = ({ customerId, customerName, open, onOpenChange }:
               </div>
             </>
           )}
-        </DialogContent>
-      </Dialog>
+      </LedgerFrame>
 
       {/* Payment Dialog */}
       <Dialog open={paymentDialogOpen} onOpenChange={setPaymentDialogOpen}>
@@ -369,3 +368,8 @@ export const CustomerLedger = ({ customerId, customerName, open, onOpenChange }:
     </>
   );
 };
+
+function LedgerFrame({ inline, open, onOpenChange, children }: { inline: boolean; open: boolean; onOpenChange: (open: boolean) => void; children: ReactNode }) {
+  if (inline) return <div className="space-y-4">{children}</div>;
+  return <Dialog open={open} onOpenChange={onOpenChange}><DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">{children}</DialogContent></Dialog>;
+}

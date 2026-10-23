@@ -3176,6 +3176,10 @@ export type Database = {
         }
         Returns: Json
       }
+      admin_get_business_billing: {
+        Args: { p_owner_id: string }
+        Returns: Json
+      }
       admin_reactivate_user: { Args: { p_user_id: string }; Returns: Json }
       approve_user_subscription: {
         Args: {
@@ -3239,6 +3243,7 @@ export type Database = {
       generate_tracking_code: { Args: never; Returns: string }
       get_my_billing: { Args: never; Returns: Json }
       get_primary_business_id: { Args: { _user_id?: string }; Returns: string }
+      get_public_billing_settings: { Args: never; Returns: Json }
       get_user_business_ids: { Args: { _user_id?: string }; Returns: string[] }
       get_user_role: { Args: { _user_id: string }; Returns: string }
       has_admin_password_set: { Args: never; Returns: boolean }
@@ -3353,6 +3358,18 @@ export type Database = {
       }
       sokoni_verify_pin: {
         Args: { p_phone: string; p_pin: string }
+        Returns: Json
+      }
+      submit_verified_order_review: {
+        Args: {
+          p_customer_name?: string
+          p_order_id: string
+          p_phone: string
+          p_pin: string
+          p_product_id: string
+          p_rating: number
+          p_review_text?: string
+        }
         Returns: Json
       }
       track_sokoni_order: {

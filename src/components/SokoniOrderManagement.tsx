@@ -14,6 +14,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useDataAccess } from '@/hooks/useDataAccess';
 import { useAuth } from '@/hooks/useAuth';
+import { MasterDetailLayout } from '@/components/MasterDetailLayout';
 import { estimateDeliveryDays } from '@/utils/deliveryEstimation';
 
 interface OrderItem {
@@ -46,6 +47,8 @@ export const SokoniOrderManagement = () => {
   // Sokoni orders belong to the main shop; branch staff never load them
   const dataOwnerId = branchId ? null : rawOwnerId;
   const { user } = useAuth();
+  const [isDesktop, setIsDesktop] = useState(() => window.innerWidth >= 768);
+  useEffect(() => { const mq = window.matchMedia('(min-width: 768px)'); const update = () => setIsDesktop(mq.matches); mq.addEventListener('change', update); return () => mq.removeEventListener('change', update); }, []);
   const [orders, setOrders] = useState<SokoniOrder[]>([]);
   const [selectedOrder, setSelectedOrder] = useState<SokoniOrder | null>(null);
   const [loading, setLoading] = useState(true);
@@ -395,122 +398,7 @@ export const SokoniOrderManagement = () => {
     return date.toLocaleDateString('sw-TZ');
   };
 
-  if (branchId) {
-    return <div className="py-16 text-center text-sm text-muted-foreground">Oda za Sokoni zinashughulikiwa na duka kuu tu, si tawi.</div>;
-  }
-
-  if (dataLoading || loading) {
-    return (
-      <div className="flex items-center justify-center py-8">
-        <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-4">
-      <Card className="border-border rounded-3xl">
-        <CardHeader className="pb-2">
-          <div className="flex items-center justify-between">
-            <div />
-            <div className="flex gap-2">
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="rounded-2xl text-green-600 border-green-300 hover:bg-green-50 dark:hover:bg-green-950"
-                onClick={() => {
-                  const customers = getUniqueCustomers();
-                  if (customers.length === 0) { toast.error('Hakuna wateja wa Sokoni bado'); return; }
-                  setBatchMsg(`🎉 HABARI NJEMA!\n\nTuna bidhaa mpya na matoleo mazuri kwenye duka letu!\n\nTembelea Sokoni yetu leo na upate bidhaa bora kwa bei nzuri.\n\nKaribuni sana! 🛍️`);
-                  setBatchOpen(true);
-                }}
-              >
-                <Megaphone className="h-4 w-4 mr-1" />
-                Tuma kwa Wote ({getUniqueCustomers().length})
-              </Button>
-              <Button variant="outline" size="sm" onClick={fetchOrders} className="rounded-2xl">
-                <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-                Refresh
-              </Button>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-              {sortedOrders.length === 0 ? (
-                <div className="text-center py-8">
-                  <Package className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
-                  <p className="text-muted-foreground">Hakuna oda</p>
-                </div>
-              ) : (
-                sortedOrders.map(order => (
-                  <Card key={order.id} className={`cursor-pointer hover:shadow-md transition-shadow border-border rounded-2xl ${order.order_status === 'new' ? 'ring-2 ring-primary/30' : ''}`}>
-                    <CardContent className="p-3">
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-1.5 mb-1 flex-wrap">
-                            <span className="font-semibold text-sm">#{order.id.slice(0, 8).toUpperCase()}</span>
-                            {order.order_status === 'new' && <Badge className="bg-primary text-primary-foreground text-[10px]">MPYA</Badge>}
-                            <Badge className={`text-[10px] ${getStatusColor(order.order_status)}`}>{getStatusLabel(order.order_status)}</Badge>
-                            <Badge className={`text-[10px] ${order.payment_status === 'paid' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
-                              {order.payment_status === 'paid' ? 'Imelipwa' : 'Inasubiri'}
-                            </Badge>
-                          </div>
-                          <p className="text-xs text-muted-foreground flex items-center gap-1">
-                            <Phone className="h-3 w-3" />{order.customer_phone}
-                          </p>
-                          {order.tracking_code && (
-                            <p className="text-xs text-muted-foreground mt-0.5">
-                              Tracking: <span className="font-mono font-semibold">{order.tracking_code}</span>
-                            </p>
-                          )}
-                          <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5 truncate">
-                            <MapPin className="h-3 w-3 flex-shrink-0" /><span className="truncate">{order.delivery_address}</span>
-                          </p>
-                          {order.delivery_person_name && (
-                            <p className="text-xs text-primary flex items-center gap-1 mt-0.5">
-                              <User className="h-3 w-3" />
-                              {order.delivery_person_name} • {order.delivery_person_phone}
-                            </p>
-                          )}
-                          <div className="mt-1.5">
-                            <p className="text-sm">
-                              {order.items.length} bidhaa • <span className="font-semibold text-primary">TSh {order.total_amount.toLocaleString()}</span>
-                            </p>
-                            <p className="text-[10px] text-muted-foreground flex items-center gap-1 mt-0.5">
-                              <Clock className="h-3 w-3" />{formatTime(order.created_at)}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex flex-col gap-1 flex-shrink-0">
-                          <Button variant="outline" size="sm" onClick={() => setSelectedOrder(order)} className="rounded-2xl h-8 w-8 p-0">
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            className="rounded-2xl text-green-600 hover:text-green-700 h-8 w-8 p-0"
-                            onClick={(e) => { 
-                              e.stopPropagation(); 
-                              setSelectedOrder(order); 
-                              openCustomWhatsApp(order); 
-                            }}
-                          >
-                            <MessageSquare className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))
-              )}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Order Detail Dialog */}
-      <Dialog open={!!selectedOrder && !whatsappOpen} onOpenChange={() => { setSelectedOrder(null); setDeliveryName(''); setDeliveryPhone(''); }}>
-        <DialogContent className="max-w-md p-0 overflow-hidden rounded-2xl">
+  const orderDetail = <>
           <div className="bg-gradient-to-br from-primary/10 via-background to-secondary/10 p-4 text-center border-b border-border">
             <h2 className="font-bold">Oda #{selectedOrder?.id.slice(0, 8).toUpperCase()}</h2>
             {selectedOrder && (
@@ -646,6 +534,125 @@ export const SokoniOrderManagement = () => {
               </div>
             </div>
           )}
+  </>;
+
+  if (branchId) {
+    return <div className="py-16 text-center text-sm text-muted-foreground">Oda za Sokoni zinashughulikiwa na duka kuu tu, si tawi.</div>;
+  }
+
+  if (dataLoading || loading) {
+    return (
+      <div className="flex items-center justify-center py-8">
+        <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <MasterDetailLayout hasSelection={!!selectedOrder} detail={orderDetail} list={<div>
+        <div className="pb-4">
+          <div className="flex items-center justify-between">
+            <div />
+            <div className="flex gap-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="rounded-2xl text-green-600 border-green-300 hover:bg-green-50 dark:hover:bg-green-950"
+                onClick={() => {
+                  const customers = getUniqueCustomers();
+                  if (customers.length === 0) { toast.error('Hakuna wateja wa Sokoni bado'); return; }
+                  setBatchMsg(`🎉 HABARI NJEMA!\n\nTuna bidhaa mpya na matoleo mazuri kwenye duka letu!\n\nTembelea Sokoni yetu leo na upate bidhaa bora kwa bei nzuri.\n\nKaribuni sana! 🛍️`);
+                  setBatchOpen(true);
+                }}
+              >
+                <Megaphone className="h-4 w-4 mr-1" />
+                Tuma kwa Wote ({getUniqueCustomers().length})
+              </Button>
+              <Button variant="outline" size="sm" onClick={fetchOrders} className="rounded-2xl">
+                <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+                Refresh
+              </Button>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div className="space-y-3">
+              {sortedOrders.length === 0 ? (
+                <div className="text-center py-8">
+                  <Package className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
+                  <p className="text-muted-foreground">Hakuna oda</p>
+                </div>
+              ) : (
+                sortedOrders.map(order => (
+                  <Card key={order.id} className={`cursor-pointer hover:shadow-md transition-shadow border-border rounded-2xl ${order.order_status === 'new' ? 'ring-2 ring-primary/30' : ''}`}>
+                    <CardContent className="p-3">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1.5 mb-1 flex-wrap">
+                            <span className="font-semibold text-sm">#{order.id.slice(0, 8).toUpperCase()}</span>
+                            {order.order_status === 'new' && <Badge className="bg-primary text-primary-foreground text-[10px]">MPYA</Badge>}
+                            <Badge className={`text-[10px] ${getStatusColor(order.order_status)}`}>{getStatusLabel(order.order_status)}</Badge>
+                            <Badge className={`text-[10px] ${order.payment_status === 'paid' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
+                              {order.payment_status === 'paid' ? 'Imelipwa' : 'Inasubiri'}
+                            </Badge>
+                          </div>
+                          <p className="text-xs text-muted-foreground flex items-center gap-1">
+                            <Phone className="h-3 w-3" />{order.customer_phone}
+                          </p>
+                          {order.tracking_code && (
+                            <p className="text-xs text-muted-foreground mt-0.5">
+                              Tracking: <span className="font-mono font-semibold">{order.tracking_code}</span>
+                            </p>
+                          )}
+                          <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5 truncate">
+                            <MapPin className="h-3 w-3 flex-shrink-0" /><span className="truncate">{order.delivery_address}</span>
+                          </p>
+                          {order.delivery_person_name && (
+                            <p className="text-xs text-primary flex items-center gap-1 mt-0.5">
+                              <User className="h-3 w-3" />
+                              {order.delivery_person_name} • {order.delivery_person_phone}
+                            </p>
+                          )}
+                          <div className="mt-1.5">
+                            <p className="text-sm">
+                              {order.items.length} bidhaa • <span className="font-semibold text-primary">TSh {order.total_amount.toLocaleString()}</span>
+                            </p>
+                            <p className="text-[10px] text-muted-foreground flex items-center gap-1 mt-0.5">
+                              <Clock className="h-3 w-3" />{formatTime(order.created_at)}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex flex-col gap-1 flex-shrink-0">
+                          <Button variant="outline" size="sm" onClick={() => setSelectedOrder(order)} className="rounded-2xl h-8 w-8 p-0">
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="rounded-2xl text-green-600 hover:text-green-700 h-8 w-8 p-0"
+                            onClick={(e) => { 
+                              e.stopPropagation(); 
+                              setSelectedOrder(order); 
+                              openCustomWhatsApp(order); 
+                            }}
+                          >
+                            <MessageSquare className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))
+              )}
+          </div>
+        </div>
+      </div>} />
+
+      {/* Order Detail Dialog */}
+      <Dialog open={!!selectedOrder && !whatsappOpen && !isDesktop} onOpenChange={() => { setSelectedOrder(null); setDeliveryName(''); setDeliveryPhone(''); }}>
+        <DialogContent className="max-w-md p-0 overflow-hidden rounded-2xl">
+          {orderDetail}
         </DialogContent>
       </Dialog>
 

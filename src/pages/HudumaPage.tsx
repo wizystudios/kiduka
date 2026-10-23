@@ -1,4 +1,9 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { InstructionMedia, InstructionCards } from '@/components/InstructionMedia';
+import { supabase } from '@/integrations/supabase/client';
+import { calculateBillingPreview } from '@/lib/billingPreview';
+import { Input } from '@/components/ui/input';
+import { Switch } from '@/components/ui/switch';
 import hudumaHero from '@/assets/huduma-hero.jpg';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -31,7 +36,7 @@ const groups: { name: string; lead: string; items: F[] }[] = [
     { icon: MessageCircle, title: 'WhatsApp', kazi: 'Kumbusho za madeni, risiti na ujumbe uliopangwa.', faida: 'Mawasiliano bila gharama ya SMS.' },
   ]},
   { name: 'Kua', lead: 'Kutoka duka moja hadi matawi mengi na mtandaoni.', items: [
-    { icon: GitBranch, title: 'Matawi', kazi: 'Kila tawi lina mauzo, stoo na wafanyakazi wake; unaona yote.', faida: 'Matawi bila kikomo kwa akaunti moja.' },
+    { icon: GitBranch, title: 'Matawi', kazi: 'Kila tawi lina mauzo, stoo na wafanyakazi wake; unaona yote.', faida: 'Maduka mengi kama matawi ya biashara kuu; kila tawi lina ada yake.' },
     { icon: Store, title: 'Sokoni', kazi: 'Duka lako mtandaoni lenye link yako, oda na ufuatiliaji wa usafirishaji.', faida: 'Wateja wa mbali wanakununua saa 24.' },
     { icon: Wallet, title: 'Lipa Namba', kazi: 'Weka QR yako rasmi; wateja walipe M-Pesa, Tigo, Airtel, HaloPesa.', faida: 'Pesa taslimu kidogo, usalama zaidi.' },
     { icon: Shield, title: 'Wafanyakazi na ruhusa', kazi: 'Kila mfanyakazi anaona tu ulichomruhusu.', faida: 'Udhibiti kamili, kumbukumbu ya kila hatua.' },
@@ -40,7 +45,12 @@ const groups: { name: string; lead: string; items: F[] }[] = [
     { icon: BarChart3, title: 'Ripoti', kazi: 'Mauzo, faida na hasara, bidhaa bora, wateja bora.', faida: 'Jua kinacholeta pesa.' },
     { icon: BookOpen, title: 'Uhasibu', kazi: 'Mapato na matumizi kwa mfumo wa double-entry.', faida: 'Vitabu safi kwa benki na TRA.' },
     { icon: Sparkles, title: 'Mshauri wa AI', kazi: 'Utabiri wa mauzo na ushauri wa biashara.', faida: 'Panga mzigo kabla ya msimu.' },
-    { icon: WifiOff, title: 'Bila mtandao', kazi: 'Uza hata mtandao ukikatika; inasawazisha ukirudi.', faida: 'Biashara haisimami kamwe.' },
+    { icon: WifiOff, title: 'Bila mtandao', kazi: 'Bidhaa na rekodi zinazoungwa mkono huhifadhiwa kwenye kifaa; husawazishwa mtandao ukirudi.', faida: 'Hupunguza usumbufu wa mtandao; malipo ya simu yanahitaji mtandao.' },
+    { icon: ClipboardList, title: 'Dashboard', kazi: 'Muhtasari wa mauzo ya leo, bidhaa na madeni kwa duka au tawi husika.', faida: 'Ona hali ya biashara kwa haraka.' },
+    { icon: Truck, title: 'Oda za Sokoni', kazi: 'Duka kuu hukubali oda, huweka mpelekaji na kufuatilia hadi kuwasilishwa.', faida: 'Ununuzi wa mtandaoni una kumbukumbu.' },
+    { icon: Wallet, title: 'Malipo ya mfumo', kazi: 'Angalia bili, tuma uthibitisho au lipa kwa simu; salio hubadilika malipo yakithibitishwa.', faida: 'Jua kiasi kinachodaiwa kabla ya kulipa.' },
+    { icon: Shield, title: 'Mipangilio na Sheria', kazi: 'Jina, nembo, mawasiliano, nyaraka za biashara na njia rasmi za malipo.', faida: 'Risiti na taarifa huwakilisha biashara yako.' },
+    { icon: MessageCircle, title: 'Arifa na Msaada', kazi: 'Arifa za biashara, mazungumzo ya msaada na kusakinisha Kiduka kwenye kifaa.', faida: 'Habari muhimu na msaada vinapatikana karibu.' },
   ]},
 ];
 
@@ -51,14 +61,13 @@ const HudumaPage = () => {
   const [tab, setTab] = useState(0);
   const [staff, setStaff] = useState(3);
   const [branches, setBranches] = useState(0);
-  const [large, setLarge] = useState(false);
-
-  const bill = useMemo(() => {
-    const staffFee = large ? 500 : 2000;
-    const branchFee = large ? 15000 : 10000;
-    const extra = Math.max(0, staff - 3);
-    return { extra, staffFee, branchFee, total: 30000 + extra * staffFee + branches * branchFee };
-  }, [staff, branches, large]);
+  const [products, setProducts] = useState(100);
+  const [customers, setCustomers] = useState(200);
+  const [branchStaff, setBranchStaff] = useState(0);
+  const [sokoni, setSokoni] = useState(false);
+  const [prices, setPrices] = useState<Record<string, number> | null>(null);
+  useEffect(() => { supabase.rpc('get_public_billing_settings').then(({ data }) => setPrices(data as Record<string, number> | null)); }, []);
+  const bill = useMemo(() => prices ? calculateBillingPreview(prices, { staff, branches, products, customers, branchStaff, sokoni }) : null, [prices, staff, branches, products, customers, branchStaff, sokoni]);
 
   const share = () => window.open(`https://wa.me/?text=${encodeURIComponent('Jionee huduma za Kiduka: ' + window.location.origin + '/huduma')}`, '_blank');
   const g = groups[tab];
@@ -67,15 +76,15 @@ const HudumaPage = () => {
     <div className="min-h-[100dvh] bg-background text-foreground">
       <header className="sticky top-0 z-20 border-b border-border/50 bg-background/80 backdrop-blur-xl">
         <div className="mx-auto flex h-12 max-w-5xl items-center justify-between px-4">
-          <button onClick={() => navigate(-1)} aria-label="Rudi" className="rounded-full p-2 hover:bg-muted"><ArrowLeft className="h-4 w-4" /></button>
+          <Button variant="ghost" size="icon" onClick={() => navigate(-1)} aria-label="Rudi"><ArrowLeft className="h-4 w-4" /></Button>
           <KidukaLogo size="sm" showText />
-          <button onClick={share} aria-label="Shiriki" className="rounded-full p-2 text-primary hover:bg-muted"><Share2 className="h-4 w-4" /></button>
+          <Button variant="ghost" size="icon" onClick={share} aria-label="Shiriki"><Share2 className="h-4 w-4" /></Button>
         </div>
       </header>
 
       <section className="mx-auto max-w-3xl px-6 pb-12 pt-16 text-center">
         <p className="text-sm font-medium text-primary">Kiduka · Biashara Smart</p>
-        <h1 className="mt-3 text-4xl font-semibold tracking-tight md:text-6xl">Duka lako lote.<br /><span className="text-muted-foreground">Mfukoni mwako.</span></h1>
+        <h1 className="mt-3 text-4xl font-semibold tracking-tight md:text-6xl">Kiduka<br /><span className="text-muted-foreground text-3xl">Biashara Smart</span></h1>
         <p className="mx-auto mt-5 max-w-xl text-lg text-muted-foreground">Uza, simamia stoo, fuatilia madeni, fungua matawi na duka la mtandaoni — kwenye mfumo mmoja.</p>
         <div className="mt-8 flex justify-center gap-3">
           <Button className="h-11 rounded-full px-7" onClick={() => navigate('/auth')}>Anza sasa</Button>
@@ -84,13 +93,15 @@ const HudumaPage = () => {
       </section>
 
       <section className="mx-auto max-w-5xl px-4 pb-16">
-        <img src={hudumaHero} alt="Muuzaji akiscan bidhaa kwa simu dukani" width={1600} height={912} className="w-full rounded-3xl object-cover shadow-lg" />
+        <InstructionMedia video />
+        <p className="mt-2 text-center text-xs text-muted-foreground">Video ya AI ya shughuli dukani; picha za mfumo hapa chini ni Kiduka halisi.</p>
+        <div className="mx-auto mt-8 max-w-2xl"><InstructionCards /></div>
       </section>
 
       <section className="mx-auto max-w-5xl px-4 pb-20">
-        <div className="mx-auto mb-8 flex w-fit gap-1 rounded-full bg-muted p-1">
+        <div className="mx-auto mb-8 flex max-w-full flex-wrap justify-center gap-1 rounded-full bg-muted p-1">
           {groups.map((x, i) => (
-            <button key={x.name} onClick={() => setTab(i)} className={cn('rounded-full px-4 py-1.5 text-sm transition-all', i === tab ? 'bg-background font-medium shadow-sm' : 'text-muted-foreground')}>{x.name}</button>
+            <Button key={x.name} size="sm" variant={i === tab ? 'default' : 'ghost'} onClick={() => setTab(i)}>{x.name}</Button>
           ))}
         </div>
         <h2 className="text-center text-2xl font-semibold tracking-tight md:text-3xl">{g.lead}</h2>
@@ -100,7 +111,7 @@ const HudumaPage = () => {
               <Icon className="h-7 w-7 text-primary" strokeWidth={1.6} />
               <h3 className="mt-4 text-lg font-semibold">{title}</h3>
               <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">{kazi}</p>
-              <p className="mt-3 text-sm font-medium text-secondary">{faida}</p>
+              <p className="mt-3 text-sm font-medium text-success">{faida}</p>
             </article>
           ))}
         </div>
@@ -111,47 +122,38 @@ const HudumaPage = () => {
           <h2 className="text-center text-3xl font-semibold tracking-tight md:text-4xl">Bei iliyo wazi.</h2>
           <p className="mt-2 text-center text-muted-foreground">Unalipa kulingana na ukubwa wa biashara yako.</p>
 
-          <div className="mt-10 grid gap-6 md:grid-cols-2">
-            <div className="space-y-7 rounded-3xl bg-background p-7">
-              <div>
-                <p className="mb-3 text-sm font-medium">Ukubwa wa biashara</p>
-                <div className="grid grid-cols-2 gap-1 rounded-full bg-muted p-1">
-                  {[['Ndogo', false], ['Kubwa', true]].map(([l, v]) => (
-                    <button key={String(l)} onClick={() => setLarge(v as boolean)} className={cn('rounded-full py-2 text-sm', large === v ? 'bg-background font-medium shadow-sm' : 'text-muted-foreground')}>{l as string}</button>
-                  ))}
-                </div>
-                <p className="mt-2 text-xs text-muted-foreground">Kubwa = bidhaa 5,000 au zaidi.</p>
-              </div>
-              <div>
-                <div className="mb-3 flex justify-between text-sm"><span className="font-medium">Wafanyakazi duka kuu</span><span>{staff}</span></div>
-                <Slider min={1} max={30} step={1} value={[staff]} onValueChange={([v]) => setStaff(v)} />
-              </div>
-              <div>
-                <div className="mb-3 flex justify-between text-sm"><span className="font-medium">Matawi</span><span>{branches}</span></div>
-                <Slider min={0} max={20} step={1} value={[branches]} onValueChange={([v]) => setBranches(v)} />
-              </div>
+          {!prices || !bill ? <p className="py-8 text-center text-muted-foreground">Inapakia bei...</p> : <>
+          <div className="mt-10 grid gap-8 md:grid-cols-2">
+            <div className="space-y-5">
+              <p className="text-sm text-muted-foreground">{bill.large ? 'Biashara kubwa' : 'Biashara ndogo'} · kubwa kuanzia bidhaa {prices.large_business_product_threshold.toLocaleString()}</p>
+              {[
+                { label: 'Wafanyakazi duka kuu', value: staff, set: setStaff },
+                { label: 'Matawi', value: branches, set: setBranches },
+                { label: 'Wafanyakazi matawini (jumla)', value: branchStaff, set: setBranchStaff },
+                { label: 'Bidhaa', value: products, set: setProducts },
+                { label: 'Wateja', value: customers, set: setCustomers },
+              ].map(r => <label key={r.label} className="flex items-center justify-between gap-4 text-sm"><span>{r.label}</span><Input className="w-28" aria-label={r.label} type="number" min={0} value={r.value} onChange={e => r.set(Math.max(0, Number(e.target.value)))} /></label>)}
+              <label className="flex items-center justify-between text-sm">Sokoni<Switch checked={sokoni} onCheckedChange={setSokoni} /></label>
             </div>
-
-            <div className="flex flex-col rounded-3xl bg-background p-7">
-              <div className="space-y-3 text-sm">
-                <Row l="Kifurushi cha msingi (wafanyakazi 3 bure)" v={fmt(30000)} />
-                {bill.extra > 0 && <Row l={`Wafanyakazi wa ziada ${bill.extra} × ${fmt(bill.staffFee)}`} v={fmt(bill.extra * bill.staffFee)} />}
-                {branches > 0 && <Row l={`Matawi ${branches} × ${fmt(bill.branchFee)}`} v={fmt(branches * bill.branchFee)} />}
-              </div>
-              <div className="mt-auto border-t pt-5">
-                <p className="text-sm text-muted-foreground">Jumla kwa mwezi</p>
-                <p className="text-4xl font-semibold tracking-tight">{fmt(bill.total)}</p>
-              </div>
+            <div className="space-y-4 border-t border-border pt-5 md:border-t-0 md:border-l md:pl-8">
+              <Row l={bill.free ? 'Mpango wa bure' : `Duka kuu: wafanyakazi ${prices.base_staff_limit}`} v={fmt(bill.free ? 0 : prices.base_fee)} />
+              {!bill.free && <>
+                {bill.extra > 0 && <Row l={`Wafanyakazi wa ziada ${bill.extra}`} v={fmt(bill.extra * bill.staffFee)} />}
+                {branches > 0 && <Row l={`Matawi ${branches}`} v={fmt(branches * bill.branchFee)} />}
+                {bill.productFee > 0 && <Row l="Bidhaa za ziada" v={fmt(bill.productFee)} />}
+                {bill.customerFee > 0 && <Row l="Wateja wa ziada" v={fmt(bill.customerFee)} />}
+                {sokoni && <Row l="Sokoni" v={fmt(prices.sokoni_fee)} />}
+              </>}
+              <div className="border-t border-border pt-5"><p className="text-sm text-muted-foreground">Makadirio kwa mwezi</p><p className="text-3xl font-semibold">{fmt(bill.total)}</p></div>
             </div>
           </div>
-
-          <div className="mt-6 grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
-            <Info t="Wafanyakazi 3" d="Wamo ndani ya TSh 30,000" />
-            <Info t="Mfanyakazi wa ziada" d="TSh 2,000 (ndogo) · TSh 500 (kubwa)" />
-            <Info t="Tawi" d="TSh 10,000 (ndogo) · TSh 15,000 (kubwa) — linajumuisha wafanyakazi 3" />
-            <Info t="Sokoni" d="TSh 50,000 / mwezi" />
-          </div>
-          <p className="mt-6 text-center text-xs text-muted-foreground">Lipa kwa M-Pesa, Tigo Pesa, Airtel Money au HaloPesa — huduma inawaka papo hapo.</p>
+          <div className="mt-8 grid gap-4 text-sm sm:grid-cols-2 lg:grid-cols-4">
+            <Info t="Duka kuu" d={`${fmt(prices.base_fee)}; wafanyakazi ${prices.base_staff_limit}, bidhaa ${prices.base_product_limit}, wateja ${prices.base_customer_limit}`} />
+            <Info t="Mfanyakazi wa ziada" d={`${fmt(prices.extra_staff_fee_small)} ndogo / ${fmt(prices.extra_staff_fee_large)} kubwa`} />
+            <Info t="Tawi" d={`${fmt(prices.branch_fee_small)} ndogo / ${fmt(prices.branch_fee_large)} kubwa; wafanyakazi ${prices.branch_staff_limit}`} />
+            <Info t="Mpango wa bure" d={`Wafanyakazi ${prices.free_staff_limit}, bidhaa ${prices.free_product_limit}, wateja ${prices.free_customer_limit}`} />
+          </div></>}
+          <p className="mt-6 text-center text-xs text-muted-foreground">Lipa kwa M-Pesa, Tigo Pesa, Airtel Money au HaloPesa — huduma huwashwa baada ya malipo kuthibitishwa.</p>
         </div>
       </section>
 

@@ -175,13 +175,13 @@ export const SubscriptionPage = ({ embedded = false }: SubscriptionPageProps) =>
   // Premium plan features
   const premiumFeatures = [
     { icon: Infinity, text: 'Bidhaa 100 (zaidi zinalipiwa)' },
-    { icon: TrendingUp, text: 'Kila tawi TSh 20,000 (wafanyakazi 3)' },
+    { icon: TrendingUp, text: 'Tawi: TSh 10,000 ndogo / 15,000 kubwa; wafanyakazi 3' },
     { icon: BarChart3, text: 'Ripoti za kina' },
-    { icon: Store, text: 'Sokoni Marketplace' },
+    { icon: Store, text: 'Sokoni: kifurushi cha ziada TSh 50,000/mwezi' },
     { icon: Shield, text: 'Msaada wa kiufundi' },
-    { icon: Users, text: 'Wateja 200, wafanyakazi 5' },
+    { icon: Users, text: 'Wateja 200, wafanyakazi 3; ziada TSh 2,000 ndogo / 500 kubwa' },
     { icon: Sparkles, text: 'Discount & Offers' },
-    { icon: Crown, text: 'Kipengele vyote' },
+    { icon: Crown, text: 'Ada huhesabiwa kwa matumizi halisi' },
   ];
 
   return (
