@@ -1,7 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { OnboardingPages } from "@/components/OnboardingPages";
 import { KidukaLogo } from "@/components/KidukaLogo";
 import { FloatingCards } from "@/components/FloatingCards";
 import { Button } from "@/components/ui/button";
@@ -15,7 +14,6 @@ const Index = () => {
   const navigate = useNavigate();
   const { t } = useLanguage();
   const { user, loading } = useAuth();
-  const [showOnboarding, setShowOnboarding] = useState(false);
 
 
   useEffect(() => {
@@ -28,16 +26,7 @@ const Index = () => {
       navigate('/auth', { replace: true });
       return;
     }
-    const hasSeenOnboarding = localStorage.getItem('kiduka_onboarding_seen');
-    if (!hasSeenOnboarding) {
-      setShowOnboarding(true);
-    }
   }, [user, loading, navigate]);
-
-  const handleOnboardingComplete = () => {
-    localStorage.setItem('kiduka_onboarding_seen', 'true');
-    setShowOnboarding(false);
-  };
 
   if (loading) {
     return (
@@ -48,10 +37,6 @@ const Index = () => {
         </div>
       </div>
     );
-  }
-
-  if (showOnboarding) {
-    return <OnboardingPages onComplete={handleOnboardingComplete} />;
   }
 
   return (
