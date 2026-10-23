@@ -7,6 +7,9 @@ import businessPoster from '@/assets/hub-business.jpg.asset.json';
 import welcomeVideo from '@/assets/hub-welcome.mp4.asset.json';
 import salesVideo from '@/assets/hub-sales.mp4.asset.json';
 import businessVideo from '@/assets/hub-business.mp4.asset.json';
+import welcomeWebm from '@/assets/hub-welcome.webm.asset.json';
+import salesWebm from '@/assets/hub-sales.webm.asset.json';
+import businessWebm from '@/assets/hub-business.webm.asset.json';
 import { KidukaLogo } from '@/components/KidukaLogo';
 import { hubWhatsAppLink, serviceHubMessage } from '@/lib/serviceHub';
 import { toast } from 'sonner';
@@ -15,6 +18,7 @@ const cards = [
  { id: 'mauzo', title: 'Mauzo yenye kumbukumbu.', text: 'Scan bidhaa, hakiki kikapu na fungua risiti yenye jina la duka. Omba miadi ya kuoneshwa Kiduka kupitia ServiceHUB.', image: salesPoster.url, video: salesVideo.url, caption: 'Video ya AI · Si biashara ya mteja' },
  { id: 'biashara', title: 'Biashara yako, pamoja.', text: 'Panga bidhaa na stoo, fuatilia taarifa za biashara na simamia matawi yako. Tupo kukusaidia kuanza na kutumia Kiduka.', image: businessPoster.url, video: businessVideo.url, caption: 'Video ya AI · Si biashara ya mteja' },
 ];
+const webmVideos = [welcomeWebm.url, salesWebm.url, businessWebm.url];
 function ShareCard({ card }: { card: typeof cards[number] }) {
  const ref = useRef<HTMLDivElement>(null); const [busy, setBusy] = useState(false);
  const message = serviceHubMessage(card.title, card.text);
@@ -34,7 +38,7 @@ function ShareCard({ card }: { card: typeof cards[number] }) {
   <div ref={ref} className="bg-card text-card-foreground">
    <div className="relative aspect-video w-full overflow-hidden">
     <img src={card.image} alt={card.title} crossOrigin="anonymous" className="h-full w-full object-cover" />
-    <video src={card.video} poster={card.image} aria-label={`Video: ${card.title}`} controls playsInline preload="none" className="absolute inset-0 h-full w-full object-cover" data-html2canvas-ignore onPlay={event => { document.querySelectorAll('video').forEach(video => { if (video !== event.currentTarget) video.pause(); }); }} />
+    <video poster={card.image} aria-label={`Video: ${card.title}`} controls playsInline preload="none" className="absolute inset-0 h-full w-full object-cover" data-html2canvas-ignore onPlay={event => { document.querySelectorAll('video').forEach(video => { if (video !== event.currentTarget) video.pause(); }); }}><source src={card.video} type="video/mp4" /><source src={webmVideos[cards.indexOf(card)]} type="video/webm" /></video>
    </div>
    <div className="p-5"><div className="flex items-center justify-between gap-2"><KidukaLogo size="sm" /><p className="text-xs font-semibold text-primary">ServiceHUB</p></div><h3 className="mt-4 font-semibold">{card.title}</h3><p className="mt-3 text-sm leading-relaxed text-muted-foreground">{card.text}</p><p className="mt-4 text-xs font-medium text-success">kiduka.shop/servicehub · +255 797 813 597</p><p className="mt-2 text-[10px] text-muted-foreground">{card.caption}</p></div>
   </div>
