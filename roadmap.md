@@ -24,10 +24,19 @@
 - [x] Product photo uploads save to the owner's folder and show in Sokoni
 - [x] Super-admin price editor (/billing-plans), linked from Matawi
 - [x] Sokoni desktop Deals tab: product feed added below banners
-- [x] Extra staff price confirmed at TSh 5,000 and shared by Matawi/Malipo database billing
+- [x] Extra staff pricing: TSh 2,000 small / TSh 500 large; base includes 3 employees
 - [x] Full phone + computer audit in the test preview; physical-device-only checks remain with the owner
 - [x] Sokoni test product photo stored in the owner's folder and linked to the product gallery
 - [x] Sokoni cards resolve the real business name through the public storefront view
 - [x] Scanner sale, invoice, line items and stock deduction are one atomic database transaction
 - [x] Private payment-proof upload and owner-visible payment ledger
 - [x] Product-image upload ownership rule requires the authenticated object owner
+
+## Current completion
+- [ ] Verify 5,000-product threshold and live pricing consistency.
+- [ ] Complete customer and Sokoni order desktop list/detail views.
+- [ ] Add visual onboarding, real app captures, and a short AI clip to Huduma.
+- [ ] Verify branch permissions and repair remaining route/data-loading gaps.
+- [ ] Verify branch heading, status, settings, and spacing.
+- [ ] Check scanner receipts and payment balance with signed-in browser access.
+- [ ] Physical-phone payment approval, fingerprint and camera scan (owner device required).
