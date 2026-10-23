@@ -21,7 +21,7 @@ export const FloatingCards = () => {
 
   useEffect(() => {
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    let timeout: ReturnType<typeof window.setTimeout> | undefined;
+    let timeout: number | undefined;
     const interval = window.setInterval(() => {
       setVisible(false);
 
