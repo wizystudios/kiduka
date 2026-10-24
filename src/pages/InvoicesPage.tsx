@@ -193,6 +193,7 @@ export const InvoicesPage = () => {
   };
 
   const openEditor = (inv: SavedInvoice) => {
+    if (!canEdit) return;
     setSelectedInvoice(null);
     setDraftCustomer(inv.customer_name || '');
     setDraftPhone(inv.customer_phone || '');
@@ -211,6 +212,7 @@ export const InvoicesPage = () => {
 
   // Turn a sale into a real, editable invoice (once), then open the editor
   const editSaleAsInvoice = async (sale: SaleRow) => {
+    if (!canEdit) return;
     if (!dataOwnerId) return;
     const saleNumber = `INV-${sale.id.slice(0, 8).toUpperCase()}`;
     const existing = invoices.find((i) => i.invoice_number === saleNumber);
@@ -252,6 +254,7 @@ export const InvoicesPage = () => {
   };
 
   const deleteInvoice = async (inv: SavedInvoice) => {
+    if (!canDelete) return;
     const { error } = await supabase.from('invoices' as any).delete().eq('id', inv.id);
     if (error) {
       toast.error(`Imeshindikana kufuta: ${error.message}`);
