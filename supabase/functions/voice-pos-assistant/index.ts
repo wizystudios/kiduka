@@ -158,6 +158,7 @@ serve(async (req) => {
         .select('owner_id')
         .eq('assistant_id', user.id)
         .eq('owner_id', requestedOwnerId)
+        .eq('is_active', true)
         .maybeSingle();
 
       if (assistantAccess?.owner_id || roles.has('super_admin')) {
@@ -170,28 +171,24 @@ serve(async (req) => {
       }
     }
 
+    const { data: access, error: accessError } = await authClient.rpc('assistant_can', { p_owner_id: ownerId, p_key: 'analytics_view' });
+    const { data: selling } = await authClient.rpc('assistant_can', { p_owner_id: ownerId, p_key: 'can_create_sales' });
+    if (accessError || (!access && !selling)) {
+      return new Response(JSON.stringify({ error: 'Huna ruhusa ya msaidizi wa sauti' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+    const allowed = async (key: string) => {
+      const { data, error } = await authClient.rpc('assistant_can', { p_owner_id: ownerId, p_key: key });
+      return !error && data === true;
+    };
+    const [viewSales, viewExpenses, viewCustomers] = await Promise.all([allowed('can_view_sales'), allowed('expenses_manage'), allowed('can_view_customers')]);
+    // User-JWT queries retain database branch and permission enforcement.
     const [profileResult, productsResult, salesResult, expensesResult, customersResult, branchesResult] = await Promise.all([
-      adminClient.from('profiles').select('business_name, full_name').eq('id', ownerId).maybeSingle(),
-      adminClient
-        .from('products')
-        .select('id, name, price, stock_quantity, low_stock_threshold, category, is_archived')
-        .eq('owner_id', ownerId)
-        .order('name', { ascending: true })
-        .limit(120),
-      adminClient
-        .from('sales')
-        .select('total_amount, created_at')
-        .eq('owner_id', ownerId)
-        .order('created_at', { ascending: false })
-        .limit(200),
-      adminClient
-        .from('expenses')
-        .select('amount, expense_date')
-        .eq('owner_id', ownerId)
-        .order('expense_date', { ascending: false })
-        .limit(200),
-      adminClient.from('customers').select('id', { count: 'exact', head: true }).eq('owner_id', ownerId),
-      adminClient.from('business_branches').select('id', { count: 'exact', head: true }).eq('owner_id', ownerId),
+      authClient.from('profiles').select('business_name, full_name').eq('id', ownerId).maybeSingle(),
+      authClient.from('products').select('id, name, price, stock_quantity, low_stock_threshold, category, is_archived').eq('owner_id', ownerId).order('name').limit(120),
+      viewSales ? authClient.from('sales').select('total_amount, created_at').eq('owner_id', ownerId).order('created_at', { ascending: false }).limit(200) : Promise.resolve({ data: [] }),
+      viewExpenses ? authClient.from('expenses').select('amount, expense_date').eq('owner_id', ownerId).order('expense_date', { ascending: false }).limit(200) : Promise.resolve({ data: [] }),
+      viewCustomers ? authClient.from('customers').select('id', { count: 'exact', head: true }).eq('owner_id', ownerId) : Promise.resolve({ count: null }),
+      roles.has('owner') || roles.has('super_admin') ? authClient.from('business_branches').select('id', { count: 'exact', head: true }).eq('owner_id', ownerId) : Promise.resolve({ count: null }),
     ]);
 
     const products = (productsResult.data ?? []).filter((product: { is_archived?: boolean | null }) => !product.is_archived);
