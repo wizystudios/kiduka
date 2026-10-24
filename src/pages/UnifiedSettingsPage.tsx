@@ -81,9 +81,10 @@ export const UnifiedSettingsPage = () => {
           </div>
         );
     }
-  }, [activeTab]);
+  }, [activeTab, permissions, isOwner]);
 
   const handleTabChange = (tabId: string) => {
+    if (!allowed(tabId)) return;
     if (tabId === 'help') { navigate('/servicehub'); return; }
     if (tabId === 'qa') {
       navigate('/mobile-qa');
@@ -106,7 +107,7 @@ export const UnifiedSettingsPage = () => {
     setSearchParams(next);
   };
 
-  const sheet = sheetTab ? SHEET_TABS[sheetTab] : null;
+  const sheet = sheetTab && allowed(sheetTab) ? SHEET_TABS[sheetTab] : null;
 
   return (
     <div className="overflow-x-hidden pb-24">
