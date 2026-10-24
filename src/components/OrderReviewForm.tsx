@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { normalizeTzPhoneDigits } from '@/utils/phoneUtils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -27,9 +28,9 @@ export const OrderReviewForm = ({ orderId, items, customerPhone }: OrderReviewFo
 
     setSubmitting(true);
     try {
-      const phone = localStorage.getItem('sokoni_customer_phone');
+      const phone = normalizeTzPhoneDigits(localStorage.getItem('sokoni_customer_phone') || '');
       const pin = localStorage.getItem('sokoni_customer_pin');
-      if (!phone || !pin || phone !== customerPhone) throw new Error('Ingia kwenye akaunti yako ya Sokoni kwanza.');
+      if (!phone || !pin || phone !== normalizeTzPhoneDigits(customerPhone)) throw new Error('Ingia kwenye akaunti yako ya Sokoni kwanza.');
       if (!items.some(item => item.product_id)) throw new Error('Bidhaa za oda hii hazijapatikana.');
       for (const item of items) {
         if (item.product_id) {
