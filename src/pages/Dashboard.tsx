@@ -7,10 +7,12 @@ import { DollarSign, Store, AlertTriangle, TrendingDown, ShoppingCart, Package, 
 import { StockAlertWidget, ExpensesWidget, TransactionsWidget, ProductsWidget, LoansWidget, DebtorsWidget } from '@/components/DashboardWidgets';
 import { AdBanner } from '@/components/AdBanner';
 import { DashboardAdCarousel } from '@/components/DashboardAdCarousel';
+import { usePermissions } from '@/hooks/usePermissions';
 import { BusinessSwitcher } from '@/components/BusinessSwitcher';
 
 export const Dashboard = () => {
   const { user, userProfile, loading: authLoading } = useAuth();
+  const { can, permissions, loading: permissionLoading } = usePermissions();
   const { dataOwnerId, branchId, branchName, ownerBusinessName, isReady, branchFeatures } = useDataAccess();
   const allow = (k: string) => !branchId || !branchFeatures || branchFeatures[k] !== false;
   const [branchCount, setBranchCount] = useState<number | null>(null);
@@ -29,12 +31,12 @@ export const Dashboard = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (isReady && dataOwnerId && !authLoading) {
+    if (isReady && dataOwnerId && !authLoading && !permissionLoading) {
       fetchDashboardData();
       const interval = setInterval(fetchDashboardData, 30000);
       return () => clearInterval(interval);
     }
-  }, [isReady, dataOwnerId, branchId, authLoading]);
+  }, [isReady, dataOwnerId, branchId, authLoading, permissionLoading, permissions]);
 
   const fetchDashboardData = async () => {
     if (!dataOwnerId) return setLoading(false);
@@ -55,9 +57,9 @@ export const Dashboard = () => {
       }
       // sokoni_orders has no branch_id column — marketplace orders stay owner-level
       const [salesRes, productsRes, ordersRes] = await Promise.all([
-        salesQuery,
-        productsQuery,
-        branchId ? Promise.resolve({ data: [] as { id: string }[] }) :
+        can('can_view_sales') ? salesQuery : Promise.resolve({ data: [] }),
+        can('can_view_products') ? productsQuery : Promise.resolve({ data: [] }),
+        branchId || !can('sokoni_orders_manage') ? Promise.resolve({ data: [] as { id: string }[] }) :
         supabase.from('sokoni_orders').select('id').eq('seller_id', dataOwnerId)
           .in('order_status', ['new', 'confirmed', 'preparing'])
       ]);
@@ -106,7 +108,7 @@ export const Dashboard = () => {
       )}
 
       {/* Hero Sales Section - centered, no box */}
-      <div className="text-center pt-0.5">
+      {can('can_view_sales') && <div className="text-center pt-0.5">
         <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Mauzo Leo</p>
         <p className="text-3xl font-black text-foreground tracking-tight">
           TZS {metrics.todaysSales.toLocaleString()}
@@ -114,11 +116,11 @@ export const Dashboard = () => {
         <p className="text-xs text-muted-foreground mt-1">
           {metrics.todaysTransactions} miamala
         </p>
-      </div>
+      </div>}
 
       {/* Key stats - flat, no containers, centered row */}
       <div className="flex items-center justify-around py-2 border-y border-border/50">
-        {!branchId && (<>
+        {!branchId && can('sokoni_orders_manage') && (<>
         <button onClick={() => navigate('/sokoni-orders')} className="text-center space-y-0.5">
           <Store className="h-4 w-4 mx-auto text-primary" />
           <p className="text-lg font-bold text-foreground">{metrics.pendingSokoniOrders}</p>
@@ -141,12 +143,12 @@ export const Dashboard = () => {
 
       {/* Action widgets - clean grid */}
       <div className="grid grid-cols-2 gap-1.5">
-        {allow('inventory') && <StockAlertWidget />}
-        {allow('expenses') && <ExpensesWidget />}
-        {allow('sales') && <TransactionsWidget />}
-        {allow('products') && <ProductsWidget />}
-        {allow('customers') && <LoansWidget />}
-        {allow('customers') && <DebtorsWidget />}
+        {allow('inventory') && can('can_view_inventory') && <StockAlertWidget />}
+        {allow('expenses') && can('expenses_manage') && <ExpensesWidget />}
+        {allow('sales') && can('can_view_sales') && <TransactionsWidget />}
+        {allow('products') && can('can_view_products') && <ProductsWidget />}
+        {allow('customers') && can('loans_manage') && <LoansWidget />}
+        {allow('customers') && can('debts_manage') && <DebtorsWidget />}
       </div>
 
       {userProfile?.role === 'super_admin' && (

@@ -8,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Plus, Trash2, Download } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { usePermissions } from '@/hooks/usePermissions';
 import { useDataAccess } from '@/hooks/useDataAccess';
 import { toast } from 'sonner';
 import { logActivity } from '@/hooks/useActivityLogger';
@@ -38,6 +39,7 @@ const expenseCategories = [
 
 export default function ExpensesPage() {
   const { user } = useAuth();
+  const { can } = usePermissions();
   const { dataOwnerId, branchId } = useDataAccess();
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(false);
@@ -79,6 +81,7 @@ export default function ExpensesPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!can('expenses_manage')) return;
     if (!dataOwnerId) return;
 
     try {
@@ -117,6 +120,7 @@ export default function ExpensesPage() {
   };
 
   const handleDelete = async (id: string) => {
+    if (!can('expenses_delete')) return;
     try {
       const { error } = await supabase
         .from('expenses')
@@ -300,7 +304,7 @@ export default function ExpensesPage() {
                     <Button
                       size="sm"
                       variant="ghost"
-                      onClick={() => setDeleteTarget(expense)}
+                      disabled={!can('expenses_delete')} onClick={() => setDeleteTarget(expense)}
                     >
                       <Trash2 className="h-4 w-4 text-destructive" />
                     </Button>

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { offlineDB } from '@/utils/offlineDatabase';
+import { usePermissions } from '@/hooks/usePermissions';
 import { toast } from 'sonner';
 
 interface Product {
@@ -37,6 +38,8 @@ interface UseOfflineProductsResult {
 }
 
 export const useOfflineProducts = (ownerId: string | null, branchId: string | null = null): UseOfflineProductsResult => {
+  const { can, permissions, loading: permissionLoading } = usePermissions();
+  const mayRead = can('can_view_products') || can('can_create_sales') || can('can_view_inventory') || can('products_create') || can('can_edit_products');
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
@@ -57,7 +60,8 @@ export const useOfflineProducts = (ownerId: string | null, branchId: string | nu
 
   // Load products from local or remote
   const loadProducts = useCallback(async () => {
-    if (!ownerId) {
+    if (!ownerId || permissionLoading || !mayRead) {
+      setProducts([]);
       setLoading(false);
       return;
     }
@@ -91,7 +95,8 @@ export const useOfflineProducts = (ownerId: string | null, branchId: string | nu
     } catch (error) {
       console.error('Error loading products:', error);
       
-      // Fallback to offline data on error
+      if (navigator.onLine) { setProducts([]); return; }
+      // Fallback to offline data only when actually offline
       try {
         const localProducts = await offlineDB.getAll<Product>('products', ownerId, branchId);
         setProducts(localProducts.sort((a, b) => a.name.localeCompare(b.name)));
@@ -103,7 +108,7 @@ export const useOfflineProducts = (ownerId: string | null, branchId: string | nu
     } finally {
       setLoading(false);
     }
-  }, [ownerId, branchId]);
+  }, [ownerId, branchId, mayRead, permissionLoading, permissions]);
 
   // Initial load
   useEffect(() => {
@@ -119,7 +124,7 @@ export const useOfflineProducts = (ownerId: string | null, branchId: string | nu
   const createProduct = useCallback(async (
     productData: Omit<Product, 'id' | 'created_at' | 'updated_at'>
   ): Promise<Product | null> => {
-    if (!ownerId) return null;
+    if (!ownerId || !can('products_create')) return null;
 
     const newProduct: Product = {
       ...productData,
@@ -174,13 +179,17 @@ export const useOfflineProducts = (ownerId: string | null, branchId: string | nu
       toast.error(`Imeshindwa kuongeza bidhaa: ${error.message || 'Unknown error'}`);
       return null;
     }
-  }, [ownerId, branchId]);
+  }, [ownerId, branchId, can]);
 
   // Update product
   const updateProduct = useCallback(async (
     id: string,
     updates: Partial<Product>
   ): Promise<boolean> => {
+    if (!can('can_edit_products')) return false;
+    if ('stock_quantity' in updates && !can('can_edit_inventory')) return false;
+    if ('cost_price' in updates && !can('products_cost_edit')) return false;
+    if ('price' in updates && !can('products_price_edit')) return false;
     try {
       const existingProduct = products.find(p => p.id === id);
       if (!existingProduct) {
@@ -235,10 +244,11 @@ export const useOfflineProducts = (ownerId: string | null, branchId: string | nu
       toast.error(`Imeshindwa kusasisha bidhaa: ${error.message || 'Unknown error'}`);
       return false;
     }
-  }, [products]);
+  }, [products, can]);
 
   // Delete product
   const deleteProduct = useCallback(async (id: string): Promise<boolean> => {
+    if (!can('can_delete_products')) return false;
     try {
       const existingProduct = products.find(p => p.id === id);
       if (!existingProduct) {
@@ -288,7 +298,7 @@ export const useOfflineProducts = (ownerId: string | null, branchId: string | nu
       toast.error(`Imeshindwa kufuta bidhaa: ${error.message || 'Kosa lisilojulikana'}`);
       throw error;
     }
-  }, [products]);
+  }, [products, can]);
 
   // Get product by barcode
   const getProductByBarcode = useCallback(async (barcode: string): Promise<Product | null> => {
@@ -332,7 +342,7 @@ export const useOfflineProducts = (ownerId: string | null, branchId: string | nu
     );
 
     return results;
-  }, [products]);
+  }, [products, can]);
 
   return {
     products,

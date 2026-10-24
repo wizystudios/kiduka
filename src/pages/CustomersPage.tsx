@@ -13,6 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { useDataAccess } from '@/hooks/useDataAccess';
 import { MasterDetailLayout } from '@/components/MasterDetailLayout';
+import { usePermissions } from '@/hooks/usePermissions';
 import { CustomerLedger } from '@/components/CustomerLedger';
 import { exportToExcel, ExportColumn } from '@/utils/exportUtils';
 
@@ -28,6 +29,7 @@ interface Customer {
 
 export const CustomersPage = () => {
   const navigate = useNavigate();
+  const { can } = usePermissions();
   const { user } = useAuth();
   const { dataOwnerId, branchId, loading: scopeLoading } = useDataAccess();
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -60,6 +62,7 @@ export const CustomersPage = () => {
   }, [dataOwnerId, branchId, scopeLoading]);
 
   const openWhatsApp = (customer: Customer) => {
+    if (!can('whatsapp_send')) return;
     if (!customer.phone) {
       toast({ title: 'Hitilafu', description: 'Mteja hana namba ya simu', variant: 'destructive' });
       return;
@@ -70,6 +73,7 @@ export const CustomersPage = () => {
   };
 
   const sendWhatsApp = async () => {
+    if (!can('whatsapp_send')) return;
     if (!whatsappTarget?.phone || !whatsappMsg.trim()) return;
     setSendingWhatsapp(true);
     const phone = whatsappTarget.phone.startsWith('+') ? whatsappTarget.phone : `+255${whatsappTarget.phone.replace(/^0/, '')}`;
@@ -81,7 +85,7 @@ export const CustomersPage = () => {
 
       if (user) {
         await supabase.from('whatsapp_messages').insert({
-          owner_id: user.id,
+          owner_id: dataOwnerId || user.id,
           customer_id: whatsappTarget.id,
           customer_name: whatsappTarget.name,
           phone_number: phone,
@@ -133,6 +137,7 @@ export const CustomersPage = () => {
   };
 
   const handleSaveCustomer = async () => {
+    if (!can('can_edit_customers')) return;
     if (!customerData.name.trim()) {
       toast({ title: 'Hitilafu', description: 'Jina la mteja linahitajika', variant: 'destructive' });
       return;
@@ -166,12 +171,14 @@ export const CustomersPage = () => {
   };
 
   const handleEditCustomer = (customer: Customer) => {
+    if (!can('can_edit_customers')) return;
     setCustomerData({ name: customer.name, email: customer.email || '', phone: customer.phone || '' });
     setEditingCustomer(customer);
     setDialogOpen(true);
   };
 
   const handleDeleteCustomer = async (id: string) => {
+    if (!can('customers_delete')) return;
     if (!confirm('Una uhakika unataka kufuta mteja huyu?')) return;
     try {
       const { error } = await supabase.from('customers').delete().eq('id', id).eq('owner_id', dataOwnerId || '');
@@ -185,6 +192,7 @@ export const CustomersPage = () => {
   };
 
   const handleExport = () => {
+    if (!can('customers_export')) return;
     const columns: ExportColumn[] = [
       { header: 'Jina', key: 'name' },
       { header: 'Barua Pepe', key: 'email', formatter: (v) => v || '' },
@@ -198,6 +206,7 @@ export const CustomersPage = () => {
   };
 
   const handleQuickPay = async () => {
+    if (!can('debts_manage')) return;
     if (!quickPayCustomer || !quickPayAmount) return;
     const paymentOwnerId = dataOwnerId || user?.id;
     if (!paymentOwnerId) {
@@ -270,12 +279,12 @@ export const CustomersPage = () => {
           <p className="text-xs text-muted-foreground">Simamia wateja na madeni</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={handleExport}>
+          <Button variant="outline" size="sm" disabled={!can('customers_export')} onClick={handleExport}>
             <FileSpreadsheet className="h-4 w-4" />
           </Button>
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild>
-              <Button size="sm">
+              <Button size="sm" disabled={!can('can_edit_customers')}>
                 <Plus className="h-4 w-4 mr-1" />
                 Ongeza
               </Button>
@@ -339,7 +348,7 @@ export const CustomersPage = () => {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
                   <h3 className="font-semibold text-sm truncate">{customer.name}</h3>
-                  {(customer.outstanding_balance || 0) > 0 && (
+                  {can('debts_manage') && (customer.outstanding_balance || 0) > 0 && (
                     <Badge className="bg-destructive/10 text-destructive text-[10px]">
                       Deni: TSh {(customer.outstanding_balance || 0).toLocaleString()}
                     </Badge>
@@ -352,7 +361,7 @@ export const CustomersPage = () => {
               </div>
               
               <div className="flex flex-wrap gap-1 flex-shrink-0">
-                {(customer.outstanding_balance || 0) > 0 && (
+                {can('debts_manage') && (customer.outstanding_balance || 0) > 0 && (
                   <Button variant="default" size="sm" className="h-7 px-2 text-xs gap-1 rounded-xl" onClick={() => { setQuickPayCustomer(customer); setQuickPayOpen(true); }}>
                     <Wallet className="h-3 w-3" />
                     Lipa
@@ -361,16 +370,16 @@ export const CustomersPage = () => {
                 <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setSelectedCustomer({ id: customer.id, name: customer.name }); setLedgerOpen(true); }}>
                   <FileText className="h-3.5 w-3.5" />
                 </Button>
-                <Button variant="ghost" size="icon" className="h-7 w-7 text-green-600" onClick={() => openWhatsApp(customer)}>
+                <Button variant="ghost" size="icon" className="h-7 w-7 text-green-600" disabled={!can('whatsapp_send')} onClick={() => openWhatsApp(customer)}>
                   <Send className="h-3.5 w-3.5" />
                 </Button>
                 <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => navigate(`/whatsapp-history?customer_id=${customer.id}&customer_name=${encodeURIComponent(customer.name)}`)}>
                   <MessageSquare className="h-3.5 w-3.5" />
                 </Button>
-                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleEditCustomer(customer)}>
+                <Button variant="ghost" size="icon" className="h-7 w-7" disabled={!can('can_edit_customers')} onClick={() => handleEditCustomer(customer)}>
                   <Edit className="h-3.5 w-3.5" />
                 </Button>
-                <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => handleDeleteCustomer(customer.id)}>
+                <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" disabled={!can('customers_delete')} onClick={() => handleDeleteCustomer(customer.id)}>
                   <Trash2 className="h-3.5 w-3.5" />
                 </Button>
               </div>
@@ -387,7 +396,7 @@ export const CustomersPage = () => {
             {searchTerm ? "Jaribu kutafuta kwa maneno mengine" : "Anza kwa kuongeza mteja wa kwanza"}
           </p>
           {!searchTerm && (
-            <Button size="sm" onClick={() => setDialogOpen(true)}>
+            <Button size="sm" disabled={!can('can_edit_customers')} onClick={() => setDialogOpen(true)}>
               <Plus className="h-4 w-4 mr-1" />
               Ongeza Mteja
             </Button>
