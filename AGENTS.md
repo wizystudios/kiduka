@@ -14,7 +14,7 @@
 - Confirm ClickPesa payments server-side against the provider and the database-calculated amount before activating service, because client totals and unauthenticated callbacks are not proof of payment.
 - Show a Lipa Namba QR only from an owner-uploaded official image, because a generated QR cannot actually take payments.
 - Keep desktop record pages as a persistent left list and right detail pane, because floating overlays and hover-expanding navigation block work on wide screens.
-- Resolve staff page access through an explicit fail-closed route registry and wait for branch scope before rendering, because hidden menus alone cannot enforce granted access.
+- Resolve staff page and action access from the shared permission catalog (fail-closed route registry, in-page checks, and database triggers via assistant_can), and wait for branch scope before rendering, because hidden menus alone cannot enforce granted access; staff, branch and platform management stay owner-only to prevent privilege escalation.
 - Keep public instructional media free of customer identifiers and distinguish generated footage from real app captures, because marketing must not expose operational records or misrepresent the interface.
 - Use explicit-play, poster-backed ServiceHUB videos and pause sibling players on playback, because speech must remain audible without competing audio or eager media downloads.
 - Keep authenticated/cross-origin requests and streaming media outside the service-worker cache, and abort timed-out navigation fetches, because private data and stalled media must not obstruct fresh pages.
