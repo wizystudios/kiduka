@@ -1,5 +1,11 @@
 # Kiduka completion roadmap
 
+## Exhaustive permission audit
+- [ ] Map the current catalog against every route, navigation surface and owner action; expand missing grants.
+- [ ] Enforce deny-by-default permissions for database reads, writes and privileged functions.
+- [ ] Verify owner, assistant and super-admin sessions without exposing private records (requested account: Khalifa).
+- [ ] Run permission regressions and record precise verified results and blockers.
+
 ## Current requested corrections
 - [x] Remove automatic first-visit onboarding from Nyumbani so the approved welcome page, not scanner instructional media, is the public entry screen.
 - [x] Restore the existing desktop welcome design without redesigning it: original two left / three right decorative cards and desktop spacing restored.
