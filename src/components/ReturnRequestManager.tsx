@@ -8,6 +8,7 @@ import { RotateCcw, CheckCircle, XCircle, Package, Phone, Calendar, ChevronDown,
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useDataAccess } from '@/hooks/useDataAccess';
+import { usePermissions } from '@/hooks/usePermissions';
 import { toast } from 'sonner';
 
 interface ReturnRequest {
@@ -25,6 +26,7 @@ interface ReturnRequest {
 
 export const ReturnRequestManager = () => {
   const { user } = useAuth();
+  const { can } = usePermissions();
   const { dataOwnerId } = useDataAccess();
   const [requests, setRequests] = useState<ReturnRequest[]>([]);
   const [loading, setLoading] = useState(true);
@@ -39,10 +41,11 @@ export const ReturnRequestManager = () => {
   }, [dataOwnerId]);
 
   const fetchRequests = async () => {
+    if (!dataOwnerId || !can('returns_view')) { setLoading(false); return; }
     const { data, error } = await supabase
       .from('return_requests')
       .select('*')
-      .eq('seller_id', dataOwnerId!)
+      .eq('seller_id', dataOwnerId)
       .order('created_at', { ascending: false });
     
     if (!error && data) setRequests(data as any);
@@ -50,6 +53,8 @@ export const ReturnRequestManager = () => {
   };
 
   const updateStatus = async (id: string, newStatus: string) => {
+    const key = newStatus === 'approved' ? 'returns_approve' : newStatus === 'rejected' ? 'returns_reject' : 'returns_refund';
+    if (!dataOwnerId || !can(key)) return;
     setProcessing(id);
     try {
       const update: any = { status: newStatus };
@@ -72,12 +77,12 @@ export const ReturnRequestManager = () => {
             let product: { id: string; stock_quantity: number } | null = null;
             if (productId) {
               const { data } = await supabase.from('products').select('id, stock_quantity')
-                .eq('id', productId).eq('owner_id', dataOwnerId!).maybeSingle();
+                .eq('id', productId).eq('owner_id', dataOwnerId).maybeSingle();
               product = data;
             }
             if (!product && productName) {
               const { data } = await supabase.from('products').select('id, stock_quantity')
-                .eq('owner_id', dataOwnerId!).eq('name', productName).limit(1).maybeSingle();
+                .eq('owner_id', dataOwnerId).eq('name', productName).limit(1).maybeSingle();
               product = data;
             }
             
@@ -89,7 +94,7 @@ export const ReturnRequestManager = () => {
 
               // Record inventory movement
               await supabase.from('inventory_movements').insert({
-                owner_id: dataOwnerId!,
+                owner_id: dataOwnerId,
                 product_id: product.id,
                 movement_type: 'return',
                 quantity_change: qty,
@@ -136,6 +141,7 @@ export const ReturnRequestManager = () => {
 
   const filtered = filter === 'all' ? requests : requests.filter(r => r.status === filter);
 
+  if (!can('returns_view')) return null;
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -236,7 +242,7 @@ export const ReturnRequestManager = () => {
                             size="sm" 
                             className="flex-1 text-xs rounded-full" 
                             onClick={() => updateStatus(req.id, 'approved')}
-                            disabled={processing === req.id}
+                            disabled={processing === req.id || !can('returns_approve')}
                           >
                             <CheckCircle className="h-3 w-3 mr-1" /> Kubali
                           </Button>
@@ -245,7 +251,7 @@ export const ReturnRequestManager = () => {
                             variant="destructive" 
                             className="flex-1 text-xs rounded-full" 
                             onClick={() => updateStatus(req.id, 'rejected')}
-                            disabled={processing === req.id}
+                            disabled={processing === req.id || !can('returns_reject')}
                           >
                             <XCircle className="h-3 w-3 mr-1" /> Kataa
                           </Button>
@@ -273,7 +279,7 @@ export const ReturnRequestManager = () => {
                           size="sm" 
                           className="w-full text-xs rounded-full" 
                           onClick={() => updateStatus(req.id, 'completed')}
-                          disabled={processing === req.id || !refundMethods[req.id]}
+                          disabled={processing === req.id || !refundMethods[req.id] || !can('returns_refund')}
                         >
                           <CheckCircle className="h-3 w-3 mr-1" /> Kamilisha Refund
                         </Button>

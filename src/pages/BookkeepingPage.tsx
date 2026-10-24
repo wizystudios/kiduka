@@ -48,7 +48,7 @@ interface JournalEntry {
 const INCOME_CATEGORIES = ['sales', 'services', 'interest', 'rent', 'other'];
 
 export default function BookkeepingPage() {
-  const { getEffectiveOwnerId } = usePermissions();
+  const { getEffectiveOwnerId, can } = usePermissions();
   const { toast } = useToast();
   const ownerId = getEffectiveOwnerId();
 
@@ -68,11 +68,12 @@ export default function BookkeepingPage() {
   useEffect(() => { if (ownerId) fetchData(); }, [ownerId]);
 
   const fetchData = async () => {
+    if (!ownerId) return;
     setLoading(true);
     const [incRes, expRes, jrnRes] = await Promise.all([
-      supabase.from('income_records').select('*').eq('owner_id', ownerId!).order('income_date', { ascending: false }).limit(100),
-      supabase.from('expenses').select('*').eq('owner_id', ownerId!).order('expense_date', { ascending: false }).limit(100),
-      supabase.from('journal_entries').select('*').eq('owner_id', ownerId!).order('entry_date', { ascending: false }).limit(100),
+      supabase.from('income_records').select('*').eq('owner_id', ownerId).order('income_date', { ascending: false }).limit(100),
+      supabase.from('expenses').select('*').eq('owner_id', ownerId).order('expense_date', { ascending: false }).limit(100),
+      supabase.from('journal_entries').select('*').eq('owner_id', ownerId).order('entry_date', { ascending: false }).limit(100),
     ]);
     setIncome((incRes.data as any[]) || []);
     setExpenses(expRes.data || []);
@@ -104,6 +105,7 @@ export default function BookkeepingPage() {
   const netProfit = totalIncome - totalExpenses;
 
   const handleSaveIncome = async () => {
+    if (!can('bookkeeping_write')) return;
     if (!incomeForm.source.trim() || !incomeForm.amount || !ownerId) return;
     setSubmitting(true);
     await supabase.from('income_records').insert({ owner_id: ownerId, ...incomeForm });
@@ -120,6 +122,7 @@ export default function BookkeepingPage() {
   };
 
   const handleSaveJournal = async () => {
+    if (!can('bookkeeping_write')) return;
     if (!journalForm.description.trim() || !journalForm.amount || !ownerId) return;
     setSubmitting(true);
     await supabase.from('journal_entries').insert({
@@ -189,7 +192,7 @@ export default function BookkeepingPage() {
         </TabsList>
 
         <TabsContent value="income" className="mt-4 space-y-3">
-          <Button size="sm" className="w-full gap-1" onClick={() => setShowIncomeDialog(true)}>
+          <Button size="sm" className="w-full gap-1" disabled={!can('bookkeeping_write')} onClick={() => setShowIncomeDialog(true)}>
             <Plus className="h-4 w-4" /> Ongeza Mapato
           </Button>
           {filteredIncome.length === 0 ? (
@@ -233,7 +236,7 @@ export default function BookkeepingPage() {
         </TabsContent>
 
         <TabsContent value="journal" className="mt-4 space-y-3">
-          <Button size="sm" className="w-full gap-1" onClick={() => setShowJournalDialog(true)}>
+          <Button size="sm" className="w-full gap-1" disabled={!can('bookkeeping_write')} onClick={() => setShowJournalDialog(true)}>
             <Plus className="h-4 w-4" /> Journal Entry
           </Button>
           <div className="p-4 border border-border/40 rounded-lg space-y-2">

@@ -3,6 +3,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Calendar, ClipboardList, TrendingDown, Package, Loader2, CheckCircle2, XCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { useDataAccess } from '@/hooks/useDataAccess';
+import { usePermissions } from '@/hooks/usePermissions';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -40,9 +42,11 @@ export const InventorySnapshotPage = () => {
   const [recording, setRecording] = useState(false);
   const [selectedDate, setSelectedDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const { user } = useAuth();
+  const { dataOwnerId, branchId, isReady } = useDataAccess();
+  const { can } = usePermissions();
 
   const fetchData = async () => {
-    if (!user?.id) return;
+    if (!dataOwnerId || !isReady) return;
 
     try {
       setLoading(true);
@@ -51,7 +55,7 @@ export const InventorySnapshotPage = () => {
       const { data: productsData, error: productsError } = await supabase
         .from('products')
         .select('id, name, stock_quantity, unit_type, price')
-        .eq('owner_id', user.id)
+        .eq('owner_id', dataOwnerId)
         .order('name');
 
       if (productsError) throw productsError;
@@ -60,7 +64,7 @@ export const InventorySnapshotPage = () => {
       const { data: snapshotsData, error: snapshotsError } = await supabase
         .from('inventory_snapshots')
         .select('*')
-        .eq('owner_id', user.id)
+        .eq('owner_id', dataOwnerId)
         .eq('snapshot_date', selectedDate)
         .order('created_at', { ascending: false });
 
@@ -78,10 +82,10 @@ export const InventorySnapshotPage = () => {
 
   useEffect(() => {
     fetchData();
-  }, [user?.id, selectedDate]);
+  }, [dataOwnerId, branchId, isReady, selectedDate]);
 
   const recordSnapshot = async (type: 'opening' | 'closing') => {
-    if (!user?.id || products.length === 0) {
+    if (!dataOwnerId || !can('inventory_snapshot_create') || products.length === 0) {
       toast.error('Hakuna bidhaa za kuhesabu');
       return;
     }
@@ -91,7 +95,7 @@ export const InventorySnapshotPage = () => {
 
       // Create snapshots for all products with current stock
       const snapshotRecords = products.map(product => ({
-        owner_id: user.id,
+        owner_id: dataOwnerId,
         product_id: product.id,
         snapshot_type: type,
         quantity: product.stock_quantity,
@@ -194,7 +198,7 @@ export const InventorySnapshotPage = () => {
       <div className="grid grid-cols-2 gap-4">
         <Button
           onClick={() => recordSnapshot('opening')}
-          disabled={recording || hasOpeningCount}
+          disabled={recording || hasOpeningCount || !can('inventory_snapshot_create')}
           className="h-auto py-6 flex-col gap-3"
           variant={hasOpeningCount ? "outline" : "default"}
         >
@@ -213,7 +217,7 @@ export const InventorySnapshotPage = () => {
 
         <Button
           onClick={() => recordSnapshot('closing')}
-          disabled={recording || !hasOpeningCount || hasClosingCount}
+          disabled={recording || !hasOpeningCount || hasClosingCount || !can('inventory_snapshot_create')}
           className="h-auto py-6 flex-col gap-3"
           variant={hasClosingCount ? "outline" : "default"}
         >
