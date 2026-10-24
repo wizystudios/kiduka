@@ -3444,6 +3444,10 @@ export type Database = {
         Args: { p_phone: string; p_pin: string }
         Returns: Json
       }
+      staff_any_permission: {
+        Args: { p_keys: string[]; p_owner: string }
+        Returns: boolean
+      }
       submit_verified_order_review: {
         Args: {
           p_customer_name?: string

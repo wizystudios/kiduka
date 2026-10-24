@@ -8,6 +8,8 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Shield, LogOut, PanelLeftOpen, PanelLeftClose, Plus } from 'lucide-react';
 import { primaryNavigationItems, filterNavigationItems, utilityNavigationItems } from '@/lib/navigation';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { canAccessStaffRoute } from '@/lib/routeAccess';
 
 /**
  * Compact sidebar rail that expands only when pinned, so it never covers
@@ -36,6 +38,7 @@ export function AppSidebar() {
   const role = userProfile.role === 'owner' ? 'Mmiliki' : userProfile.role === 'super_admin' ? 'Msimamizi Mkuu' : branchName ? `Tawi: ${branchName}` : 'Msaidizi';
 
   const items = filterNavigationItems(primaryNavigationItems, userProfile.role, permissions as unknown as Record<string, boolean> | null, branchFeatures);
+  const canSell = userProfile.role === 'owner' || userProfile.role === 'super_admin' || canAccessStaffRoute('/quick-sale', permissions, branchFeatures);
   const all = [
     ...(userProfile.role === 'super_admin' ? [{ id: 'super-admin', href: '/super-admin', label: 'Super Admin', icon: Shield }] : []),
     ...items,
@@ -85,14 +88,14 @@ export function AppSidebar() {
         </nav>
 
         <div className="mx-2 my-1 h-px bg-border" />
-        <button
+        {canSell && <Button
           type="button"
           onClick={() => navigate('/quick-sale')}
           className="flex h-9 items-center justify-center gap-2 rounded-xl bg-background/70 text-sm text-primary hover:bg-background"
           title="Uza haraka"
         >
           <Plus className="h-4 w-4" />{open && <span>Uza haraka</span>}
-        </button>
+        </Button>}
         <div className="flex items-center gap-2 rounded-xl px-1 py-1.5">
           <Avatar className="h-8 w-8 shrink-0">
             <AvatarFallback className="bg-primary text-primary-foreground text-xs">{initials}</AvatarFallback>

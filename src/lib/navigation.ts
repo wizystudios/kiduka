@@ -26,6 +26,7 @@ export interface AppNavItem {
   icon: LucideIcon;
   href: string;
   permission?: string | null;
+  anyPermission?: string[];
   /** Branch feature key the owner/admin must enable for branch staff to see this item. */
   feature?: string;
   ownerOnly?: boolean;
@@ -37,7 +38,7 @@ export const primaryNavigationItems: AppNavItem[] = [
   { id: 'sales', feature: 'sales', label: 'Mauzo', icon: ShoppingCart, href: '/sales', permission: 'can_view_sales' },
   { id: 'stock', feature: 'inventory', label: 'Stock', icon: ClipboardList, href: '/inventory-snapshots', permission: 'can_view_inventory' },
   { id: 'orders', label: 'Oda', icon: Crown, href: '/sokoni-orders', permission: 'sokoni_orders_manage' },
-  { id: 'rewards', feature: 'customers', label: 'Tuzo', icon: Gift, href: '/rewards', permission: 'loyalty_manage' },
+  { id: 'rewards', label: 'Tuzo', icon: Gift, href: '/rewards', anyPermission: ['discounts_manage', 'returns_view', 'marketplace_manage'] },
   { id: 'groups', feature: 'customers', label: 'Makundi', icon: Users, href: '/groups', permission: 'groups_manage' },
   { id: 'mikopo', feature: 'customers', label: 'Mikopo', icon: CreditCard, href: '/credit-management', permission: 'debts_manage' },
   { id: 'invoices', feature: 'sales', label: 'Ankara', icon: FileText, href: '/invoices', permission: 'invoices_view' },
@@ -72,6 +73,7 @@ export const filterNavigationItems = <T extends AppNavItem>(
   if (item.ownerOnly) return false;
   // Branch staff only see what the owner/admin enabled for their branch
   if (branchFeatures && item.feature && branchFeatures[item.feature] !== true) return false;
+  if (item.anyPermission) return item.anyPermission.some(key => permissions?.[key] === true);
   if (!item.permission) return true;
   return permissions?.[item.permission] ?? false;
 });

@@ -7,6 +7,7 @@ import { Plus, Search, Edit, Trash2, Package, Loader2, Scale, ChevronDown, Chevr
 import { useNavigate } from 'react-router-dom';
 import { useDataAccess } from '@/hooks/useDataAccess';
 import { useOfflineProducts } from '@/hooks/useOfflineProducts';
+import { usePermissions } from '@/hooks/usePermissions';
 import { toast } from 'sonner';
 import { logActivity } from '@/hooks/useActivityLogger';
 import * as XLSX from 'xlsx';
@@ -37,6 +38,7 @@ interface ProductLocal {
 }
 
 export const ProductsPage = () => {
+  const { can } = usePermissions();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedWeightProduct, setSelectedWeightProduct] = useState<ProductLocal | null>(null);
   const [expandedProduct, setExpandedProduct] = useState<string | null>(null);
@@ -64,11 +66,13 @@ export const ProductsPage = () => {
   };
 
   const handleAddProduct = () => {
+    if (!can('products_create')) return;
     console.log('Navigating to add product page...');
     navigate('/products/add');
   };
 
   const executeDeleteProduct = async () => {
+    if (!can('can_delete_products')) return;
     if (!deleteTarget) return;
     if (!dataOwnerId) {
       toast.error('Hakuna data ya biashara.');
@@ -82,6 +86,7 @@ export const ProductsPage = () => {
   };
 
   const handleArchiveProduct = async (id: string, productName: string, currentArchived: boolean) => {
+    if (!can('products_archive')) return;
     if (!dataOwnerId) {
       toast.error('Hakuna data ya biashara.');
       return;
@@ -117,10 +122,12 @@ export const ProductsPage = () => {
   };
 
   const handleSellProduct = (product: ProductLocal) => {
+    if (!can('can_create_sales')) return;
     navigate('/scanner', { state: { selectedProduct: product } });
   };
 
   const exportToCSV = () => {
+    if (!can('products_export')) return;
     if (filteredProducts.length === 0) {
       toast.error('Hakuna bidhaa za kuexport');
       return;
@@ -130,7 +137,7 @@ export const ProductsPage = () => {
       p.name,
       p.barcode || '',
       p.price,
-      0, // cost_price not in interface, default 0
+      '', // Cost is not exported without a separate cost read.
       p.stock_quantity,
       p.category || '',
       p.description || '',
@@ -151,6 +158,7 @@ export const ProductsPage = () => {
   };
 
   const exportToExcel = () => {
+    if (!can('products_export')) return;
     if (filteredProducts.length === 0) {
       toast.error('Hakuna bidhaa za kuexport');
       return;
@@ -250,7 +258,7 @@ export const ProductsPage = () => {
             {refreshing ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Sasisha'}
           </Button>
           <Button 
-            onClick={exportToCSV}
+            disabled={!can('products_export')} onClick={exportToCSV}
             variant="outline"
             className="text-xs px-2 py-1 h-7 flex-1 sm:flex-none"
           >
@@ -258,7 +266,7 @@ export const ProductsPage = () => {
             CSV
           </Button>
           <Button 
-            onClick={exportToExcel}
+            disabled={!can('products_export')} onClick={exportToExcel}
             variant="outline"
             className="text-xs px-2 py-1 h-7 flex-1 sm:flex-none"
           >
@@ -266,7 +274,7 @@ export const ProductsPage = () => {
             Excel
           </Button>
           <Button 
-            onClick={() => navigate('/products/import')}
+            disabled={!can('products_import')} onClick={() => navigate('/products/import')}
             variant="outline"
             className="text-xs px-2 py-1 h-7 flex-1 sm:flex-none"
           >
@@ -274,7 +282,7 @@ export const ProductsPage = () => {
             Ingiza
           </Button>
           <Button 
-            onClick={handleAddProduct}
+            disabled={!can('products_create')} onClick={handleAddProduct}
             className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-2 py-1 h-7 flex-1 sm:flex-none"
           >
             <Plus className="h-3 w-3 mr-1" />
@@ -369,9 +377,10 @@ export const ProductsPage = () => {
                       <div className="flex flex-wrap gap-1 pt-1">
                         <Button
                           size="sm"
+                          disabled={!can('can_create_sales')}
                           onClick={(e) => {
                             e.stopPropagation();
-                            handleSellProduct(product);
+                            if (can('can_create_sales')) handleSellProduct(product);
                           }}
                           className="h-6 text-xs px-2 bg-green-600 hover:bg-green-700"
                         >
@@ -384,7 +393,7 @@ export const ProductsPage = () => {
                           variant="outline"
                           onClick={(e) => {
                             e.stopPropagation();
-                            navigate(`/products/edit/${product.id}`);
+                            if (can('can_edit_products')) navigate(`/products/edit/${product.id}`);
                           }}
                           className="h-6 text-xs px-2"
                         >
@@ -399,7 +408,7 @@ export const ProductsPage = () => {
                             e.stopPropagation();
                             handleArchiveProduct(product.id, product.name, product.is_archived || false);
                           }}
-                          disabled={archiving === product.id}
+                          disabled={archiving === product.id || !can('products_archive')}
                           className={`h-6 text-xs px-2 ${product.is_archived ? 'text-green-600 hover:text-green-700 hover:bg-green-50' : 'text-yellow-600 hover:text-yellow-700 hover:bg-yellow-50'}`}
                         >
                           {archiving === product.id ? (
@@ -417,7 +426,7 @@ export const ProductsPage = () => {
                           variant="outline"
                           onClick={(e) => {
                             e.stopPropagation();
-                            setDeleteTarget(product);
+                            if (can('can_delete_products')) setDeleteTarget(product);
                           }}
                           className="h-6 text-xs px-2 text-red-600 hover:text-red-700 hover:bg-red-50"
                         >
@@ -483,10 +492,10 @@ export const ProductsPage = () => {
               </div>
               {selectedProduct.description && <p className="text-sm text-muted-foreground">{selectedProduct.description}</p>}
               <div className="flex flex-wrap gap-2">
-                <Button onClick={() => handleSellProduct(selectedProduct)} className="rounded-full"><ShoppingCart className="mr-2 h-4 w-4" />Uza</Button>
-                <Button variant="outline" onClick={() => navigate(`/products/edit/${selectedProduct.id}`)} className="rounded-full"><Edit className="mr-2 h-4 w-4" />Hariri</Button>
-                <Button variant="outline" onClick={() => handleArchiveProduct(selectedProduct.id, selectedProduct.name, selectedProduct.is_archived || false)} className="rounded-full"><Archive className="mr-2 h-4 w-4" />{selectedProduct.is_archived ? 'Rejesha' : 'Hifadhi'}</Button>
-                <Button variant="outline" onClick={() => setDeleteTarget(selectedProduct)} className="rounded-full text-destructive"><Trash2 className="mr-2 h-4 w-4" />Futa</Button>
+                <Button disabled={!can('can_create_sales')} onClick={() => handleSellProduct(selectedProduct)} className="rounded-full"><ShoppingCart className="mr-2 h-4 w-4" />Uza</Button>
+                <Button variant="outline" disabled={!can('can_edit_products')} onClick={() => navigate(`/products/edit/${selectedProduct.id}`)} className="rounded-full"><Edit className="mr-2 h-4 w-4" />Hariri</Button>
+                <Button variant="outline" disabled={!can('products_archive')} onClick={() => handleArchiveProduct(selectedProduct.id, selectedProduct.name, selectedProduct.is_archived || false)} className="rounded-full"><Archive className="mr-2 h-4 w-4" />{selectedProduct.is_archived ? 'Rejesha' : 'Hifadhi'}</Button>
+                <Button variant="outline" disabled={!can('can_delete_products')} onClick={() => setDeleteTarget(selectedProduct)} className="rounded-full text-destructive"><Trash2 className="mr-2 h-4 w-4" />Futa</Button>
               </div>
             </div>
           );
@@ -509,7 +518,7 @@ export const ProductsPage = () => {
             </p>
             {!searchTerm && (
               <Button 
-                onClick={handleAddProduct} 
+                disabled={!can('products_create')} onClick={handleAddProduct} 
                 className="bg-blue-600 hover:bg-blue-700 text-xs px-2 py-1 h-7"
               >
                 <Plus className="h-3 w-3 mr-1" />
