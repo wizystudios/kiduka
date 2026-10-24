@@ -64,7 +64,7 @@ export const Dashboard = () => {
           .in('order_status', ['new', 'confirmed', 'preparing'])
       ]);
 
-      const totalSales = salesRes.data?.reduce((sum, s) => sum + Number(s.total_amount || 0), 0) || 0;
+      const totalSales = (salesRes.data as { total_amount: number }[] | null)?.reduce((sum, s) => sum + Number(s.total_amount || 0), 0) || 0;
       const lowStock = productsRes.data?.filter(p => (p.stock_quantity || 0) <= (p.low_stock_threshold || 10)) || [];
 
       setMetrics({

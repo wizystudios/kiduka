@@ -16,6 +16,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useDataAccess } from '@/hooks/useDataAccess';
 import { useNavigate } from 'react-router-dom';
+import { usePermissions } from '@/hooks/usePermissions';
 import { toast } from 'sonner';
 import {
   AlertTriangle,
@@ -140,6 +141,7 @@ export const StockAlertWidget = () => {
 
 // Expenses Widget
 export const ExpensesWidget = () => {
+  const { can } = usePermissions();
   const { user } = useAuth();
   const { dataOwnerId, branchId } = useDataAccess();
   const navigate = useNavigate();
@@ -186,12 +188,13 @@ export const ExpensesWidget = () => {
 
   const handleAddExpense = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user?.id) return;
+    if (!dataOwnerId || !can('expenses_manage')) return;
 
     try {
       setLoading(true);
       const { error } = await supabase.from('expenses').insert([{
-        owner_id: user.id,
+        owner_id: dataOwnerId,
+        branch_id: branchId,
         category: formData.category,
         amount: parseFloat(formData.amount),
         description: formData.description,
@@ -654,6 +657,7 @@ interface Debtor {
 }
 
 export const DebtorsWidget = () => {
+  const { can } = usePermissions();
   const { user } = useAuth();
   const { dataOwnerId, isReady } = useDataAccess();
   const navigate = useNavigate();
@@ -691,6 +695,7 @@ export const DebtorsWidget = () => {
   };
 
   const openWhatsApp = (debtor: Debtor) => {
+    if (!can('whatsapp_send')) return;
     const defaultMsg = `Habari ${debtor.name}, tunakukumbusha kuwa una deni la TZS ${debtor.outstanding_balance.toLocaleString()}. Tafadhali fanya malipo haraka iwezekanavyo. Asante!`;
     setWhatsappMsg(defaultMsg);
     setSendingTo(debtor);
@@ -710,6 +715,7 @@ export const DebtorsWidget = () => {
   };
 
   const sendWhatsApp = async () => {
+    if (!can('whatsapp_send')) return;
     if (!sendingTo?.phone) {
       toast.error('Mteja hana nambari ya simu');
       return;
@@ -747,6 +753,7 @@ export const DebtorsWidget = () => {
   };
 
   const sendBatchWhatsApp = async () => {
+    if (!can('whatsapp_send')) return;
     const debtorsWithPhone = debtors.filter(d => d.phone);
     if (debtorsWithPhone.length === 0) return;
 
@@ -764,7 +771,7 @@ export const DebtorsWidget = () => {
 
       try {
         await supabase.functions.invoke('send-whatsapp', {
-          body: { phoneNumber: d.phone!, message: finalMsg, messageType: 'debt_reminder_batch' }
+          body: { phoneNumber: d.phone || '', message: finalMsg, messageType: 'debt_reminder_batch' }
         });
         await logMessage(d, finalMsg, 'debt_reminder_batch', 'sent');
       } catch (e) {
@@ -809,7 +816,7 @@ export const DebtorsWidget = () => {
               <p className="text-sm text-muted-foreground text-center py-4">Hakuna wateja wenye madeni</p>
             ) : (
               <>
-                {debtors.filter(d => d.phone).length > 1 && (
+                {can('whatsapp_send') && debtors.filter(d => d.phone).length > 1 && (
                   <Button
                     variant="outline"
                     className="w-full text-green-600 border-green-200 hover:bg-green-50"
@@ -826,7 +833,7 @@ export const DebtorsWidget = () => {
                       {d.phone && <p className="text-[10px] text-muted-foreground">{d.phone}</p>}
                     </div>
                     <div className="flex items-center gap-2">
-                      {d.phone && (
+                      {can('whatsapp_send') && d.phone && (
                         <Button
                           size="icon"
                           variant="ghost"

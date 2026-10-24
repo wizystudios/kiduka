@@ -36,6 +36,17 @@ const handler = async (req: Request): Promise<Response> => {
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
+    const { data: roles, error: roleError } = await userClient.from('user_roles').select('role').eq('user_id', user.id);
+    const owner = !roleError && roles?.some((r: { role: string }) => r.role === 'owner' || r.role === 'super_admin');
+    if (!owner) {
+      const { data: links, error } = await userClient.from('assistant_permissions').select('owner_id').eq('assistant_id', user.id).eq('is_active', true);
+      const grants = await Promise.all((links || []).map(async (link: { owner_id: string }) => {
+        const result = await userClient.rpc('assistant_can', { p_owner_id: link.owner_id, p_key: 'whatsapp_send' });
+        return !result.error && result.data === true;
+      }));
+      if (error || !grants.some(Boolean)) return new Response(JSON.stringify({ error: 'Huna ruhusa ya kutuma ujumbe', success: false }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+
     const { phoneNumber, message, transactionId }: SMSRequest = await req.json();
     
     console.log('SMS request received:', { phoneNumber, transactionId });

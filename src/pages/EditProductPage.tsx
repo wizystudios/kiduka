@@ -10,6 +10,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { MultiImageUpload } from '@/components/MultiImageUpload';
+import { usePermissions } from '@/hooks/usePermissions';
 import { logActivity } from '@/hooks/useActivityLogger';
 
 interface ProductImage {
@@ -20,6 +21,7 @@ interface ProductImage {
 }
 
 export const EditProductPage = () => {
+  const { can } = usePermissions();
   const [loading, setLoading] = useState(false);
   const [fetchLoading, setFetchLoading] = useState(true);
   const [productImages, setProductImages] = useState<ProductImage[]>([]);
@@ -103,6 +105,7 @@ export const EditProductPage = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!can('can_edit_products')) return;
     
     if (!formData.name || !formData.price || !formData.stock_quantity) {
       toast({
@@ -123,9 +126,9 @@ export const EditProductPage = () => {
       const updateData = {
         name: formData.name.trim(),
         barcode: formData.barcode?.trim() || null,
-        price: parseFloat(formData.price),
-        cost_price: formData.cost_price ? parseFloat(formData.cost_price) : null,
-        stock_quantity: parseFloat(formData.stock_quantity),
+        ...(can('products_price_edit') ? { price: parseFloat(formData.price) } : {}),
+        ...(can('products_cost_edit') ? { cost_price: formData.cost_price ? parseFloat(formData.cost_price) : null } : {}),
+        ...(can('can_edit_inventory') ? { stock_quantity: parseFloat(formData.stock_quantity) } : {}),
         category: formData.category?.trim() || null,
         description: formData.description?.trim() || null,
         low_stock_threshold: parseInt(formData.low_stock_threshold),
@@ -253,7 +256,7 @@ export const EditProductPage = () => {
               <div>
                 <Label htmlFor="price">Bei ya Mauzo *</Label>
                 <Input
-                  id="price"
+                  disabled={!can('products_price_edit')} id="price"
                   type="number"
                   step="0.01"
                   value={formData.price}
@@ -262,24 +265,24 @@ export const EditProductPage = () => {
                   required
                 />
               </div>
-              <div>
+              {can('products_view_cost') && <div>
                 <Label htmlFor="cost_price">Bei ya Ununuzi</Label>
                 <Input
-                  id="cost_price"
+                  disabled={!can('products_cost_edit')} id="cost_price"
                   type="number"
                   step="0.01"
                   value={formData.cost_price}
                   onChange={(e) => setFormData({...formData, cost_price: e.target.value})}
                   placeholder="0.00"
                 />
-              </div>
+              </div>}
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="stock">Idadi ya Stock *</Label>
                  <Input
-                   id="stock"
+                   disabled={!can('can_edit_inventory')} id="stock"
                    type="number"
                    step={formData.is_weight_based ? "0.1" : "1"}
                   value={formData.stock_quantity}
