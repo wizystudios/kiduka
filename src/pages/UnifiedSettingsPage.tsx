@@ -13,6 +13,8 @@ import LipaNambaPage from '@/pages/LipaNambaPage';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { BusinessRegistrationPanel } from '@/components/BusinessRegistrationPanel';
 import { NurathSettingsPanel } from '@/components/NurathSettingsPanel';
+import { usePermissions } from '@/hooks/usePermissions';
+import { useAuth } from '@/hooks/useAuth';
 
 // These open as right-side panels, matching the admin pages
 const SHEET_TABS: Record<string, { title: string; render: () => JSX.Element }> = {
@@ -28,29 +30,41 @@ export const UnifiedSettingsPage = () => {
   const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'overview');
   const [sheetTab, setSheetTab] = useState<string | null>(null);
 
-  const tabs = [
+  const { can, permissions } = usePermissions();
+  const { userProfile } = useAuth();
+  const isOwner = userProfile?.role === 'owner' || userProfile?.role === 'super_admin';
+  const allTabs = [
     { id: 'profile', label: 'Profaili', icon: Settings },
-    { id: 'registration', label: 'Sheria', icon: ShieldAlert },
-    { id: 'payments', label: 'Malipo', icon: Wallet },
-    { id: 'whatsapp', label: 'WhatsApp', icon: MessageSquare },
+    { id: 'registration', label: 'Sheria', icon: ShieldAlert, perm: 'compliance_manage' },
+    { id: 'payments', label: 'Malipo', icon: Wallet, perm: 'payment_numbers_manage' },
+    { id: 'whatsapp', label: 'WhatsApp', icon: MessageSquare, perm: 'whatsapp_send' },
     { id: 'nurath', label: 'Nurath', icon: Sparkles },
-    { id: 'subscription', label: 'Michango', icon: Crown },
-    { id: 'ads', label: 'Matangazo', icon: Megaphone },
+    { id: 'subscription', label: 'Michango', icon: Crown, perm: 'billing_view' },
+    { id: 'ads', label: 'Matangazo', icon: Megaphone, perm: 'ads_manage' },
     { id: 'install', label: 'App', icon: Smartphone },
-    { id: 'qa', label: 'Mobile QA', icon: ClipboardCheck },
+    { id: 'qa', label: 'Mobile QA', icon: ClipboardCheck, perm: '__owner' },
     { id: 'help', label: 'ServiceHUB', icon: Headphones },
   ];
+  const allowed = (id: string) => {
+    const t = allTabs.find(x => x.id === id);
+    if (!t || !t.perm || isOwner) return true;
+    return t.perm !== '__owner' && can(t.perm);
+  };
+  const tabs = allTabs.filter(t => allowed(t.id));
 
   useEffect(() => {
     const tab = searchParams.get('tab') || 'overview';
+    if (!allowed(tab)) { setSheetTab(null); setActiveTab('overview'); return; }
     if (SHEET_TABS[tab]) {
       setSheetTab(tab);
     } else {
       setActiveTab(tab);
     }
-  }, [searchParams]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams, permissions, isOwner]);
 
   const activeContent = useMemo(() => {
+    if (!allowed(activeTab)) return null;
     switch (activeTab) {
       case 'whatsapp': return <WhatsAppPage />;
       case 'nurath': return <NurathSettingsPanel />;
