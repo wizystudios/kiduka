@@ -220,11 +220,11 @@ export const UsersPage = () => {
       } else if (resultObj?.error === 'assistant_not_found') {
         toast.error('Hakuna mtumiaji aliye na barua pepe hii. Mtumiaji lazima ajisajili kwanza.');
       } else {
-        toast.error('Imeshindwa kufunga msaidizi');
+        toast.error('Imeshindwa kuunganisha msaidizi');
       }
     } catch (error: any) {
       console.error('Link assistant error:', error);
-      toast.error('Imeshindwa kufunga msaidizi: ' + (error.message || 'Kosa lisilojulikana'));
+      toast.error('Imeshindwa kuunganisha msaidizi: ' + (error.message || 'Kosa lisilojulikana'));
     } finally {
       setLinking(false);
     }
