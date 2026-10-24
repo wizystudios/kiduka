@@ -148,6 +148,13 @@
       "when": 1792866207737,
       "tag": "0020_staff_permission_backstops",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1792866315388,
+      "tag": "0021_scanner_permissions_and_prices",
+      "breakpoints": true
     }
   ]
 }
