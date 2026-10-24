@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { InvoiceGenerator } from '@/components/InvoiceGenerator';
+import { usePermissions } from '@/hooks/usePermissions';
 import { FileText, Search, Loader2, ArrowLeft, Plus, Trash2, Pencil } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
@@ -53,6 +54,9 @@ const emptyItem = (): DraftItem => ({ name: '', quantity: 1, unit_price: 0 });
 
 export const InvoicesPage = () => {
   const { dataOwnerId, branchId } = useDataAccess();
+  const { can } = usePermissions();
+  const canEdit = can('invoices_edit');
+  const canDelete = can('invoices_delete');
   const [sales, setSales] = useState<SaleRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState('');
@@ -365,7 +369,7 @@ export const InvoicesPage = () => {
                       </Badge>
                     </button>
                   </div>
-                  <Button
+                  {canEdit && <Button
                     variant="ghost"
                     size="icon"
                     aria-label="Hariri ankara"
@@ -373,8 +377,8 @@ export const InvoicesPage = () => {
                     onClick={() => openEditor(inv)}
                   >
                     <Pencil className="h-4 w-4" />
-                  </Button>
-                  <Button
+                  </Button>}
+                  {canDelete && <Button
                     variant="ghost"
                     size="icon"
                     aria-label="Futa ankara"
@@ -382,7 +386,7 @@ export const InvoicesPage = () => {
                     onClick={() => deleteInvoice(inv)}
                   >
                     <Trash2 className="h-4 w-4" />
-                  </Button>
+                  </Button>}
                 </CardContent>
               </Card>
             ))}
@@ -422,9 +426,9 @@ export const InvoicesPage = () => {
                 <Button variant="ghost" size="sm" className="rounded-full" onClick={() => setSelectedInvoice(null)}>
                   <ArrowLeft className="h-4 w-4 mr-1" /> Rudi
                 </Button>
-                <Button size="sm" className="rounded-full ml-auto" onClick={() => openEditor(selectedInvoice)}>
+{canEdit && (<Button size="sm" className="rounded-full ml-auto" onClick={() => openEditor(selectedInvoice)}>
                   <Pencil className="h-4 w-4 mr-1" /> Hariri
-                </Button>
+                </Button>)}
               </div>
               <InvoiceGenerator
                 customer_name={selectedInvoice.customer_name}
@@ -446,9 +450,9 @@ export const InvoicesPage = () => {
                 <Button variant="ghost" size="sm" className="rounded-full" onClick={() => setSelected(null)}>
                   <ArrowLeft className="h-4 w-4 mr-1" /> Rudi
                 </Button>
-                <Button size="sm" className="rounded-full ml-auto" disabled={saving} onClick={() => editSaleAsInvoice(selected)}>
+{canEdit && (<Button size="sm" className="rounded-full ml-auto" disabled={saving} onClick={() => editSaleAsInvoice(selected)}>
                   <Pencil className="h-4 w-4 mr-1" /> Hariri
-                </Button>
+                </Button>)}
               </div>
               <InvoiceGenerator
                 customer_name={selected.customers?.name || 'Mteja wa Kawaida'}
@@ -472,9 +476,9 @@ export const InvoicesPage = () => {
                 <Button variant="ghost" size="sm" className="rounded-full" onClick={() => setSelectedInvoice(null)}>
                   <ArrowLeft className="h-4 w-4 mr-1" /> Rudi
                 </Button>
-                <Button size="sm" className="rounded-full ml-auto" onClick={() => openEditor(selectedInvoice)}>
+{canEdit && (<Button size="sm" className="rounded-full ml-auto" onClick={() => openEditor(selectedInvoice)}>
                   <Pencil className="h-4 w-4 mr-1" /> Hariri
-                </Button>
+                </Button>)}
               </div>
               <InvoiceGenerator
                 customer_name={selectedInvoice.customer_name}
@@ -501,9 +505,9 @@ export const InvoicesPage = () => {
                 <Button variant="ghost" size="sm" className="rounded-full" onClick={() => setSelected(null)}>
                   <ArrowLeft className="h-4 w-4 mr-1" /> Rudi
                 </Button>
-                <Button size="sm" className="rounded-full ml-auto" disabled={saving} onClick={() => editSaleAsInvoice(selected)}>
+{canEdit && (<Button size="sm" className="rounded-full ml-auto" disabled={saving} onClick={() => editSaleAsInvoice(selected)}>
                   <Pencil className="h-4 w-4 mr-1" /> Hariri
-                </Button>
+                </Button>)}
               </div>
               <InvoiceGenerator
                 customer_name={selected.customers?.name || 'Mteja wa Kawaida'}
