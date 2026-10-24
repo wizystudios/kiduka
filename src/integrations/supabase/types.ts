@@ -210,6 +210,7 @@ export type Database = {
           created_at: string | null
           deactivated_at: string | null
           deactivated_by: string | null
+          extra_permissions: Json
           id: string
           is_active: boolean
           owner_id: string
@@ -230,6 +231,7 @@ export type Database = {
           created_at?: string | null
           deactivated_at?: string | null
           deactivated_by?: string | null
+          extra_permissions?: Json
           id?: string
           is_active?: boolean
           owner_id: string
@@ -250,6 +252,7 @@ export type Database = {
           created_at?: string | null
           deactivated_at?: string | null
           deactivated_by?: string | null
+          extra_permissions?: Json
           id?: string
           is_active?: boolean
           owner_id?: string

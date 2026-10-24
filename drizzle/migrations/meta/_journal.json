@@ -127,6 +127,13 @@
       "when": 1792735340547,
       "tag": "0017_servicehub_admin_replies",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1792864340602,
+      "tag": "0018_assistant_permissions_granular",
+      "breakpoints": true
     }
   ]
 }
