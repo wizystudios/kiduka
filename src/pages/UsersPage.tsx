@@ -392,17 +392,17 @@ export const UsersPage = () => {
               <DialogTrigger asChild>
                 <Button size="sm" variant="outline">
                   <UserPlus className="h-4 w-4 mr-1" />
-                  Funga Aliyepo
+                  Unganisha aliyepo
                 </Button>
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
-                  <DialogTitle>Funga Msaidizi Aliyepo</DialogTitle>
+                  <DialogTitle>Unganisha mwenye akaunti tayari</DialogTitle>
                 </DialogHeader>
                 <div className="space-y-3">
                   <div className="p-3 bg-muted rounded-lg text-sm">
                     <p className="text-muted-foreground">
-                      Kama mtu tayari ana account ya Kiduka, unaweza kumfunga na biashara yako kwa kutumia barua pepe yake.
+                      Kama mtu tayari ana account ya Kiduka, unaweza kumuunganisha na biashara yako kwa kutumia barua pepe yake.
                     </p>
                   </div>
                   <div>
@@ -422,12 +422,12 @@ export const UsersPage = () => {
                     {linking ? (
                       <>
                         <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Inafunga...
+                        Inaunganisha...
                       </>
                     ) : (
                       <>
                         <UserPlus className="h-4 w-4 mr-2" />
-                        Funga Msaidizi
+                        Unganisha
                       </>
                     )}
                   </Button>
@@ -497,7 +497,7 @@ export const UsersPage = () => {
                 <UsersIcon className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                 <h3 className="text-lg font-semibold mb-2">Hakuna wasaidizi</h3>
                 <p className="text-muted-foreground mb-4">
-                  {searchTerm ? "Hakuna matokeo" : "Ongeza msaidizi wa kwanza au funga aliyepo"}
+                  {searchTerm ? "Hakuna matokeo" : "Ongeza msaidizi wa kwanza au unganisha aliyepo"}
                 </p>
                 {!searchTerm && (
                   <div className="flex gap-2 justify-center">
@@ -507,7 +507,7 @@ export const UsersPage = () => {
                     </Button>
                     <Button variant="outline" onClick={() => setLinkDialogOpen(true)}>
                       <UserPlus className="h-4 w-4 mr-1" />
-                      Funga Aliyepo
+                      Unganisha aliyepo
                     </Button>
                   </div>
                 )}
