@@ -18,6 +18,7 @@ export const AssistantPermissionsManager = ({ ownerId }: { ownerId?: string }) =
   const [perms, setPerms] = useState<Record<string, boolean>>(mergePermissionRow(null));
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [loadingPermissions, setLoadingPermissions] = useState(true);
 
   useEffect(() => {
     if (!owner) return;
@@ -36,19 +37,26 @@ export const AssistantPermissionsManager = ({ ownerId }: { ownerId?: string }) =
 
   useEffect(() => {
     if (!owner || !selected) return;
+    let current = true;
+    setLoadingPermissions(true); setPerms(mergePermissionRow(null));
     supabase.from('assistant_permissions').select('*').eq('owner_id', owner).eq('assistant_id', selected).maybeSingle()
-      .then(({ data }) => setPerms(mergePermissionRow(data as Record<string, unknown> | null)));
+      .then(({ data, error }) => {
+        if (!current) return;
+        if (error || !data) { toast.error('Imeshindwa kupakia ruhusa'); return; }
+        setPerms(mergePermissionRow(data as Record<string, unknown>)); setLoadingPermissions(false);
+      });
+    return () => { current = false; };
   }, [owner, selected]);
 
   const save = async (next: Record<string, boolean>) => {
-    if (!owner || !selected) return;
+    if (!owner || !selected || saving || loadingPermissions) return;
     const prev = perms;
     setPerms(next); setSaving(true);
-    const { error } = await supabase.from('assistant_permissions')
+    const { data, error } = await supabase.from('assistant_permissions')
       .update({ ...splitPermissions(next), updated_at: new Date().toISOString() } as never)
-      .eq('owner_id', owner).eq('assistant_id', selected);
+      .eq('owner_id', owner).eq('assistant_id', selected).select('id').maybeSingle();
     setSaving(false);
-    if (error) { setPerms(prev); toast.error('Imeshindwa kuhifadhi ruhusa'); }
+    if (error || !data) { setPerms(prev); toast.error('Imeshindwa kuhifadhi ruhusa'); }
   };
 
   if (loading) return <div className="flex justify-center p-8"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
@@ -61,7 +69,7 @@ export const AssistantPermissionsManager = ({ ownerId }: { ownerId?: string }) =
     <div className="space-y-5">
       <div className="flex gap-2 overflow-x-auto pb-1">
         {assistants.map(a => (
-          <Button key={a.id} size="sm" variant={selected === a.id ? 'default' : 'outline'} className="shrink-0 rounded-full" onClick={() => setSelected(a.id)}>
+          <Button key={a.id} size="sm" variant={selected === a.id ? 'default' : 'outline'} className="shrink-0 rounded-full" disabled={saving} onClick={() => setSelected(a.id)}>
             {a.full_name || a.email}
           </Button>
         ))}
@@ -69,14 +77,14 @@ export const AssistantPermissionsManager = ({ ownerId }: { ownerId?: string }) =
 
       <div className="flex items-center justify-between text-xs text-muted-foreground">
         <span>Ruhusa {granted} kati ya {total}</span>
-        <span className="flex items-center gap-1">{saving ? <><Loader2 className="h-3 w-3 animate-spin" />Inahifadhi</> : <><Check className="h-3 w-3 text-success" />Imehifadhiwa</>}</span>
+        <span className="flex items-center gap-1">{saving || loadingPermissions ? <><Loader2 className="h-3 w-3 animate-spin" />Inahifadhi</> : <><Check className="h-3 w-3 text-success" />Imehifadhiwa</>}</span>
       </div>
 
       <div>
         <p className="mb-2 text-xs font-medium text-muted-foreground">Chagua kazi kwa haraka</p>
         <div className="flex flex-wrap gap-2">
           {PERMISSION_PRESETS.map(p => (
-            <Button key={p.id} size="sm" variant="outline" className="rounded-full" disabled={saving} onClick={() => save(p.perms)}>{p.label}</Button>
+            <Button key={p.id} size="sm" variant="outline" className="rounded-full" disabled={saving || loadingPermissions} onClick={() => save(p.perms)}>{p.label}</Button>
           ))}
         </div>
       </div>
@@ -88,7 +96,7 @@ export const AssistantPermissionsManager = ({ ownerId }: { ownerId?: string }) =
             <section key={g.id} className="rounded-3xl border border-border/60 p-4">
               <div className="mb-3 flex items-center justify-between">
                 <h3 className="text-sm font-semibold">{g.title}</h3>
-                <button className="text-xs font-medium text-primary" disabled={saving}
+                <button className="text-xs font-medium text-primary" disabled={saving || loadingPermissions}
                   onClick={() => save({ ...perms, ...Object.fromEntries(g.items.map(i => [i.key, !all])) })}>
                   {all ? 'Ondoa zote' : 'Ruhusu zote'}
                 </button>
@@ -97,7 +105,7 @@ export const AssistantPermissionsManager = ({ ownerId }: { ownerId?: string }) =
                 {g.items.map(i => (
                   <label key={i.key} className="flex items-center justify-between gap-3 text-sm">
                     <span>{i.label}</span>
-                    <Switch checked={perms[i.key]} disabled={saving} onCheckedChange={v => save({ ...perms, [i.key]: v })} />
+                    <Switch checked={perms[i.key]} disabled={saving || loadingPermissions} onCheckedChange={v => save({ ...perms, [i.key]: v })} />
                   </label>
                 ))}
               </div>

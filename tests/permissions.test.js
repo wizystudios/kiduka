@@ -26,3 +26,23 @@ test('staff and branch management can never be delegated', () => {
   expect(canAccessStaffRoute('/users', all, null)).toBe(false);
   expect(canAccessStaffRoute('/branches', all, null)).toBe(false);
 });
+
+for (const key of ALL_PERMISSION_KEYS) {
+  test(`each permission is independent: ${key}`, () => {
+    const map = mergePermissionRow(splitPermissions({ [key]: true }));
+    expect(map[key]).toBe(true);
+    expect(Object.entries(map).filter(([, value]) => value).map(([name]) => name)).toEqual([key]);
+  });
+}
+test('catalog has unique keys and additional action controls', () => {
+  expect(ALL_PERMISSION_KEYS.length).toBe(51);
+  expect(new Set(ALL_PERMISSION_KEYS).size).toBe(51);
+});
+test('editing products does not grant product creation', () => {
+  expect(canAccessStaffRoute('/products/add', { can_edit_products: true }, null)).toBe(false);
+  expect(canAccessStaffRoute('/products/add', { products_create: true }, null)).toBe(true);
+});
+test('loyalty never grants returns or storefront settings', () => {
+  expect(canAccessStaffRoute('/rewards', { loyalty_manage: true }, null)).toBe(false);
+  expect(canAccessStaffRoute('/rewards', { returns_view: true }, null)).toBe(true);
+});
