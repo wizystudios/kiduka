@@ -344,9 +344,9 @@ export const ReportsPage = () => {
                     </div>
                     <div className="text-right">
                       <p className="font-bold text-primary text-sm">TZS {product.revenue.toLocaleString()}</p>
-                      <p className={`text-xs ${product.profit >= 0 ? 'text-green-600' : 'text-destructive'}`}>
+                      {showProfit && <p className={`text-xs ${product.profit >= 0 ? 'text-green-600' : 'text-destructive'}`}>
                         Faida: TZS {product.profit.toLocaleString()}
-                      </p>
+                      </p>}
                     </div>
                   </div>
                 ))}

@@ -3269,6 +3269,10 @@ export type Database = {
         }
         Returns: Json
       }
+      assistant_can: {
+        Args: { p_key: string; p_owner_id: string }
+        Returns: boolean
+      }
       audit_delete_attempt: {
         Args: {
           p_action: string
