@@ -210,6 +210,7 @@ export type Database = {
           created_at: string | null
           deactivated_at: string | null
           deactivated_by: string | null
+          extra_permissions: Json
           id: string
           is_active: boolean
           owner_id: string
@@ -230,6 +231,7 @@ export type Database = {
           created_at?: string | null
           deactivated_at?: string | null
           deactivated_by?: string | null
+          extra_permissions?: Json
           id?: string
           is_active?: boolean
           owner_id: string
@@ -250,6 +252,7 @@ export type Database = {
           created_at?: string | null
           deactivated_at?: string | null
           deactivated_by?: string | null
+          extra_permissions?: Json
           id?: string
           is_active?: boolean
           owner_id?: string
@@ -3265,6 +3268,10 @@ export type Database = {
           p_subscription_id: string
         }
         Returns: Json
+      }
+      assistant_can: {
+        Args: { p_key: string; p_owner_id: string }
+        Returns: boolean
       }
       audit_delete_attempt: {
         Args: {

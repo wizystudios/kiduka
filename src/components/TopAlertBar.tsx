@@ -46,7 +46,8 @@ export const TopAlertBar = () => {
   }
 
   // Location not set
-  if (!userProfile.location_set) {
+  // Only the owner sets the shop location; staff work under the owner's shop.
+  if (userProfile.role === 'owner' && !userProfile.location_set) {
     alerts.push({
       key: 'location',
       icon: <MapPin className="h-3 w-3" />,

@@ -39,7 +39,8 @@ export const ReportsPage = () => {
     quickSalesRevenue: 0,
   });
   const { user } = useAuth();
-  const { getEffectiveOwnerId } = usePermissions();
+  const { getEffectiveOwnerId, can } = usePermissions();
+  const showProfit = can('profit_view');
   const ownerId = getEffectiveOwnerId();
 
   useEffect(() => {
@@ -220,11 +221,9 @@ export const ReportsPage = () => {
         <DataExportButton
           data={[
             { kipimo: 'Mapato', kiasi: stats.totalRevenue },
-            { kipimo: 'COGS', kiasi: stats.totalCOGS },
-            { kipimo: 'Matumizi', kiasi: stats.totalExpenses },
-            { kipimo: 'Faida', kiasi: stats.totalProfit },
+            ...(showProfit ? [{ kipimo: 'COGS', kiasi: stats.totalCOGS }, { kipimo: 'Matumizi', kiasi: stats.totalExpenses }, { kipimo: 'Faida', kiasi: stats.totalProfit }] : []),
             { kipimo: 'Mauzo', kiasi: stats.totalSales },
-            ...topProducts.map(p => ({ kipimo: `Bidhaa: ${p.name}`, kiasi: p.revenue, faida: p.profit, idadi: p.total_sold })),
+            ...topProducts.map(p => ({ kipimo: `Bidhaa: ${p.name}`, kiasi: p.revenue, faida: showProfit ? p.profit : undefined, idadi: p.total_sold })),
           ]}
           columns={[
             { header: 'Kipimo', key: 'kipimo' },
@@ -257,6 +256,7 @@ export const ReportsPage = () => {
           <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Mapato</p>
           <p className="text-sm font-bold text-primary">TZS {stats.totalRevenue.toLocaleString()}</p>
         </div>
+        {showProfit && (<>
         <div className="w-px h-8 bg-border/50" />
         <div className="text-center space-y-0.5">
           <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Gharama (COGS)</p>
@@ -274,6 +274,7 @@ export const ReportsPage = () => {
             TZS {stats.totalProfit.toLocaleString()}
           </p>
         </div>
+        </>)}
       </div>
 
       <Tabs defaultValue="overview" className="w-full">
@@ -343,9 +344,9 @@ export const ReportsPage = () => {
                     </div>
                     <div className="text-right">
                       <p className="font-bold text-primary text-sm">TZS {product.revenue.toLocaleString()}</p>
-                      <p className={`text-xs ${product.profit >= 0 ? 'text-green-600' : 'text-destructive'}`}>
+                      {showProfit && <p className={`text-xs ${product.profit >= 0 ? 'text-green-600' : 'text-destructive'}`}>
                         Faida: TZS {product.profit.toLocaleString()}
-                      </p>
+                      </p>}
                     </div>
                   </div>
                 ))}
