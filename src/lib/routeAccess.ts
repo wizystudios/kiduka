@@ -1,8 +1,8 @@
 /** Explicit access rules shared by page guards and regression tests. Keys come from permissionCatalog. */
-export const staffRouteRules: Record<string, { feature?: string; permission?: string; ownerOnly?: boolean }> = {
+export const staffRouteRules: Record<string, { feature?: string; permission?: string; anyPermission?: string[]; ownerOnly?: boolean }> = {
   '/dashboard': {}, '/notifications': {}, '/notification-settings': {}, '/pwa-install': {}, '/help': {}, '/calculator': {}, '/settings': {},
   '/products': { feature: 'products', permission: 'can_view_products' },
-  '/products/add': { feature: 'products', permission: 'can_edit_products' },
+  '/products/add': { feature: 'products', permission: 'products_create' },
   '/products/edit': { feature: 'products', permission: 'can_edit_products' },
   '/products/import': { feature: 'products', permission: 'products_import' },
   '/sales': { feature: 'sales', permission: 'can_view_sales' },
@@ -21,7 +21,7 @@ export const staffRouteRules: Record<string, { feature?: string; permission?: st
   '/credit-management': { feature: 'customers', permission: 'debts_manage' },
   '/micro-loans': { feature: 'customers', permission: 'loans_manage' },
   '/loyalty': { feature: 'customers', permission: 'loyalty_manage' },
-  '/rewards': { feature: 'customers', permission: 'loyalty_manage' },
+  '/rewards': { anyPermission: ['discounts_manage', 'returns_view', 'marketplace_manage'] },
   '/whatsapp': { feature: 'customers', permission: 'whatsapp_send' },
   '/whatsapp-history': { feature: 'customers', permission: 'whatsapp_send' },
   '/reports': { feature: 'reports', permission: 'can_view_reports' },
@@ -41,7 +41,7 @@ export const staffRouteRules: Record<string, { feature?: string; permission?: st
   '/lipa-namba': { permission: 'payment_numbers_manage' },
   '/subscription': { permission: 'billing_view' },
   '/subscription-success': { permission: 'billing_view' },
-  '/billing-plans': { permission: 'billing_view' },
+  '/billing-plans': { ownerOnly: true },
   '/compliance-notifications': { permission: 'compliance_manage' },
   // Managing staff, branches and the platform can never be delegated (prevents privilege escalation).
   '/branches': { ownerOnly: true }, '/users': { ownerOnly: true },
@@ -55,5 +55,6 @@ export function canAccessStaffRoute(pathname: string, permissions: Record<string
   const rule = staffRouteRules[path];
   if (rule.ownerOnly) return false;
   if (features && rule.feature && features[rule.feature] !== true) return false;
+  if (rule.anyPermission) return rule.anyPermission.some(key => permissions?.[key] === true);
   return !rule.permission || permissions?.[rule.permission] === true;
 }

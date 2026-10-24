@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ProfileMenuSheet } from '@/components/ProfileMenuSheet';
 import { useAuth } from '@/hooks/useAuth';
+import { canAccessStaffRoute } from '@/lib/routeAccess';
 import { usePermissions } from '@/hooks/usePermissions';
 import { Home, LogOut, Menu, Package, Plus, ShoppingCart, Headphones } from 'lucide-react';
 import { useDataAccess as __uda } from '@/hooks/useDataAccess';
@@ -17,6 +18,7 @@ export const MobileBottomNav = () => {
   const { user, userProfile, signOut } = useAuth();
   const { permissions } = usePermissions();
   const { branchFeatures } = __uda();
+  const access = (path: string) => userProfile?.role === 'owner' || userProfile?.role === 'super_admin' || canAccessStaffRoute(path, permissions, branchFeatures);
 
   const longPressTimer = useRef<NodeJS.Timeout | null>(null);
   const [isLongPressing, setIsLongPressing] = useState(false);
@@ -56,6 +58,7 @@ export const MobileBottomNav = () => {
   const isActive = (href: string) => href === '/dashboard' ? location.pathname === '/dashboard' : location.pathname.startsWith(href);
 
   const handleCenterTouchStart = () => {
+    if (!access('/scanner')) return;
     longPressTriggered.current = false;
     longPressTimer.current = setTimeout(() => {
       longPressTriggered.current = true;
@@ -73,7 +76,10 @@ export const MobileBottomNav = () => {
       clearTimeout(longPressTimer.current);
       longPressTimer.current = null;
     }
-    if (!longPressTriggered.current) navigate('/products/add');
+    if (!longPressTriggered.current) {
+      if (access('/products/add')) navigate('/products/add');
+      else if (access('/scanner')) navigate('/scanner');
+    }
   };
 
   const handleCenterTouchCancel = () => {
@@ -96,12 +102,12 @@ export const MobileBottomNav = () => {
             <span className="mt-0.5 text-[10px] font-medium">Home</span>
           </button>
 
-          <button onClick={() => handleNav('/sales')} className={`flex flex-1 flex-col items-center justify-center rounded-xl p-2 transition-all ${isActive('/sales') ? 'text-primary' : 'text-muted-foreground'}`}>
+          {access('/sales') && <Button variant="ghost" onClick={() => handleNav('/sales')} className={`flex flex-1 flex-col items-center justify-center rounded-xl p-2 transition-all ${isActive('/sales') ? 'text-primary' : 'text-muted-foreground'}`}>
             <ShoppingCart className="h-5 w-5" />
             <span className="mt-0.5 text-[10px] font-medium">Mauzo</span>
-          </button>
+          </Button>}
 
-          <div className="-mt-5 flex flex-1 flex-col items-center justify-center">
+          {(access('/products/add') || access('/scanner')) && <div className="-mt-5 flex flex-1 flex-col items-center justify-center">
             <button
               onTouchStart={handleCenterTouchStart}
               onTouchEnd={handleCenterTouchEnd}
@@ -114,13 +120,13 @@ export const MobileBottomNav = () => {
               {isLongPressing && <span className="absolute inset-0 rounded-full border-4 border-success animate-ping opacity-75" />}
               <Plus className={`h-7 w-7 transition-transform duration-300 ${isLongPressing ? 'rotate-45' : ''}`} />
             </button>
-            <span className="mt-0.5 text-[9px] font-medium text-muted-foreground">Ongeza</span>
-          </div>
+            <span className="mt-0.5 text-[9px] font-medium text-muted-foreground">{access('/products/add') ? 'Ongeza' : 'Uza'}</span>
+          </div>}
 
-          <Button variant="ghost" onClick={() => handleNav('/products')} className={`h-full flex flex-1 flex-col gap-0 items-center justify-center p-1 transition-all ${isActive('/products') ? 'text-primary' : 'text-muted-foreground'}`}>
+          {access('/products') && <Button variant="ghost" onClick={() => handleNav('/products')} className={`h-full flex flex-1 flex-col gap-0 items-center justify-center p-1 transition-all ${isActive('/products') ? 'text-primary' : 'text-muted-foreground'}`}>
             <Package className="h-5 w-5" />
             <span className="mt-0.5 text-[10px] font-medium">Bidhaa</span>
-          </Button>
+          </Button>}
 
           <Button variant="ghost" onClick={() => handleNav('/servicehub')} className="h-full flex flex-1 flex-col gap-0 p-1 text-muted-foreground">
             <Headphones className="h-5 w-5" />
