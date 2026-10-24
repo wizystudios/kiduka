@@ -43,6 +43,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Check, ChevronsUpDown, Gauge, ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { AdminAssistantPermissions } from '@/components/AdminAssistantPermissions';
 
 interface User {
   id: string;
@@ -1449,6 +1450,7 @@ export const SuperAdminDashboard = () => {
             { value: 'ads', label: 'Matangazo' },
             { value: 'chat', label: 'Mazungumzo' },
             { value: 'servicehub', label: 'ServiceHUB' },
+            { value: 'ruhusa', label: 'Ruhusa' },
             { value: 'emails', label: 'Barua' },
             { value: 'logs', label: 'Logi' },
             { value: 'more', label: 'Zaidi' },
@@ -1481,6 +1483,7 @@ export const SuperAdminDashboard = () => {
             <TabsTrigger value="ads" className="h-8 shrink-0 rounded-full border border-border bg-transparent px-3 text-[11px]">Matangazo</TabsTrigger>
             <TabsTrigger value="chat" className="h-8 shrink-0 rounded-full border border-border bg-transparent px-3 text-[11px]">Mazungumzo</TabsTrigger>
             <TabsTrigger value="servicehub" className="h-8 shrink-0 rounded-full border border-border bg-transparent px-3 text-[11px]">ServiceHUB</TabsTrigger>
+            <TabsTrigger value="ruhusa" className="h-8 shrink-0 rounded-full border border-border bg-transparent px-3 text-[11px]">Ruhusa</TabsTrigger>
             <TabsTrigger value="emails" className="h-8 shrink-0 rounded-full border border-border bg-transparent px-3 text-[11px]">Barua</TabsTrigger>
             <TabsTrigger value="logs" className="h-8 shrink-0 rounded-full border border-border bg-transparent px-3 text-[11px]">Logi</TabsTrigger>
             <TabsTrigger value="more" className="h-8 shrink-0 rounded-full border border-border bg-transparent px-3 text-[11px]">Zaidi</TabsTrigger>
@@ -1996,6 +1999,9 @@ export const SuperAdminDashboard = () => {
         </TabsContent>
         <TabsContent value="servicehub" className="space-y-4">
           <ServiceHubAdminPanel />
+        </TabsContent>
+        <TabsContent value="ruhusa" className="space-y-4">
+          <AdminAssistantPermissions />
         </TabsContent>
 
         <TabsContent value="emails" className="space-y-4">

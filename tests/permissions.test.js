@@ -1,0 +1,28 @@
+import { test, expect } from 'bun:test';
+import { mergePermissionRow, splitPermissions, ALL_PERMISSION_KEYS } from '../src/lib/permissionCatalog.ts';
+import { canAccessStaffRoute } from '../src/lib/routeAccess.ts';
+
+test('unsaved permissions are denied', () => {
+  expect(Object.values(mergePermissionRow(null)).every(v => v === false)).toBe(true);
+});
+test('extra permissions round-trip through storage', () => {
+  const stored = splitPermissions({ invoices_edit: true, can_view_sales: true });
+  const back = mergePermissionRow(stored);
+  expect(back.invoices_edit).toBe(true);
+  expect(back.invoices_delete).toBe(false);
+  expect(stored.extra_permissions.invoices_edit).toBe(true);
+});
+test('reports access does not grant profit and loss', () => {
+  expect(canAccessStaffRoute('/profit-loss', { can_view_reports: true }, null)).toBe(false);
+  expect(canAccessStaffRoute('/profit-loss', { profit_view: true }, null)).toBe(true);
+});
+test('billing and payment numbers need explicit grant', () => {
+  expect(canAccessStaffRoute('/subscription', { can_view_sales: true }, null)).toBe(false);
+  expect(canAccessStaffRoute('/subscription', { billing_view: true }, null)).toBe(true);
+  expect(canAccessStaffRoute('/lipa-namba', {}, null)).toBe(false);
+});
+test('staff and branch management can never be delegated', () => {
+  const all = Object.fromEntries(ALL_PERMISSION_KEYS.map(k => [k, true]));
+  expect(canAccessStaffRoute('/users', all, null)).toBe(false);
+  expect(canAccessStaffRoute('/branches', all, null)).toBe(false);
+});
