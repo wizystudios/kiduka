@@ -73,9 +73,23 @@ Deno.serve(async (req) => {
       bizName = prof?.business_name || "";
     }
 
+    const json = (b: unknown) => new Response(JSON.stringify(b), {
+      status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+    const normEmail = String(email).trim().toLowerCase();
+
+    const linkAssistant = async (assistantId: string) => {
+      const { data, error } = await adminClient.rpc("add_assistant_permission", {
+        p_assistant_id: assistantId,
+        p_owner_id: caller.id,
+        p_business_name: bizName,
+      });
+      return { data, error };
+    };
+
     // Create the assistant auth user (auto-confirmed so they can log in immediately)
     const { data: created, error: createErr } = await adminClient.auth.admin.createUser({
-      email,
+      email: normEmail,
       password,
       email_confirm: true,
       user_metadata: {
@@ -86,36 +100,63 @@ Deno.serve(async (req) => {
       },
     });
 
+    let assistantId: string | null = created?.user?.id ?? null;
+    let createdNow = !!assistantId;
+
     if (createErr || !created?.user) {
       const raw = createErr?.message || "";
-      let msg = "Imeshindwa kuunda akaunti ya msaidizi. Jaribu tena.";
-      if (/weak|easy to guess|pwned|leaked/i.test(raw)) msg = "Nywila hii ni rahisi kukisiwa au imevuja mtandaoni. Chagua nywila nyingine ya kipekee (mf. herufi na namba zisizo za kawaida).";
-      else if (/already|registered|exists/i.test(raw)) msg = "Barua pepe hii tayari ina akaunti. Tumia 'Unganisha msaidizi aliyepo' au barua pepe nyingine.";
-      else if (/invalid.*email|email.*invalid/i.test(raw)) msg = "Barua pepe si sahihi.";
-      // 200 so the app can read and show the real reason
-      return new Response(JSON.stringify({ error: msg }), {
-        status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      if (/already|registered|exists/i.test(raw)) {
+        // Recover an account this same owner started creating earlier (e.g. a
+        // dropped connection left it half-made). Never touch other people's accounts.
+        let existing: any = null;
+        for (let page = 1; page <= 20 && !existing; page++) {
+          const { data: list } = await adminClient.auth.admin.listUsers({ page, perPage: 1000 });
+          const users = list?.users || [];
+          existing = users.find((u: any) => (u.email || "").toLowerCase() === normEmail) || null;
+          if (users.length < 1000) break;
+        }
+        if (existing) {
+          const [{ data: perm }, { data: exRoles }, { count: memberCount }] = await Promise.all([
+            adminClient.from("assistant_permissions").select("owner_id").eq("assistant_id", existing.id).maybeSingle(),
+            adminClient.from("user_roles").select("role").eq("user_id", existing.id),
+            adminClient.from("business_members").select("id", { count: "exact", head: true }).eq("user_id", existing.id).eq("role", "owner"),
+          ]);
+          const privileged = (exRoles || []).some((r: any) => r.role === "owner" || r.role === "super_admin");
+          const startedByCaller = existing.user_metadata?.owner_id === caller.id;
+          const mine = perm ? perm.owner_id === caller.id : startedByCaller;
+          if (mine && !privileged && !memberCount) {
+            const { error: updErr } = await adminClient.auth.admin.updateUserById(existing.id, {
+              password,
+              email_confirm: true,
+              user_metadata: { ...(existing.user_metadata || {}), full_name, business_name: bizName, role: "assistant", owner_id: caller.id },
+            });
+            if (updErr) {
+              const weak = /weak|easy to guess|pwned|leaked/i.test(updErr.message || "");
+              return json({ error: weak
+                ? "Nywila hii ni rahisi kukisiwa au imevuja mtandaoni. Chagua nywila nyingine ya kipekee (mf. herufi na namba zisizo za kawaida)."
+                : "Imeshindwa kukamilisha akaunti ya msaidizi. Jaribu tena." });
+            }
+            assistantId = existing.id;
+          }
+        }
+        if (!assistantId) {
+          return json({ error: "Barua pepe hii tayari ina akaunti. Tumia 'Unganisha msaidizi aliyepo' au barua pepe nyingine." });
+        }
+      } else {
+        let msg = "Imeshindwa kuunda akaunti ya msaidizi. Jaribu tena.";
+        if (/weak|easy to guess|pwned|leaked/i.test(raw)) msg = "Nywila hii ni rahisi kukisiwa au imevuja mtandaoni. Chagua nywila nyingine ya kipekee (mf. herufi na namba zisizo za kawaida).";
+        else if (/invalid.*email|email.*invalid/i.test(raw)) msg = "Barua pepe si sahihi.";
+        return json({ error: msg });
+      }
     }
 
-    const assistantId = created.user.id;
-
-    // Link permissions via secure RPC (handles profile, role, permissions row)
-    const { data: linkResult, error: linkErr } = await adminClient.rpc("add_assistant_permission", {
-      p_assistant_id: assistantId,
-      p_owner_id: caller.id,
-      p_business_name: bizName,
-    });
+    // Link profile, role and permissions; never leave a half-made account behind
+    const { data: linkResult, error: linkErr } = await linkAssistant(assistantId!);
 
     if (linkErr) {
       console.error("Link error:", linkErr);
-      return new Response(JSON.stringify({
-        warning: "Assistant created but permissions failed",
-        assistant_id: assistantId,
-        error: linkErr.message,
-      }), {
-        status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      if (createdNow) await adminClient.auth.admin.deleteUser(assistantId!).catch(() => null);
+      return json({ error: "Imeshindwa kumuunganisha msaidizi na biashara. Hakuna akaunti iliyobaki—jaribu tena." });
     }
 
     return new Response(JSON.stringify({
