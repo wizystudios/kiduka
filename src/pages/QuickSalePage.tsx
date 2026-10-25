@@ -117,7 +117,7 @@ export const QuickSalePage = () => {
       setLastSaleData({
         customer_name: formData.customer_name,
         items: [{ name: formData.product_name, quantity, unit_price, subtotal: total_amount }],
-        total_amount, payment_method: formData.payment_method, payment_status: formData.payment_status,
+        total_amount, payment_method: formData.payment_method, payment_status: formData.payment_status, payment_reference: formData.payment_reference || undefined,
          invoice_number: invoiceNumber, date: new Date(sale.created_at).toLocaleDateString('sw-TZ')
       });
 

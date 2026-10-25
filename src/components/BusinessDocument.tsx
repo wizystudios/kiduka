@@ -17,6 +17,7 @@ export interface BusinessDocumentProps {
   customerName?: string;
   customerPhone?: string;
   paymentMethod?: string;
+  paymentReference?: string;
   paymentStatus?: string;
   items: BusinessDocumentItem[];
   subtotal: number;
@@ -65,6 +66,7 @@ export const BusinessDocument = forwardRef<HTMLDivElement, BusinessDocumentProps
       customerName,
       customerPhone,
       paymentMethod,
+      paymentReference,
       paymentStatus,
       items,
       subtotal,
@@ -114,6 +116,7 @@ export const BusinessDocument = forwardRef<HTMLDivElement, BusinessDocumentProps
             <div>
               <p style={{ color: '#6b7280' }}>Malipo</p>
               <p style={{ fontWeight: 600, color: '#111827' }}>{methodLabel(paymentMethod)}</p>
+              {paymentReference ? <p className="font-mono" style={{ fontWeight: 600, color: '#111827' }}>{paymentReference}</p> : null}
             </div>
             <div className="text-right">
               <p style={{ color: '#6b7280' }}>Hali</p>
