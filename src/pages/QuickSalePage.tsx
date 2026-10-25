@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { ShoppingBag, Plus } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useDataAccess } from '@/hooks/useDataAccess';
+import { usePermissions } from '@/hooks/usePermissions';
 import { toast } from 'sonner';
 import { logActivity } from '@/hooks/useActivityLogger';
 import { InvoiceGenerator } from '@/components/InvoiceGenerator';
@@ -19,11 +20,12 @@ export const QuickSalePage = () => {
   const [showInvoice, setShowInvoice] = useState(false);
   const [lastSaleData, setLastSaleData] = useState<any>(null);
   const { dataOwnerId, branchId, ownerBusinessName, loading: dataLoading } = useDataAccess();
+  const { can, loading: permLoading } = usePermissions();
 
   const [formData, setFormData] = useState({
     customer_name: '', customer_id: '', product_name: '', quantity: '',
     unit_price: '', payment_status: 'paid' as 'paid' | 'partial' | 'unpaid',
-    amount_paid: '', payment_method: 'cash', notes: ''
+    amount_paid: '', payment_method: 'cash', payment_reference: '', notes: ''
   });
 
   useEffect(() => { if (dataOwnerId) fetchCustomers(); }, [dataOwnerId]);
@@ -55,7 +57,7 @@ export const QuickSalePage = () => {
         total_amount,
         payment_method: formData.payment_method,
         payment_status: formData.payment_status,
-        payment_details: { amount_paid, balance, notes: formData.notes || '' },
+        payment_details: { amount_paid, balance, notes: formData.notes || '', payment_reference: formData.payment_reference || '' },
       }).select('id,created_at').single();
       if (saleError) throw saleError;
 
@@ -134,6 +136,16 @@ export const QuickSalePage = () => {
     return parseFloat(formData.quantity || '0') * parseFloat(formData.unit_price || '0');
   };
 
+  if (!permLoading && !can('can_create_sales')) {
+    return (
+      <div className="p-8 text-center space-y-2">
+        <ShoppingBag className="h-8 w-8 text-muted-foreground mx-auto" />
+        <p className="text-sm font-medium">Huna ruhusa ya kurekodi mauzo</p>
+        <p className="text-xs text-muted-foreground">Mmiliki wa biashara ndiye anaweza kukupa ruhusa hii kwenye ukurasa wa Ruhusa.</p>
+      </div>
+    );
+  }
+
   if (dataLoading) {
     return (
       <div className="p-4 flex items-center justify-center min-h-[40vh]">
@@ -149,7 +161,7 @@ export const QuickSalePage = () => {
           <InvoiceGenerator {...lastSaleData} />
           <Button onClick={() => {
             setShowInvoice(false);
-            setFormData({ customer_name: '', customer_id: '', product_name: '', quantity: '', unit_price: '', payment_status: 'paid', amount_paid: '', payment_method: 'cash', notes: '' });
+            setFormData({ customer_name: '', customer_id: '', product_name: '', quantity: '', unit_price: '', payment_status: 'paid', amount_paid: '', payment_method: 'cash', payment_reference: '', notes: '' });
           }} className="w-full">
             Mauzo Mengine
           </Button>
@@ -237,6 +249,13 @@ export const QuickSalePage = () => {
                 </SelectContent>
               </Select>
             </div>
+
+            {formData.payment_method !== 'cash' && (
+              <div>
+                <Label className="text-xs">Namba ya Malipo / Muamala</Label>
+                <Input value={formData.payment_reference} onChange={(e) => setFormData({ ...formData, payment_reference: e.target.value })} placeholder="Mf. namba ya muamala wa simu" />
+              </div>
+            )}
 
             <div>
               <Label className="text-xs">Maelezo (Optional)</Label>
