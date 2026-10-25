@@ -162,6 +162,13 @@
       "when": 1792907238550,
       "tag": "0022_add_branch_id_to_customer_transactions",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1792933006764,
+      "tag": "0023_sync_registered_business_owner_role",
+      "breakpoints": true
     }
   ]
 }
