@@ -335,7 +335,7 @@ export const UsersPage = () => {
         <TabsContent value="assistants" className="space-y-4 mt-4">
           <div className="flex items-center justify-between gap-2 flex-wrap">
             {/* Create New Assistant */}
-            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+            <Dialog open={dialogOpen} onOpenChange={(o) => { setDialogOpen(o); if (!o) setCreateError(null); }}>
               <DialogTrigger asChild>
                 <Button size="sm">
                   <Plus className="h-4 w-4 mr-1" />
@@ -381,7 +381,13 @@ export const UsersPage = () => {
                       Herufi 8+, herufi kubwa 1+, nambari 3+, alama maalum 1+
                     </p>
                   </div>
+                  {createError && (
+                    <div role="alert" className="p-3 rounded-2xl bg-destructive/10 text-destructive text-sm font-medium">
+                      {createError}
+                    </div>
+                  )}
                   <Button 
+                    type="button"
                     onClick={handleCreateAssistant} 
                     className="w-full"
                     disabled={creating}
