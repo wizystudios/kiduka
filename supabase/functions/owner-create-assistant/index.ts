@@ -156,7 +156,10 @@ Deno.serve(async (req) => {
     if (linkErr) {
       console.error("Link error:", linkErr);
       if (createdNow) await adminClient.auth.admin.deleteUser(assistantId!).catch(() => null);
-      return json({ error: "Imeshindwa kumuunganisha msaidizi na biashara. Hakuna akaunti iliyobaki—jaribu tena." });
+      const reason = String(linkErr.message || "");
+      return json({ error: /Mpango wa bure/i.test(reason)
+        ? reason + " Fungua Malipo ulipie mpango, au zima msaidizi mwingine kwanza."
+        : "Imeshindwa kumuunganisha msaidizi na biashara. Hakuna akaunti iliyobaki—jaribu tena." });
     }
 
     return new Response(JSON.stringify({
