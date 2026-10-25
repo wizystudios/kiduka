@@ -123,7 +123,8 @@ Deno.serve(async (req) => {
           ]);
           const privileged = (exRoles || []).some((r: any) => r.role === "owner" || r.role === "super_admin");
           const startedByCaller = existing.user_metadata?.owner_id === caller.id;
-          const mine = perm ? perm.owner_id === caller.id : startedByCaller;
+          // Only finish half-made accounts (no staff record yet); never reset a working assistant
+          const mine = !perm && startedByCaller;
           if (mine && !privileged && !memberCount) {
             const { error: updErr } = await adminClient.auth.admin.updateUserById(existing.id, {
               password,
