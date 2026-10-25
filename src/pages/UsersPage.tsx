@@ -35,6 +35,7 @@ export const UsersPage = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [linkDialogOpen, setLinkDialogOpen] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
   const [linking, setLinking] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Assistant | null>(null);
   const { user, userProfile, session } = useAuth();
