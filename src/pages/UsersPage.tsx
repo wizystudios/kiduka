@@ -122,25 +122,31 @@ export const UsersPage = () => {
     return null;
   };
 
+  const showCreateError = (msg: string) => {
+    setCreateError(msg);
+    toast.error(msg);
+  };
+
   const handleCreateAssistant = async () => {
-    if (!newUser.email || !newUser.password || !newUser.full_name) {
-      toast.error('Tafadhali jaza sehemu zote zinazohitajika');
+    setCreateError(null);
+    if (!newUser.email.trim() || !newUser.password || !newUser.full_name.trim()) {
+      showCreateError('Tafadhali jaza jina, barua pepe na nywila');
       return;
     }
 
     const pwdError = validatePassword(newUser.password);
     if (pwdError) {
-      toast.error(pwdError);
+      showCreateError(pwdError);
       return;
     }
 
-    if (!user?.id || !userProfile || !session) {
-      toast.error('Tafadhali ingia kwanza');
+    if (!user?.id || !session) {
+      showCreateError('Tafadhali ingia kwanza');
       return;
     }
 
     setCreating(true);
-    const ownerBusinessName = userProfile.business_name || '';
+    const ownerBusinessName = userProfile?.business_name || '';
 
     try {
       // Use edge function with service role so the owner's session is NEVER touched
@@ -154,15 +160,20 @@ export const UsersPage = () => {
       });
 
       if (error) {
+        let serverMsg = '';
+        try {
+          const body = await (error as any)?.context?.json?.();
+          serverMsg = body?.error || '';
+        } catch { /* ignore */ }
         console.error('Edge function error:', error);
-        toast.error('Imeshindwa kuongeza msaidizi: ' + (error.message || 'kosa la mfumo'));
-        setCreating(false);
+        showCreateError(serverMsg === 'Only owners can create assistants'
+          ? 'Mwenye duka pekee ndiye anaweza kuunda msaidizi'
+          : 'Imeshindwa kuongeza msaidizi: ' + (serverMsg || 'tatizo la mtandao, jaribu tena'));
         return;
       }
 
       if (data?.error) {
-        toast.error(data.error);
-        setCreating(false);
+        showCreateError(data.error);
         return;
       }
 
@@ -174,7 +185,7 @@ export const UsersPage = () => {
       await fetchAssistants();
     } catch (err: any) {
       console.error('Create assistant exception:', err);
-      toast.error('Imeshindwa kuongeza msaidizi: ' + (err?.message || 'Kosa lisilojulikana'));
+      showCreateError('Imeshindwa kuongeza msaidizi: ' + (err?.message || 'Kosa lisilojulikana'));
     } finally {
       setCreating(false);
     }
