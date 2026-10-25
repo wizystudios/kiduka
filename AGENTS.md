@@ -1,5 +1,7 @@
 # Project Architecture Rules
 
+- Initialize missing owner roles from active, creator-matched business ownership in a database trigger, never user metadata, because new owners must receive the same server-verified staff-management access as existing owners without promoting staff.
+
 - Render the public welcome page directly for first-time visitors; never replace it with automatic onboarding, because instructional media belongs in ServiceHUB rather than blocking entry.
 
 - Keep ServiceHUB publicly routable outside operational access gates; validate submissions server-side into a private request table and send through the shared email sender, because guests need support without exposing inquiries or choosing email recipients.

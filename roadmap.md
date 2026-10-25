@@ -7,6 +7,7 @@
 - [ ] Run permission regressions and record precise verified results and blockers.
 
 ## Current requested corrections
+- [x] Repair missing server-side role for registered new business owners; verify assistant creation through the affected owner's real form and list.
 - [x] Remove automatic first-visit onboarding from Nyumbani so the approved welcome page, not scanner instructional media, is the public entry screen.
 - [x] Restore the existing desktop welcome design without redesigning it: original two left / three right decorative cards and desktop spacing restored.
 - [x] Add the Kiduka logo, distinct full-frame images and speaking videos of at least five seconds to ServiceHUB cards: three 1080p six-second clips, MP4/WebM playback, branded downloaded cards.
