@@ -1,0 +1,2 @@
+ALTER TABLE public.customer_transactions ADD COLUMN branch_id uuid REFERENCES public.business_branches(id) ON DELETE SET NULL;
+CREATE INDEX customer_transactions_branch_idx ON public.customer_transactions (branch_id);

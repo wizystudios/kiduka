@@ -862,6 +862,7 @@ export type Database = {
         Row: {
           amount_paid: number | null
           balance: number | null
+          branch_id: string | null
           created_at: string
           customer_id: string | null
           customer_name: string
@@ -881,6 +882,7 @@ export type Database = {
         Insert: {
           amount_paid?: number | null
           balance?: number | null
+          branch_id?: string | null
           created_at?: string
           customer_id?: string | null
           customer_name: string
@@ -900,6 +902,7 @@ export type Database = {
         Update: {
           amount_paid?: number | null
           balance?: number | null
+          branch_id?: string | null
           created_at?: string
           customer_id?: string | null
           customer_name?: string
@@ -917,6 +920,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "customer_transactions_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "business_branches"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "customer_transactions_customer_id_fkey"
             columns: ["customer_id"]

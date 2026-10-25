@@ -21,6 +21,7 @@ interface InvoiceProps {
   items: InvoiceItem[];
   total_amount: number;
   payment_method?: string;
+  payment_reference?: string;
   payment_status?: string;
   invoice_number?: string;
   date?: string;
@@ -33,6 +34,7 @@ export const InvoiceGenerator = ({
   items,
   total_amount,
   payment_method = 'cash',
+  payment_reference,
   payment_status = 'paid',
   invoice_number,
   date,
@@ -77,6 +79,7 @@ export const InvoiceGenerator = ({
         customerName={customer_name}
         customerPhone={customer_phone}
         paymentMethod={payment_method}
+        paymentReference={payment_reference}
         paymentStatus={payment_status}
         items={items}
         subtotal={total_amount}

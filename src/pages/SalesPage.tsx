@@ -27,7 +27,7 @@ interface Sale {
     unit_price: number;
     subtotal: number;
     product_id: string;
-    products: { name: string; category?: string };
+    products: { name: string; category?: string } | null;
   }>;
   customers?: { name: string; phone?: string; email?: string };
   seller_name?: string;
@@ -144,7 +144,7 @@ export const SalesPage = () => {
       s.customers?.name?.toLowerCase().includes(q) ||
       s.seller_name?.toLowerCase().includes(q) ||
       s.branch_name?.toLowerCase().includes(q) ||
-      s.sales_items.some(i => i.products.name.toLowerCase().includes(q))
+      s.sales_items.some(i => i.products?.name?.toLowerCase().includes(q))
     );
   }, [sales, searchTerm]);
 
@@ -175,7 +175,7 @@ export const SalesPage = () => {
     seller: s.seller_name || '—',
     branch: s.branch_name || '—',
     customer: s.customers?.name || '—',
-    items: s.sales_items.map(i => `${i.quantity}x ${i.products.name}`).join(' | '),
+    items: s.sales_items.map(i => `${i.quantity}x ${i.products?.name || 'Bidhaa'}`).join(' | '),
     qty: s.sales_items.reduce((a, i) => a + i.quantity, 0),
     payment_method: s.payment_method || 'Taslimu',
     discount: Number(s.discount_amount || 0),
@@ -238,7 +238,7 @@ export const SalesPage = () => {
         <h4 className="font-semibold">Bidhaa</h4>
         {selectedSale.sales_items.map((item, index) => (
           <div key={index} className="flex justify-between border-b border-border py-3 text-sm">
-            <div><p className="font-medium">{item.products.name}</p><p className="text-xs text-muted-foreground">{item.quantity} × TSh {item.unit_price.toLocaleString()}</p></div>
+            <div><p className="font-medium">{item.products?.name || 'Bidhaa'}</p><p className="text-xs text-muted-foreground">{item.quantity} × TSh {item.unit_price.toLocaleString()}</p></div>
             <p className="font-medium">TSh {item.subtotal.toLocaleString()}</p>
           </div>
         ))}
@@ -358,7 +358,7 @@ export const SalesPage = () => {
             </div>
             <div className="mt-1 text-xs text-muted-foreground">
               {sale.sales_items.slice(0, 2).map((i, idx) => (
-                <span key={idx}>{i.quantity}x {i.products.name}{idx < Math.min(sale.sales_items.length, 2) - 1 ? ', ' : ''}</span>
+                <span key={idx}>{i.quantity}x {i.products?.name || 'Bidhaa'}{idx < Math.min(sale.sales_items.length, 2) - 1 ? ', ' : ''}</span>
               ))}
               {sale.sales_items.length > 2 && <span> +{sale.sales_items.length - 2}</span>}
             </div>
@@ -402,7 +402,7 @@ export const SalesPage = () => {
                   {selectedSale.sales_items.map((item, i) => (
                     <div key={i} className="flex justify-between p-2 bg-muted/50 rounded-xl text-sm">
                       <div>
-                        <p className="font-medium">{item.products.name}</p>
+                        <p className="font-medium">{item.products?.name || 'Bidhaa'}</p>
                         <p className="text-xs text-muted-foreground">{item.quantity} × TSh {item.unit_price.toLocaleString()}</p>
                       </div>
                       <p className="font-medium">TSh {item.subtotal.toLocaleString()}</p>
