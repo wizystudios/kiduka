@@ -22,3 +22,4 @@
 - Keep authenticated/cross-origin requests and streaming media outside the service-worker cache, and abort timed-out navigation fetches, because private data and stalled media must not obstruct fresh pages.
 
 - Expose only public pricing fields through the public pricing RPC and read admin bills from the server, because preview calculators and admin displays must not diverge from actual usage charges.
+- Mount the sonner Toaster globally in App.tsx, because most pages report errors through sonner and an unmounted toaster silently hides every message.
