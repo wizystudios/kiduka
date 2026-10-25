@@ -110,11 +110,13 @@ export const MobileBottomNav = () => {
           {(access('/products/add') || access('/scanner')) && <div className="-mt-5 flex flex-1 flex-col items-center justify-center">
             <button
               onTouchStart={handleCenterTouchStart}
-              onTouchEnd={handleCenterTouchEnd}
+              onTouchEnd={(e) => { e.preventDefault(); handleCenterTouchEnd(); }}
               onTouchCancel={handleCenterTouchCancel}
               onMouseDown={handleCenterTouchStart}
               onMouseUp={handleCenterTouchEnd}
               onMouseLeave={handleCenterTouchCancel}
+              onContextMenu={(e) => e.preventDefault()}
+              aria-label="Ongeza bidhaa"
               className={`relative flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg transition-all duration-300 active:scale-95 ${isLongPressing ? 'scale-110' : ''}`}
             >
               {isLongPressing && <span className="absolute inset-0 rounded-full border-4 border-success animate-ping opacity-75" />}
