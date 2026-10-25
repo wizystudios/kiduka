@@ -12,6 +12,7 @@ import { NotificationSettingsPage } from '@/pages/NotificationSettingsPage';
 import { CustomerReportsPage } from '@/pages/CustomerReportsPage';
 import { ProductReportsPage } from '@/pages/ProductReportsPage';
 import { Toaster } from '@/components/ui/toaster';
+import { Toaster as SonnerToaster } from '@/components/ui/sonner';
 import { GlobalNurathFloat } from '@/components/GlobalNurathFloat';
 
 // Pages
@@ -583,6 +584,7 @@ export default function App() {
             <PublicHubNav />
             <GlobalNurathFloat />
             <Toaster />
+            <SonnerToaster position="top-center" richColors closeButton />
           </div>
           </BusinessProvider>
         </AuthProvider>
