@@ -35,6 +35,7 @@ export const UsersPage = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [linkDialogOpen, setLinkDialogOpen] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
   const [linking, setLinking] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Assistant | null>(null);
   const { user, userProfile, session } = useAuth();
@@ -122,25 +123,31 @@ export const UsersPage = () => {
     return null;
   };
 
+  const showCreateError = (msg: string) => {
+    setCreateError(msg);
+    toast.error(msg);
+  };
+
   const handleCreateAssistant = async () => {
-    if (!newUser.email || !newUser.password || !newUser.full_name) {
-      toast.error('Tafadhali jaza sehemu zote zinazohitajika');
+    setCreateError(null);
+    if (!newUser.email.trim() || !newUser.password || !newUser.full_name.trim()) {
+      showCreateError('Tafadhali jaza jina, barua pepe na nywila');
       return;
     }
 
     const pwdError = validatePassword(newUser.password);
     if (pwdError) {
-      toast.error(pwdError);
+      showCreateError(pwdError);
       return;
     }
 
-    if (!user?.id || !userProfile || !session) {
-      toast.error('Tafadhali ingia kwanza');
+    if (!user?.id || !session) {
+      showCreateError('Tafadhali ingia kwanza');
       return;
     }
 
     setCreating(true);
-    const ownerBusinessName = userProfile.business_name || '';
+    const ownerBusinessName = userProfile?.business_name || '';
 
     try {
       // Use edge function with service role so the owner's session is NEVER touched
@@ -154,15 +161,20 @@ export const UsersPage = () => {
       });
 
       if (error) {
+        let serverMsg = '';
+        try {
+          const body = await (error as any)?.context?.json?.();
+          serverMsg = body?.error || '';
+        } catch { /* ignore */ }
         console.error('Edge function error:', error);
-        toast.error('Imeshindwa kuongeza msaidizi: ' + (error.message || 'kosa la mfumo'));
-        setCreating(false);
+        showCreateError(serverMsg === 'Only owners can create assistants'
+          ? 'Mwenye duka pekee ndiye anaweza kuunda msaidizi'
+          : 'Imeshindwa kuongeza msaidizi: ' + (serverMsg || 'tatizo la mtandao, jaribu tena'));
         return;
       }
 
       if (data?.error) {
-        toast.error(data.error);
-        setCreating(false);
+        showCreateError(data.error);
         return;
       }
 
@@ -174,7 +186,7 @@ export const UsersPage = () => {
       await fetchAssistants();
     } catch (err: any) {
       console.error('Create assistant exception:', err);
-      toast.error('Imeshindwa kuongeza msaidizi: ' + (err?.message || 'Kosa lisilojulikana'));
+      showCreateError('Imeshindwa kuongeza msaidizi: ' + (err?.message || 'Kosa lisilojulikana'));
     } finally {
       setCreating(false);
     }
@@ -323,7 +335,7 @@ export const UsersPage = () => {
         <TabsContent value="assistants" className="space-y-4 mt-4">
           <div className="flex items-center justify-between gap-2 flex-wrap">
             {/* Create New Assistant */}
-            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+            <Dialog open={dialogOpen} onOpenChange={(o) => { setDialogOpen(o); if (!o) setCreateError(null); }}>
               <DialogTrigger asChild>
                 <Button size="sm">
                   <Plus className="h-4 w-4 mr-1" />
@@ -369,7 +381,13 @@ export const UsersPage = () => {
                       Herufi 8+, herufi kubwa 1+, nambari 3+, alama maalum 1+
                     </p>
                   </div>
+                  {createError && (
+                    <div role="alert" className="p-3 rounded-2xl bg-destructive/10 text-destructive text-sm font-medium">
+                      {createError}
+                    </div>
+                  )}
                   <Button 
+                    type="button"
                     onClick={handleCreateAssistant} 
                     className="w-full"
                     disabled={creating}
