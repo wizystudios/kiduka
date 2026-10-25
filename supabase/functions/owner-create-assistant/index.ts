@@ -87,9 +87,14 @@ Deno.serve(async (req) => {
     });
 
     if (createErr || !created?.user) {
-      const msg = createErr?.message || "Failed to create user";
+      const raw = createErr?.message || "";
+      let msg = "Imeshindwa kuunda akaunti ya msaidizi. Jaribu tena.";
+      if (/weak|easy to guess|pwned|leaked/i.test(raw)) msg = "Nywila hii ni rahisi kukisiwa au imevuja mtandaoni. Chagua nywila nyingine ya kipekee (mf. herufi na namba zisizo za kawaida).";
+      else if (/already|registered|exists/i.test(raw)) msg = "Barua pepe hii tayari ina akaunti. Tumia 'Unganisha msaidizi aliyepo' au barua pepe nyingine.";
+      else if (/invalid.*email|email.*invalid/i.test(raw)) msg = "Barua pepe si sahihi.";
+      // 200 so the app can read and show the real reason
       return new Response(JSON.stringify({ error: msg }), {
-        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
