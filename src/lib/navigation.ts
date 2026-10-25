@@ -45,6 +45,7 @@ export const primaryNavigationItems: AppNavItem[] = [
   { id: 'payments', label: 'Malipo', icon: Wallet, href: '/lipa-namba', permission: 'payment_numbers_manage' },
   { id: 'reports', feature: 'reports', label: 'Ripoti', icon: BarChart3, href: '/reports', permission: 'can_view_reports' },
   { id: 'bookkeeping', feature: 'reports', label: 'Uhasibu', icon: BookOpen, href: '/bookkeeping', permission: 'bookkeeping_view' },
+  { id: 'branches', label: 'Matawi', icon: Store, href: '/branches', ownerOnly: true },
     { id: 'settings', label: 'Mipangilio', icon: Settings, href: '/settings', permission: null },
 ];
 
