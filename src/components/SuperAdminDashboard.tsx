@@ -1441,22 +1441,23 @@ export const SuperAdminDashboard = () => {
           onChange={setActiveTab}
           tabs={[
             { value: 'overview', label: 'Overview' },
-            { value: 'analytics', label: 'Analytics' },
             { value: 'subscriptions', label: 'Usajili', badge: stats.pendingSubscriptions },
+            { value: 'branches', label: 'Matawi' },
             { value: 'compliance', label: 'Sheria' },
-            { value: 'users', label: 'Watumiaji' },
-            { value: 'activities', label: 'Shughuli' },
-            { value: 'products', label: 'Bidhaa' },
             { value: 'sales', label: 'Mauzo' },
             { value: 'orders', label: 'Oda' },
+            { value: 'products', label: 'Bidhaa' },
+            { value: 'activities', label: 'Shughuli' },
+            { value: 'logs', label: 'Logi' },
             { value: 'marketplace', label: 'Sokoni' },
             { value: 'ads', label: 'Matangazo' },
             { value: 'chat', label: 'Mazungumzo' },
             { value: 'servicehub', label: 'ServiceHUB' },
-            { value: 'announcements', label: 'Arifa / Update' },
+            { value: 'users', label: 'Watumiaji' },
             { value: 'ruhusa', label: 'Ruhusa' },
+            { value: 'announcements', label: 'Arifa / Update' },
             { value: 'emails', label: 'Barua' },
-            { value: 'logs', label: 'Logi' },
+            { value: 'analytics', label: 'Analytics' },
             { value: 'more', label: 'Zaidi' },
           ]}
         />
@@ -1466,7 +1467,6 @@ export const SuperAdminDashboard = () => {
           <TabsList className="mb-4 flex h-auto w-max min-w-full flex-nowrap justify-start gap-1 bg-transparent p-0 md:w-full md:flex-wrap">
             <span className="self-center px-1 text-[10px] font-semibold uppercase text-muted-foreground">Biashara</span>
             <TabsTrigger value="overview" className="h-8 shrink-0 rounded-full border border-border bg-transparent px-3 text-[11px]">Muhtasari</TabsTrigger>
-            <TabsTrigger value="analytics" className="h-8 shrink-0 rounded-full border border-border bg-transparent px-3 text-[11px]">Analytics</TabsTrigger>
             <TabsTrigger value="subscriptions" className="relative h-8 shrink-0 rounded-full border border-border bg-transparent px-3 text-[11px]">
               Usajili
               {stats.pendingSubscriptions > 0 && (
@@ -1477,18 +1477,23 @@ export const SuperAdminDashboard = () => {
             </TabsTrigger>
             <TabsTrigger value="branches" className="h-8 shrink-0 rounded-full border border-border bg-transparent px-3 text-[11px]">Matawi</TabsTrigger>
             <TabsTrigger value="compliance" className="h-8 shrink-0 rounded-full border border-border bg-transparent px-3 text-[11px]">Sheria</TabsTrigger>
-            <TabsTrigger value="users" className="h-8 shrink-0 rounded-full border border-border bg-transparent px-3 text-[11px]">Watumiaji</TabsTrigger>
-            <TabsTrigger value="activities" className="h-8 shrink-0 rounded-full border border-border bg-transparent px-3 text-[11px]">Shughuli</TabsTrigger>
-            <TabsTrigger value="products" className="h-8 shrink-0 rounded-full border border-border bg-transparent px-3 text-[11px]">Bidhaa</TabsTrigger>
+            <span className="self-center px-1 text-[10px] font-semibold uppercase text-muted-foreground">Rekodi</span>
             <TabsTrigger value="sales" className="h-8 shrink-0 rounded-full border border-border bg-transparent px-3 text-[11px]">Mauzo</TabsTrigger>
             <TabsTrigger value="orders" className="h-8 shrink-0 rounded-full border border-border bg-transparent px-3 text-[11px]">Oda</TabsTrigger>
+            <TabsTrigger value="products" className="h-8 shrink-0 rounded-full border border-border bg-transparent px-3 text-[11px]">Bidhaa</TabsTrigger>
+            <TabsTrigger value="activities" className="h-8 shrink-0 rounded-full border border-border bg-transparent px-3 text-[11px]">Shughuli</TabsTrigger>
+            <TabsTrigger value="logs" className="h-8 shrink-0 rounded-full border border-border bg-transparent px-3 text-[11px]">Logi</TabsTrigger>
+            <span className="self-center px-1 text-[10px] font-semibold uppercase text-muted-foreground">Sokoni</span>
             <TabsTrigger value="marketplace" className="h-8 shrink-0 rounded-full border border-border bg-transparent px-3 text-[11px]">Sokoni</TabsTrigger>
             <TabsTrigger value="ads" className="h-8 shrink-0 rounded-full border border-border bg-transparent px-3 text-[11px]">Matangazo</TabsTrigger>
             <TabsTrigger value="chat" className="h-8 shrink-0 rounded-full border border-border bg-transparent px-3 text-[11px]">Mazungumzo</TabsTrigger>
             <TabsTrigger value="servicehub" className="h-8 shrink-0 rounded-full border border-border bg-transparent px-3 text-[11px]">ServiceHUB</TabsTrigger>
+            <span className="self-center px-1 text-[10px] font-semibold uppercase text-muted-foreground">Mfumo</span>
+            <TabsTrigger value="users" className="h-8 shrink-0 rounded-full border border-border bg-transparent px-3 text-[11px]">Watumiaji</TabsTrigger>
             <TabsTrigger value="ruhusa" className="h-8 shrink-0 rounded-full border border-border bg-transparent px-3 text-[11px]">Ruhusa</TabsTrigger>
+            <TabsTrigger value="announcements" className="h-8 shrink-0 rounded-full border border-border bg-transparent px-3 text-[11px]">Arifa / Update</TabsTrigger>
             <TabsTrigger value="emails" className="h-8 shrink-0 rounded-full border border-border bg-transparent px-3 text-[11px]">Barua</TabsTrigger>
-            <TabsTrigger value="logs" className="h-8 shrink-0 rounded-full border border-border bg-transparent px-3 text-[11px]">Logi</TabsTrigger>
+            <TabsTrigger value="analytics" className="h-8 shrink-0 rounded-full border border-border bg-transparent px-3 text-[11px]">Analytics</TabsTrigger>
             <TabsTrigger value="more" className="h-8 shrink-0 rounded-full border border-border bg-transparent px-3 text-[11px]">Zaidi</TabsTrigger>
           </TabsList>
         </div>
