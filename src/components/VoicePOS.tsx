@@ -641,20 +641,18 @@ export const VoicePOS = () => {
 
       if (saleError) throw saleError;
 
-      for (const item of saleItems) {
-        await supabase.from('sales_items').insert({
-          sale_id: sale.id,
-          product_id: item.product.id,
-          quantity: item.quantity,
-          unit_price: item.unit_price,
-          subtotal: item.total_price,
-        });
-
-        await supabase
-          .from('products')
-          .update({ stock_quantity: item.product.stock_quantity - item.quantity })
-          .eq('id', item.product.id);
-      }
+      const { error: itemsError } = await supabase.from('sales_items').insert(saleItems.map((item) => ({
+        sale_id: sale.id,
+        product_id: item.product.id,
+        quantity: item.quantity,
+        unit_price: item.unit_price,
+        subtotal: item.total_price,
+      })));
+      if (itemsError) throw itemsError;
+      const { error: effectsError } = await supabase.rpc('apply_staff_sale_effects', {
+        p_sale_id: sale.id, p_customer_id: null, p_debt: 0,
+      } as any);
+      if (effectsError) throw effectsError;
 
       setCurrentSale([]);
       await fetchProducts();
