@@ -1435,68 +1435,31 @@ export const SuperAdminDashboard = () => {
 
       {/* Main Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        {/* Mobile: compact quick-switch bar + all-sections grid */}
         <AdminMobileTabBar
           active={activeTab}
           onChange={setActiveTab}
           tabs={[
-            { value: 'overview', label: 'Overview' },
-            { value: 'subscriptions', label: 'Usajili', badge: stats.pendingSubscriptions },
-            { value: 'branches', label: 'Matawi' },
-            { value: 'compliance', label: 'Sheria' },
-            { value: 'sales', label: 'Mauzo' },
-            { value: 'orders', label: 'Oda' },
-            { value: 'products', label: 'Bidhaa' },
-            { value: 'activities', label: 'Shughuli' },
-            { value: 'logs', label: 'Logi' },
-            { value: 'marketplace', label: 'Sokoni' },
-            { value: 'ads', label: 'Matangazo' },
-            { value: 'chat', label: 'Mazungumzo' },
-            { value: 'servicehub', label: 'ServiceHUB' },
-            { value: 'users', label: 'Watumiaji' },
-            { value: 'ruhusa', label: 'Ruhusa' },
-            { value: 'announcements', label: 'Arifa / Update' },
-            { value: 'emails', label: 'Barua' },
-            { value: 'analytics', label: 'Analytics' },
-            { value: 'more', label: 'Zaidi' },
+            { group: 'Biashara', value: 'overview', label: 'Muhtasari' },
+            { group: 'Biashara', value: 'subscriptions', label: 'Usajili & Malipo', badge: stats.pendingSubscriptions },
+            { group: 'Biashara', value: 'branches', label: 'Matawi' },
+            { group: 'Biashara', value: 'compliance', label: 'Sheria' },
+            { group: 'Rekodi', value: 'sales', label: 'Mauzo' },
+            { group: 'Rekodi', value: 'orders', label: 'Oda' },
+            { group: 'Rekodi', value: 'products', label: 'Bidhaa' },
+            { group: 'Rekodi', value: 'activities', label: 'Shughuli' },
+            { group: 'Rekodi', value: 'logs', label: 'Logi' },
+            { group: 'Wateja', value: 'chat', label: 'Mazungumzo' },
+            { group: 'Wateja', value: 'servicehub', label: 'ServiceHUB' },
+            { group: 'Wateja', value: 'marketplace', label: 'Sokoni' },
+            { group: 'Wateja', value: 'ads', label: 'Matangazo' },
+            { group: 'Mfumo', value: 'users', label: 'Watumiaji' },
+            { group: 'Mfumo', value: 'ruhusa', label: 'Ruhusa' },
+            { group: 'Mfumo', value: 'announcements', label: 'Arifa / Update' },
+            { group: 'Mfumo', value: 'emails', label: 'Barua' },
+            { group: 'Mfumo', value: 'analytics', label: 'Analytics' },
+            { group: 'Mfumo', value: 'more', label: 'Zaidi' },
           ]}
         />
-
-
-        <div className="hidden w-full px-1 overflow-x-auto no-scrollbar md:block">
-          <TabsList className="mb-4 flex h-auto w-max min-w-full flex-nowrap justify-start gap-1 bg-transparent p-0 md:w-full md:flex-wrap">
-            <span className="self-center px-1 text-[10px] font-semibold uppercase text-muted-foreground">Biashara</span>
-            <TabsTrigger value="overview" className="h-8 shrink-0 rounded-full border border-border bg-transparent px-3 text-[11px]">Muhtasari</TabsTrigger>
-            <TabsTrigger value="subscriptions" className="relative h-8 shrink-0 rounded-full border border-border bg-transparent px-3 text-[11px]">
-              Usajili
-              {stats.pendingSubscriptions > 0 && (
-                <Badge className="absolute -top-1 -right-1 h-4 w-4 p-0 flex items-center justify-center text-[10px] bg-destructive">
-                  {stats.pendingSubscriptions}
-                </Badge>
-              )}
-            </TabsTrigger>
-            <TabsTrigger value="branches" className="h-8 shrink-0 rounded-full border border-border bg-transparent px-3 text-[11px]">Matawi</TabsTrigger>
-            <TabsTrigger value="compliance" className="h-8 shrink-0 rounded-full border border-border bg-transparent px-3 text-[11px]">Sheria</TabsTrigger>
-            <span className="self-center px-1 text-[10px] font-semibold uppercase text-muted-foreground">Rekodi</span>
-            <TabsTrigger value="sales" className="h-8 shrink-0 rounded-full border border-border bg-transparent px-3 text-[11px]">Mauzo</TabsTrigger>
-            <TabsTrigger value="orders" className="h-8 shrink-0 rounded-full border border-border bg-transparent px-3 text-[11px]">Oda</TabsTrigger>
-            <TabsTrigger value="products" className="h-8 shrink-0 rounded-full border border-border bg-transparent px-3 text-[11px]">Bidhaa</TabsTrigger>
-            <TabsTrigger value="activities" className="h-8 shrink-0 rounded-full border border-border bg-transparent px-3 text-[11px]">Shughuli</TabsTrigger>
-            <TabsTrigger value="logs" className="h-8 shrink-0 rounded-full border border-border bg-transparent px-3 text-[11px]">Logi</TabsTrigger>
-            <span className="self-center px-1 text-[10px] font-semibold uppercase text-muted-foreground">Sokoni</span>
-            <TabsTrigger value="marketplace" className="h-8 shrink-0 rounded-full border border-border bg-transparent px-3 text-[11px]">Sokoni</TabsTrigger>
-            <TabsTrigger value="ads" className="h-8 shrink-0 rounded-full border border-border bg-transparent px-3 text-[11px]">Matangazo</TabsTrigger>
-            <TabsTrigger value="chat" className="h-8 shrink-0 rounded-full border border-border bg-transparent px-3 text-[11px]">Mazungumzo</TabsTrigger>
-            <TabsTrigger value="servicehub" className="h-8 shrink-0 rounded-full border border-border bg-transparent px-3 text-[11px]">ServiceHUB</TabsTrigger>
-            <span className="self-center px-1 text-[10px] font-semibold uppercase text-muted-foreground">Mfumo</span>
-            <TabsTrigger value="users" className="h-8 shrink-0 rounded-full border border-border bg-transparent px-3 text-[11px]">Watumiaji</TabsTrigger>
-            <TabsTrigger value="ruhusa" className="h-8 shrink-0 rounded-full border border-border bg-transparent px-3 text-[11px]">Ruhusa</TabsTrigger>
-            <TabsTrigger value="announcements" className="h-8 shrink-0 rounded-full border border-border bg-transparent px-3 text-[11px]">Arifa / Update</TabsTrigger>
-            <TabsTrigger value="emails" className="h-8 shrink-0 rounded-full border border-border bg-transparent px-3 text-[11px]">Barua</TabsTrigger>
-            <TabsTrigger value="analytics" className="h-8 shrink-0 rounded-full border border-border bg-transparent px-3 text-[11px]">Analytics</TabsTrigger>
-            <TabsTrigger value="more" className="h-8 shrink-0 rounded-full border border-border bg-transparent px-3 text-[11px]">Zaidi</TabsTrigger>
-          </TabsList>
-        </div>
 
         {/* Search */}
         <div className="mb-4 flex flex-col gap-2 rounded-3xl border border-border bg-card p-3 sm:flex-row sm:items-center">
