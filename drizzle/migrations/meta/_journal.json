@@ -183,6 +183,13 @@
       "when": 1793015937694,
       "tag": "0025_report_read_and_snapshot_update_backstops",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1793016065481,
+      "tag": "0026_enable_live_stock_updates",
+      "breakpoints": true
     }
   ]
 }
