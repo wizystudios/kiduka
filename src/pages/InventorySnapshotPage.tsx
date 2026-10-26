@@ -203,6 +203,11 @@ export const InventorySnapshotPage = () => {
       </div>
 
       <StockChart items={products} />
+      {can('inventory_automation') && (
+        <div className="flex justify-center">
+          <Button asChild variant="outline" className="rounded-full"><a href="/inventory-automation">Sheria za kuagiza & makadirio</a></Button>
+        </div>
+      )}
       {/* Action Buttons */}
       <div className="flex justify-center gap-8 flex-wrap">
         <Button
