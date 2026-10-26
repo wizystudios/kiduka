@@ -8,6 +8,7 @@ import { usePermissions } from '@/hooks/usePermissions';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+import { StockChart } from '@/components/StockChart';
 
 interface Product {
   id: string;
@@ -52,11 +53,13 @@ export const InventorySnapshotPage = () => {
       setLoading(true);
 
       // Fetch products
-      const { data: productsData, error: productsError } = await supabase
+      let productQuery = supabase
         .from('products')
         .select('id, name, stock_quantity, unit_type, price')
         .eq('owner_id', dataOwnerId)
         .order('name');
+      productQuery = branchId ? productQuery.eq('branch_id', branchId) : productQuery.is('branch_id', null);
+      const { data: productsData, error: productsError } = await productQuery;
 
       if (productsError) throw productsError;
 
@@ -82,6 +85,11 @@ export const InventorySnapshotPage = () => {
 
   useEffect(() => {
     fetchData();
+    if (!dataOwnerId || !isReady) return;
+    const channel = supabase.channel(`stock-${crypto.randomUUID()}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'products', filter: `owner_id=eq.${dataOwnerId}` }, () => void fetchData())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'inventory_snapshots', filter: `owner_id=eq.${dataOwnerId}` }, () => void fetchData()).subscribe();
+    return () => { void supabase.removeChannel(channel); };
   }, [dataOwnerId, branchId, isReady, selectedDate]);
 
   const recordSnapshot = async (type: 'opening' | 'closing') => {
@@ -150,7 +158,7 @@ export const InventorySnapshotPage = () => {
   const hasClosingCount = snapshots.some(s => s.snapshot_type === 'closing');
   const productReport = getProductReport();
 
-  if (loading) {
+  if (loading && products.length === 0) {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -194,12 +202,13 @@ export const InventorySnapshotPage = () => {
         />
       </div>
 
+      <StockChart items={products} />
       {/* Action Buttons */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="flex justify-center gap-8 flex-wrap">
         <Button
           onClick={() => recordSnapshot('opening')}
           disabled={recording || hasOpeningCount || !can('inventory_snapshot_create')}
-          className="h-auto py-6 flex-col gap-3"
+          className="h-36 w-36 rounded-full flex-col gap-2 whitespace-normal shrink-0"
           variant={hasOpeningCount ? "outline" : "default"}
         >
           {hasOpeningCount ? (
@@ -218,7 +227,7 @@ export const InventorySnapshotPage = () => {
         <Button
           onClick={() => recordSnapshot('closing')}
           disabled={recording || !hasOpeningCount || hasClosingCount || !can('inventory_snapshot_create')}
-          className="h-auto py-6 flex-col gap-3"
+          className="h-36 w-36 rounded-full flex-col gap-2 whitespace-normal shrink-0"
           variant={hasClosingCount ? "outline" : "default"}
         >
           {hasClosingCount ? (
