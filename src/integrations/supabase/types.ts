@@ -1859,6 +1859,39 @@ export type Database = {
           },
         ]
       }
+      platform_announcements: {
+        Row: {
+          created_at: string
+          created_by: string
+          id: string
+          is_active: boolean
+          kind: string
+          summary: string
+          title: string
+          version: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          is_active?: boolean
+          kind?: string
+          summary: string
+          title: string
+          version?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          is_active?: boolean
+          kind?: string
+          summary?: string
+          title?: string
+          version?: string | null
+        }
+        Relationships: []
+      }
       product_images: {
         Row: {
           created_at: string
@@ -2255,6 +2288,35 @@ export type Database = {
           viewport?: string | null
         }
         Relationships: []
+      }
+      release_preferences: {
+        Row: {
+          announcement_id: string
+          choice: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          announcement_id: string
+          choice: string
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          announcement_id?: string
+          choice?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "release_preferences_announcement_id_fkey"
+            columns: ["announcement_id"]
+            isOneToOne: false
+            referencedRelation: "platform_announcements"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       return_requests: {
         Row: {
@@ -2805,6 +2867,137 @@ export type Database = {
           phone?: string
         }
         Relationships: []
+      }
+      staff_reports: {
+        Row: {
+          author_id: string
+          body: string
+          branch_id: string | null
+          business_id: string
+          created_at: string
+          feedback: string
+          id: string
+          kind: string
+          owner_id: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          title: string
+        }
+        Insert: {
+          author_id?: string
+          body: string
+          branch_id?: string | null
+          business_id: string
+          created_at?: string
+          feedback?: string
+          id?: string
+          kind?: string
+          owner_id: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          title: string
+        }
+        Update: {
+          author_id?: string
+          body?: string
+          branch_id?: string | null
+          business_id?: string
+          created_at?: string
+          feedback?: string
+          id?: string
+          kind?: string
+          owner_id?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_reports_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "business_branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "staff_reports_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stock_order_rules: {
+        Row: {
+          branch_id: string | null
+          business_id: string
+          created_at: string
+          id: string
+          is_active: boolean
+          order_quantity: number
+          owner_id: string
+          product_id: string
+          supplier_info: string
+          trigger_threshold: number
+        }
+        Insert: {
+          branch_id?: string | null
+          business_id: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          order_quantity: number
+          owner_id: string
+          product_id: string
+          supplier_info?: string
+          trigger_threshold: number
+        }
+        Update: {
+          branch_id?: string | null
+          business_id?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          order_quantity?: number
+          owner_id?: string
+          product_id?: string
+          supplier_info?: string
+          trigger_threshold?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stock_order_rules_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "business_branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_order_rules_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_order_rules_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_order_rules_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "public_marketplace_products"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       suppliers: {
         Row: {
