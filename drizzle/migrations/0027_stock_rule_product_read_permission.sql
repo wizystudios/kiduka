@@ -1,0 +1,1 @@
+ALTER POLICY "Catalog select" ON public.products USING(public.can_access_branch_data(owner_id,business_id,branch_id) AND public.staff_any_permission(owner_id,ARRAY['can_view_products','can_create_sales','can_view_inventory','can_view_reports','products_create','can_edit_products','inventory_automation']));

@@ -1,11 +1,12 @@
 # Kiduka completion roadmap
 
 ## Notes, stock and release communication
-- [ ] Audit assigned permissions against working actions and repair confirmed gaps.
-- [ ] Add permission-controlled staff notes/reports with owner approval or return.
-- [ ] Add branch-scoped live stock charts and circular stock controls.
-- [ ] Add server-protected admin announcements and release summaries, homepage alerts and Settings → Kiduka Update.
-- [ ] Remove stale app-shell cache hazards; test notes, access denial, announcements and update choices without private output.
+- [x] Focused audit: repair create-sales-only redirect/history access, replace simulated stock automation, expose stock rules/suppliers links and enforce restrictive snapshot/supplier permissions. Exhaustive catalog audit remains in its separate section below.
+- [x] Add permission-controlled staff notes/reports with owner approval or return: saved/list readback, returned and approved states browser-verified; generated reports removed. Ungranted assistant reads/inserts and admin broadcasts denied by database.
+- [x] Add branch-scoped stock charts, circular controls and Realtime publications/subscriptions; live data, empty state and circular control verified. Rules persist; forecasts use actual 30-day sale items, no simulated supplier sending.
+- [x] Add server-protected admin announcements and release summaries, homepage alerts and Settings → Kiduka Update: admin validation and private inactive announcement persistence tested, later/accepted preferences read back, private test removed.
+- [x] Remove stale app-shell cache hazards using PWA skill retirement path, retain manifest and IndexedDB sync; 73 tests pass. Changes to returning installed/published browsers need publishing; release acknowledgement does not pin old code or provide offline app reopening.
+- [ ] Exhaustive 53-permission role-by-role walkthrough remains unverified; only focused owner/admin report flow and ungranted assistant server denial tested. Publication/returning installed-app behavior requires a published release and the user's installed device; no global test notification sent to customers.
 
 ## Exhaustive permission audit
 - [ ] Map the current catalog against every route, navigation surface and owner action; expand missing grants.
