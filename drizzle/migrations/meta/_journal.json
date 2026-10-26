@@ -190,6 +190,13 @@
       "when": 1793016065481,
       "tag": "0026_enable_live_stock_updates",
       "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1793030955945,
+      "tag": "0027_stock_rule_product_read_permission",
+      "breakpoints": true
     }
   ]
 }
