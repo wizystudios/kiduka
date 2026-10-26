@@ -80,10 +80,14 @@ export const QuickSalePage = () => {
       });
       if (itemError) throw itemError;
 
-      if (matchedProduct) {
-        await supabase.from('products')
-          .update({ stock_quantity: Math.max(0, (matchedProduct.stock_quantity || 0) - Math.round(quantity)) })
-          .eq('id', matchedProduct.id);
+      const { error: effectsError } = await supabase.rpc('apply_staff_sale_effects', {
+        p_sale_id: sale.id,
+        p_customer_id: formData.customer_id || null,
+        p_debt: balance > 0 ? balance : 0,
+      } as any);
+      if (effectsError) {
+        console.error('Stock/debt update failed:', effectsError);
+        toast.error('Mauzo yamehifadhiwa, lakini stoo au deni halijasasishwa');
       }
 
       const invoiceNumber = `INV-${sale.id.slice(0, 8).toUpperCase()}`;
@@ -109,10 +113,6 @@ export const QuickSalePage = () => {
       }]);
       if (error) throw error;
 
-      if (formData.customer_id && balance > 0) {
-        const { data: customer } = await supabase.from('customers').select('outstanding_balance').eq('id', formData.customer_id).single();
-        await supabase.from('customers').update({ outstanding_balance: (customer?.outstanding_balance || 0) + balance }).eq('id', formData.customer_id);
-      }
 
       setLastSaleData({
         customer_name: formData.customer_name,
