@@ -1567,7 +1567,7 @@ export const SuperAdminDashboard = () => {
                 {filteredSubscriptions.map(sub => (
                   <div key={sub.id} className="flex items-center justify-between gap-3 p-3 rounded-2xl border hover:bg-muted/50 flex-wrap">
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium text-sm truncate">{sub.business_name || sub.user_name || sub.user_email}</p>
+                      <p className="font-medium text-sm truncate">{(sub as any).business_name || sub.user_name || sub.user_email}</p>
                       <p className="text-xs text-muted-foreground">Mmiliki: {sub.user_name || sub.user_email}{sub.current_period_end ? ` · hadi ${new Date(sub.current_period_end).toLocaleDateString('sw-TZ')}` : ''}</p>
                       <div className="flex items-center gap-2 mt-1 flex-wrap">
                         <Badge variant={sub.status === 'active' ? 'default' : sub.status === 'trial' ? 'secondary' : 'destructive'} className="text-[10px]">
