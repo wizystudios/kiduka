@@ -67,11 +67,13 @@ export default function SuppliersPage() {
   useEffect(() => { if (ownerId) fetchData(); }, [ownerId]);
 
   const fetchData = async () => {
+    if (!ownerId) return;
     setLoading(true);
     const [supRes, poRes] = await Promise.all([
-      supabase.from('suppliers').select('*').eq('owner_id', ownerId!).order('name'),
-      supabase.from('purchase_orders').select('*').eq('owner_id', ownerId!).order('created_at', { ascending: false }).limit(50),
+      supabase.from('suppliers').select('*').eq('owner_id', ownerId).order('name'),
+      supabase.from('purchase_orders').select('*').eq('owner_id', ownerId).order('created_at', { ascending: false }).limit(50),
     ]);
+    if (supRes.error || poRes.error) toast({title:'Imeshindwa kupakia wasambazaji au manunuzi',variant:'destructive'});
     setSuppliers((supRes.data as any[]) || []);
     setOrders((poRes.data as any[]) || []);
     setLoading(false);
@@ -80,13 +82,11 @@ export default function SuppliersPage() {
   const handleSaveSupplier = async () => {
     if (!form.name.trim() || !ownerId) return;
     setSubmitting(true);
-    if (editingSupplier) {
-      await supabase.from('suppliers').update({ ...form }).eq('id', editingSupplier.id);
-      toast({ title: 'Msambazaji amebadilishwa' });
-    } else {
-      await supabase.from('suppliers').insert({ ...form, owner_id: ownerId });
-      toast({ title: 'Msambazaji ameongezwa' });
-    }
+    const result = editingSupplier
+      ? await supabase.from('suppliers').update({ ...form }).eq('id', editingSupplier.id)
+      : await supabase.from('suppliers').insert({ ...form, owner_id: ownerId });
+    if (result.error) { setSubmitting(false); toast({title:'Msambazaji hajahifadhiwa. Kagua ruhusa na mtandao.',variant:'destructive'}); return; }
+    toast({title:editingSupplier?'Msambazaji amebadilishwa':'Msambazaji ameongezwa'});
     setShowSupplierDialog(false);
     setForm(emptySupplier);
     setEditingSupplier(null);
@@ -95,7 +95,8 @@ export default function SuppliersPage() {
   };
 
   const handleDeleteSupplier = async (id: string) => {
-    await supabase.from('suppliers').delete().eq('id', id);
+    const {error} = await supabase.from('suppliers').delete().eq('id', id);
+    if(error){toast({title:'Msambazaji hajafutwa',variant:'destructive'});return;}
     toast({ title: 'Msambazaji amefutwa' });
     fetchData();
   };
@@ -104,7 +105,7 @@ export default function SuppliersPage() {
     if (!poForm.supplier_name.trim() || !ownerId) return;
     setSubmitting(true);
     const balance = poForm.total_amount - poForm.amount_paid;
-    await supabase.from('purchase_orders').insert({
+    const {error} = await supabase.from('purchase_orders').insert({
       owner_id: ownerId,
       supplier_id: poForm.supplier_id || null,
       supplier_name: poForm.supplier_name,
@@ -117,6 +118,7 @@ export default function SuppliersPage() {
       items: poForm.items,
       status: balance <= 0 ? 'paid' : 'pending',
     });
+    if(error){setSubmitting(false);toast({title:'Oda haijahifadhiwa. Kagua ruhusa na mtandao.',variant:'destructive'});return;}
     toast({ title: 'Oda imeundwa' });
     setShowOrderDialog(false);
     setPoForm(emptyPO);
@@ -191,7 +193,7 @@ export default function SuppliersPage() {
                   </div>
                   <div className="flex gap-1">
                     {s.phone && (
-                      <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => openWhatsApp(s.phone!, `Habari ${s.name}`)}>
+                      <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => {if(s.phone)openWhatsApp(s.phone, `Habari ${s.name}`);}}>
                         <MessageCircle className="h-3.5 w-3.5" />
                       </Button>
                     )}
