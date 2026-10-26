@@ -44,6 +44,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Check, ChevronsUpDown, Gauge, ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { AdminAssistantPermissions } from '@/components/AdminAssistantPermissions';
+import { AdminAnnouncementsPanel } from '@/components/AdminAnnouncementsPanel';
 
 interface User {
   id: string;
@@ -1450,6 +1451,7 @@ export const SuperAdminDashboard = () => {
             { value: 'ads', label: 'Matangazo' },
             { value: 'chat', label: 'Mazungumzo' },
             { value: 'servicehub', label: 'ServiceHUB' },
+            { value: 'announcements', label: 'Arifa / Update' },
             { value: 'ruhusa', label: 'Ruhusa' },
             { value: 'emails', label: 'Barua' },
             { value: 'logs', label: 'Logi' },
@@ -1460,6 +1462,7 @@ export const SuperAdminDashboard = () => {
 
         <div className="hidden w-full px-1 overflow-x-auto no-scrollbar md:block">
           <TabsList className="mb-4 flex h-auto w-max min-w-full flex-nowrap justify-start gap-1 bg-transparent p-0 md:w-full md:flex-wrap">
+            <TabsTrigger value="announcements" className="h-8 shrink-0 rounded-full border border-border bg-transparent px-3 text-[11px]">Arifa / Update</TabsTrigger>
 
 
             <TabsTrigger value="overview" className="h-8 shrink-0 rounded-full border border-border bg-transparent px-3 text-[11px]">Overview</TabsTrigger>
@@ -2003,6 +2006,7 @@ export const SuperAdminDashboard = () => {
         <TabsContent value="ruhusa" className="space-y-4">
           <AdminAssistantPermissions />
         </TabsContent>
+        <TabsContent value="announcements" className="space-y-4"><AdminAnnouncementsPanel /></TabsContent>
 
         <TabsContent value="emails" className="space-y-4">
           <AdminEmailsPanel />

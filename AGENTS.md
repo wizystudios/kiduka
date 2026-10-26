@@ -23,3 +23,7 @@
 
 - Expose only public pricing fields through the public pricing RPC and read admin bills from the server, because preview calculators and admin displays must not diverge from actual usage charges.
 - Mount the sonner Toaster globally in App.tsx, because most pages report errors through sonner and an unmounted toaster silently hides every message.
+- Store staff reports with business/branch scope and server-validated review transitions; authors cannot approve their own reports because owner review is a separate authority.
+- Keep platform announcements and release choices in authenticated, RLS-protected tables; only server-verified super admins publish messages because browser state is not administrative authority.
+- Retire the legacy app-shell worker with a same-path cleanup worker and keep manifest installability and IndexedDB data sync; release acknowledgements do not pin old JavaScript because stale pages must not obstruct customers.
+- Derive stock forecasts from actual sale items and persist stock reorder rules; never simulate ordering or claim supplier delivery because no supplier sending integration exists.

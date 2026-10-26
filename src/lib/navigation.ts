@@ -35,7 +35,7 @@ export interface AppNavItem {
 export const primaryNavigationItems: AppNavItem[] = [
   { id: 'dashboard', label: 'Dashboard', icon: Home, href: '/dashboard', permission: null },
   { id: 'products', feature: 'products', label: 'Bidhaa', icon: Package, href: '/products', permission: 'can_view_products' },
-  { id: 'sales', feature: 'sales', label: 'Mauzo', icon: ShoppingCart, href: '/sales', permission: 'can_view_sales' },
+  { id: 'sales', feature: 'sales', label: 'Mauzo', icon: ShoppingCart, href: '/sales', anyPermission: ['can_view_sales', 'can_create_sales'] },
   { id: 'stock', feature: 'inventory', label: 'Stock', icon: ClipboardList, href: '/inventory-snapshots', permission: 'can_view_inventory' },
   { id: 'orders', label: 'Oda', icon: Crown, href: '/sokoni-orders', permission: 'sokoni_orders_manage' },
   { id: 'rewards', label: 'Tuzo', icon: Gift, href: '/rewards', anyPermission: ['discounts_manage', 'returns_view', 'marketplace_manage'] },
@@ -46,6 +46,7 @@ export const primaryNavigationItems: AppNavItem[] = [
   { id: 'reports', feature: 'reports', label: 'Ripoti', icon: BarChart3, href: '/reports', permission: 'can_view_reports' },
   { id: 'bookkeeping', feature: 'reports', label: 'Uhasibu', icon: BookOpen, href: '/bookkeeping', permission: 'bookkeeping_view' },
   { id: 'branches', label: 'Matawi', icon: Store, href: '/branches', ownerOnly: true },
+  { id: 'notes', label: 'Notisi / Taarifa', icon: FileText, href: '/staff-reports', anyPermission: ['notes_view', 'notes_create'] },
     { id: 'settings', label: 'Mipangilio', icon: Settings, href: '/settings', permission: null },
 ];
 

@@ -36,7 +36,7 @@ export const usePermissions = () => {
       if (current) setLoading(false);
     };
     run();
-    const channel = user ? supabase.channel(`permissions:${user.id}`).on('postgres_changes', { event: '*', schema: 'public', table: 'assistant_permissions', filter: `assistant_id=eq.${user.id}` }, () => { setPermissions(null); setLoading(true); run(); }).subscribe() : null;
+    const channel = user ? supabase.channel(`permissions:${user.id}:${crypto.randomUUID()}`).on('postgres_changes', { event: '*', schema: 'public', table: 'assistant_permissions', filter: `assistant_id=eq.${user.id}` }, () => { setPermissions(null); setLoading(true); run(); }).subscribe() : null;
     return () => { current = false; if (channel) supabase.removeChannel(channel); };
   }, [user, userProfile]);
 
