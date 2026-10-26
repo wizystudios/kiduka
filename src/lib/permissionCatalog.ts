@@ -70,6 +70,10 @@ export const PERMISSION_GROUPS: PermissionGroup[] = [
     { key: 'billing_view', label: 'Michango na bili ya Kiduka' },
     { key: 'compliance_manage', label: 'Sheria: TIN, NIDA, leseni' },
   ]},
+  { id: 'notes', title: 'Notisi na taarifa za kazi', items: [
+    { key: 'notes_view', label: 'Kuona notisi na majibu yake' },
+    { key: 'notes_create', label: 'Kuandika na kutuma notisi au taarifa' },
+  ]},
 ];
 
 export const ALL_PERMISSION_KEYS = PERMISSION_GROUPS.flatMap(g => g.items.map(i => i.key));

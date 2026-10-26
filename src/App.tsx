@@ -89,6 +89,8 @@ import UnifiedSettingsPage from '@/pages/UnifiedSettingsPage';
 import { BranchManager } from '@/components/BranchManager';
 import RewardsPage from '@/pages/RewardsPage';
 import LipaNambaPage from '@/pages/LipaNambaPage';
+import StaffReportsPage from '@/pages/StaffReportsPage';
+import { KidukaUpdates } from '@/components/KidukaUpdates';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -123,6 +125,7 @@ export default function App() {
               <Route path="/unsubscribe" element={<UnsubscribePage />} />
               
               {/* Protected Routes */}
+              <Route path="/staff-reports" element={<ProtectedRoute><AppLayout><StaffReportsPage /></AppLayout></ProtectedRoute>} />
               <Route path="/dashboard" element={
                 <ProtectedRoute>
                   <SubscriptionGuard>
@@ -387,7 +390,7 @@ export default function App() {
               <Route path="/quick-sale" element={
                 <ProtectedRoute>
                   <AppLayout>
-                    <Navigate to="/sales" replace />
+                    <QuickSalePage />
                   </AppLayout>
                 </ProtectedRoute>
               } />
@@ -583,6 +586,7 @@ export default function App() {
             </Routes>
             <PublicHubNav />
             <GlobalNurathFloat />
+            <KidukaUpdates compact />
             <Toaster />
             <SonnerToaster position="top-center" richColors closeButton />
           </div>

@@ -35,8 +35,8 @@ for (const key of ALL_PERMISSION_KEYS) {
   });
 }
 test('catalog has unique keys and additional action controls', () => {
-  expect(ALL_PERMISSION_KEYS.length).toBe(51);
-  expect(new Set(ALL_PERMISSION_KEYS).size).toBe(51);
+  expect(ALL_PERMISSION_KEYS.length).toBe(53);
+  expect(new Set(ALL_PERMISSION_KEYS).size).toBe(53);
 });
 test('editing products does not grant product creation', () => {
   expect(canAccessStaffRoute('/products/add', { can_edit_products: true }, null)).toBe(false);
@@ -45,4 +45,13 @@ test('editing products does not grant product creation', () => {
 test('loyalty never grants returns or storefront settings', () => {
   expect(canAccessStaffRoute('/rewards', { loyalty_manage: true }, null)).toBe(false);
   expect(canAccessStaffRoute('/rewards', { returns_view: true }, null)).toBe(true);
+});
+test('creating sales does not require history access', () => {
+  expect(canAccessStaffRoute('/sales', {can_create_sales:true}, null)).toBe(true);
+  expect(canAccessStaffRoute('/quick-sale', {can_view_sales:true}, null)).toBe(false);
+});
+test('notes need an explicit independent grant', () => {
+  expect(canAccessStaffRoute('/staff-reports', {}, null)).toBe(false);
+  expect(canAccessStaffRoute('/staff-reports', {notes_create:true}, null)).toBe(true);
+  expect(mergePermissionRow(splitPermissions({notes_view:true})).notes_create).toBe(false);
 });

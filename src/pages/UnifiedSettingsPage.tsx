@@ -15,6 +15,8 @@ import { BusinessRegistrationPanel } from '@/components/BusinessRegistrationPane
 import { NurathSettingsPanel } from '@/components/NurathSettingsPanel';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useAuth } from '@/hooks/useAuth';
+import { KidukaUpdates } from '@/components/KidukaUpdates';
+import { Button } from '@/components/ui/button';
 
 // These open as right-side panels, matching the admin pages
 const SHEET_TABS: Record<string, { title: string; render: () => JSX.Element }> = {
@@ -42,6 +44,7 @@ export const UnifiedSettingsPage = () => {
     { id: 'subscription', label: 'Michango', icon: Crown, perm: 'billing_view' },
     { id: 'ads', label: 'Matangazo', icon: Megaphone, perm: 'ads_manage' },
     { id: 'install', label: 'App', icon: Smartphone },
+    { id: 'updates', label: 'Kiduka Update', icon: Sparkles },
     { id: 'qa', label: 'Mobile QA', icon: ClipboardCheck, perm: '__owner' },
     { id: 'help', label: 'ServiceHUB', icon: Headphones },
   ];
@@ -71,6 +74,7 @@ export const UnifiedSettingsPage = () => {
       case 'subscription': return <SubscriptionPage embedded />;
       case 'ads': return <AdsManagerPage />;
       case 'install': return <PWAInstallerPage />;
+      case 'updates': return <KidukaUpdates />;
       case 'help': return <HelpPage />;
       default:
         return (
@@ -122,7 +126,8 @@ export const UnifiedSettingsPage = () => {
             const Icon = tab.icon;
             const active = activeTab === tab.id || sheetTab === tab.id;
             return (
-              <button
+              <Button
+                variant="ghost"
                 key={tab.id}
                 onClick={() => handleTabChange(tab.id)}
                 className={`flex flex-col items-center gap-1 py-2 px-1 rounded-2xl text-[10px] font-medium transition-colors ${
@@ -131,7 +136,7 @@ export const UnifiedSettingsPage = () => {
               >
                 <Icon className="h-4 w-4" />
                 {tab.label}
-              </button>
+              </Button>
             );
           })}
         </div>
