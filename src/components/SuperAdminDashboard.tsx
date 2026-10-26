@@ -439,24 +439,27 @@ export const SuperAdminDashboard = () => {
   };
   
   const fetchSubscriptions = async () => {
-    const { data: subs } = await supabase
-      .from('user_subscriptions')
-      .select('*')
-      .order('created_at', { ascending: false });
-    
-    const userIds = (subs || []).map(s => s.user_id);
+    const [{ data: subs }, { data: owners }] = await Promise.all([
+      supabase.from('user_subscriptions').select('*').order('created_at', { ascending: false }),
+      supabase.from('business_members').select('user_id, role, businesses(name)').eq('role', 'owner'),
+    ]);
+    // Billing is per business: only owners carry a subscription, never staff.
+    const ownerMap = new Map((owners || []).map((o: any) => [o.user_id, o.businesses?.name]));
+    const ownerSubs = (subs || []).filter(s => ownerMap.has(s.user_id));
+    const userIds = ownerSubs.map(s => s.user_id);
     const { data: profiles } = await supabase
       .from('profiles')
       .select('id, email, full_name')
       .in('id', userIds);
     
-    const enriched = (subs || []).map(s => ({
+    const enriched = ownerSubs.map(s => ({
       ...s,
+      business_name: ownerMap.get(s.user_id),
       user_email: profiles?.find(p => p.id === s.user_id)?.email,
       user_name: profiles?.find(p => p.id === s.user_id)?.full_name
     }));
     
-    setSubscriptions(enriched);
+    setSubscriptions(enriched as any);
   };
 
   const fetchBusinessRelations = async () => {
@@ -506,9 +509,8 @@ export const SuperAdminDashboard = () => {
         case '1_week':
           periodEnd.setDate(periodEnd.getDate() + 7);
           break;
-        case '1_month':
         default:
-          periodEnd.setMonth(periodEnd.getMonth() + 1);
+          periodEnd.setMonth(periodEnd.getMonth() + (parseInt(duration, 10) || 1));
           break;
       }
       
@@ -954,7 +956,7 @@ export const SuperAdminDashboard = () => {
           // Create new session
           const { error } = await supabase
             .from('admin_business_sessions')
-            .insert({ owner_id: ownerId, admin_id: user!.id, active: true });
+            .insert({ owner_id: ownerId, admin_id: user!.id, active: true, consent_status: 'pending', reason: 'Msaada wa kiufundi' } as any);
 
           if (error) throw error;
 
@@ -1462,10 +1464,8 @@ export const SuperAdminDashboard = () => {
 
         <div className="hidden w-full px-1 overflow-x-auto no-scrollbar md:block">
           <TabsList className="mb-4 flex h-auto w-max min-w-full flex-nowrap justify-start gap-1 bg-transparent p-0 md:w-full md:flex-wrap">
-            <TabsTrigger value="announcements" className="h-8 shrink-0 rounded-full border border-border bg-transparent px-3 text-[11px]">Arifa / Update</TabsTrigger>
-
-
-            <TabsTrigger value="overview" className="h-8 shrink-0 rounded-full border border-border bg-transparent px-3 text-[11px]">Overview</TabsTrigger>
+            <span className="self-center px-1 text-[10px] font-semibold uppercase text-muted-foreground">Biashara</span>
+            <TabsTrigger value="overview" className="h-8 shrink-0 rounded-full border border-border bg-transparent px-3 text-[11px]">Muhtasari</TabsTrigger>
             <TabsTrigger value="analytics" className="h-8 shrink-0 rounded-full border border-border bg-transparent px-3 text-[11px]">Analytics</TabsTrigger>
             <TabsTrigger value="subscriptions" className="relative h-8 shrink-0 rounded-full border border-border bg-transparent px-3 text-[11px]">
               Usajili
@@ -1562,8 +1562,8 @@ export const SuperAdminDashboard = () => {
                 {filteredSubscriptions.map(sub => (
                   <div key={sub.id} className="flex items-center justify-between gap-3 p-3 rounded-2xl border hover:bg-muted/50 flex-wrap">
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium text-sm truncate">{sub.user_name || sub.user_email}</p>
-                      <p className="text-xs text-muted-foreground">{sub.user_email}</p>
+                      <p className="font-medium text-sm truncate">{sub.business_name || sub.user_name || sub.user_email}</p>
+                      <p className="text-xs text-muted-foreground">Mmiliki: {sub.user_name || sub.user_email}{sub.current_period_end ? ` · hadi ${new Date(sub.current_period_end).toLocaleDateString('sw-TZ')}` : ''}</p>
                       <div className="flex items-center gap-2 mt-1 flex-wrap">
                         <Badge variant={sub.status === 'active' ? 'default' : sub.status === 'trial' ? 'secondary' : 'destructive'} className="text-[10px]">
                           {sub.status}
@@ -1574,9 +1574,20 @@ export const SuperAdminDashboard = () => {
                         {sub.branch_count > 0 && <span className="text-[10px] text-muted-foreground">🏢{sub.branch_count}</span>}
                       </div>
                     </div>
-                    <Button size="sm" variant="outline" onClick={() => openFeeDialog(sub)}>
-                      <Pencil className="h-3 w-3 mr-1" /> Ada
-                    </Button>
+                    <div className="flex gap-2 flex-wrap">
+                      {sub.status === 'active' ? (
+                        <Button size="sm" variant="destructive" className="rounded-full" onClick={() => handleRejectSubscription(sub.id)}>
+                          <XCircle className="h-3 w-3 mr-1" /> Sitisha
+                        </Button>
+                      ) : (
+                        <Button size="sm" className="rounded-full" onClick={() => setApprovalDialog({ subId: sub.id, duration: '1_month' })}>
+                          <CheckCircle className="h-3 w-3 mr-1" /> Washa
+                        </Button>
+                      )}
+                      <Button size="sm" variant="outline" className="rounded-full" onClick={() => openFeeDialog(sub)}>
+                        <Pencil className="h-3 w-3 mr-1" /> Ada
+                      </Button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -1604,6 +1615,9 @@ export const SuperAdminDashboard = () => {
                   <SelectItem value="2_days">Siku 2</SelectItem>
                   <SelectItem value="1_week">Wiki 1</SelectItem>
                   <SelectItem value="1_month">Mwezi 1</SelectItem>
+                  <SelectItem value="3_month">Miezi 3</SelectItem>
+                  <SelectItem value="6_month">Miezi 6</SelectItem>
+                  <SelectItem value="12_month">Mwaka 1</SelectItem>
                 </SelectContent>
               </Select>
             </div>
