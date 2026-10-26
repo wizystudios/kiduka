@@ -3464,6 +3464,10 @@ export type Database = {
         Returns: Json
       }
       admin_reactivate_user: { Args: { p_user_id: string }; Returns: Json }
+      apply_staff_sale_effects: {
+        Args: { p_customer_id: string; p_debt: number; p_sale_id: string }
+        Returns: Json
+      }
       approve_user_subscription: {
         Args: {
           p_admin_id: string
