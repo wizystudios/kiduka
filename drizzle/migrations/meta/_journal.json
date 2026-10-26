@@ -169,6 +169,13 @@
       "when": 1792933006764,
       "tag": "0023_sync_registered_business_owner_role",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1793006223469,
+      "tag": "0024_staff_reports_releases_and_stock_rules",
+      "breakpoints": true
     }
   ]
 }
