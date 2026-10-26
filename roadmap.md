@@ -1,5 +1,12 @@
 # Kiduka completion roadmap
 
+## Notes, stock and release communication
+- [ ] Audit assigned permissions against working actions and repair confirmed gaps.
+- [ ] Add permission-controlled staff notes/reports with owner approval or return.
+- [ ] Add branch-scoped live stock charts and circular stock controls.
+- [ ] Add server-protected admin announcements and release summaries, homepage alerts and Settings → Kiduka Update.
+- [ ] Remove stale app-shell cache hazards; test notes, access denial, announcements and update choices without private output.
+
 ## Exhaustive permission audit
 - [ ] Map the current catalog against every route, navigation surface and owner action; expand missing grants.
 - [ ] Enforce deny-by-default permissions for database reads, writes and privileged functions.
