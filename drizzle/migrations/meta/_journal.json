@@ -176,6 +176,13 @@
       "when": 1793006223469,
       "tag": "0024_staff_reports_releases_and_stock_rules",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1793015937694,
+      "tag": "0025_report_read_and_snapshot_update_backstops",
+      "breakpoints": true
     }
   ]
 }
