@@ -1,30 +1,10 @@
 import { test, expect } from 'bun:test';
 import { readFileSync } from 'node:fs';
 import { runInNewContext } from 'node:vm';
-
-function worker(fetch) {
-  const handlers = {};
-  const context = {
-    fetch, URL, Response, AbortController, setTimeout, clearTimeout,
-    console: { log() {}, error() {} },
-    self: { location: { origin: 'https://kiduka.shop' }, addEventListener: (event, fn) => { handlers[event] = fn; } },
-  };
-  runInNewContext(readFileSync(new URL('../public/sw.js', import.meta.url), 'utf8'), context);
-  return { handlers, context };
-}
-
-test('authorized responses are network-only, never served from worker cache', async () => {
-  let calls = 0;
-  const { handlers } = worker(async () => { calls++; return new Response('fresh'); });
-  let response;
-  handlers.fetch({ request: new Request('https://kiduka.shop/private', { headers: { authorization: 'Bearer test' } }), respondWith: p => { response = p; } });
-  expect(await (await response).text()).toBe('fresh');
-  expect(calls).toBe(1);
+test('retirement deletes only app caches and unregisters', async()=>{
+ const events={};const deleted=[];let removed=false;const scope='https://kiduka.shop/';
+ runInNewContext(readFileSync(new URL('../public/sw.js',import.meta.url),'utf8'),{self:{registration:{scope,unregister:async()=>{removed=true;}},skipWaiting(){},clients:{claim:async()=>{},matchAll:async()=>[]},addEventListener:(k,v)=>events[k]=v},caches:{keys:async()=>['kiduka-static-v4','firebase-messaging','other-app',`workbox-precache-v2-${scope}`],delete:async name=>{deleted.push(name);}}});
+ let p;events.activate({waitUntil:x=>p=x});await p;
+ expect(deleted).toEqual(['kiduka-static-v4',`workbox-precache-v2-${scope}`]);expect(removed).toBe(true);expect(events.fetch).toBeUndefined();
 });
-
-test('stalled navigation fetch aborts at its configured timeout', async () => {
-  const { context } = worker((_, { signal }) => new Promise((resolve, reject) => {
-    signal.addEventListener('abort', () => reject(new Error('aborted')));
-  }));
-  await expect(context.fetchWithTimeout(new Request('https://kiduka.shop/servicehub'), 10)).rejects.toThrow('aborted');
-});
+test('retirement unregisters even if cache access fails',async()=>{const events={};let removed=false;runInNewContext(readFileSync(new URL('../public/sw.js',import.meta.url),'utf8'),{self:{registration:{scope:'https://kiduka.shop/',unregister:async()=>{removed=true;}},addEventListener:(k,v)=>events[k]=v},caches:{keys:async()=>{throw Error('storage');}}});let p;events.activate({waitUntil:x=>p=x});await expect(p).rejects.toThrow('storage');expect(removed).toBe(true);});
