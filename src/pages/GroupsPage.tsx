@@ -117,7 +117,7 @@ export default function GroupsPage() {
     <div className="container mx-auto p-4 max-w-3xl">
       <div className="text-center mb-4">
         <h1 className="text-2xl font-bold">Makundi</h1>
-        <p className="text-sm text-muted-foreground">Wateja, Wasambazaji{isOwner ? ' na Wasaidizi' : ''}</p>
+        <p className="text-sm text-muted-foreground">Wateja{isOwner ? ' na Wasaidizi' : ''}</p>
       </div>
 
       <div className="relative mb-4">
@@ -126,9 +126,8 @@ export default function GroupsPage() {
       </div>
 
       <Tabs defaultValue="customers" className="w-full">
-        <TabsList className={`grid w-full ${isOwner ? 'grid-cols-3' : 'grid-cols-2'}`}>
+        <TabsList className={`grid w-full ${isOwner ? 'grid-cols-2' : 'grid-cols-1'}`}>
           <TabsTrigger value="customers" className="gap-1 text-xs"><Users className="h-3.5 w-3.5" /> Wateja ({customers.length})</TabsTrigger>
-          <TabsTrigger value="suppliers" className="gap-1 text-xs"><Truck className="h-3.5 w-3.5" /> Wasambazaji ({suppliers.length})</TabsTrigger>
           {isOwner && <TabsTrigger value="users" className="gap-1 text-xs"><UserCheck className="h-3.5 w-3.5" /> Wasaidizi</TabsTrigger>}
         </TabsList>
 

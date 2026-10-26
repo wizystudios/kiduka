@@ -51,7 +51,6 @@ export const primaryNavigationItems: AppNavItem[] = [
 ];
 
 export const utilityNavigationItems: AppNavItem[] = [
-  { id: 'stock-rules', label: 'Sheria za Stock', icon: ClipboardList, href: '/inventory-automation', feature: 'inventory', permission: 'inventory_automation' },
   { id: 'suppliers', label: 'Wasambazaji', icon: Store, href: '/suppliers', feature: 'inventory', permission: 'suppliers_manage' },
   { id: 'servicehub', label: 'ServiceHUB', icon: HelpCircle, href: '/servicehub', permission: null },
   { id: 'notifications', label: 'Arifa', icon: Bell, href: '/notifications', permission: null },
