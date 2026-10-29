@@ -11,7 +11,6 @@ const Toaster = ({ ...props }: ToasterProps) => {
       theme={theme as ToasterProps["theme"]}
       className="toaster group kiduka-top-toaster"
       offset={0}
-      mobileOffset={0}
       gap={4}
       toastOptions={{
         classNames: {
