@@ -20,6 +20,21 @@ interface MultiImageUploadProps {
   maxImages?: number;
 }
 
+const shrinkImage = (file: File): Promise<File> => new Promise((resolve, reject) => {
+  const img = new Image();
+  const url = URL.createObjectURL(file);
+  img.onload = () => {
+    const scale = Math.min(1, 1600 / Math.max(img.width, img.height));
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.round(img.width * scale); canvas.height = Math.round(img.height * scale);
+    canvas.getContext('2d')?.drawImage(img, 0, 0, canvas.width, canvas.height);
+    URL.revokeObjectURL(url);
+    canvas.toBlob(b => b ? resolve(new File([b], file.name.replace(/\.\w+$/, '') + '.jpg', { type: 'image/jpeg' })) : reject(new Error('shrink')), 'image/jpeg', 0.82);
+  };
+  img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('load')); };
+  img.src = url;
+});
+
 export const MultiImageUpload = ({
   productId,
   existingImages = [],
@@ -44,7 +59,10 @@ export const MultiImageUpload = ({
       return null;
     }
 
-    // Validate file size (max 5MB)
+    // Phone photos are often larger than 5MB: shrink instead of rejecting
+    if (file.size > 1.5 * 1024 * 1024) {
+      try { file = await shrinkImage(file); } catch { /* keep original */ }
+    }
     if (file.size > 5 * 1024 * 1024) {
       toast.error('Picha ni kubwa sana. Ukubwa wa juu ni 5MB');
       return null;

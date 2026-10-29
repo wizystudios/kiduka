@@ -46,7 +46,7 @@ export const AddProductPage = () => {
       const productData = {
         name: formData.name.trim(), barcode: formData.barcode || '8' + Date.now().toString().slice(-11),
         price: parseFloat(formData.price), cost_price: formData.cost_price ? parseFloat(formData.cost_price) : 0,
-        stock_quantity: parseFloat(formData.stock_quantity),
+        stock_quantity: Math.max(0, Math.round(parseFloat(formData.stock_quantity) || 0)),
         category: formData.category?.trim() || null, description: formData.description?.trim() || null,
         low_stock_threshold: parseInt(formData.low_stock_threshold), is_weight_based: formData.is_weight_based,
         unit_type: formData.unit_type, min_quantity: parseFloat(formData.min_quantity) || 0.1,
