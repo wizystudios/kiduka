@@ -124,7 +124,8 @@ export const useOfflineProducts = (ownerId: string | null, branchId: string | nu
   const createProduct = useCallback(async (
     productData: Omit<Product, 'id' | 'created_at' | 'updated_at'>
   ): Promise<Product | null> => {
-    if (!ownerId || !can('products_create')) return null;
+    if (!ownerId) { toast.error('Taarifa za duka bado zinapakia. Subiri kidogo kisha ujaribu tena.'); return null; }
+    if (!can('products_create')) { toast.error('Huna ruhusa ya kuongeza bidhaa. Muombe mmiliki akuwashie.'); return null; }
 
     const newProduct: Product = {
       ...productData,
@@ -176,7 +177,13 @@ export const useOfflineProducts = (ownerId: string | null, branchId: string | nu
       }
     } catch (error: any) {
       console.error('Error creating product:', error);
-      toast.error(`Imeshindwa kuongeza bidhaa: ${error.message || 'Unknown error'}`);
+      const msg = String(error?.message || '');
+      const friendly = error?.code === '23505' || msg.includes('products_barcode_key')
+        ? 'Barcode hii tayari inatumika. Bonyeza "Zalisha" upate mpya.'
+        : msg.includes('invalid input syntax for type integer')
+          ? 'Idadi ya stock iwe namba kamili (mf. 10), au chagua "inauzwa kwa uzito".'
+          : msg || 'Kosa lisilojulikana';
+      toast.error(`Imeshindwa kuongeza bidhaa: ${friendly}`);
       return null;
     }
   }, [ownerId, branchId, can]);
