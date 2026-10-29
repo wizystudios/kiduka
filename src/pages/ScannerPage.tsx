@@ -527,6 +527,10 @@ export const ScannerPage = () => {
     }));
   };
 
+  const setPrice = (id: string, price: number) => {
+    setCart(prev => prev.map(item => item.id === id ? { ...item, price: Number.isFinite(price) && price >= 0 ? price : 0 } : item));
+  };
+
   const removeFromCart = (id: string) => {
     setCart(cart.filter(item => item.id !== id));
   };
@@ -904,7 +908,19 @@ export const ScannerPage = () => {
               <div key={item.id} className="flex items-center justify-between py-3 gap-2">
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-medium text-neutral-900 truncate">{item.name}</p>
-                  <p className="text-xs text-neutral-500">TZS {item.price.toLocaleString()} · Jumla TZS {(item.price * item.quantity).toLocaleString()}</p>
+                  <div className="flex items-center gap-1 text-xs text-neutral-500">
+                    <span>TZS</span>
+                    <Input
+                      type="number"
+                      min={0}
+                      inputMode="decimal"
+                      aria-label={`Bei ya ${item.name}`}
+                      value={item.price}
+                      onChange={(e) => setPrice(item.id, parseFloat(e.target.value))}
+                      className="h-7 w-24 rounded-full px-2 text-xs"
+                    />
+                    <span>· Jumla {(item.price * item.quantity).toLocaleString()}</span>
+                  </div>
                 </div>
                 <div className="flex items-center gap-1 flex-shrink-0">
                   <Button size="icon" variant="ghost" className="h-8 w-8 rounded-full border border-neutral-200"
