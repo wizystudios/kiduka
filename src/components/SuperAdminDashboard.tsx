@@ -1440,24 +1440,24 @@ export const SuperAdminDashboard = () => {
           onChange={setActiveTab}
           tabs={[
             { group: 'Biashara', value: 'overview', label: 'Muhtasari' },
-            { group: 'Biashara', value: 'subscriptions', label: 'Usajili & Malipo', badge: stats.pendingSubscriptions },
             { group: 'Biashara', value: 'branches', label: 'Matawi' },
             { group: 'Biashara', value: 'compliance', label: 'Sheria' },
-            { group: 'Rekodi', value: 'sales', label: 'Mauzo' },
-            { group: 'Rekodi', value: 'orders', label: 'Oda' },
-            { group: 'Rekodi', value: 'products', label: 'Bidhaa' },
-            { group: 'Rekodi', value: 'activities', label: 'Shughuli' },
-            { group: 'Rekodi', value: 'logs', label: 'Logi' },
-            { group: 'Wateja', value: 'chat', label: 'Mazungumzo' },
-            { group: 'Wateja', value: 'servicehub', label: 'ServiceHUB' },
-            { group: 'Wateja', value: 'marketplace', label: 'Sokoni' },
-            { group: 'Wateja', value: 'ads', label: 'Matangazo' },
-            { group: 'Mfumo', value: 'users', label: 'Watumiaji' },
-            { group: 'Mfumo', value: 'ruhusa', label: 'Ruhusa' },
-            { group: 'Mfumo', value: 'announcements', label: 'Arifa / Update' },
-            { group: 'Mfumo', value: 'emails', label: 'Barua' },
-            { group: 'Mfumo', value: 'analytics', label: 'Analytics' },
-            { group: 'Mfumo', value: 'more', label: 'Zaidi' },
+            { group: 'Biashara', value: 'sales', label: 'Mauzo' },
+            { group: 'Biashara', value: 'products', label: 'Bidhaa' },
+            { group: 'Biashara', value: 'orders', label: 'Oda' },
+            { group: 'Biashara', value: 'more', label: 'Wateja & Matumizi' },
+            { group: 'Watumiaji', value: 'users', label: 'Watumiaji & Nenosiri' },
+            { group: 'Watumiaji', value: 'ruhusa', label: 'Ruhusa' },
+            { group: 'Watumiaji', value: 'activities', label: 'Shughuli' },
+            { group: 'Watumiaji', value: 'logs', label: 'Logi' },
+            { group: 'Fedha', value: 'subscriptions', label: 'Usajili & Malipo', badge: stats.pendingSubscriptions },
+            { group: 'Fedha', value: 'analytics', label: 'Mapato & Analytics' },
+            { group: 'Huduma', value: 'servicehub', label: 'ServiceHUB' },
+            { group: 'Huduma', value: 'chat', label: 'Mazungumzo' },
+            { group: 'Huduma', value: 'emails', label: 'Barua' },
+            { group: 'Huduma', value: 'announcements', label: 'Arifa / Update' },
+            { group: 'Huduma', value: 'marketplace', label: 'Sokoni' },
+            { group: 'Huduma', value: 'ads', label: 'Matangazo' },
           ]}
         />
 
@@ -1791,8 +1791,35 @@ export const SuperAdminDashboard = () => {
                         onClick={() => setViewDialog({type: 'user', data: u})}
                       >
                         <Eye className="h-3 w-3 mr-1" />
-                        View
+                        Angalia
                       </Button>
+                    </div>
+                    <div className="mt-3 flex flex-wrap gap-1.5 border-t border-border pt-3">
+                      <Button size="sm" variant="secondary" className="h-8 rounded-full text-xs" onClick={() => handleChangeUserPassword(u.id, u.full_name || u.email)}>
+                        <Key className="h-3 w-3 mr-1" />Nenosiri
+                      </Button>
+                      <Button size="sm" variant="secondary" className="h-8 rounded-full text-xs" onClick={async () => {
+                        try { await callAdminManageUser('unlock_login', u.id); toast.success('Kizuizi cha kuingia kimeondolewa'); }
+                        catch (e: any) { toast.error(`Imeshindwa: ${e.message}`); }
+                      }}>
+                        <Lock className="h-3 w-3 mr-1" />Fungua lockout
+                      </Button>
+                      <Button size="sm" variant="secondary" className="h-8 rounded-full text-xs" onClick={() => handleBanUser(u.id, u.full_name || u.email)}>
+                        <Ban className="h-3 w-3 mr-1" />Fungia
+                      </Button>
+                      <Button size="sm" variant="secondary" className="h-8 rounded-full text-xs" onClick={() => handleUnbanUser(u.id, u.full_name || u.email)}>
+                        <CheckCircle className="h-3 w-3 mr-1" />Fungulia
+                      </Button>
+                      {u.role === 'owner' && (
+                        <Button size="sm" className="h-8 rounded-full text-xs" onClick={() => { setSelectedBusiness(u.id); setActiveTab('overview'); }}>
+                          <Building2 className="h-3 w-3 mr-1" />Biashara yake
+                        </Button>
+                      )}
+                      {u.phone && (
+                        <Button size="sm" variant="outline" className="h-8 rounded-full text-xs" asChild>
+                          <a href={`https://wa.me/${u.phone.replace(/\D/g, '').replace(/^0/, '255')}`} target="_blank" rel="noreferrer"><Phone className="h-3 w-3 mr-1" />WhatsApp</a>
+                        </Button>
+                      )}
                     </div>
                   </CardContent>
                 </Card>

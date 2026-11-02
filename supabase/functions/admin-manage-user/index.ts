@@ -95,6 +95,17 @@ Deno.serve(async (req) => {
         break;
       }
 
+      case "unlock_login": {
+        const { data: { user: target }, error: getErr } = await adminClient.auth.admin.getUserById(user_id);
+        if (getErr) throw getErr;
+        if (target?.email) {
+          await adminClient.from("login_attempts").delete().eq("email", target.email.toLowerCase());
+          await adminClient.from("login_attempts").delete().eq("email", target.email);
+        }
+        result.message = "Login lockout cleared";
+        break;
+      }
+
       case "unban_user": {
         const { error } = await adminClient.auth.admin.updateUser(user_id, {
           ban_duration: "none",
