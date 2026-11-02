@@ -50,7 +50,7 @@ interface ContractRecord {
   email?: string;
 }
 
-export const AdminCompliancePanel = () => {
+export const AdminCompliancePanel = ({ ownerId = null }: { ownerId?: string | null } = {}) => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -79,7 +79,7 @@ export const AdminCompliancePanel = () => {
       const roles = rolesRes.data || [];
 
       const ownerIds = new Set(roles.filter(r => r.role === 'owner').map(r => r.user_id));
-      const ownerProfiles = profiles.filter(profile => ownerIds.has(profile.id));
+      const ownerProfiles = profiles.filter(profile => ownerIds.has(profile.id) && (!ownerId || profile.id === ownerId));
       const complianceByOwner = new Map((compRes.data || []).map(record => [record.owner_id, record]));
       const contractByOwner = new Map((contractRes.data || []).map(record => [record.owner_id, record]));
 
@@ -128,7 +128,7 @@ export const AdminCompliancePanel = () => {
     }
   };
 
-  useEffect(() => { fetchData(); }, []);
+  useEffect(() => { fetchData(); }, [ownerId]);
 
   const handleBlock = (record: ComplianceRecord) => {
     setBlockDialog({ record });

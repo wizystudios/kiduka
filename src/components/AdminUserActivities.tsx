@@ -31,7 +31,7 @@ const activityLabels: Record<string, { label: string; color: string }> = {
 
 type Period = 'today' | 'week' | 'month' | 'year' | 'all';
 
-export const AdminUserActivities = () => {
+export const AdminUserActivities = ({ userIds: scopeUserIds = null }: { userIds?: string[] | null } = {}) => {
   const [activities, setActivities] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState<Period>('today');
@@ -58,6 +58,7 @@ export const AdminUserActivities = () => {
         .order('created_at', { ascending: false })
         .limit(500);
 
+      if (scopeUserIds) query = query.in('user_id', scopeUserIds.length ? scopeUserIds : ['00000000-0000-0000-0000-000000000000']);
       const dateFilter = getDateFilter(period);
       if (dateFilter) {
         query = query.gte('created_at', dateFilter);
@@ -100,7 +101,7 @@ export const AdminUserActivities = () => {
 
   useEffect(() => {
     fetchActivities();
-  }, [period, selectedType]);
+  }, [period, selectedType, scopeUserIds?.join(',')]);
 
   // Realtime subscription
   useEffect(() => {

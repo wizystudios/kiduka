@@ -247,6 +247,7 @@ export const SuperAdminDashboard = () => {
   const [deletionDialog, setDeletionDialog] = useState<{ ownerId: string; name: string } | null>(null);
   const [approvalDialog, setApprovalDialog] = useState<{subId: string; duration: string} | null>(null);
   const [userPasswordChange, setUserPasswordChange] = useState<{userId: string; userName: string; newPassword: string} | null>(null);
+  const [assistantLinks, setAssistantLinks] = useState<{ owner_id: string; assistant_id: string }[]>([]);
   const [dossierOwner, setDossierOwner] = useState<string | null>(null);
   const [contactEdit, setContactEdit] = useState<{userId: string; userName: string; email: string; phone: string; origEmail: string; origPhone: string} | null>(null);
   const [banDialog, setBanDialog] = useState<{userId: string; userName: string; duration: string} | null>(null);
@@ -293,7 +294,8 @@ export const SuperAdminDashboard = () => {
 
   // Re-compute filtered stats when business changes
   useEffect(() => {
-    // Stats are recalculated from already-fetched data arrays
+    if (loading) return;
+    Promise.all([fetchProducts(), fetchSales(), fetchOrders(), fetchExpenses(), fetchCustomers()]).catch(() => {});
   }, [selectedBusiness]);
   
   const fetchAllData = async () => {
@@ -471,6 +473,7 @@ export const SuperAdminDashboard = () => {
       supabase.from('assistant_permissions').select('owner_id, assistant_id'),
     ]);
     setBusinessMembers((membersRes.data as any[]) || []);
+    setAssistantLinks((assistantRes.data as any[]) || []);
     if (assistantRes.error) console.warn('assistant permissions audit load failed', assistantRes.error);
   };
 
@@ -701,12 +704,20 @@ export const SuperAdminDashboard = () => {
     setUsers(usersWithRoles);
   };
   
+  const scopeQuery = <T,>(qIn: T, ownerCol: 'owner_id' | 'seller_id' = 'owner_id'): T => {
+    const q = qIn as any;
+    if (!selectedBusiness) return q.limit(120);
+    const bizId = businessMembers.find((m: any) => m.user_id === selectedBusiness && m.role === 'owner')?.business_id;
+    return (bizId && ownerCol === 'owner_id'
+      ? q.or(`owner_id.eq.${selectedBusiness},business_id.eq.${bizId}`)
+      : q.eq(ownerCol, selectedBusiness)).limit(1000);
+  };
+
   const fetchProducts = async () => {
-    const { data } = await supabase
+    const { data } = await scopeQuery(supabase
       .from('products')
       .select('*')
-      .order('created_at', { ascending: false })
-      .limit(120);
+      .order('created_at', { ascending: false }), 'owner_id');
     
     // Enrich with owner info
     const ownerIds = [...new Set((data || []).map(p => p.owner_id))];
@@ -725,11 +736,10 @@ export const SuperAdminDashboard = () => {
   };
   
   const fetchSales = async () => {
-    const { data } = await supabase
+    const { data } = await scopeQuery(supabase
       .from('sales')
       .select('*')
-      .order('created_at', { ascending: false })
-      .limit(120);
+      .order('created_at', { ascending: false }), 'owner_id');
     
     // Enrich with owner info
     const ownerIds = [...new Set((data || []).map(s => s.owner_id))];
@@ -748,11 +758,10 @@ export const SuperAdminDashboard = () => {
   };
   
   const fetchExpenses = async () => {
-    const { data } = await supabase
+    const { data } = await scopeQuery(supabase
       .from('expenses')
       .select('*')
-      .order('expense_date', { ascending: false })
-      .limit(120);
+      .order('expense_date', { ascending: false }), 'owner_id');
     
     const ownerIds = [...new Set((data || []).map(e => e.owner_id))];
     const { data: profiles } = await supabase
@@ -770,11 +779,10 @@ export const SuperAdminDashboard = () => {
   };
   
   const fetchCustomers = async () => {
-    const { data } = await supabase
+    const { data } = await scopeQuery(supabase
       .from('customers')
       .select('*')
-      .order('created_at', { ascending: false })
-      .limit(120);
+      .order('created_at', { ascending: false }), 'owner_id');
     
     const ownerIds = [...new Set((data || []).map(c => c.owner_id))];
     const { data: profiles } = await supabase
@@ -792,11 +800,10 @@ export const SuperAdminDashboard = () => {
   };
   
   const fetchOrders = async () => {
-    const { data } = await supabase
+    const { data } = await scopeQuery(supabase
       .from('sokoni_orders')
       .select('*')
-      .order('created_at', { ascending: false })
-      .limit(120);
+      .order('created_at', { ascending: false }), 'seller_id');
     
     const sellerIds = [...new Set((data || []).map(o => o.seller_id))];
     const { data: profiles } = await supabase
@@ -1081,8 +1088,12 @@ export const SuperAdminDashboard = () => {
   const selectedBusinessId = selectedBusiness
     ? businessMembers.find((m: any) => m.user_id === selectedBusiness && m.role === 'owner')?.business_id || null
     : null;
-  const selectedBusinessMemberIds = selectedBusinessId
-    ? new Set([selectedBusiness, ...businessMembers.filter((m: any) => m.business_id === selectedBusinessId && m.is_active).map((m: any) => m.user_id)].filter(Boolean))
+  const selectedBusinessMemberIds = selectedBusiness
+    ? new Set<string>([
+        selectedBusiness,
+        ...businessMembers.filter((m: any) => selectedBusinessId && m.business_id === selectedBusinessId && m.is_active).map((m: any) => m.user_id),
+        ...assistantLinks.filter((l) => l.owner_id === selectedBusiness).map((l) => l.assistant_id),
+      ].filter(Boolean) as string[])
     : null;
   const belongsToSelectedBusiness = (row: { owner_id?: string; seller_id?: string; user_id?: string; business_id?: string | null }) => {
     if (!selectedBusiness) return true;
@@ -1122,7 +1133,7 @@ export const SuperAdminDashboard = () => {
     { title: 'Oda Sokoni', value: filteredStats.totalOrders, icon: <Store className="h-5 w-5" />, color: 'text-warning', tab: 'orders' },
     { title: 'Matumizi', value: filteredStats.totalExpenses, icon: <CreditCard className="h-5 w-5" />, color: 'text-destructive', tab: 'more' },
     { title: 'Wateja', value: filteredStats.totalCustomers, icon: <Users className="h-5 w-5" />, color: 'text-foreground', tab: 'more' },
-    { title: 'Mikopo', value: filteredStats.activeLoans, icon: <TrendingUp className="h-5 w-5" />, color: 'text-warning', tab: 'overview' },
+    ...(selectedBusiness ? [] : [{ title: 'Mikopo', value: filteredStats.activeLoans, icon: <TrendingUp className="h-5 w-5" />, color: 'text-warning', tab: 'overview' }]),
   ];
   
   const formatCurrency = (amount: number) => `TSh ${amount.toLocaleString()}`;
@@ -1215,15 +1226,26 @@ export const SuperAdminDashboard = () => {
         </div>
       )}
       {/* Header - compact, horizontally scrollable actions on mobile */}
-      <div className="rounded-2xl border bg-card p-3 md:p-4">
-        <div className="flex items-center gap-2 mb-2">
-          <Shield className="h-5 w-5 md:h-6 md:w-6 text-destructive flex-shrink-0" />
-          <div className="min-w-0 flex-1">
-            <h2 className="text-sm md:text-lg font-bold truncate">Super Admin Dashboard</h2>
-            <p className="text-[10px] md:text-xs text-muted-foreground truncate">Dhibiti kila kitu Kiduka</p>
+      <div className="rounded-3xl bg-gradient-to-br from-primary/10 via-background to-success/10 p-4 md:p-6">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl bg-primary text-primary-foreground">
+            <Shield className="h-5 w-5" />
           </div>
+          <div className="min-w-0 flex-1">
+            <h2 className="text-lg md:text-2xl font-bold tracking-tight truncate">Kituo cha Msimamizi</h2>
+            <p className="text-xs md:text-sm text-muted-foreground truncate">
+              {selectedBusiness ? `Unaangalia: ${selectedBusinessLabel}` : 'Biashara zote za Kiduka'}
+            </p>
+          </div>
+          <Button variant="ghost" size="icon" className="relative rounded-full" aria-label="Arifa" onClick={() => setNotificationsPanelOpen(true)}>
+            <Bell className="h-5 w-5" />
+            {unreadCount > 0 && <Badge className="absolute -top-0.5 -right-0.5 h-4 min-w-4 p-0 flex items-center justify-center text-[10px] bg-destructive">{unreadCount > 9 ? '9+' : unreadCount}</Badge>}
+          </Button>
+          <Button variant="ghost" size="icon" className="rounded-full" aria-label="Pakia upya" onClick={fetchActiveTab}>
+            <RefreshCw className="h-5 w-5" />
+          </Button>
         </div>
-        <div className="flex items-center gap-2 overflow-x-auto -mx-1 px-1 pb-1 [&::-webkit-scrollbar]:hidden" style={{ scrollbarWidth: 'none' }}>
+        <div className="flex flex-wrap items-center gap-2">
           <Popover open={businessSelectorOpen} onOpenChange={setBusinessSelectorOpen}>
             <PopoverTrigger asChild>
               <Button
@@ -1231,7 +1253,7 @@ export const SuperAdminDashboard = () => {
                 size="sm"
                 role="combobox"
                 aria-expanded={businessSelectorOpen}
-                className="w-[180px] h-8 flex-shrink-0 text-xs justify-between"
+                className="h-11 w-full flex-1 justify-between rounded-2xl bg-background text-sm sm:max-w-md"
               >
                 <span className="flex items-center gap-1 truncate">
                   <Building2 className="h-3.5 w-3.5" />
@@ -1293,30 +1315,11 @@ export const SuperAdminDashboard = () => {
               </Command>
             </PopoverContent>
           </Popover>
-          <Button variant="outline" size="sm" className="relative h-8 px-2 flex-shrink-0" onClick={() => setNotificationsPanelOpen(true)}>
-            <Bell className="h-3.5 w-3.5" />
-            {unreadCount > 0 && (
-              <Badge className="absolute -top-1.5 -right-1.5 h-4 w-4 p-0 flex items-center justify-center text-[10px] bg-destructive">
-                {unreadCount > 9 ? '9+' : unreadCount}
-              </Badge>
-            )}
-          </Button>
-          <Button variant="outline" size="sm" className="h-8 px-2 flex-shrink-0 text-xs" onClick={() => handleExportPDF('summary')}>
+          <Button variant="outline" size="sm" className="h-11 rounded-full px-4 text-xs" onClick={() => handleExportPDF('summary')}>
             <FileText className="h-3.5 w-3.5 mr-1" />PDF
           </Button>
-          <Button variant="outline" size="sm" className="h-8 px-2 flex-shrink-0 text-xs" onClick={handleExportSales}>
+          <Button variant="outline" size="sm" className="h-11 rounded-full px-4 text-xs" onClick={handleExportSales}>
             <FileSpreadsheet className="h-3.5 w-3.5 mr-1" />CSV
-          </Button>
-          <Button variant="default" size="sm" className="h-8 px-2 flex-shrink-0 text-xs rounded-full">
-            <ShieldCheck className="h-3.5 w-3.5 mr-1" />
-            Admin • ruhusa kamili
-          </Button>
-
-          <Badge variant="outline" className="h-8 gap-1 rounded-full px-2 font-normal">
-            <Gauge className="h-3.5 w-3.5" /> {lastLoadMs}ms
-          </Badge>
-          <Button onClick={fetchActiveTab} variant="outline" size="sm" className="h-8 px-2 flex-shrink-0 text-xs">
-            <RefreshCw className="h-3.5 w-3.5 mr-1" />Refresh
           </Button>
         </div>
       </div>
@@ -1418,23 +1421,21 @@ export const SuperAdminDashboard = () => {
       </Dialog>
       
       {/* Stats - horizontal scroll on mobile, clickable chips */}
-      <div className="grid grid-cols-4 gap-x-2 gap-y-3 px-1 pb-1 md:flex md:gap-2">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {statCards.map((stat, idx) => (
           <button
             key={idx}
             type="button"
             onClick={() => stat.tab && setActiveTab(stat.tab)}
-            className="min-w-0 rounded-none border-0 bg-transparent p-0 text-left shadow-none transition-opacity hover:opacity-80 active:scale-95 md:min-w-[110px]"
+            className="min-w-0 rounded-3xl border border-border bg-card p-4 text-left transition-all hover:border-primary/40 hover:shadow-md active:scale-[0.98]"
           >
-            <div className="flex items-center justify-start gap-1.5 mb-1">
-              <div className={`${stat.color} flex-shrink-0`}>{stat.icon}</div>
-            </div>
-            <p className="text-base md:text-lg font-bold leading-none truncate">
+            <div className={`mb-3 flex h-9 w-9 items-center justify-center rounded-2xl bg-muted ${stat.color}`}>{stat.icon}</div>
+            <p className="text-xl md:text-2xl font-bold leading-none truncate">
               {stat.title === 'Mapato' || stat.title === 'Matumizi'
-                ? `${(stat.value / 1000000).toFixed(1)}M`
+                ? (stat.value >= 1000000 ? `${(stat.value / 1000000).toFixed(1)}M` : stat.value >= 1000 ? `${Math.round(stat.value / 1000)}K` : stat.value)
                 : stat.value}
             </p>
-            <p className="text-[10px] md:text-xs text-muted-foreground mt-1 truncate">{stat.title}</p>
+            <p className="text-xs text-muted-foreground mt-1.5 truncate">{stat.title}</p>
           </button>
         ))}
       </div>
@@ -1635,11 +1636,11 @@ export const SuperAdminDashboard = () => {
         
         {/* Compliance Tab */}
         <TabsContent value="branches" className="space-y-4">
-          <AdminBranchesPanel />
+          <AdminBranchesPanel ownerId={selectedBusiness} />
         </TabsContent>
 
         <TabsContent value="compliance" className="space-y-4">
-          <AdminCompliancePanel />
+          <AdminCompliancePanel ownerId={selectedBusiness} />
         </TabsContent>
 
         {/* Analytics Tab */}
@@ -1655,7 +1656,7 @@ export const SuperAdminDashboard = () => {
               <CardContent>
                 <div className="h-[250px]">
                   <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={revenueChartData}>
+                    <AreaChart data={selectedBusiness ? dailyRevenueData : revenueChartData}>
                       <defs>
                         <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
                           <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
@@ -1721,7 +1722,7 @@ export const SuperAdminDashboard = () => {
               <CardContent>
                 <div className="h-[220px]">
                   <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={dailyRevenueData.length ? dailyRevenueData : revenueChartData}>
+                    <LineChart data={selectedBusiness ? dailyRevenueData : (dailyRevenueData.length ? dailyRevenueData : revenueChartData)}>
                       <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                       <XAxis dataKey="date" tick={{ fontSize: 10 }} />
                       <YAxis tick={{ fontSize: 10 }} tickFormatter={(v) => `${Number(v) / 1000}k`} />
@@ -1839,7 +1840,7 @@ export const SuperAdminDashboard = () => {
 
         {/* Activities Tab */}
         <TabsContent value="activities" className="space-y-4">
-          <AdminUserActivities />
+          <AdminUserActivities userIds={selectedBusinessMemberIds ? Array.from(selectedBusinessMemberIds) as string[] : (selectedBusiness ? [selectedBusiness] : null)} />
         </TabsContent>
         
         {/* Products Tab */}
@@ -2007,12 +2008,12 @@ export const SuperAdminDashboard = () => {
         
         {/* Marketplace Tab - Coupons, Returns, Reviews, Abandoned Carts */}
         <TabsContent value="marketplace" className="space-y-4">
-          <AdminMarketplacePanel />
+          <AdminMarketplacePanel ownerId={selectedBusiness} />
         </TabsContent>
 
         {/* Ads Management Tab */}
         <TabsContent value="ads" className="space-y-4">
-          <AdminAdsPanel />
+          <AdminAdsPanel ownerId={selectedBusiness} />
         </TabsContent>
 
         <TabsContent value="chat" className="space-y-4">
@@ -2022,7 +2023,7 @@ export const SuperAdminDashboard = () => {
           <ServiceHubAdminPanel />
         </TabsContent>
         <TabsContent value="ruhusa" className="space-y-4">
-          <AdminAssistantPermissions />
+          <AdminAssistantPermissions ownerId={selectedBusiness} />
         </TabsContent>
         <TabsContent value="announcements" className="space-y-4"><AdminAnnouncementsPanel /></TabsContent>
 

@@ -33,13 +33,17 @@ export const AdminBusinessDossier = ({ ownerId, onClose, onPassword, onEditConta
         supabase.from('products').select('id', { count: 'exact', head: true }).eq('owner_id', ownerId).eq('is_archived', false),
       ]);
       let staff: any[] = [];
-      if (biz.data?.id) {
-        const { data: members } = await supabase.from('business_members').select('user_id,role,is_active').eq('business_id', biz.data.id);
-        const ids = (members || []).map((m) => m.user_id).filter((id) => id !== ownerId);
-        if (ids.length) {
-          const { data: profs } = await supabase.from('profiles').select('id,full_name,email,phone').in('id', ids);
-          staff = (members || []).filter((m) => m.user_id !== ownerId).map((m) => ({ ...m, ...(profs || []).find((p) => p.id === m.user_id) }));
-        }
+      const [{ data: members }, { data: links }] = await Promise.all([
+        biz.data?.id ? supabase.from('business_members').select('user_id,role,is_active').eq('business_id', biz.data.id) : Promise.resolve({ data: [] as any[] }),
+        supabase.from('assistant_permissions').select('assistant_id,is_active').eq('owner_id', ownerId),
+      ]);
+      const byId = new Map<string, any>();
+      (links || []).forEach((l: any) => byId.set(l.assistant_id, { user_id: l.assistant_id, role: 'msaidizi', is_active: l.is_active }));
+      (members || []).filter((m: any) => m.user_id !== ownerId).forEach((m: any) => byId.set(m.user_id, { ...byId.get(m.user_id), ...m }));
+      const ids = [...byId.keys()];
+      if (ids.length) {
+        const { data: profs } = await supabase.from('profiles').select('id,full_name,email,phone').in('id', ids);
+        staff = ids.map((id) => ({ ...byId.get(id), ...(profs || []).find((p) => p.id === id) }));
       }
       if (cancelled) return;
       const salesRows = sales.data || [];

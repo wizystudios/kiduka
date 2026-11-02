@@ -28,7 +28,7 @@ type Row = {
 };
 type Owner = { id: string; business_name: string | null; email: string | null };
 
-export function AdminBranchesPanel() {
+export function AdminBranchesPanel({ ownerId = null }: { ownerId?: string | null } = {}) {
   const [rows, setRows] = useState<Row[]>([]);
   const [owners, setOwners] = useState<Owner[]>([]);
   const [sel, setSel] = useState<Row | null>(null);
@@ -43,13 +43,14 @@ export function AdminBranchesPanel() {
     setRows((b as any[] || []).map((r) => ({ ...r, features: { ...ALL_ON, ...(r.features || {}) } })));
     setOwners((o as Owner[]) || []);
   };
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); }, [ownerId]);
 
   const ownerName = (id: string) => owners.find((o) => o.id === id)?.business_name || 'Biashara';
   const list = useMemo(() => rows.filter((r) => {
+    if (ownerId && r.owner_id !== ownerId) return false;
     const t = q.trim().toLowerCase();
     return !t || r.branch_name.toLowerCase().includes(t) || ownerName(r.owner_id).toLowerCase().includes(t);
-  }), [rows, q, owners]);
+  }), [rows, q, owners, ownerId]);
 
   const save = async () => {
     if (!sel) return;
@@ -145,7 +146,7 @@ export function AdminBranchesPanel() {
           <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Tafuta tawi au biashara" className="rounded-2xl pl-9" />
         </div>
         <Button size="icon" className="rounded-full" aria-label="Ongeza tawi" onClick={() => setSel({
-          owner_id: '', branch_name: '', branch_type: 'custom', region: '', district: '', street: '',
+          owner_id: ownerId || '', branch_name: '', branch_type: 'custom', region: '', district: '', street: '',
           is_active: true, features: { ...ALL_ON }, subscription_amount: 15000, subscription_status: 'pending',
         })}><Plus className="h-4 w-4" /></Button>
       </div>

@@ -27,7 +27,7 @@ interface AdminAd {
   created_at: string;
 }
 
-export const AdminAdsPanel = () => {
+export const AdminAdsPanel = ({ ownerId = null }: { ownerId?: string | null } = {}) => {
   const [ads, setAds] = useState<AdminAd[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedAd, setSelectedAd] = useState<AdminAd | null>(null);
@@ -37,7 +37,7 @@ export const AdminAdsPanel = () => {
     display_location: 'both', starts_at: '', expires_at: ''
   });
 
-  useEffect(() => { fetchAds(); }, []);
+  useEffect(() => { fetchAds(); }, [ownerId]);
 
   const fetchAds = async () => {
     setLoading(true);
@@ -49,7 +49,7 @@ export const AdminAdsPanel = () => {
 
       if (error) throw error;
 
-      const adsList = (data as any[]) || [];
+      const adsList = ((data as any[]) || []).filter(a => !ownerId || a.owner_id === ownerId);
       const ownerIds = [...new Set(adsList.map(a => a.owner_id))];
       
       let profiles: any[] = [];

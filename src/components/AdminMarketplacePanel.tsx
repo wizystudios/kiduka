@@ -69,7 +69,7 @@ interface AdminCart {
   business_name?: string;
 }
 
-export const AdminMarketplacePanel = () => {
+export const AdminMarketplacePanel = ({ ownerId = null }: { ownerId?: string | null } = {}) => {
   const [coupons, setCoupons] = useState<AdminCoupon[]>([]);
   const [returns, setReturns] = useState<AdminReturn[]>([]);
   const [reviews, setReviews] = useState<AdminReview[]>([]);
@@ -82,7 +82,7 @@ export const AdminMarketplacePanel = () => {
 
   useEffect(() => {
     fetchAll();
-  }, []);
+  }, [ownerId]);
 
   const fetchAll = async () => {
     setLoading(true);
@@ -103,12 +103,12 @@ export const AdminMarketplacePanel = () => {
 
   const fetchCoupons = async () => {
     const { data } = await supabase.from('coupon_codes').select('*').order('created_at', { ascending: false });
-    setCoupons(await enrichWithOwner(data || [], 'owner_id'));
+    setCoupons(await enrichWithOwner((data || []).filter((d: any) => !ownerId || d.owner_id === ownerId), 'owner_id'));
   };
 
   const fetchReturns = async () => {
     const { data } = await supabase.from('return_requests').select('*').order('created_at', { ascending: false });
-    setReturns(await enrichWithOwner(data || [], 'seller_id'));
+    setReturns(await enrichWithOwner((data || []).filter((d: any) => !ownerId || d.seller_id === ownerId), 'seller_id'));
   };
 
   const fetchReviews = async () => {
@@ -124,7 +124,7 @@ export const AdminMarketplacePanel = () => {
     const ownerIds = [...new Set((products || []).map(p => p.owner_id))];
     const { data: profiles } = await supabase.from('profiles').select('id, full_name').in('id', ownerIds);
 
-    setReviews(reviewsData.map(r => {
+    setReviews(reviewsData.filter(r => !ownerId || products?.find(p => p.id === r.product_id)?.owner_id === ownerId).map(r => {
       const product = products?.find(p => p.id === r.product_id);
       const reply = (replies as any[])?.find((rp: any) => rp.review_id === r.id);
       return {
@@ -138,7 +138,7 @@ export const AdminMarketplacePanel = () => {
 
   const fetchCarts = async () => {
     const { data } = await supabase.from('abandoned_carts').select('*').order('created_at', { ascending: false }).limit(100);
-    setCarts(await enrichWithOwner(data || [], 'seller_id'));
+    setCarts(await enrichWithOwner((data || []).filter((d: any) => !ownerId || d.seller_id === ownerId), 'seller_id'));
   };
 
   const toggleCoupon = async (id: string, active: boolean) => {

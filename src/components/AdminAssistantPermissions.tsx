@@ -4,9 +4,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { AssistantPermissionsManager } from '@/components/AssistantPermissionsManager';
 
 /** Super admin: pick any business owner and manage their assistants' permissions. */
-export const AdminAssistantPermissions = () => {
+export const AdminAssistantPermissions = ({ ownerId = null }: { ownerId?: string | null } = {}) => {
   const [owners, setOwners] = useState<{ id: string; business_name: string | null; full_name: string | null }[]>([]);
-  const [owner, setOwner] = useState<string>('');
+  const [owner, setOwner] = useState<string>(ownerId || '');
+  useEffect(() => { if (ownerId) setOwner(ownerId); }, [ownerId]);
   useEffect(() => {
     supabase.from('assistant_permissions').select('owner_id').then(async ({ data }) => {
       const ids = [...new Set((data || []).map(r => r.owner_id))];
