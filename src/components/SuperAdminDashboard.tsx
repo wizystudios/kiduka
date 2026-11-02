@@ -1326,39 +1326,55 @@ export const SuperAdminDashboard = () => {
 
       {/* Active Business Session Banner */}
       {selectedBusiness && (
-        <div className="flex items-center justify-between bg-primary/10 border border-primary/20 rounded-2xl px-4 py-2">
-          <div className="flex items-center gap-2 text-sm">
-            <Shield className="h-4 w-4 text-primary" />
-            <span className="font-medium">
-              Unaangalia biashara: {businessOwners.find(o => o.id === selectedBusiness)?.business_name || 'Unknown'}
+        <div className="flex flex-col gap-3 rounded-3xl border border-primary/20 bg-primary/5 p-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex min-w-0 items-center gap-2 text-sm">
+            <Building2 className="h-4 w-4 flex-shrink-0 text-primary" />
+            <span className="truncate font-medium">
+              {businessOwners.find(o => o.id === selectedBusiness)?.business_name || 'Biashara'}
             </span>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="grid grid-cols-3 gap-2 sm:flex">
+            <Button size="sm" className="rounded-full" onClick={() => setDossierOwner(selectedBusiness)}>
+              <FileText className="h-3.5 w-3.5 mr-1" />Jalada
+            </Button>
+            <Button variant="outline" size="sm" className="rounded-full" onClick={handleExitBusiness}>
+              Toka
+            </Button>
             <Button
-              variant="destructive"
+              variant="ghost"
               size="sm"
-              className="rounded-xl"
+              className="rounded-full text-destructive hover:text-destructive"
               onClick={() => {
                 const o = businessOwners.find(b => b.id === selectedBusiness);
                 if (!o) return;
-                setDeletionDialog({
-                  ownerId: o.id,
-                  name: o.business_name || o.full_name || o.email,
-                });
+                setDeletionDialog({ ownerId: o.id, name: o.business_name || o.full_name || o.email });
               }}
             >
-              <Trash2 className="h-3.5 w-3.5 mr-1" />
-              Futa
-            </Button>
-            <Button size="sm" className="rounded-xl" onClick={() => setDossierOwner(selectedBusiness)}>
-              Jalada
-            </Button>
-            <Button variant="outline" size="sm" className="rounded-xl" onClick={handleExitBusiness}>
-              Toka Biashara
+              <Trash2 className="h-3.5 w-3.5 mr-1" />Futa
             </Button>
           </div>
         </div>
       )}
+
+      {/* Quick actions: the admin's most common daily tasks */}
+      <div className="no-scrollbar flex gap-2 overflow-x-auto">
+        {[
+          { label: 'Maombi ya usajili', tab: 'subscriptions', icon: <Clock className="h-4 w-4" />, badge: stats.pendingSubscriptions },
+          { label: 'Badili nenosiri', tab: 'users', icon: <Shield className="h-4 w-4" /> },
+          { label: 'ServiceHUB', tab: 'servicehub', icon: <Bell className="h-4 w-4" /> },
+          { label: 'Tuma arifa', tab: 'announcements', icon: <UserPlus className="h-4 w-4" /> },
+        ].map(a => (
+          <button
+            key={a.tab}
+            type="button"
+            onClick={() => setActiveTab(a.tab)}
+            className="relative flex h-11 flex-shrink-0 items-center gap-2 rounded-full border border-border bg-card px-4 text-xs font-medium transition-colors hover:border-primary/40 hover:text-primary"
+          >
+            <span className="text-primary">{a.icon}</span>{a.label}
+            {!!a.badge && a.badge > 0 && <Badge variant="destructive" className="h-4 min-w-4 justify-center p-0 text-[9px]">{a.badge}</Badge>}
+          </button>
+        ))}
+      </div>
       
       {/* Notifications Panel */}
       <Dialog open={notificationsPanelOpen} onOpenChange={setNotificationsPanelOpen}>
