@@ -75,6 +75,11 @@ Deno.serve(async (req) => {
 
       case "update_email": {
         const { new_email } = params;
+        if (typeof new_email !== "string" || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(new_email)) {
+          return new Response(JSON.stringify({ error: "Barua pepe si sahihi" }), {
+            status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
         const { error } = await adminClient.auth.admin.updateUser(user_id, {
           email: new_email,
           email_confirm: true,
@@ -92,6 +97,19 @@ Deno.serve(async (req) => {
         });
         if (error) throw error;
         result.message = `User banned${ban_duration === "permanent" ? " permanently" : ` for ${ban_duration}`}`;
+        break;
+      }
+
+      case "update_phone": {
+        const { new_phone } = params;
+        if (typeof new_phone !== "string" || !/^\+?\d{9,15}$/.test(new_phone.replace(/\s/g, ""))) {
+          return new Response(JSON.stringify({ error: "Namba ya simu si sahihi" }), {
+            status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        const { error } = await adminClient.from("profiles").update({ phone: new_phone.replace(/\s/g, "") }).eq("id", user_id);
+        if (error) throw error;
+        result.message = "Phone updated";
         break;
       }
 

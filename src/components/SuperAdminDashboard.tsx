@@ -45,6 +45,7 @@ import { Check, ChevronsUpDown, Gauge, ChevronLeft, ChevronRight } from 'lucide-
 import { cn } from '@/lib/utils';
 import { AdminAssistantPermissions } from '@/components/AdminAssistantPermissions';
 import { AdminAnnouncementsPanel } from '@/components/AdminAnnouncementsPanel';
+import { AdminBusinessDossier } from '@/components/AdminBusinessDossier';
 
 interface User {
   id: string;
@@ -246,6 +247,8 @@ export const SuperAdminDashboard = () => {
   const [deletionDialog, setDeletionDialog] = useState<{ ownerId: string; name: string } | null>(null);
   const [approvalDialog, setApprovalDialog] = useState<{subId: string; duration: string} | null>(null);
   const [userPasswordChange, setUserPasswordChange] = useState<{userId: string; userName: string; newPassword: string} | null>(null);
+  const [dossierOwner, setDossierOwner] = useState<string | null>(null);
+  const [contactEdit, setContactEdit] = useState<{userId: string; userName: string; email: string; phone: string; origEmail: string; origPhone: string} | null>(null);
   const [banDialog, setBanDialog] = useState<{userId: string; userName: string; duration: string} | null>(null);
   const [authoritativeBill, setAuthoritativeBill] = useState<any>(null);
   const [feeDialog, setFeeDialog] = useState<Subscription | null>(null);
@@ -1344,6 +1347,9 @@ export const SuperAdminDashboard = () => {
               <Trash2 className="h-3.5 w-3.5 mr-1" />
               Futa
             </Button>
+            <Button size="sm" className="rounded-xl" onClick={() => setDossierOwner(selectedBusiness)}>
+              Jalada
+            </Button>
             <Button variant="outline" size="sm" className="rounded-xl" onClick={handleExitBusiness}>
               Toka Biashara
             </Button>
@@ -1807,12 +1813,15 @@ export const SuperAdminDashboard = () => {
                       <Button size="sm" variant="secondary" className="h-8 rounded-full text-xs" onClick={() => handleBanUser(u.id, u.full_name || u.email)}>
                         <Ban className="h-3 w-3 mr-1" />Fungia
                       </Button>
+                      <Button size="sm" variant="secondary" className="h-8 rounded-full text-xs" onClick={() => setContactEdit({ userId: u.id, userName: u.full_name || u.email, email: u.email || '', phone: u.phone || '', origEmail: u.email || '', origPhone: u.phone || '' })}>
+                        <Pencil className="h-3 w-3 mr-1" />Email/Simu
+                      </Button>
                       <Button size="sm" variant="secondary" className="h-8 rounded-full text-xs" onClick={() => handleUnbanUser(u.id, u.full_name || u.email)}>
                         <CheckCircle className="h-3 w-3 mr-1" />Fungulia
                       </Button>
                       {u.role === 'owner' && (
-                        <Button size="sm" className="h-8 rounded-full text-xs" onClick={() => { setSelectedBusiness(u.id); setActiveTab('overview'); }}>
-                          <Building2 className="h-3 w-3 mr-1" />Biashara yake
+                        <Button size="sm" className="h-8 rounded-full text-xs" onClick={() => setDossierOwner(u.id)}>
+                          <Building2 className="h-3 w-3 mr-1" />Jalada la biashara
                         </Button>
                       )}
                       {u.phone && (
@@ -2555,6 +2564,35 @@ export const SuperAdminDashboard = () => {
         </DialogContent>
       </Dialog>
       
+      <AdminBusinessDossier
+        ownerId={dossierOwner}
+        onClose={() => setDossierOwner(null)}
+        onPassword={(id, name) => handleChangeUserPassword(id, name)}
+        onEditContact={(id, name, email, phone) => setContactEdit({ userId: id, userName: name, email, phone, origEmail: email, origPhone: phone })}
+      />
+      <Dialog open={!!contactEdit} onOpenChange={(v) => !v && setContactEdit(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader><DialogTitle>Badilisha Email/Simu - {contactEdit?.userName}</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <div><Label>Barua pepe</Label><Input type="email" value={contactEdit?.email || ''} onChange={(e) => setContactEdit(p => p ? { ...p, email: e.target.value } : null)} /></div>
+            <div><Label>Namba ya simu</Label><Input inputMode="tel" placeholder="2557XXXXXXXX" value={contactEdit?.phone || ''} onChange={(e) => setContactEdit(p => p ? { ...p, phone: e.target.value } : null)} /></div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setContactEdit(null)}>Ghairi</Button>
+            <Button onClick={async () => {
+              if (!contactEdit) return;
+              try {
+                if (contactEdit.email.trim() && contactEdit.email.trim() !== contactEdit.origEmail) await callAdminManageUser('update_email', contactEdit.userId, { new_email: contactEdit.email.trim() });
+                if (contactEdit.phone.trim() && contactEdit.phone.trim() !== contactEdit.origPhone) await callAdminManageUser('update_phone', contactEdit.userId, { new_phone: contactEdit.phone.trim() });
+                toast.success('Taarifa zimehifadhiwa');
+                setContactEdit(null);
+                await fetchUsers();
+              } catch (e: any) { toast.error(`Imeshindwa: ${e.message}`); }
+            }}>Hifadhi</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Password Change Dialog */}
       <Dialog open={!!userPasswordChange} onOpenChange={() => setUserPasswordChange(null)}>
         <DialogContent className="max-w-sm">
