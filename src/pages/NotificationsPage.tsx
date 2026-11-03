@@ -17,6 +17,7 @@ import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { QRCodeSVG } from 'qrcode.react';
 import { QrCode } from 'lucide-react';
+import { notificationPath, saveNotificationDetail } from '@/lib/notificationDetails';
 
 interface Notification {
   id: string;
@@ -88,7 +89,7 @@ export const NotificationsPage = () => {
       recentSales?.forEach((sale) => {
         const id = `sale-${sale.id}`;
         const existing = persisted.find(n => n.id === id);
-        newNotifications.push({ id, title: 'Mauzo Yamekamilika', message: `Umeuza bidhaa kwa TSh ${Number(sale.total_amount).toLocaleString()}`, type: 'sale', isRead: existing?.isRead ?? true, timestamp: new Date(sale.created_at), route: '/sales' });
+        newNotifications.push({ id, title: 'Mauzo Yamekamilika', message: `Umeuza bidhaa kwa TSh ${Number(sale.total_amount).toLocaleString()}`, type: 'sale', isRead: existing?.isRead ?? true, timestamp: new Date(sale.created_at), route: `/mauzo/${sale.id}` });
       });
 
       const { data: lowStock } = await supabase.from('products').select('id, name, stock_quantity, low_stock_threshold').eq('owner_id', dataOwnerId);
@@ -146,6 +147,7 @@ export const NotificationsPage = () => {
   };
 
   const saveNotifications = (notifs: Notification[]) => {
+    notifs.forEach(n => saveNotificationDetail({ id: n.id, title: n.title, description: n.message, kind: n.type, createdAt: n.timestamp.toISOString(), source: n.route || '/notifications' }));
     if (userProfile?.id) localStorage.setItem(`notifications-${userProfile.id}`, JSON.stringify(notifs));
   };
 
@@ -259,10 +261,10 @@ export const NotificationsPage = () => {
           </div>
           <div className="space-y-2">
             {items.map((notif) => (
-              <button
+              <Button variant="ghost"
                 key={notif.id}
                 onClick={() => handleClick(notif)}
-                className={`flex w-full items-start gap-3 rounded-2xl border p-3 text-left shadow-sm transition hover:shadow-md active:scale-[0.99] ${!notif.isRead ? 'border-primary/30 bg-primary/5' : 'border-border bg-card'}`}
+                className={`flex h-auto w-full items-start gap-3 whitespace-normal rounded-2xl border p-3 text-left shadow-sm transition hover:shadow-md active:scale-[0.99] ${!notif.isRead ? 'border-primary/30 bg-primary/5' : 'border-border bg-card'}`}
               >
                 <div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-muted">
                   {getTypeIcon(notif.type)}
@@ -276,7 +278,8 @@ export const NotificationsPage = () => {
                   <p className="mt-0.5 line-clamp-2 text-sm text-foreground/80">{notif.message}</p>
                   <span className="mt-1 inline-flex items-center gap-1 text-xs font-medium text-primary"><QrCode className="h-3 w-3" /> Ona zaidi</span>
                 </div>
-              </button>
+                <span className="shrink-0 rounded-xl bg-background p-1"><QRCodeSVG value={`${window.location.origin}${notif.type === 'sale' ? notif.route : notificationPath(notif.id)}`} size={64} title="QR ya arifa" /></span>
+              </Button>
             ))}
           </div>
         </section>

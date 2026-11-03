@@ -1,5 +1,9 @@
 # Project Architecture Rules
 
+- Enrich the single Sonner stream in place with notification details, QR and view links while preserving IDs and original actions, because all toast APIs and legacy callers must remain covered without duplicate messages.
+- Resolve client roles exclusively from the protected server role lookup and preserve that role during profile edits, because unavailable lookups and editable metadata must not unlock owner controls.
+- Keep practice receipts explicitly marked JARIBIO on a public, database-free route with artificial-only shared payloads, because QR verification must work across tabs without touching operational records.
+
 - Initialize missing owner roles from active, creator-matched business ownership in a database trigger, never user metadata, because new owners must receive the same server-verified staff-management access as existing owners without promoting staff.
 
 - Render the public welcome page directly for first-time visitors; never replace it with automatic onboarding, because instructional media belongs in ServiceHUB rather than blocking entry.

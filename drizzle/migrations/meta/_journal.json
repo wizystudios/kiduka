@@ -211,6 +211,13 @@
       "when": 1793679421487,
       "tag": "0029_guard_profile_admin_fields",
       "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1793685144087,
+      "tag": "0030_settings_payment_owner_backstop",
+      "breakpoints": true
     }
   ]
 }

@@ -1,5 +1,11 @@
 # Kiduka completion roadmap
 
+## Notification and Settings safety verification
+- [x] Give every transient notification a QR and Ona zaidi, preserving its original actions. Browser-verified normal, message, success, error, info, warning, loading, custom and promise; list items now display an actual QR too.
+- [x] Click Settings sale test; verify one notification, both links, JARIBIO receipt and zero operational writes. New-tab QR link opens the same public artificial receipt; network shows only read-only role RPCs, no sale/product/customer writes.
+- [x] Audit every Settings tab with safe owner, assistant and admin sessions. Hosted API rejects non-admin account-status changes, billing access and admin endpoints; assistants cannot publish announcements, promote their role or create payment numbers. Added restrictive owner payment policy; all synthetic users/profiles/terms removed and temporary audit endpoint deleted.
+- [x] Run focused permission regressions and notification-type browser checks; no runtime errors and preview build passes. Generic transient detail contents remain private to the originating tab; practice receipts alone can be opened across devices without a session.
+
 ## Notes, stock and release communication
 - [x] Focused audit: repair create-sales-only redirect/history access, replace simulated stock automation, expose stock rules/suppliers links and enforce restrictive snapshot/supplier permissions. Exhaustive catalog audit remains in its separate section below.
 - [x] Add permission-controlled staff notes/reports with owner approval or return: saved/list readback, returned and approved states browser-verified; generated reports removed. Ungranted assistant reads/inserts and admin broadcasts denied by database.

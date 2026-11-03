@@ -1,5 +1,5 @@
 import { toast } from 'sonner';
-import { QRCodeSVG } from 'qrcode.react';
+import { NotificationLinks } from '@/components/NotificationBridge';
 
 const TEST_PREFIX = 'test-';
 export const isTestSaleId = (id?: string | null) => !!id && id.startsWith(TEST_PREFIX);
@@ -20,6 +20,17 @@ export const readTestSale = (id: string): TestSale | null => {
   try { return JSON.parse(sessionStorage.getItem(`kiduka_test_sale_${id}`) || 'null'); } catch { return null; }
 };
 
+export const testSalePath = (sale: TestSale) => `/jaribio/risiti/${sale.id}#${encodeURIComponent(JSON.stringify(sale))}`;
+export const readSharedTestSale = (id: string): TestSale | null => {
+  try {
+    const sale = JSON.parse(decodeURIComponent(window.location.hash.slice(1)));
+    if (sale.id !== id || !isTestSaleId(id) || sale.total !== 5000 || !Array.isArray(sale.items) || sale.items.length !== 2) return null;
+    // Only explicitly artificial items can travel in this public practice link.
+    if (sale.items[0].name !== 'Bidhaa ya majaribio A' || sale.items[1].name !== 'Bidhaa ya majaribio B') return null;
+    return { ...sale, businessName: 'Kiduka — JARIBIO' };
+  } catch { return null; }
+};
+
 /** Notification with a QR code and "Ona zaidi" that opens the full detail. */
 export const qrNotification = (opts: { id?: string; title: string; summary: string; path: string; kind?: 'success' | 'info' }) => {
   const url = `${window.location.origin}${opts.path}`;
@@ -28,17 +39,8 @@ export const qrNotification = (opts: { id?: string; title: string; summary: stri
     id: opts.id,
     duration: 8000,
     description: (
-      <div className="mt-1 flex items-center gap-3">
-        <a href={url} aria-label="Fungua maelezo kamili" className="shrink-0 rounded-xl bg-background p-1.5">
-          <QRCodeSVG value={url} size={64} />
-        </a>
-        <div className="text-xs">
-          <p className="font-semibold">{opts.summary}</p>
-          <p className="opacity-80">Scan QR au bonyeza Ona zaidi</p>
-        </div>
-      </div>
+      <NotificationLinks path={opts.path}>{opts.summary}</NotificationLinks>
     ),
-    action: { label: 'Ona zaidi', onClick: () => window.location.assign(url) },
   });
 };
 
@@ -46,5 +48,6 @@ export const qrNotification = (opts: { id?: string; title: string; summary: stri
 export const saleSuccessToast = (saleId: string | null | undefined, total: number, title = 'Mauzo yamekamilika!') => {
   const summary = `Jumla: TSh ${Math.round(total || 0).toLocaleString()}`;
   if (!saleId) { toast.success(title, { description: summary }); return; }
-  qrNotification({ id: `sale-${saleId}`, title, summary, path: `/mauzo/${saleId}` });
+  const practice = isTestSaleId(saleId) ? readTestSale(saleId) : null;
+  qrNotification({ id: `sale-${saleId}`, title, summary, path: practice ? testSalePath({ ...practice, businessName: 'Kiduka — JARIBIO' }) : `/mauzo/${saleId}` });
 };

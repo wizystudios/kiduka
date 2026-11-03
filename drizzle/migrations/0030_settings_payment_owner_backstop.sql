@@ -1,0 +1,1 @@
+CREATE POLICY "Payment number management requires owner authority" ON public.owner_payment_numbers AS RESTRICTIVE FOR ALL TO authenticated USING (public.has_role(auth.uid(), 'super_admin') OR (auth.uid() = owner_id AND public.has_role(auth.uid(), 'owner'))) WITH CHECK (public.has_role(auth.uid(), 'super_admin') OR (auth.uid() = owner_id AND public.has_role(auth.uid(), 'owner')));

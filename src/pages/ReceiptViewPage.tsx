@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom';
 import { Receipt } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { BusinessDocument, BusinessDocumentItem } from '@/components/BusinessDocument';
-import { isTestSaleId, readTestSale } from '@/lib/saleToast';
+import { isTestSaleId, readTestSale, readSharedTestSale } from '@/lib/saleToast';
 
 interface ReceiptData {
   id: string;
@@ -26,12 +26,13 @@ export const ReceiptViewPage = () => {
     const load = async () => {
       if (!transactionId) { setError('Namba ya risiti haipo'); setLoading(false); return; }
       if (isTestSaleId(transactionId)) {
-        const t = readTestSale(transactionId);
+        const t = readSharedTestSale(transactionId) || readTestSale(transactionId);
         if (!t) { setError('Jaribio limeisha muda. Anza jaribio jipya kwenye Mipangilio.'); setLoading(false); return; }
         setIsTest(true);
         setReceipt({ id: t.id, total: t.total, paymentMethod: 'cash', paymentStatus: 'paid', createdAt: t.createdAt, businessName: t.businessName, items: t.items });
         setLoading(false); return;
       }
+      if (window.location.pathname.startsWith('/jaribio/')) { setError('Namba ya JARIBIO si sahihi'); setLoading(false); return; }
       const { data: sale, error: saleError } = await supabase.from('sales').select('id,owner_id,total_amount,payment_method,payment_status,created_at,sales_items(quantity,unit_price,subtotal,products(name))').eq('id', transactionId).single();
       if (saleError || !sale) { setError('Risiti haijapatikana'); setLoading(false); return; }
       const { data: owner } = await supabase.from('profiles').select('business_name').eq('id', sale.owner_id).single();

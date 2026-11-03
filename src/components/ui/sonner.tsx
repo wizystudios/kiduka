@@ -1,5 +1,6 @@
 import { useTheme } from "next-themes"
 import { Toaster as Sonner, toast } from "sonner"
+import { NotificationBridge } from '@/components/NotificationBridge'
 
 type ToasterProps = React.ComponentProps<typeof Sonner>
 
@@ -7,7 +8,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
   const { theme = "system" } = useTheme()
 
   return (
-    <Sonner
+    <><NotificationBridge /><Sonner
       theme={theme as ToasterProps["theme"]}
       className="toaster group kiduka-card-toaster"
       position="bottom-center"
@@ -26,7 +27,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
         },
       }}
       {...props}
-    />
+    /></>
   )
 }
 

@@ -40,6 +40,7 @@ import { PWAInstallerPage } from '@/pages/PWAInstallerPage';
 import ComplianceNotificationsPage from '@/pages/ComplianceNotificationsPage';
 import MobileQAPage from '@/pages/MobileQAPage';
 import { ReceiptViewPage } from '@/pages/ReceiptViewPage';
+import { NotificationDetailPage } from '@/pages/NotificationDetailPage';
 
 // AI and Business Intelligence Pages
 import { BusinessIntelligencePage } from '@/pages/BusinessIntelligencePage';
@@ -123,6 +124,8 @@ export default function App() {
               <Route path="/forgot-password" element={<ForgotPasswordPage />} />
               <Route path="/verify-email" element={<EmailVerificationStatus />} />
               <Route path="/unsubscribe" element={<UnsubscribePage />} />
+              <Route path="/jaribio/risiti/:transactionId" element={<ReceiptViewPage />} />
+              <Route path="/arifa/:notificationId" element={<NotificationDetailPage />} />
               
               {/* Protected Routes */}
               <Route path="/staff-reports" element={<ProtectedRoute><AppLayout><StaffReportsPage /></AppLayout></ProtectedRoute>} />

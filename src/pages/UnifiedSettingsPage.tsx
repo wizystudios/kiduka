@@ -17,7 +17,7 @@ import { usePermissions } from '@/hooks/usePermissions';
 import { useAuth } from '@/hooks/useAuth';
 import { KidukaUpdates } from '@/components/KidukaUpdates';
 import { Button } from '@/components/ui/button';
-import { canOpenSettingsTab } from '@/lib/settingsAccess';
+import { canOpenSettingsTab, settingsTabPermissions } from '@/lib/settingsAccess';
 import { createTestSale, saleSuccessToast } from '@/lib/saleToast';
 
 // These open as right-side panels, matching the admin pages
@@ -53,7 +53,7 @@ export const UnifiedSettingsPage = () => {
   const allowed = (id: string) => {
     const t = allTabs.find(x => x.id === id);
     if (!t) return id === 'overview';
-    return canOpenSettingsTab(t.perm, userProfile?.role, can);
+    return canOpenSettingsTab(settingsTabPermissions[id], userProfile?.role, can);
   };
   const tabs = allTabs.filter(t => allowed(t.id));
 
@@ -66,7 +66,7 @@ export const UnifiedSettingsPage = () => {
       setActiveTab(tab);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams, permissions, isOwner]);
+  }, [searchParams, permissions, userProfile?.role]);
 
   const activeContent = useMemo(() => {
     if (!allowed(activeTab)) return null;
@@ -95,7 +95,7 @@ export const UnifiedSettingsPage = () => {
           </div>
         );
     }
-  }, [activeTab, permissions, isOwner]);
+  }, [activeTab, permissions, userProfile?.role]);
 
   const handleTabChange = (tabId: string) => {
     if (!allowed(tabId)) return;

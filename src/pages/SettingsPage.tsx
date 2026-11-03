@@ -73,7 +73,7 @@ export const SettingsPage = () => {
   const handlePasswordChange = async () => {
     if (!formData.newPassword || !formData.confirmPassword) { toast.error('Jaza nywila zote'); return; }
     if (formData.newPassword !== formData.confirmPassword) { toast.error('Nywila hazilingani'); return; }
-    const pwErr = userProfile?.role === 'assistant' ? staffPasswordError(formData.newPassword) : (formData.newPassword.length < 6 ? 'Nywila lazima herufi 6+' : null);
+    const pwErr = userProfile?.role === 'assistant' ? staffPasswordError(formData.newPassword) : (formData.newPassword.length < 8 ? 'Nywila lazima herufi 8+' : null);
     if (pwErr) { toast.error(pwErr); return; }
     setUpdating(true);
     try {

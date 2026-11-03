@@ -75,16 +75,15 @@ export const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
   const fetchUserProfile = async (userId: string, currentUser?: User | null) => {
     const userRef = currentUser || user;
 
-    // Resolve role from backend roles table (fallback to user metadata)
+    // A failed role lookup must never promote a user through editable metadata.
     const resolveRole = async () => {
-      const metadataRole = userRef?.user_metadata?.role;
       try {
         const { data, error } = await supabase.rpc('get_user_role', { _user_id: userId });
         if (!error && data) return data;
       } catch {
         // ignore
       }
-      return metadataRole === 'assistant' ? 'assistant' : 'owner';
+      return 'unassigned';
     };
 
     try {
@@ -160,7 +159,7 @@ export const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
 
       if (error) throw error;
 
-      setUserProfile(data);
+      setUserProfile((previous: any) => ({ ...data, role: previous?.role || 'unassigned' }));
       return data;
     } catch (error) {
       console.error('Error updating profile:', error);
