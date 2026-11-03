@@ -117,10 +117,10 @@ export const AdminBusinessWorkspace = (p: Props) => {
 
   const nav: { key: Section; label: string; icon: any; count?: number }[] = [
     { key: 'overview', label: 'Muhtasari', icon: LayoutDashboard },
-    { key: 'people', label: 'Watu', icon: Users, count: d.staff.length + 1 },
-    { key: 'branches', label: 'Matawi', icon: Store, count: d.branchCount },
     { key: 'billing', label: 'Usajili', icon: CreditCard },
+    { key: 'people', label: 'Watu', icon: Users, count: d.staff.length + 1 },
     { key: 'compliance', label: 'Sheria', icon: Scale },
+    { key: 'branches', label: 'Matawi', icon: Store, count: d.branchCount },
     { key: 'sales', label: 'Mauzo', icon: ShoppingCart, count: d.sales.length },
     { key: 'products', label: 'Bidhaa', icon: Package, count: d.productCount },
     { key: 'permissions', label: 'Ruhusa', icon: KeyRound },
@@ -195,6 +195,19 @@ export const AdminBusinessWorkspace = (p: Props) => {
         <div className="min-w-0 space-y-4">
           {section === 'overview' && (
             <>
+              <div className="rounded-3xl border border-primary/20 bg-primary/5 p-3">
+                <p className="mb-2 px-1 text-xs font-semibold text-muted-foreground">Vitendo muhimu</p>
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                  {d.sub && (subStatus === 'active'
+                    ? <Button variant="destructive" className="h-11 rounded-full" onClick={() => p.onSuspend(d.sub.id)}>Sitisha usajili</Button>
+                    : <Button className="h-11 rounded-full" onClick={() => p.onActivate(d.sub.id)}>Washa usajili</Button>)}
+                  <Button variant="secondary" className="h-11 rounded-full" onClick={() => p.onPassword(d.owner.id, d.owner.full_name || d.owner.email)}><Key className="mr-1 h-4 w-4" />Nenosiri</Button>
+                  {d.owner?.phone
+                    ? <Button variant="outline" className="h-11 rounded-full" asChild><a href={wa(d.owner.phone)} target="_blank" rel="noreferrer"><Phone className="mr-1 h-4 w-4" />WhatsApp</a></Button>
+                    : <Button variant="outline" className="h-11 rounded-full" onClick={() => p.onEditContact(d.owner.id, d.owner.full_name || d.owner.email, d.owner.email || '', '')}><Phone className="mr-1 h-4 w-4" />Weka simu</Button>}
+                  <Button variant="outline" className="h-11 rounded-full" onClick={() => setSection('compliance')}><Scale className="mr-1 h-4 w-4" />Sheria</Button>
+                </div>
+              </div>
               <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
                 {[
                   { l: 'Mapato siku 30', v: fmt(sales30), go: 'sales' },
