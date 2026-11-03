@@ -27,3 +27,4 @@
 - Keep platform announcements and release choices in authenticated, RLS-protected tables; only server-verified super admins publish messages because browser state is not administrative authority.
 - Retire the legacy app-shell worker with a same-path cleanup worker and keep manifest installability and IndexedDB data sync; release acknowledgements do not pin old JavaScript because stale pages must not obstruct customers.
 - Derive stock forecasts from actual sale items and persist stock reorder rules; never simulate ordering or claim supplier delivery because no supplier sending integration exists.
+- When a super admin selects a business, render the dedicated AdminBusinessWorkspace (its own owner-scoped queries and sections) instead of the system-wide tabs, because global panels filtered after the fact show other businesses' data and irrelevant sections.

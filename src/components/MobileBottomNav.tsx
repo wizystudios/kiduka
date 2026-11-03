@@ -24,7 +24,7 @@ export const MobileBottomNav = () => {
   const [isLongPressing, setIsLongPressing] = useState(false);
   const longPressTriggered = useRef(false);
 
-  if (!user) return null;
+  if (!user || location.pathname.startsWith('/super-admin')) return null;
 
   const handleNav = (href: string) => {
     navigate(href);

@@ -50,7 +50,7 @@ interface ContractRecord {
   email?: string;
 }
 
-export const AdminCompliancePanel = ({ ownerId = null }: { ownerId?: string | null } = {}) => {
+export const AdminCompliancePanel = ({ ownerId = null, compact = false }: { ownerId?: string | null; compact?: boolean } = {}) => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -266,7 +266,7 @@ export const AdminCompliancePanel = ({ ownerId = null }: { ownerId?: string | nu
   return (
     <div className="space-y-6">
       {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
+      <div className={compact ? 'hidden' : 'grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3'}>
         <Card>
           <CardContent className="p-3 text-center">
             <p className="text-xl font-bold">{complianceStats.total}</p>
@@ -312,7 +312,7 @@ export const AdminCompliancePanel = ({ ownerId = null }: { ownerId?: string | nu
       </div>
 
       {/* Search */}
-      <div className="relative">
+      <div className={compact ? 'hidden' : 'relative'}>
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
           placeholder="Tafuta biashara..."

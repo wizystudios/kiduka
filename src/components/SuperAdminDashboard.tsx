@@ -30,6 +30,7 @@ import { AdminChatPanel } from './AdminChatPanel';
 import { ServiceHubAdminPanel } from './ServiceHubAdminPanel';
 import { AdminCompliancePanel } from './AdminCompliancePanel';
 import { AdminBranchesPanel } from './AdminBranchesPanel';
+import { AdminBusinessWorkspace } from './AdminBusinessWorkspace';
 import { AdminEmailsPanel } from './AdminEmailsPanel';
 import { AdminUserActivities } from './AdminUserActivities';
 import { AdminMarketplacePanel } from './AdminMarketplacePanel';
@@ -1324,38 +1325,22 @@ export const SuperAdminDashboard = () => {
         </div>
       </div>
 
-      {/* Active Business Session Banner */}
       {selectedBusiness && (
-        <div className="flex flex-col gap-3 rounded-3xl border border-primary/20 bg-primary/5 p-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex min-w-0 items-center gap-2 text-sm">
-            <Building2 className="h-4 w-4 flex-shrink-0 text-primary" />
-            <span className="truncate font-medium">
-              {businessOwners.find(o => o.id === selectedBusiness)?.business_name || 'Biashara'}
-            </span>
-          </div>
-          <div className="grid grid-cols-3 gap-2 sm:flex">
-            <Button size="sm" className="rounded-full" onClick={() => setDossierOwner(selectedBusiness)}>
-              <FileText className="h-3.5 w-3.5 mr-1" />Jalada
-            </Button>
-            <Button variant="outline" size="sm" className="rounded-full" onClick={handleExitBusiness}>
-              Toka
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="rounded-full text-destructive hover:text-destructive"
-              onClick={() => {
-                const o = businessOwners.find(b => b.id === selectedBusiness);
-                if (!o) return;
-                setDeletionDialog({ ownerId: o.id, name: o.business_name || o.full_name || o.email });
-              }}
-            >
-              <Trash2 className="h-3.5 w-3.5 mr-1" />Futa
-            </Button>
-          </div>
-        </div>
+        <AdminBusinessWorkspace
+          ownerId={selectedBusiness}
+          reloadToken={subscriptions}
+          onExit={handleExitBusiness}
+          onDossier={(id) => setDossierOwner(id)}
+          onDelete={(id, name) => setDeletionDialog({ ownerId: id, name })}
+          onPassword={(id, name) => handleChangeUserPassword(id, name)}
+          onEditContact={(id, name, email, phone) => setContactEdit({ userId: id, userName: name, email, phone, origEmail: email, origPhone: phone })}
+          onActivate={(subId) => setApprovalDialog({ subId, duration: '1_month' })}
+          onSuspend={async (subId) => { await handleRejectSubscription(subId); }}
+          onEditFee={(sub) => openFeeDialog(sub)}
+        />
       )}
 
+      {!selectedBusiness && (<>
       {/* Quick actions: the admin's most common daily tasks */}
       <div className="no-scrollbar flex gap-2 overflow-x-auto">
         {[
@@ -1375,7 +1360,8 @@ export const SuperAdminDashboard = () => {
           </button>
         ))}
       </div>
-      
+      </>)}
+
       {/* Notifications Panel */}
       <Dialog open={notificationsPanelOpen} onOpenChange={setNotificationsPanelOpen}>
         <DialogContent className="max-w-md">
@@ -1436,6 +1422,7 @@ export const SuperAdminDashboard = () => {
         </DialogContent>
       </Dialog>
       
+      <div className={selectedBusiness ? 'hidden' : 'contents'}>
       {/* Stats - horizontal scroll on mobile, clickable chips */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {statCards.map((stat, idx) => (
@@ -2165,6 +2152,7 @@ export const SuperAdminDashboard = () => {
           </Tabs>
         </TabsContent>
       </Tabs>
+      </div>
       
       {/* View Sheet */}
       <Sheet open={!!viewDialog} onOpenChange={(open) => { if (!open) setViewDialog(null); }}>
