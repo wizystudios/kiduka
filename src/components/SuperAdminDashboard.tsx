@@ -24,6 +24,7 @@ import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import { useAdminNotifications } from '@/hooks/useAdminNotifications';
+import { AdminNotificationFeed } from '@/components/admin/AdminNotificationFeed';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 import { exportToCSV, exportToPDF, createPrintableTable } from '@/utils/exportUtils';
 import { AdminChatPanel } from './AdminChatPanel';
@@ -1364,61 +1365,17 @@ export const SuperAdminDashboard = () => {
 
       {/* Notifications Panel */}
       <Dialog open={notificationsPanelOpen} onOpenChange={setNotificationsPanelOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center justify-between">
-              <span className="flex items-center gap-2">
-                <Bell className="h-5 w-5" />
-                Arifa ({unreadCount} mpya)
-              </span>
-              {unreadCount > 0 && (
-                <Button variant="ghost" size="sm" onClick={markAllAsRead}>
-                  Soma zote
-                </Button>
-              )}
-            </DialogTitle>
+        <DialogContent className="max-w-md rounded-3xl">
+          <DialogHeader className="sr-only">
+            <DialogTitle>Taarifa ({unreadCount} mpya)</DialogTitle>
           </DialogHeader>
-          <ScrollArea className="h-[400px] pr-4">
-            <div className="space-y-3">
-              {notifications.length === 0 ? (
-                <p className="text-center text-muted-foreground py-8">Hakuna arifa</p>
-              ) : (
-                notifications.map(n => (
-                  <Card 
-                    key={n.id} 
-                    className={`cursor-pointer transition-colors ${!n.is_read ? 'bg-primary/5 border-primary/20' : ''}`}
-                    onClick={() => markAsRead(n.id)}
-                  >
-                    <CardContent className="p-3">
-                      <div className="flex items-start gap-3">
-                        <div className={`p-2 rounded-full ${
-                          n.notification_type === 'new_user' ? 'bg-blue-100 text-blue-600' :
-                          n.notification_type === 'large_transaction' ? 'bg-green-100 text-green-600' :
-                          n.notification_type === 'subscription_request' ? 'bg-orange-100 text-orange-600' :
-                          'bg-muted text-muted-foreground'
-                        }`}>
-                          {n.notification_type === 'new_user' ? <UserPlus className="h-4 w-4" /> :
-                           n.notification_type === 'large_transaction' ? <DollarSign className="h-4 w-4" /> :
-                           n.notification_type === 'subscription_request' ? <Clock className="h-4 w-4" /> :
-                           <Bell className="h-4 w-4" />}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium text-sm">{n.title}</p>
-                          <p className="text-xs text-muted-foreground">{n.message}</p>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            {new Date(n.created_at).toLocaleString('sw-TZ')}
-                          </p>
-                        </div>
-                        {!n.is_read && (
-                          <div className="h-2 w-2 rounded-full bg-primary flex-shrink-0" />
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))
-              )}
-            </div>
-          </ScrollArea>
+          <AdminNotificationFeed
+            notifications={notifications}
+            unreadCount={unreadCount}
+            onRead={markAsRead}
+            onReadAll={markAllAsRead}
+            onClose={() => setNotificationsPanelOpen(false)}
+          />
         </DialogContent>
       </Dialog>
       
