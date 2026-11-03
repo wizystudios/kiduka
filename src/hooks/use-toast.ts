@@ -1,3 +1,4 @@
+import { toast as sonnerToast } from "sonner"
 import * as React from "react"
 
 import type {
@@ -141,6 +142,12 @@ type Toast = Omit<ToasterToast, "id">
 
 function toast({ ...props }: Toast) {
   const id = genId()
+  // Single notification system: forward legacy toasts to sonner so only one message shows.
+  const opts = { id, description: props.description as any }
+  const title = (props.title as any) ?? ''
+  if (props.variant === 'destructive') sonnerToast.error(title, opts)
+  else sonnerToast.success(title, opts)
+  return { id, dismiss: () => sonnerToast.dismiss(id), update: (_: ToasterToast) => {} }
 
   const update = (props: ToasterToast) =>
     dispatch({

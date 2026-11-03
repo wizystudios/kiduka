@@ -9,6 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useDataAccess } from '@/hooks/useDataAccess';
 import { usePermissions } from '@/hooks/usePermissions';
 import { toast } from 'sonner';
+import { saleSuccessToast } from '@/lib/saleToast';
 import { logActivity } from '@/hooks/useActivityLogger';
 import { InvoiceGenerator } from '@/components/InvoiceGenerator';
 
@@ -122,7 +123,7 @@ export const QuickSalePage = () => {
       });
 
       logActivity('sale_create', `Mauzo ya TSh ${total_amount.toLocaleString()}`, { amount: total_amount, product: formData.product_name });
-      toast.success('Mauzo yamerekodishwa!');
+      saleSuccessToast(sale?.id, total_amount, 'Mauzo yamerekodishwa!');
       setShowInvoice(true);
     } catch (error) {
       console.error('Error:', error);

@@ -9,6 +9,7 @@ import { BarcodeFormat, BrowserMultiFormatReader, DecodeHintType } from '@zxing/
 
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { saleSuccessToast } from '@/lib/saleToast';
 import { useAuth } from '@/hooks/useAuth';
 import { useDataAccess } from '@/hooks/useDataAccess';
 import { PaymentMethodDialog } from '@/components/PaymentMethodDialog';
@@ -605,10 +606,7 @@ export const ScannerPage = () => {
         businessName: receiptBusinessName
       });
 
-      toast({
-        title: 'Mauzo Yamekamilika!',
-        description: `Jumla: TZS ${getSubtotal().toLocaleString()}`
-      });
+      saleSuccessToast(sale.sale_id, getSubtotal());
       
       setShowPayment(false);
       setShowReceipt(true);

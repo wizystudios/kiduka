@@ -45,11 +45,12 @@ export const UnifiedSettingsPage = () => {
     { id: 'ads', label: 'Matangazo', icon: Megaphone, perm: 'ads_manage' },
     { id: 'install', label: 'App', icon: Smartphone },
     { id: 'updates', label: 'Kiduka Update', icon: Sparkles },
-    { id: 'qa', label: 'Mobile QA', icon: ClipboardCheck, perm: '__owner' },
+    { id: 'qa', label: 'Mobile QA', icon: ClipboardCheck, perm: '__admin' },
     { id: 'help', label: 'ServiceHUB', icon: Headphones },
   ];
   const allowed = (id: string) => {
     const t = allTabs.find(x => x.id === id);
+    if (t?.perm === '__admin') return userProfile?.role === 'super_admin';
     if (!t || !t.perm || isOwner) return true;
     return t.perm !== '__owner' && can(t.perm);
   };

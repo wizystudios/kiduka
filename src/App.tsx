@@ -11,7 +11,6 @@ import { PublicHubNav } from '@/components/PublicHubNav';
 import { NotificationSettingsPage } from '@/pages/NotificationSettingsPage';
 import { CustomerReportsPage } from '@/pages/CustomerReportsPage';
 import { ProductReportsPage } from '@/pages/ProductReportsPage';
-import { Toaster } from '@/components/ui/toaster';
 import { Toaster as SonnerToaster } from '@/components/ui/sonner';
 import { GlobalNurathFloat } from '@/components/GlobalNurathFloat';
 
@@ -40,6 +39,7 @@ import { InventorySnapshotPage } from '@/pages/InventorySnapshotPage';
 import { PWAInstallerPage } from '@/pages/PWAInstallerPage';
 import ComplianceNotificationsPage from '@/pages/ComplianceNotificationsPage';
 import MobileQAPage from '@/pages/MobileQAPage';
+import { ReceiptViewPage } from '@/pages/ReceiptViewPage';
 
 // AI and Business Intelligence Pages
 import { BusinessIntelligencePage } from '@/pages/BusinessIntelligencePage';
@@ -289,7 +289,7 @@ export default function App() {
               } />
 
               <Route path="/mobile-qa" element={
-                <ProtectedRoute>
+                <ProtectedRoute allowedRoles={['super_admin']}>
                   <MobileQAPage />
                 </ProtectedRoute>
               } />
@@ -442,6 +442,7 @@ export default function App() {
               <Route path="/track-order" element={<OrderTrackingPage />} />
 
               {/* Printable / PDF Receipt - Public access */}
+ <Route path="/mauzo/:transactionId" element={<ProtectedRoute><AppLayout><ReceiptViewPage /></AppLayout></ProtectedRoute>} />
               <Route path="/risiti/:trackingCode" element={<ReceiptPrintPage />} />
               
               {/* Online Storefront - Public access */}
@@ -587,7 +588,6 @@ export default function App() {
             <PublicHubNav />
             <GlobalNurathFloat />
             <KidukaUpdates compact />
-            <Toaster />
             <SonnerToaster position="top-center" richColors closeButton />
           </div>
           </BusinessProvider>
