@@ -15,6 +15,8 @@ import { useDataAccess } from '@/hooks/useDataAccess';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
+import { QRCodeSVG } from 'qrcode.react';
+import { QrCode } from 'lucide-react';
 
 interface Notification {
   id: string;
@@ -272,6 +274,7 @@ export const NotificationsPage = () => {
                     <span className="shrink-0 text-[10px] text-muted-foreground">{formatTime(notif.timestamp)}</span>
                   </div>
                   <p className="mt-0.5 line-clamp-2 text-sm text-foreground/80">{notif.message}</p>
+                  <span className="mt-1 inline-flex items-center gap-1 text-xs font-medium text-primary"><QrCode className="h-3 w-3" /> Ona zaidi</span>
                 </div>
               </button>
             ))}
@@ -293,11 +296,14 @@ export const NotificationsPage = () => {
               <Clock className="h-3 w-3" />
               {selectedItem?.timestamp && formatTime(selectedItem.timestamp)}
             </div>
-            {selectedItem?.route && (
-              <Button variant="outline" size="sm" className="w-full rounded-full" onClick={() => { setSelectedItem(null); navigate(selectedItem.route!); }}>
-                Angalia Zaidi →
-              </Button>
-            )}
+            <div className="flex justify-center">
+              <div className="rounded-2xl bg-background p-2 ring-1 ring-border">
+                <QRCodeSVG value={`${window.location.origin}${selectedItem?.route || '/notifications'}`} size={120} />
+              </div>
+            </div>
+            <Button variant="outline" size="sm" className="w-full rounded-full" onClick={() => { const r = selectedItem?.route || '/notifications'; setSelectedItem(null); navigate(r); }}>
+              Ona zaidi →
+            </Button>
           </div>
         </DialogContent>
       </Dialog>

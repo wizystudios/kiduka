@@ -17,6 +17,8 @@ import { usePermissions } from '@/hooks/usePermissions';
 import { useAuth } from '@/hooks/useAuth';
 import { KidukaUpdates } from '@/components/KidukaUpdates';
 import { Button } from '@/components/ui/button';
+import { canOpenSettingsTab } from '@/lib/settingsAccess';
+import { createTestSale, saleSuccessToast } from '@/lib/saleToast';
 
 // These open as right-side panels, matching the admin pages
 const SHEET_TABS: Record<string, { title: string; render: () => JSX.Element }> = {
@@ -50,9 +52,8 @@ export const UnifiedSettingsPage = () => {
   ];
   const allowed = (id: string) => {
     const t = allTabs.find(x => x.id === id);
-    if (t?.perm === '__admin') return userProfile?.role === 'super_admin';
-    if (!t || !t.perm || isOwner) return true;
-    return t.perm !== '__owner' && can(t.perm);
+    if (!t) return id === 'overview';
+    return canOpenSettingsTab(t.perm, userProfile?.role, can);
   };
   const tabs = allTabs.filter(t => allowed(t.id));
 
@@ -79,9 +80,17 @@ export const UnifiedSettingsPage = () => {
       case 'help': return <HelpPage />;
       default:
         return (
-          <div className="p-4">
+          <div className="space-y-3 p-4">
             <div className="rounded-3xl border border-border/60 p-5 text-sm text-muted-foreground">
               Chagua kipengele hapo juu. Profaili, Sheria na Malipo hufunguka upande wa kulia.
+            </div>
+            <div className="rounded-3xl border border-primary/30 bg-primary/5 p-5">
+              <p className="text-sm font-semibold text-foreground">Hali ya majaribio ya mauzo</p>
+              <p className="mt-1 text-xs text-muted-foreground">Inaonyesha notification moja yenye QR na risiti ya majaribio. Haihifadhi mauzo, haipunguzi stock wala kugusa wateja.</p>
+              <Button size="sm" className="mt-3 rounded-full" onClick={() => {
+                const t = createTestSale(userProfile?.business_name?.trim() || 'Duka langu');
+                saleSuccessToast(t.id, t.total, 'Jaribio: Mauzo yamekamilika');
+              }}>Jaribu notification ya mauzo</Button>
             </div>
           </div>
         );

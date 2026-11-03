@@ -14,6 +14,7 @@ import { CompanyProductsFooter } from '@/components/CompanyProductsFooter';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { InstallAppButton } from '@/components/InstallAppButton';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { staffPasswordError } from '@/lib/settingsAccess';
 
 export const SettingsPage = () => {
   const { user, userProfile, updateProfile, loading } = useAuth();
@@ -43,7 +44,9 @@ export const SettingsPage = () => {
     if (!formData.full_name.trim()) { toast.error('Jina kamili ni lazima'); return; }
     setUpdating(true);
     try {
-      await updateProfile({ full_name: formData.full_name.trim(), business_name: formData.business_name.trim() });
+      await updateProfile(userProfile?.role === 'assistant'
+        ? { full_name: formData.full_name.trim() }
+        : { full_name: formData.full_name.trim(), business_name: formData.business_name.trim() });
       toast.success('Profaili imesasishwa');
     } catch { toast.error('Imeshindwa kusasisha profaili'); }
     finally { setUpdating(false); }
@@ -70,7 +73,8 @@ export const SettingsPage = () => {
   const handlePasswordChange = async () => {
     if (!formData.newPassword || !formData.confirmPassword) { toast.error('Jaza nywila zote'); return; }
     if (formData.newPassword !== formData.confirmPassword) { toast.error('Nywila hazilingani'); return; }
-    if (formData.newPassword.length < 6) { toast.error('Nywila lazima herufi 6+'); return; }
+    const pwErr = userProfile?.role === 'assistant' ? staffPasswordError(formData.newPassword) : (formData.newPassword.length < 6 ? 'Nywila lazima herufi 6+' : null);
+    if (pwErr) { toast.error(pwErr); return; }
     setUpdating(true);
     try {
       const { error } = await supabase.auth.updateUser({ password: formData.newPassword });
@@ -131,7 +135,7 @@ export const SettingsPage = () => {
           </div>
           <div>
             <Label className="text-xs">Jina la Biashara</Label>
-            <Input value={formData.business_name} onChange={(e) => setFormData(prev => ({ ...prev, business_name: e.target.value }))} placeholder="Jina la biashara" />
+            <Input value={formData.business_name} disabled={userProfile?.role === 'assistant'} onChange={(e) => setFormData(prev => ({ ...prev, business_name: e.target.value }))} placeholder="Jina la biashara" />
           </div>
           <div>
             <Label className="text-xs">Barua Pepe</Label>

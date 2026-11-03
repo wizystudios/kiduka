@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import { Receipt } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { BusinessDocument, BusinessDocumentItem } from '@/components/BusinessDocument';
+import { isTestSaleId, readTestSale } from '@/lib/saleToast';
 
 interface ReceiptData {
   id: string;
@@ -19,10 +20,18 @@ export const ReceiptViewPage = () => {
   const [receipt, setReceipt] = useState<ReceiptData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [isTest, setIsTest] = useState(false);
 
   useEffect(() => {
     const load = async () => {
       if (!transactionId) { setError('Namba ya risiti haipo'); setLoading(false); return; }
+      if (isTestSaleId(transactionId)) {
+        const t = readTestSale(transactionId);
+        if (!t) { setError('Jaribio limeisha muda. Anza jaribio jipya kwenye Mipangilio.'); setLoading(false); return; }
+        setIsTest(true);
+        setReceipt({ id: t.id, total: t.total, paymentMethod: 'cash', paymentStatus: 'paid', createdAt: t.createdAt, businessName: t.businessName, items: t.items });
+        setLoading(false); return;
+      }
       const { data: sale, error: saleError } = await supabase.from('sales').select('id,owner_id,total_amount,payment_method,payment_status,created_at,sales_items(quantity,unit_price,subtotal,products(name))').eq('id', transactionId).single();
       if (saleError || !sale) { setError('Risiti haijapatikana'); setLoading(false); return; }
       const { data: owner } = await supabase.from('profiles').select('business_name').eq('id', sale.owner_id).single();
@@ -42,7 +51,8 @@ export const ReceiptViewPage = () => {
 
   return (
     <main className="min-h-screen bg-muted/30 px-3 py-6 md:py-10">
-      <BusinessDocument kind="receipt" businessName={receipt.businessName} documentNumber={receipt.id.slice(0, 8).toUpperCase()} documentDate={new Date(receipt.createdAt).toLocaleString('sw-TZ')} paymentMethod={receipt.paymentMethod} paymentStatus={receipt.paymentStatus} items={receipt.items} subtotal={receipt.total} total={receipt.total} />
+      {isTest && <p className="mx-auto mb-3 max-w-xl rounded-2xl border border-primary/30 bg-primary/10 p-3 text-center text-xs font-medium text-primary">JARIBIO — risiti hii haikuhifadhiwa; stock na wateja hawajaguswa.</p>}
+      <BusinessDocument kind="receipt" businessName={receipt.businessName} documentNumber={isTest ? 'JARIBIO' : receipt.id.slice(0, 8).toUpperCase()} documentDate={new Date(receipt.createdAt).toLocaleString('sw-TZ')} paymentMethod={receipt.paymentMethod} paymentStatus={receipt.paymentStatus} items={receipt.items} subtotal={receipt.total} total={receipt.total} />
     </main>
   );
 };
