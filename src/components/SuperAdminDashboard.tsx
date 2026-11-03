@@ -195,7 +195,7 @@ const PageControls = ({ page, total, onChange }: { page: number; total: number; 
 export const SuperAdminDashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const { notifications, unreadCount, markAsRead, markAllAsRead } = useAdminNotifications();
+  const { notifications, unreadCount, markAsRead, markAllAsRead, fetchNotifications } = useAdminNotifications();
   const [activeTab, setActiveTab] = useState('overview');
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -1365,7 +1365,7 @@ export const SuperAdminDashboard = () => {
 
       {/* Notifications Panel */}
       <Dialog open={notificationsPanelOpen} onOpenChange={setNotificationsPanelOpen}>
-        <DialogContent className="max-w-md rounded-3xl">
+        <DialogContent className="h-[100dvh] max-w-full rounded-none p-3 sm:h-auto sm:max-w-2xl sm:rounded-3xl sm:p-6">
           <DialogHeader className="sr-only">
             <DialogTitle>Taarifa ({unreadCount} mpya)</DialogTitle>
           </DialogHeader>
@@ -1375,6 +1375,7 @@ export const SuperAdminDashboard = () => {
             onRead={markAsRead}
             onReadAll={markAllAsRead}
             onClose={() => setNotificationsPanelOpen(false)}
+            onRefresh={fetchNotifications}
           />
         </DialogContent>
       </Dialog>

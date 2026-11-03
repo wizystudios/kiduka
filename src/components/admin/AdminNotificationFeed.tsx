@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, CheckCheck, Clock, DollarSign, QrCode, UserPlus, CreditCard } from 'lucide-react';
+import { Bell, CheckCheck, DollarSign, QrCode, UserPlus, CreditCard, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -46,9 +46,10 @@ interface Props {
   onRead: (id: string) => void;
   onReadAll: () => void;
   onClose?: () => void;
+  onRefresh?: () => void;
 }
 
-export const AdminNotificationFeed = ({ notifications, unreadCount, onRead, onReadAll, onClose }: Props) => {
+export const AdminNotificationFeed = ({ notifications, unreadCount, onRead, onReadAll, onClose, onRefresh }: Props) => {
   const navigate = useNavigate();
   const [filter, setFilter] = useState('all');
 
@@ -72,7 +73,7 @@ export const AdminNotificationFeed = ({ notifications, unreadCount, onRead, onRe
 
   return (
     <div className="flex min-h-0 flex-col">
-      <div className="flex items-center gap-1 pb-2">
+      <div className="flex items-center gap-1 pb-2 pr-8">
         <h2 className="flex-1 text-xl font-semibold">Taarifa</h2>
         <Select value={filter} onValueChange={setFilter}>
           <SelectTrigger aria-label="Chuja" className="h-9 w-auto gap-1 rounded-xl border-primary/30 px-2 text-xs"><SelectValue /></SelectTrigger>
@@ -85,8 +86,9 @@ export const AdminNotificationFeed = ({ notifications, unreadCount, onRead, onRe
           </SelectContent>
         </Select>
         <Button variant="ghost" size="icon" title="Soma zote" onClick={onReadAll} className="h-9 w-9 rounded-xl"><CheckCheck className="h-4 w-4" /></Button>
+        {onRefresh && <Button variant="ghost" size="icon" title="Onyesha upya" onClick={onRefresh} className="h-9 w-9 rounded-xl"><RefreshCw className="h-4 w-4" /></Button>}
       </div>
-      <ScrollArea className="h-[60vh] pr-2">
+      <ScrollArea className="h-[calc(100dvh-8rem)] pr-2 sm:h-[70vh]">
         {unreadCount === 0 && (
           <div className="flex flex-col items-center py-6 text-center">
             <p className="font-semibold">Uko sawa kabisa!</p>
@@ -117,12 +119,12 @@ export const AdminNotificationFeed = ({ notifications, unreadCount, onRead, onRe
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
                       <h4 className="flex-1 truncate text-sm font-medium">{n.title}</h4>
-                      <span className="shrink-0 text-[10px] text-muted-foreground"><Clock className="mr-0.5 inline h-2.5 w-2.5" />{formatTime(n.created_at)}</span>
+                      <span className="shrink-0 text-[10px] text-muted-foreground">{formatTime(n.created_at)}</span>
                     </div>
                     <p className="mt-0.5 line-clamp-2 text-sm text-foreground/80">{n.message}</p>
                     <span className="mt-1 inline-flex items-center gap-1 text-xs font-medium text-primary"><QrCode className="h-3 w-3" /> Ona zaidi</span>
                   </div>
-                  <span className="shrink-0 rounded-xl bg-background p-1"><QRCodeSVG value={`${window.location.origin}${notificationPath(`admin-${n.id}`)}`} size={56} title="QR ya arifa" /></span>
+                  <span className="shrink-0 rounded-xl bg-background p-1"><QRCodeSVG value={`${window.location.origin}${notificationPath(`admin-${n.id}`)}`} size={64} title="QR ya arifa" /></span>
                 </Button>
               ))}
             </div>
