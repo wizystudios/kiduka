@@ -47,7 +47,7 @@ class SyncService {
         }
 
         // Insert sale
-        const { data: saleData, error: saleError } = await supabase
+        const { data: saleData, error: saleError } = await (supabase as any)
           .from('sales')
           .insert({
             total_amount: sale.total_amount,

@@ -68,7 +68,7 @@ export const AIChatAssistant = ({
     if (!user) return;
 
     try {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('ai_chat_sessions')
         .insert({
           user_id: user.id,
@@ -149,7 +149,7 @@ export const AIChatAssistant = ({
         language: msg.language
       }));
 
-      await supabase
+      await (supabase as any)
         .from('ai_chat_sessions')
         .update({
           messages: updatedMessages,
@@ -249,7 +249,7 @@ export const AIChatAssistant = ({
       setInputMessage(transcript);
       
       if (user) {
-        await supabase.from('voice_commands').insert({
+        await (supabase as any).from('voice_commands').insert({
           user_id: user.id,
           command_text: transcript,
           language,
