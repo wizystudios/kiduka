@@ -1,6 +1,6 @@
 // Database-triggered owner notifications (new Sokoni order, low stock, ...).
-// Service-role callers only; the recipient is always the owner's own profile email.
-import { identifyCaller } from '../_shared/caller.ts'
+// The database stores each notification first and passes only its id, so this
+// endpoint can only send stored, unprocessed rows to the owner's own email.
 import { sendAppEmail, serviceClient } from '../_shared/app-email.ts'
 import { TEMPLATES } from '../_shared/transactional-email-templates/registry.ts'
 
@@ -9,23 +9,27 @@ const json = (d: unknown, status = 200) =>
 
 Deno.serve(async (req) => {
   if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405)
-  if ((await identifyCaller(req)).kind !== 'service') return json({ error: 'Forbidden' }, 403)
-
-  let body: any
-  try { body = await req.json() } catch { return json({ error: 'Invalid JSON' }, 400) }
-  const ownerId = String(body?.ownerId || '')
-  const templateName = String(body?.templateName || '')
-  if (!/^[0-9a-f-]{36}$/i.test(ownerId)) return json({ error: 'Invalid owner' }, 400)
-  if (!templateName.startsWith('owner-') || !TEMPLATES[templateName]) return json({ error: 'Invalid template' }, 400)
+  let id = ''
+  try { id = String((await req.json())?.notificationId || '') } catch { /* invalid */ }
+  if (!/^[0-9a-f-]{36}$/i.test(id)) return json({ error: 'Invalid notification' }, 400)
 
   const db = serviceClient()
-  const { data: profile } = await db.from('profiles').select('email').eq('id', ownerId).maybeSingle()
+  // Claim the row once; redeliveries and guesses find nothing to send.
+  const { data: row, error } = await db.from('owner_email_notifications')
+    .update({ processed_at: new Date().toISOString() })
+    .eq('id', id).is('processed_at', null)
+    .gt('created_at', new Date(Date.now() - 60 * 60 * 1000).toISOString())
+    .select('owner_id, template_name, idempotency_key, template_data').maybeSingle()
+  if (error) { console.error('claim failed', { code: error.code, message: error.message }); return json({ error: 'Server error' }, 500) }
+  if (!row) return json({ success: false, reason: 'not_found' }, 404)
+  if (!row.template_name.startsWith('owner-') || !TEMPLATES[row.template_name]) return json({ error: 'Invalid template' }, 400)
+
+  const { data: profile } = await db.from('profiles').select('email').eq('id', row.owner_id).maybeSingle()
   if (!profile?.email) return json({ success: false, reason: 'no_email' })
 
-  const result = await sendAppEmail(templateName, profile.email, {
+  return json(await sendAppEmail(row.template_name, profile.email, {
     db,
-    idempotencyKey: typeof body.idempotencyKey === 'string' ? body.idempotencyKey.slice(0, 200) : undefined,
-    templateData: body.templateData && typeof body.templateData === 'object' ? body.templateData : {},
-  })
-  return json(result)
+    idempotencyKey: row.idempotency_key ?? `owner-notify-${id}`,
+    templateData: (row.template_data as Record<string, any>) ?? {},
+  }))
 })
