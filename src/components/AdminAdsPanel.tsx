@@ -76,7 +76,7 @@ export const AdminAdsPanel = ({ ownerId = null }: { ownerId?: string | null } = 
   const toggleAd = async (ad: AdminAd) => {
     const { error } = await supabase
       .from('business_ads')
-      .update({ is_active: !ad.is_active } as any)
+      .update({ is_active: !ad.is_active, ...(!ad.is_active ? { approved_at: new Date().toISOString() } : {}) } as any)
       .eq('id', ad.id);
     if (error) {
       toast.error('Imeshindwa kubadili hali');
@@ -112,7 +112,8 @@ export const AdminAdsPanel = ({ ownerId = null }: { ownerId?: string | null } = 
       starts_at: newAd.starts_at || new Date().toISOString(),
       expires_at: newAd.expires_at || null,
       owner_id: user.id,
-      is_active: true
+      is_active: true,
+      approved_at: new Date().toISOString(),
     } as any);
 
     if (error) {
