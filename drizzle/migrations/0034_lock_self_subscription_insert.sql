@@ -1,0 +1,1 @@
+DROP POLICY IF EXISTS "Users can insert own subscription" ON public.user_subscriptions;

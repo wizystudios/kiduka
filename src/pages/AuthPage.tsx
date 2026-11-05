@@ -176,7 +176,7 @@ export const AuthPage = () => {
       // Record failed attempt
       try {
         const { data: attemptResult } = await supabase.functions.invoke('check-login-attempt', {
-          body: { action: 'record_failure', email: loginEmail }
+          body: { action: 'record_failure', email: loginEmail, password }
         });
         if (attemptResult?.locked) {
           toast.error('Akaunti imezuiwa kwa masaa 24 baada ya majaribio 5 yasiyofanikiwa!');

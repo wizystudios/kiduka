@@ -239,6 +239,13 @@
       "when": 1793908494921,
       "tag": "0033_pixel_id_format_checks",
       "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1793909889119,
+      "tag": "0034_lock_self_subscription_insert",
+      "breakpoints": true
     }
   ]
 }

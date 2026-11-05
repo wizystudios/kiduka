@@ -165,7 +165,7 @@ const handler = async (req: Request): Promise<Response> => {
       });
     }
 
-    console.log('Parsed Africa\'s Talking response:', result);
+    console.log('Parsed Africa\'s Talking response:', { status: result?.SMSMessageData?.Message ? 'ok' : 'unknown' });
 
     if (!response.ok) {
       console.error('SMS API error response:', { status: result?.status ?? result?.SMSMessageData?.Message });
