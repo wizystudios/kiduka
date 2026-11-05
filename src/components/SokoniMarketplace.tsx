@@ -585,21 +585,8 @@ export const SokoniMarketplace = () => {
 
         // Customer order confirmation email (consent required)
         if (validEmail && emailConsent && insertedOrder?.id) {
-          supabase.functions.invoke('send-transactional-email', {
-            body: {
-              templateName: 'customer-order-confirmation',
-              recipientEmail: validEmail,
-              idempotencyKey: `sokoni-confirm-${insertedOrder.id}`,
-              templateData: {
-                customerName: customerName.trim() || undefined,
-                trackingCode,
-                totalAmount: orderTotal,
-                items: orderItems.map(i => ({
-                  name: i.product_name, quantity: i.quantity, price: i.unit_price,
-                })),
-                paymentMethod: method,
-              },
-            },
+          supabase.functions.invoke('send-order-confirmation', {
+            body: { orderId: insertedOrder.id },
           }).catch(err => console.warn('order-confirmation email failed', err));
         }
       }
