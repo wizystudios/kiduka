@@ -48,7 +48,7 @@ export const BusinessAuditLogsPanel = ({ businessId }: { businessId?: string | n
 
   // Realtime
   useEffect(() => {
-    const ch = supabase.channel('audit-logs')
+    const ch = supabase.channel(`audit-logs-${Math.random().toString(36).slice(2)}`)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'business_audit_logs' },
         () => load())
       .subscribe();

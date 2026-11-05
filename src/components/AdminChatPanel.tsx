@@ -44,7 +44,7 @@ export const AdminChatPanel = () => {
     fetchChatUsers();
     
     const channel = supabase
-      .channel('admin_chat_realtime')
+      .channel(`admin_chat_realtime-${Math.random().toString(36).slice(2)}`)
       .on('postgres_changes', {
         event: 'INSERT',
         schema: 'public',

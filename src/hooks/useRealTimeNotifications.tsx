@@ -63,7 +63,7 @@ export const useRealTimeNotifications = () => {
 
     // Subscribe to new sales
     const salesChannel = supabase
-      .channel('realtime-sales')
+      .channel(`realtime-sales-${Math.random().toString(36).slice(2)}`)
       .on(
         'postgres_changes',
         {
@@ -95,7 +95,7 @@ export const useRealTimeNotifications = () => {
 
     // Subscribe to product updates for low stock alerts
     const productsChannel = supabase
-      .channel('realtime-products')
+      .channel(`realtime-products-${Math.random().toString(36).slice(2)}`)
       .on(
         'postgres_changes',
         {
@@ -161,7 +161,7 @@ export const useRealTimeNotifications = () => {
 
     // Subscribe to new Sokoni orders
     const sokoniChannel = supabase
-      .channel('realtime-sokoni-push')
+      .channel(`realtime-sokoni-push-${Math.random().toString(36).slice(2)}`)
       .on(
         'postgres_changes',
         {

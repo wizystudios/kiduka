@@ -106,7 +106,7 @@ export const AdminUserActivities = ({ userIds: scopeUserIds = null }: { userIds?
   // Realtime subscription
   useEffect(() => {
     const channel = supabase
-      .channel('admin-activities')
+      .channel(`admin-activities-${Math.random().toString(36).slice(2)}`)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'user_activities' }, () => {
         fetchActivities();
       })
