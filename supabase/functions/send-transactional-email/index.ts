@@ -3,6 +3,7 @@ import { renderAsync } from 'npm:@react-email/components@0.0.22'
 import { createClient } from 'npm:@supabase/supabase-js@2'
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors'
 import { TEMPLATES } from '../_shared/transactional-email-templates/registry.ts'
+import { identifyCaller, mask } from '../_shared/caller.ts'
 
 // Configuration baked in at scaffold time — do NOT change these manually.
 // To update, re-run the email domain setup flow.
@@ -126,6 +127,29 @@ Deno.serve(async (req) => {
   // Create Supabase client with service role (bypasses RLS)
   const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
+  // Only trusted server code may send freely. Browsers get two narrow cases:
+  // a login alert to their own address, and a Sokoni confirmation for a fresh order with that email.
+  const caller = await identifyCaller(req)
+  if (caller.kind !== 'service') {
+    const forbid = () => new Response(JSON.stringify({ error: 'Forbidden' }), {
+      status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
+    const to = String(effectiveRecipient).toLowerCase()
+    if (templateName === 'owner-login-alert') {
+      if (caller.kind !== 'user' || caller.email !== to) return forbid()
+    } else if (templateName === 'customer-order-confirmation') {
+      const orderId = String(idempotencyKey).replace(/^sokoni-confirm-/, '')
+      if (!/^[0-9a-f-]{36}$/i.test(orderId)) return forbid()
+      const { data: order } = await supabase.from('sokoni_orders')
+        .select('customer_email, email_consent, created_at').eq('id', orderId).maybeSingle()
+      const fresh = order && Date.now() - new Date(order.created_at).getTime() < 15 * 60 * 1000
+      if (!order || !fresh || !order.email_consent || String(order.customer_email || '').toLowerCase() !== to) return forbid()
+      idempotencyKey = `sokoni-confirm-${orderId}`
+    } else {
+      return forbid()
+    }
+  }
+
   // 2. Check suppression list (fail-closed: if we can't verify, don't send)
   const { data: suppressed, error: suppressionError } = await supabase
     .from('suppressed_emails')
@@ -136,7 +160,7 @@ Deno.serve(async (req) => {
   if (suppressionError) {
     console.error('Suppression check failed — refusing to send', {
       error: suppressionError,
-      effectiveRecipient,
+      recipient: mask(effectiveRecipient),
     })
     return new Response(
       JSON.stringify({ error: 'Failed to verify suppression status' }),
@@ -156,7 +180,7 @@ Deno.serve(async (req) => {
       status: 'suppressed',
     })
 
-    console.log('Email suppressed', { effectiveRecipient, templateName })
+    console.log('Email suppressed', { recipient: mask(effectiveRecipient), templateName })
     return new Response(
       JSON.stringify({ success: false, reason: 'email_suppressed' }),
       {
@@ -396,7 +420,7 @@ Deno.serve(async (req) => {
     console.error('Failed to enqueue email', {
       error: enqueueError,
       templateName,
-      effectiveRecipient,
+      recipient: mask(effectiveRecipient),
     })
 
     await supabase.from('email_send_log').insert({
@@ -413,7 +437,7 @@ Deno.serve(async (req) => {
     })
   }
 
-  console.log('Transactional email enqueued', { templateName, effectiveRecipient })
+  console.log('Transactional email enqueued', { templateName, recipient: mask(effectiveRecipient) })
 
   return new Response(
     JSON.stringify({ success: true, queued: true }),
