@@ -118,6 +118,8 @@ serve(async (req) => {
     const currentSale = Array.isArray(body.currentSale) ? (body.currentSale as CurrentSaleItem[]) : [];
     const conversationHistory = Array.isArray(body.conversationHistory)
       ? body.conversationHistory.slice(-4)
+          .filter((m: any) => m && (m.role === 'user' || m.role === 'assistant') && typeof m.content === 'string')
+          .map((m: any) => ({ role: m.role as 'user' | 'assistant', content: m.content.slice(0, 1000) }))
       : [];
 
     if (!message) {
