@@ -80,6 +80,11 @@ export const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
       try {
         const { data, error } = await supabase.rpc('get_user_role', { _user_id: userId });
         if (!error && data) return data;
+        if (!error) {
+          // No role yet: the server grants owner only to accounts that are not staff anywhere.
+          const { data: claimed, error: claimError } = await supabase.rpc('claim_owner_role' as any);
+          if (!claimError && claimed) return claimed as string;
+        }
       } catch {
         // ignore
       }
