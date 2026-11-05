@@ -1,6 +1,6 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { canMessagePhone } from "../_shared/caller.ts"
+import { canMessagePhone, shapeOutboundMessage } from "../_shared/caller.ts"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -42,10 +42,11 @@ serve(async (req) => {
       if (error || !grants.some(Boolean)) return new Response(JSON.stringify({ error: 'Huna ruhusa ya kutuma ujumbe', success: false }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
-    const { phoneNumber, message, messageType = 'general' } = await req.json()
+    const { phoneNumber, message: rawMessage, messageType = "general" } = await req.json()
+    const message = await shapeOutboundMessage(userClient, user.id, rawMessage)
 
     // Validate input
-    if (!phoneNumber || !message) {
+    if (typeof phoneNumber !== "string" || !phoneNumber || !message) {
       return new Response(
         JSON.stringify({ error: 'Phone number and message are required' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
