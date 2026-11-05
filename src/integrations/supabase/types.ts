@@ -3506,6 +3506,7 @@ export type Database = {
         Returns: boolean
       }
       check_user_subscription: { Args: { p_user_id: string }; Returns: Json }
+      claim_owner_role: { Args: never; Returns: string }
       complete_scanner_sale: {
         Args: {
           p_branch_id: string
