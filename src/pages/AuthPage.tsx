@@ -151,20 +151,21 @@ export const AuthPage = () => {
       loginEmail = email;
     }
 
-    // Check if account is locked
-    try {
-      const { data: lockCheck } = await supabase.functions.invoke('check-login-attempt', {
-        body: { action: 'check', email: loginEmail }
-      });
-      if (lockCheck?.locked) {
-        toast.error('Akaunti imezuiwa kwa masaa 24. Wasiliana na msimamizi.');
-        return;
-      }
-    } catch { /* proceed if check fails */ }
-
     setLoading(true);
     try {
       await signIn(loginEmail, password);
+
+      // Lock status can only be read once signed in as this account.
+      try {
+        const { data: lockCheck } = await supabase.functions.invoke('check-login-attempt', {
+          body: { action: 'check', email: loginEmail }
+        });
+        if (lockCheck?.locked) {
+          await supabase.auth.signOut();
+          toast.error('Akaunti imezuiwa kwa masaa 24. Wasiliana na msimamizi.');
+          return;
+        }
+      } catch { /* proceed if check fails */ }
 
       // Reset attempts on success
       supabase.functions.invoke('check-login-attempt', {

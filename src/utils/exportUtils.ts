@@ -1,3 +1,4 @@
+import { escapeHtml } from '@/lib/safeCell';
 import * as XLSX from 'xlsx';
 import { safeCell, csvRow, safeRow } from '@/lib/safeCell';
 
@@ -141,12 +142,12 @@ export const exportToPDF = (title: string, contentHtml: string) => {
     <!DOCTYPE html>
     <html>
     <head>
-      <title>${title}</title>
+      <title>${escapeHtml(title)}</title>
       ${styles}
     </head>
     <body>
       <div class="header">
-        <h1>Kiduka POS - ${title}</h1>
+        <h1>Kiduka POS - ${escapeHtml(title)}</h1>
         <p>Tarehe: ${new Date().toLocaleDateString('sw-TZ')}</p>
       </div>
       ${contentHtml}
@@ -177,15 +178,15 @@ export const createPrintableTable = (
       if (col.formatter) {
         value = col.formatter(value);
       }
-      return `<td>${value ?? '-'}</td>`;
+      return `<td>${escapeHtml(value ?? '-')}</td>`;
     }).join('')}</tr>`;
   }).join('');
 
   return `
-    <h2>${title}</h2>
+    <h2>${escapeHtml(title)}</h2>
     <table>
       <thead>
-        <tr>${columns.map(col => `<th>${col.header}</th>`).join('')}</tr>
+        <tr>${columns.map(col => `<th>${escapeHtml(col.header)}</th>`).join('')}</tr>
       </thead>
       <tbody>${rows}</tbody>
     </table>

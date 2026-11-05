@@ -23,7 +23,11 @@ Deno.serve(async (req) => {
     }
 
     if (action === "check") {
-      // Check if account is locked
+      // Lock status is only disclosed to the signed-in owner of this exact account.
+      const checker = await identifyCaller(req);
+      if (checker.kind !== "user" || checker.email !== email.toLowerCase()) {
+        return new Response(JSON.stringify({ error: "Forbidden" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
       const { data } = await adminClient
         .from("login_attempts")
         .select("*")

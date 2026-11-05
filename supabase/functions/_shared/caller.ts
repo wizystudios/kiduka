@@ -83,3 +83,22 @@ export async function paymentTargetError(admin: any, userId: string, type: strin
   if (tail9(o.customer_phone) !== tail9(phone)) return 'Namba lazima iwe ya mteja wa oda hii'
   return null
 }
+
+const ALLOWED_LINK_HOSTS = /^(?:[a-z0-9-]+\.)*(?:kiduka\.shop|kiduka\.lovable\.app|wa\.me)$/i
+/** Server-side shaping of business→customer texts: plain text, capped, Kiduka-only links, sender named. */
+export async function shapeOutboundMessage(userClient: any, userId: string, raw: unknown): Promise<string | null> {
+  if (typeof raw !== 'string') return null
+  let text = raw.replace(/[\u0000-\u0008\u000B-\u001F\u007F\u200B-\u200F\u202A-\u202E]/g, '').trim()
+  text = text.replace(/\b(?:https?:\/\/|www\.)[^\s]+/gi, (url) => {
+    try { const u = new URL(url.startsWith('http') ? url : `https://${url}`); return ALLOWED_LINK_HOSTS.test(u.hostname) ? url : '[kiungo kimeondolewa]' } catch { return '[kiungo kimeondolewa]' }
+  })
+  if (!text) return null
+  text = text.slice(0, 600)
+  let sender = 'Kiduka'
+  try {
+    const { data } = await userClient.from('profiles').select('business_name, full_name').eq('id', userId).maybeSingle()
+    const name = String(data?.business_name || data?.full_name || '').replace(/[^\p{L}\p{N} .&'-]/gu, '').trim().slice(0, 40)
+    if (name) sender = name
+  } catch { /* keep default */ }
+  return `${text}\n— ${sender} (kupitia Kiduka)`
+}

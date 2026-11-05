@@ -1,3 +1,4 @@
+import { escapeHtml } from '@/lib/safeCell';
 import { useState, useRef, useCallback } from 'react';
 import { safeCell, csvRow, safeRow } from '@/lib/safeCell';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -35,7 +36,7 @@ const exportPdf = (rows: Row[], passed: number) => {
     <h1>Nurath Avatar — Visibility & Latency QA</h1>
     <div class="meta"><span>Tarehe: ${new Date().toLocaleString()}</span><span>Matokeo: <strong>${passed}/${rows.length}</strong> pass</span></div>
     <table><thead><tr><th>State</th><th>Latency (ms)</th><th>Pill</th><th>Ring</th><th>Status</th></tr></thead><tbody>
-    ${rows.map(r => `<tr><td>${r.state}</td><td>${r.latencyMs.toFixed(2)}</td><td>${r.pillVisible ? (r.pillText ?? '—') : 'haijatokea'}</td><td>${r.ringClass ?? '—'}</td><td class="${r.pass ? 'pass' : 'fail'}">${r.pass ? 'PASS' : 'FAIL'}</td></tr>`).join('')}
+    ${rows.map(r => `<tr><td>${escapeHtml(r.state)}</td><td>${r.latencyMs.toFixed(2)}</td><td>${r.pillVisible ? escapeHtml(r.pillText ?? '—') : 'haijatokea'}</td><td>${escapeHtml(r.ringClass ?? '—')}</td><td class="${r.pass ? 'pass' : 'fail'}">${r.pass ? 'PASS' : 'FAIL'}</td></tr>`).join('')}
     </tbody></table>
     <script>window.onload=()=>{setTimeout(()=>window.print(),200)}</script>
     </body></html>`;

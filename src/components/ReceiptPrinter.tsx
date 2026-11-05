@@ -1,3 +1,4 @@
+import { escapeHtml } from '@/lib/safeCell';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -26,7 +27,7 @@ export const ReceiptPrinter = ({ items, total, transactionId, onPrint }: Receipt
         <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 15px;">
           <h2 style="margin: 0; font-size: 24px; font-weight: bold;">KIDUKA</h2>
           <p style="margin: 5px 0; font-size: 14px;">Smart Business Solution</p>
-          <p style="margin: 0; font-size: 12px;">Transaction: ${transactionId}</p>
+          <p style="margin: 0; font-size: 12px;">Transaction: ${escapeHtml(transactionId)}</p>
         </div>
         
         <div style="margin-bottom: 15px;">
@@ -36,7 +37,7 @@ export const ReceiptPrinter = ({ items, total, transactionId, onPrint }: Receipt
         <div style="border-bottom: 1px solid #000; padding-bottom: 10px; margin-bottom: 10px;">
           ${items.map(item => `
             <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
-              <span style="font-size: 12px;">${item.quantity}x ${item.name}</span>
+              <span style="font-size: 12px;">${escapeHtml(item.quantity)}x ${escapeHtml(item.name)}</span>
               <span style="font-size: 12px;">$${item.total.toFixed(2)}</span>
             </div>
           `).join('')}
@@ -60,7 +61,7 @@ export const ReceiptPrinter = ({ items, total, transactionId, onPrint }: Receipt
       printWindow.document.write(`
         <html>
           <head>
-            <title>Receipt - ${transactionId}</title>
+            <title>Receipt - ${escapeHtml(transactionId)}</title>
             <style>
               @media print {
                 body { margin: 0; }
