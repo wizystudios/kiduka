@@ -1742,6 +1742,36 @@ export type Database = {
         }
         Relationships: []
       }
+      owner_email_notifications: {
+        Row: {
+          created_at: string
+          id: string
+          idempotency_key: string | null
+          owner_id: string
+          processed_at: string | null
+          template_data: Json
+          template_name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          idempotency_key?: string | null
+          owner_id: string
+          processed_at?: string | null
+          template_data?: Json
+          template_name: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          idempotency_key?: string | null
+          owner_id?: string
+          processed_at?: string | null
+          template_data?: Json
+          template_name?: string
+        }
+        Relationships: []
+      }
       owner_payment_numbers: {
         Row: {
           account_name: string | null

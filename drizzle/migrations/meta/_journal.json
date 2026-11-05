@@ -246,6 +246,13 @@
       "when": 1793909889119,
       "tag": "0034_lock_self_subscription_insert",
       "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1793912606975,
+      "tag": "0035_owner_email_managed_sender",
+      "breakpoints": true
     }
   ]
 }
