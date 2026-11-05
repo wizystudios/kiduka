@@ -2,6 +2,7 @@
 // and sends owner-compliance-reminder emails. Idempotent per day.
 // Can be invoked by pg_cron OR manually by admin (with optional ownerId + adminMessage).
 import { createClient } from 'npm:@supabase/supabase-js@2'
+import { identifyCaller, isServiceOrAdmin } from '../_shared/caller.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -56,6 +57,10 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
   try {
+    const caller = await identifyCaller(req)
+    if (!isServiceOrAdmin(caller)) {
+      return new Response(JSON.stringify({ error: 'Forbidden' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    }
     const admin = createClient(SUPABASE_URL, SERVICE_KEY)
     let body: any = {}
     try { body = await req.json() } catch { /* cron call */ }
