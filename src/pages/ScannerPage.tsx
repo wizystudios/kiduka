@@ -82,7 +82,7 @@ export const ScannerPage = () => {
   const { toast } = useToast();
   const { user, userProfile } = useAuth();
   const { dataOwnerId, ownerBusinessName, branchId, loading: dataLoading } = useDataAccess();
-  const debounceRef = useRef<NodeJS.Timeout | null>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const location = useLocation();
   const skipNextSearchRef = useRef(false);
 

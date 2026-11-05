@@ -20,7 +20,7 @@ export const MobileBottomNav = () => {
   const { branchFeatures } = __uda();
   const access = (path: string) => userProfile?.role === 'owner' || userProfile?.role === 'super_admin' || canAccessStaffRoute(path, permissions, branchFeatures);
 
-  const longPressTimer = useRef<NodeJS.Timeout | null>(null);
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [isLongPressing, setIsLongPressing] = useState(false);
   const longPressTriggered = useRef(false);
 
