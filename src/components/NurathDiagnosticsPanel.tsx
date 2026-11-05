@@ -1,3 +1,4 @@
+import { escapeHtml } from '@/lib/safeCell';
 import { useEffect, useMemo, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -74,9 +75,9 @@ export const NurathDiagnosticsPanel = () => {
       return;
     }
     const s: any = data;
-    const topShopsRows = (s.topShops ?? []).map((x: any) => `<tr><td>${x.name}</td><td>${x.failures}</td></tr>`).join('');
+    const topShopsRows = (s.topShops ?? []).map((x: any) => `<tr><td>${escapeHtml(x.name)}</td><td>${escapeHtml(x.failures)}</td></tr>`).join('');
     const errRows = Object.entries(s.errorTypeCounts ?? {})
-      .map(([k, v]) => `<tr><td>${k}</td><td>${v}</td></tr>`).join('');
+      .map(([k, v]) => `<tr><td>${escapeHtml(k)}</td><td>${escapeHtml(v)}</td></tr>`).join('');
     const html = `
       <div class="stats">
         <div class="stat-card"><strong>${s.total}</strong><br/>Sessions (${s.windowMinutes} min)</div>

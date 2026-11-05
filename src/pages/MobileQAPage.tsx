@@ -1,3 +1,4 @@
+import { escapeHtml } from '@/lib/safeCell';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -46,7 +47,7 @@ const QaScreenshotThumb = ({ pathOrUrl }: { pathOrUrl: string }) => {
 const printAsPDF = (title: string, htmlBody: string) => {
   const w = window.open('', '_blank', 'width=900,height=700');
   if (!w) { toast.error('Ruhusu pop-ups ili kuchapisha PDF'); return; }
-  w.document.write(`<!doctype html><html><head><title>${title}</title>
+  w.document.write(`<!doctype html><html><head><title>${escapeHtml(title)}</title>
     <style>
       body{font-family:ui-sans-serif,system-ui,-apple-system;padding:24px;color:#111;}
       h1{font-size:18px;margin:0 0 12px;} h2{font-size:14px;margin:18px 0 6px;}
@@ -55,7 +56,7 @@ const printAsPDF = (title: string, htmlBody: string) => {
       th{background:#f5f5f5;} .meta{color:#666;font-size:11px;margin-bottom:12px;}
       .badge{display:inline-block;padding:1px 6px;border-radius:9999px;background:#eee;font-size:10px;margin-right:4px;}
     </style></head><body>
-    <h1>${title}</h1>
+    <h1>${escapeHtml(title)}</h1>
     <div class="meta">Imetolewa: ${new Date().toLocaleString()} · Kiduka Mobile QA</div>
     ${htmlBody}
     <script>window.onload=()=>{setTimeout(()=>window.print(),250);};</script>
@@ -627,7 +628,7 @@ export default function MobileQAPage() {
                     </Button>
                     <Button variant="outline" size="sm" className="h-7 text-[10px] rounded-full"
                       onClick={() => {
-                        const rowsHtml = (h: any[]) => h.map((r) => `<tr><td>${new Date(r.timestamp).toLocaleString()}</td><td>${r.table || ''}</td><td>${r.type || r.action || ''}</td><td>${r.details || r.data?.id || ''}</td></tr>`).join('');
+                        const rowsHtml = (h: any[]) => h.map((r) => `<tr><td>${new Date(r.timestamp).toLocaleString()}</td><td>${escapeHtml(r.table || '')}</td><td>${escapeHtml(r.type || r.action || '')}</td><td>${escapeHtml(r.details || r.data?.id || '')}</td></tr>`).join('');
                         printAsPDF('Kiduka — Sync Status & Historia', `
                           <h2>Foleni ya Pending (${pendingQueue.filter((x) => !x.synced).length})</h2>
                           <table><thead><tr><th>Wakati</th><th>Jedwali</th><th>Kitendo</th><th>ID / Maelezo</th></tr></thead>
@@ -851,7 +852,7 @@ export default function MobileQAPage() {
                     <Button variant="outline" size="sm" className="h-7 text-[10px] rounded-full"
                       onClick={() => {
                         const body = `<table><thead><tr><th>Wakati</th><th>Scope</th><th>Step</th><th>Lvl</th><th>Code</th><th>Ujumbe</th></tr></thead><tbody>${
-                          logs.map((l) => `<tr><td>${new Date(l.timestamp).toLocaleString()}</td><td>${l.scope}</td><td>${l.step}</td><td>${l.level}</td><td>${l.code || ''}</td><td>${l.message}</td></tr>`).join('')
+                          logs.map((l) => `<tr><td>${new Date(l.timestamp).toLocaleString()}</td><td>${escapeHtml(l.scope)}</td><td>${escapeHtml(l.step)}</td><td>${escapeHtml(l.level)}</td><td>${escapeHtml(l.code || '')}</td><td>${escapeHtml(l.message)}</td></tr>`).join('')
                         }</tbody></table>`;
                         printAsPDF('Kiduka — Transaction Logs', body);
                       }}>
