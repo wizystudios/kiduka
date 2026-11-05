@@ -16,7 +16,7 @@ Deno.serve(async (req) => {
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const adminClient = createClient(supabaseUrl, serviceRoleKey);
 
-    const { action, email: rawEmail } = await req.json();
+    const { action, email: rawEmail, password } = await req.json();
     const email = typeof rawEmail === "string" ? rawEmail.trim() : "";
     if (!email || email.length > 320) {
       return new Response(JSON.stringify({ error: "Invalid email" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -47,7 +47,16 @@ Deno.serve(async (req) => {
     }
 
     if (action === "record_failure") {
-      // Record a failed login attempt
+      // Only count a failure the server itself confirms: the password must actually be wrong.
+      if (typeof password !== "string" || !password || password.length > 256) {
+        return new Response(JSON.stringify({ error: "Password required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      const probe = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!, { auth: { persistSession: false } });
+      const { data: ok } = await probe.auth.signInWithPassword({ email: email.toLowerCase(), password });
+      if (ok?.session) {
+        await probe.auth.signOut().catch(() => {});
+        return new Response(JSON.stringify({ attempts: 0, locked: false, remaining: 5 }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
       const { data: existing } = await adminClient
         .from("login_attempts")
         .select("*")
@@ -72,7 +81,7 @@ Deno.serve(async (req) => {
           await adminClient.from("admin_notifications").insert({
             notification_type: "account_locked",
             title: "Akaunti Imezuiwa",
-            message: `Akaunti ${email} imezuiwa baada ya majaribio 5 yasiyofanikiwa.`,
+            message: `Akaunti ${email.slice(0,1)}***@${email.split("@")[1] || ""} imezuiwa baada ya majaribio 5 yasiyofanikiwa.`,
             data: { email, locked_until: updates.locked_until, attempt_count: newCount }
           });
         }
