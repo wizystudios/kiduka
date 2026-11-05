@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback } from 'react';
+import { safeCell, csvRow, safeRow } from '@/lib/safeCell';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -16,7 +17,7 @@ const exportCsv = (rows: Row[], passed: number) => {
   const head = ['state', 'latency_ms', 'pill_visible', 'pill_text', 'ring_class', 'pass'];
   const body = rows.map(r => [r.state, r.latencyMs, r.pillVisible, r.pillText ?? '', r.ringClass ?? '', r.pass]);
   const csv = [head, ...body, [], ['summary', `${passed}/${rows.length} pass`]]
-    .map(line => line.map(v => `"${String(v).replace(/"/g, '""')}"`).join(','))
+    .map(line => csvRow(line))
     .join('\n');
   downloadBlob(new Blob([csv], { type: 'text/csv;charset=utf-8' }), `nurath-latency-${Date.now()}.csv`);
 };

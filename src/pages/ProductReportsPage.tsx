@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { safeCell, csvRow, safeRow } from '@/lib/safeCell';
 // PageHeader removed for cleaner UI
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -150,7 +151,7 @@ export const ProductReportsPage = () => {
       report.business_id || '',
     ]);
 
-    const csv = [headers.join(','), ...rows.map((row) => row.join(','))].join('\n');
+    const csv = [headers.join(','), ...rows.map((row) => csvRow(row))].join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');

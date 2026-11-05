@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { safeCell, csvRow, safeRow } from '@/lib/safeCell';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -146,7 +147,7 @@ export const ProductsPage = () => {
       p.unit_type || 'piece',
       p.min_quantity || 0.1,
     ]);
-    const csv = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
+    const csv = [headers.join(','), ...rows.map((r) => csvRow(r))].join('\n');
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -164,7 +165,7 @@ export const ProductsPage = () => {
       return;
     }
     const ws = XLSX.utils.json_to_sheet(
-      filteredProducts.map((p) => ({
+      filteredProducts.map((p) => safeRow({
         Jina: p.name,
         Barcode: p.barcode || '',
         Bei: p.price,

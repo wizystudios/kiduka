@@ -1,4 +1,5 @@
 import * as XLSX from 'xlsx';
+import { safeCell, csvRow, safeRow } from '@/lib/safeCell';
 
 export interface ExportColumn {
   header: string;
@@ -17,7 +18,7 @@ export const exportToExcel = (
       const transformedRow: any = {};
       columns.forEach((col) => {
         const value = row[col.key];
-        transformedRow[col.header] = col.formatter ? col.formatter(value) : value;
+        transformedRow[col.header] = safeCell(col.formatter ? col.formatter(value) : value);
       });
       return transformedRow;
     });
@@ -59,7 +60,7 @@ export const exportToCSV = (
           const value = row[col.key];
           const formatted = col.formatter ? col.formatter(value) : value;
           // Escape commas and quotes
-          const escaped = String(formatted).replace(/"/g, '""');
+          const escaped = String(safeCell(formatted ?? '')).replace(/"/g, '""');
           return `"${escaped}"`;
         })
         .join(',');
@@ -99,7 +100,7 @@ export const exportMultipleToExcel = (
         const transformedRow: any = {};
         sheet.columns.forEach((col) => {
           const value = row[col.key];
-          transformedRow[col.header] = col.formatter ? col.formatter(value) : value;
+          transformedRow[col.header] = safeCell(col.formatter ? col.formatter(value) : value);
         });
         return transformedRow;
       });
