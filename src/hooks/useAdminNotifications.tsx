@@ -53,7 +53,7 @@ export const useAdminNotifications = () => {
     if (!isSuperAdmin) return;
 
     const channel = supabase
-      .channel('admin-notifications')
+      .channel(`admin-notifications-${Math.random().toString(36).slice(2)}`)
       .on(
         'postgres_changes',
         {

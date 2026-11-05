@@ -35,7 +35,7 @@ export const AdminSessionBanner = () => {
     check();
 
     const channel = supabase
-      .channel('admin-session-banner')
+      .channel(`admin-session-banner-${Math.random().toString(36).slice(2)}`)
       .on('postgres_changes', {
         event: '*',
         schema: 'public',

@@ -80,7 +80,7 @@ export const SokoniOrderManagement = () => {
     if (dataOwnerId) {
       fetchOrders();
       const channel = supabase
-        .channel('sokoni_orders_changes')
+        .channel(`sokoni_orders_changes-${Math.random().toString(36).slice(2)}`)
         .on('postgres_changes', { event: '*', schema: 'public', table: 'sokoni_orders', filter: `seller_id=eq.${dataOwnerId}` },
           (payload) => {
             const updatedOrder = payload.new as any;

@@ -39,7 +39,7 @@ export const ChatSupport = ({ open, onClose }: ChatSupportProps) => {
       fetchMessages();
 
       const channel = supabase
-        .channel('chat_realtime')
+        .channel(`chat_realtime-${Math.random().toString(36).slice(2)}`)
         .on('postgres_changes', {
           event: 'INSERT',
           schema: 'public',

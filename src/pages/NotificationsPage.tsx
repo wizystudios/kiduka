@@ -47,7 +47,7 @@ export const NotificationsPage = () => {
   useEffect(() => {
     if (!dataOwnerId || !isReady) return;
     const channel = supabase
-      .channel('sokoni-orders-notifications')
+      .channel(`sokoni-orders-notifications-${Math.random().toString(36).slice(2)}`)
       .on('postgres_changes', {
         event: 'INSERT', schema: 'public', table: 'sokoni_orders',
         filter: `seller_id=eq.${dataOwnerId}`

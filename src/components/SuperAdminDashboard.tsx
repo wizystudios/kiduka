@@ -274,7 +274,7 @@ export const SuperAdminDashboard = () => {
       refreshTimer.current = setTimeout(() => fetchActiveTab(), 500);
     };
     const channel = supabase
-      .channel('super-admin-live-data')
+      .channel(`super-admin-live-data-${Math.random().toString(36).slice(2)}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, scheduleRefresh)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, scheduleRefresh)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'sales' }, scheduleRefresh)

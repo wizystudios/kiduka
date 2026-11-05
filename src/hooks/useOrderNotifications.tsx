@@ -71,7 +71,7 @@ export const useOrderNotifications = ({
 
     // Subscribe to real-time order updates (INSERT and UPDATE)
     const channel = supabase
-      .channel(`sokoni-orders-${sellerId}`)
+      .channel(`sokoni-orders-${sellerId}-${Math.random().toString(36).slice(2)}`)
       .on(
         'postgres_changes',
         {
