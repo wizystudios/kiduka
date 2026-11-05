@@ -1,5 +1,6 @@
 
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { canMessagePhone, mask } from "../_shared/caller.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -49,7 +50,11 @@ const handler = async (req: Request): Promise<Response> => {
 
     const { phoneNumber, message, transactionId }: SMSRequest = await req.json();
     
-    console.log('SMS request received:', { phoneNumber, transactionId });
+    console.log('SMS request received:', { phone: mask(phoneNumber), transactionId });
+    if (!(await canMessagePhone(userClient, user.id, phoneNumber))) {
+      return new Response(JSON.stringify({ error: 'Namba hii si ya mteja wako', success: false }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+
     
     // Get Africa's Talking credentials
     const africasTalkingApiKey = Deno.env.get("AFRICAS_TALKING_API_KEY");
@@ -117,7 +122,7 @@ const handler = async (req: Request): Promise<Response> => {
       formattedPhone = '+255' + formattedPhone;
     }
     
-    console.log('Formatted phone number:', formattedPhone);
+    console.log('Formatted phone number:', mask(formattedPhone));
 
     // Prepare form data for Africa's Talking API
     const formData = new URLSearchParams();
@@ -144,7 +149,7 @@ const handler = async (req: Request): Promise<Response> => {
     console.log('Africa\'s Talking response status:', response.status);
 
     const responseText = await response.text();
-    console.log('Raw response text:', responseText);
+    console.log('Raw response length:', responseText.length);
 
     let result;
     try {
@@ -163,7 +168,7 @@ const handler = async (req: Request): Promise<Response> => {
     console.log('Parsed Africa\'s Talking response:', result);
 
     if (!response.ok) {
-      console.error('SMS API error response:', result);
+      console.error('SMS API error response:', { status: result?.status ?? result?.SMSMessageData?.Message });
       return new Response(JSON.stringify({ 
         error: `SMS API error (${response.status}): ${result.message || responseText}`,
         success: false 
@@ -187,7 +192,7 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     const firstRecipient = recipients[0];
-    console.log('First recipient status:', firstRecipient);
+    console.log('First recipient status:', { status: firstRecipient?.status ?? firstRecipient?.SMSMessageData?.Message });
     
     // Handle different status types with detailed messages
     if (firstRecipient.status === 'InsufficientBalance') {
@@ -204,7 +209,7 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     if (firstRecipient.status === 'InvalidPhoneNumber') {
-      console.error('Invalid phone number:', firstRecipient);
+      console.error('Invalid phone number:', { status: firstRecipient?.status ?? firstRecipient?.SMSMessageData?.Message });
       return new Response(JSON.stringify({ 
         error: `SMS failed: Invalid phone number ${formattedPhone}. Please use a valid Tanzanian number format.`,
         success: false,
@@ -218,7 +223,7 @@ const handler = async (req: Request): Promise<Response> => {
     // Accept Success, Sent, and Queued as valid statuses
     const validStatuses = ['Success', 'Sent', 'Queued'];
     if (!validStatuses.includes(firstRecipient.status)) {
-      console.error('SMS failed for recipient:', firstRecipient);
+      console.error('SMS failed for recipient:', { status: firstRecipient?.status ?? firstRecipient?.SMSMessageData?.Message });
       return new Response(JSON.stringify({ 
         error: `SMS delivery failed: ${firstRecipient.status}. Status code: ${firstRecipient.statusCode}. ${firstRecipient.status === 'InsufficientBalance' ? 'Please top up your Africa\'s Talking account.' : ''}`,
         success: false,

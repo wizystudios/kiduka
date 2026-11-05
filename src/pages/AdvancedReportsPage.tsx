@@ -1,5 +1,6 @@
 
 import { useState, useEffect } from 'react';
+import { safeCell, csvRow, safeRow } from '@/lib/safeCell';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -135,7 +136,7 @@ export const AdvancedReportsPage = () => {
     const data = reportType === 'sales' ? salesData : productData;
     const csv = [
       Object.keys(data[0] || {}).join(','),
-      ...data.map(row => Object.values(row).join(','))
+      ...data.map(row => csvRow(Object.values(row)))
     ].join('\n');
 
     const blob = new Blob([csv], { type: 'text/csv' });

@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.8";
+import { identifyCaller } from "../_shared/caller.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -15,7 +16,11 @@ Deno.serve(async (req) => {
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const adminClient = createClient(supabaseUrl, serviceRoleKey);
 
-    const { action, email } = await req.json();
+    const { action, email: rawEmail } = await req.json();
+    const email = typeof rawEmail === "string" ? rawEmail.trim() : "";
+    if (!email || email.length > 320) {
+      return new Response(JSON.stringify({ error: "Invalid email" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
 
     if (action === "check") {
       // Check if account is locked
@@ -96,6 +101,11 @@ Deno.serve(async (req) => {
     }
 
     if (action === "reset") {
+      // Only the person who just signed in to this exact account may clear its counter.
+      const caller = await identifyCaller(req);
+      if (caller.kind !== "user" || caller.email !== email.toLowerCase()) {
+        return new Response(JSON.stringify({ error: "Forbidden" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
       // Reset attempts on successful login
       await adminClient
         .from("login_attempts")

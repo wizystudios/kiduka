@@ -20,6 +20,7 @@ interface Ad {
   image_url: string | null;
   link_url: string | null;
   is_active: boolean;
+  approved_at?: string | null;
   display_location: string;
   starts_at: string;
   expires_at: string | null;
@@ -406,7 +407,7 @@ export const AdsManagerPage = () => {
                     <p className="text-sm font-semibold truncate">{ad.title}</p>
                     <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                       <Badge variant={ad.is_active ? 'default' : 'secondary'} className="text-[10px] rounded-full">
-                        {ad.is_active ? 'Hai' : 'Imezimwa'}
+                        {!ad.approved_at ? 'Inasubiri idhini' : ad.is_active ? 'Hai' : 'Imezimwa'}
                       </Badge>
                       <span className="text-[10px] text-muted-foreground">
                         {ad.display_location === 'both' ? 'Kiduka & Sokoni' : ad.display_location === 'kiduka' ? 'Kiduka' : 'Sokoni'}

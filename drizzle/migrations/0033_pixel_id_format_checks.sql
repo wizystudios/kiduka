@@ -1,0 +1,2 @@
+ALTER TABLE public.profiles ADD CONSTRAINT profiles_facebook_pixel_id_format CHECK (facebook_pixel_id IS NULL OR facebook_pixel_id = '' OR facebook_pixel_id ~ '^\d{5,20}$') NOT VALID;
+ALTER TABLE public.profiles ADD CONSTRAINT profiles_google_pixel_id_format CHECK (google_pixel_id IS NULL OR google_pixel_id = '' OR google_pixel_id ~* '^(G|AW|UA|GT|DC)-[A-Z0-9-]{4,24}$') NOT VALID;

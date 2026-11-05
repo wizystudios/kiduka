@@ -1,6 +1,7 @@
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { z } from 'npm:zod@3';
+import { paymentTargetError } from '../_shared/caller.ts';
 import { adminClient, harakaFetch, ownerAmountDue, verifyAndApply } from '../_shared/harakapay.ts';
 
 const json = (body: unknown, status = 200) =>
@@ -46,6 +47,8 @@ Deno.serve(async (req) => {
       return json({ success: true, ...result, amount: tx.amount });
     }
 
+    const targetError = await paymentTargetError(admin, user.id, body.transaction_type, body.phone_number, body.order_id);
+    if (targetError) return json({ success: false, error: targetError }, 403);
     let amount = 0;
     let subscriptionId: string | null = null;
     let orderId: string | null = null;

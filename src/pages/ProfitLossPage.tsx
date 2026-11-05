@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { safeCell, csvRow, safeRow } from '@/lib/safeCell';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -204,7 +205,7 @@ export const ProfitLossPage = () => {
     }
     const headers = ['Tarehe', 'Mapato', 'Gharama ya Bidhaa', 'Matumizi', 'Faida'];
     const rows = data.map((d) => [d.date, d.revenue, d.cost, d.expenses, d.profit]);
-    const csv = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
+    const csv = [headers.join(','), ...rows.map((r) => csvRow(r))].join('\n');
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');

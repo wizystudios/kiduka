@@ -7,6 +7,13 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+const ALLOWED_ORIGINS = ["https://kiduka.shop", "https://www.kiduka.shop", "https://kiduka.lovable.app"];
+const SAFE_ORIGIN = (req: Request) => {
+  const o = req.headers.get("origin") || "";
+  if (ALLOWED_ORIGINS.includes(o) || /^https:\/\/[a-z0-9-]+\.lovable\.app$/.test(o)) return o;
+  return ALLOWED_ORIGINS[0];
+};
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -65,8 +72,8 @@ serve(async (req) => {
         },
       ],
       mode: "subscription",
-      success_url: `${req.headers.get("origin")}/subscription-success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${req.headers.get("origin")}/dashboard`,
+      success_url: `${SAFE_ORIGIN(req)}/subscription-success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${SAFE_ORIGIN(req)}/dashboard`,
       metadata: {
         user_id: user.id,
         plan_id: plan_id

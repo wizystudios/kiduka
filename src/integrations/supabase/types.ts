@@ -393,6 +393,7 @@ export type Database = {
       }
       business_ads: {
         Row: {
+          approved_at: string | null
           created_at: string
           description: string | null
           display_location: string
@@ -407,6 +408,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          approved_at?: string | null
           created_at?: string
           description?: string | null
           display_location?: string
@@ -421,6 +423,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          approved_at?: string | null
           created_at?: string
           description?: string | null
           display_location?: string
@@ -3506,6 +3509,10 @@ export type Database = {
         Returns: boolean
       }
       check_user_subscription: { Args: { p_user_id: string }; Returns: Json }
+      check_user_subscription_guard: {
+        Args: { p_user_id: string }
+        Returns: boolean
+      }
       claim_owner_role: { Args: never; Returns: string }
       complete_scanner_sale: {
         Args: {

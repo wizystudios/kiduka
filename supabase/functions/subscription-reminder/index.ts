@@ -2,6 +2,7 @@
 // ending in {7, 3, 1} days and sends owner-subscription-reminder.
 // Test mode: pass { ownerId, force: true, adminMessage } to send to one owner now.
 import { createClient } from 'npm:@supabase/supabase-js@2'
+import { identifyCaller, isServiceOrAdmin } from '../_shared/caller.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -16,6 +17,10 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
   try {
+    const caller = await identifyCaller(req)
+    if (!isServiceOrAdmin(caller)) {
+      return new Response(JSON.stringify({ error: 'Forbidden' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    }
     let body: any = {}
     try { body = await req.json() } catch { body = {} }
     const { ownerId, force, adminMessage } = body || {}

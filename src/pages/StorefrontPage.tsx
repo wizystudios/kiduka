@@ -41,6 +41,10 @@ interface BranchInfo {
   street: string | null;
 }
 
+// Only plain pixel IDs may reach the injected scripts; anything else could run code for visitors.
+const SAFE_FB_PIXEL = /^\d{5,20}$/;
+const SAFE_GOOGLE_TAG = /^(G|AW|UA|GT|DC)-[A-Z0-9-]{4,24}$/i;
+
 export const StorefrontPage = () => {
   const { slug } = useParams();
   const navigate = useNavigate();
@@ -59,7 +63,7 @@ export const StorefrontPage = () => {
   // Inject tracking pixels
   useEffect(() => {
     if (!store) return;
-    if (store.facebook_pixel_id) {
+    if (store.facebook_pixel_id && SAFE_FB_PIXEL.test(store.facebook_pixel_id)) {
       const script = document.createElement('script');
       script.innerHTML = `!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');fbq('init','${store.facebook_pixel_id}');fbq('track','PageView');`;
       document.head.appendChild(script);
@@ -68,7 +72,7 @@ export const StorefrontPage = () => {
   }, [store]);
 
   useEffect(() => {
-    if (!store?.google_pixel_id) return;
+    if (!store?.google_pixel_id || !SAFE_GOOGLE_TAG.test(store.google_pixel_id)) return;
     const script = document.createElement('script');
     script.src = `https://www.googletagmanager.com/gtag/js?id=${store.google_pixel_id}`;
     script.async = true;

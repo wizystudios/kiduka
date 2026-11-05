@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { safeCell, csvRow, safeRow } from '@/lib/safeCell';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -292,7 +293,7 @@ const EmailLogs = () => {
     }
     const headers = ['created_at', 'status', 'template_name', 'recipient_email', 'message_id', 'error_message'];
     const escape = (v: any) => {
-      const s = v == null ? '' : String(v);
+      const s = v == null ? '' : String(safeCell(String(v)));
       return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
     };
     const lines = [headers.join(',')];

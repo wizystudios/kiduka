@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { safeCell, csvRow, safeRow } from '@/lib/safeCell';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -58,14 +59,14 @@ export const BusinessAuditLogsPanel = ({ businessId }: { businessId?: string | n
   const exportCsv = () => {
     if (logs.length === 0) { toast.error('Hakuna logi'); return; }
     const header = 'Tarehe,Biashara,Mtumiaji,Aina,Kitendo,Maelezo\n';
-    const rows = logs.map(l => [
+    const rows = logs.map(l => csvRow([
       new Date(l.created_at).toISOString(),
       l.business_id || '',
       l.actor_id || '',
       l.entity_type,
       l.action,
-      (l.summary || '').replace(/"/g, '""'),
-    ].map(v => `"${v}"`).join(',')).join('\n');
+      l.summary || '',
+    ])).join('\n');
     const blob = new Blob([header + rows], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
