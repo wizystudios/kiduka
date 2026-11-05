@@ -1,5 +1,6 @@
 
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { canMessagePhone, mask } from "../_shared/caller.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -49,7 +50,11 @@ const handler = async (req: Request): Promise<Response> => {
 
     const { phoneNumber, message, transactionId }: SMSRequest = await req.json();
     
-    console.log('SMS request received:', { phoneNumber, transactionId });
+    console.log('SMS request received:', { phone: mask(phoneNumber), transactionId });
+    if (!(await canMessagePhone(userClient, user.id, phoneNumber))) {
+      return new Response(JSON.stringify({ error: 'Namba hii si ya mteja wako', success: false }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+
     
     // Get Africa's Talking credentials
     const africasTalkingApiKey = Deno.env.get("AFRICAS_TALKING_API_KEY");
@@ -117,7 +122,7 @@ const handler = async (req: Request): Promise<Response> => {
       formattedPhone = '+255' + formattedPhone;
     }
     
-    console.log('Formatted phone number:', formattedPhone);
+    console.log('Formatted phone number:', mask(formattedPhone));
 
     // Prepare form data for Africa's Talking API
     const formData = new URLSearchParams();

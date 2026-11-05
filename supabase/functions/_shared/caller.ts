@@ -40,3 +40,23 @@ export const mask = (v?: string | null) => {
   if (s.includes('@')) { const [u, d] = s.split('@'); return `${u.slice(0, 1)}***@${d}` }
   return s.length > 3 ? `***${s.slice(-3)}` : '***'
 }
+
+/**
+ * True when the phone belongs to a customer (or Sokoni order) the signed-in caller can already see
+ * through row-level security, or to the caller's own profile. Super admins are allowed any number.
+ */
+// deno-lint-ignore no-explicit-any
+export async function canMessagePhone(userClient: any, userId: string, phone: string): Promise<boolean> {
+  const digits = String(phone || '').replace(/\D/g, '')
+  if (digits.length < 9 || digits.length > 15) return false
+  const tail = digits.slice(-9)
+  const { data: sa } = await userClient.from('user_roles').select('role').eq('user_id', userId).eq('role', 'super_admin').maybeSingle()
+  if (sa) return true
+  const checks = [
+    userClient.from('customers').select('id').ilike('phone', `%${tail}`).limit(1),
+    userClient.from('sokoni_orders').select('id').ilike('customer_phone', `%${tail}`).limit(1),
+    userClient.from('profiles').select('id').eq('id', userId).ilike('phone', `%${tail}`).limit(1),
+  ]
+  const results = await Promise.all(checks.map((q) => q.then((r: { data: unknown[] | null }) => r, () => ({ data: null }))))
+  return results.some((r: { data: unknown[] | null }) => Array.isArray(r.data) && r.data.length > 0)
+}

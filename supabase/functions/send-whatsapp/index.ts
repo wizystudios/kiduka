@@ -1,5 +1,6 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { canMessagePhone } from "../_shared/caller.ts"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -51,6 +52,9 @@ serve(async (req) => {
       )
     }
 
+    if (!(await canMessagePhone(userClient, user.id, phoneNumber))) {
+      return new Response(JSON.stringify({ error: 'Namba hii si ya mteja wako', success: false }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
     // Format phone number (ensure it has country code)
     const formattedPhone = phoneNumber.startsWith('+') ? phoneNumber.slice(1) : 
                           phoneNumber.startsWith('0') ? `255${phoneNumber.slice(1)}` : phoneNumber
