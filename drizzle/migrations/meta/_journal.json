@@ -225,6 +225,13 @@
       "when": 1793905518534,
       "tag": "0031_claim_owner_role",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1793908468240,
+      "tag": "0032_security_go_live_hardening",
+      "breakpoints": true
     }
   ]
 }
