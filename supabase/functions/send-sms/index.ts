@@ -149,7 +149,7 @@ const handler = async (req: Request): Promise<Response> => {
     console.log('Africa\'s Talking response status:', response.status);
 
     const responseText = await response.text();
-    console.log('Raw response text:', responseText);
+    console.log('Raw response length:', responseText.length);
 
     let result;
     try {
@@ -168,7 +168,7 @@ const handler = async (req: Request): Promise<Response> => {
     console.log('Parsed Africa\'s Talking response:', result);
 
     if (!response.ok) {
-      console.error('SMS API error response:', result);
+      console.error('SMS API error response:', { status: result?.status ?? result?.SMSMessageData?.Message });
       return new Response(JSON.stringify({ 
         error: `SMS API error (${response.status}): ${result.message || responseText}`,
         success: false 
@@ -192,7 +192,7 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     const firstRecipient = recipients[0];
-    console.log('First recipient status:', firstRecipient);
+    console.log('First recipient status:', { status: firstRecipient?.status ?? firstRecipient?.SMSMessageData?.Message });
     
     // Handle different status types with detailed messages
     if (firstRecipient.status === 'InsufficientBalance') {
@@ -209,7 +209,7 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     if (firstRecipient.status === 'InvalidPhoneNumber') {
-      console.error('Invalid phone number:', firstRecipient);
+      console.error('Invalid phone number:', { status: firstRecipient?.status ?? firstRecipient?.SMSMessageData?.Message });
       return new Response(JSON.stringify({ 
         error: `SMS failed: Invalid phone number ${formattedPhone}. Please use a valid Tanzanian number format.`,
         success: false,
@@ -223,7 +223,7 @@ const handler = async (req: Request): Promise<Response> => {
     // Accept Success, Sent, and Queued as valid statuses
     const validStatuses = ['Success', 'Sent', 'Queued'];
     if (!validStatuses.includes(firstRecipient.status)) {
-      console.error('SMS failed for recipient:', firstRecipient);
+      console.error('SMS failed for recipient:', { status: firstRecipient?.status ?? firstRecipient?.SMSMessageData?.Message });
       return new Response(JSON.stringify({ 
         error: `SMS delivery failed: ${firstRecipient.status}. Status code: ${firstRecipient.statusCode}. ${firstRecipient.status === 'InsufficientBalance' ? 'Please top up your Africa\'s Talking account.' : ''}`,
         success: false,
