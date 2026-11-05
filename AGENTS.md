@@ -33,3 +33,5 @@
 - Derive stock forecasts from actual sale items and persist stock reorder rules; never simulate ordering or claim supplier delivery because no supplier sending integration exists.
 - When a super admin selects a business, render the dedicated AdminBusinessWorkspace (its own owner-scoped queries and sections) instead of the system-wide tabs, because global panels filtered after the fact show other businesses' data and irrelevant sections.
 - Grant owner to role-less accounts only through the server `claim_owner_role` check (refuses anyone with staff records), because new self-registered owners have no business yet and must not be locked out while staff must never self-promote.
+- Gate every edge function that sends messages, emails, reminders or payment prompts through `_shared/caller.ts` (service/admin, own-address, or RLS-visible recipient checks), because public endpoints must not reach arbitrary people.
+- Neutralize spreadsheet exports with `src/lib/safeCell.ts`, and publish owner ads only after admin approval (`approved_at`), because user text must not run as formulas and ads must not go live unpaid.
