@@ -1,5 +1,6 @@
 // Send test emails (auth or transactional) - super_admin only
 import { createClient } from 'npm:@supabase/supabase-js@2'
+import { sendAppEmail } from '../_shared/app-email.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -50,10 +51,8 @@ Deno.serve(async (req) => {
       if (error) throw error
       result = { ok: true, kind, link: data?.properties?.action_link, sentVia: 'auth-email-hook' }
     } else if (kind === 'order-confirmation') {
-      const { data, error } = await admin.functions.invoke('send-transactional-email', {
-        body: {
-          templateName: 'customer-order-confirmation',
-          recipientEmail: email,
+      const data = await sendAppEmail('customer-order-confirmation', email, {
+          db: admin,
           idempotencyKey: `test-order-${Date.now()}`,
           templateData: {
             customerName: 'Mteja wa Jaribio',
@@ -63,9 +62,7 @@ Deno.serve(async (req) => {
             itemsCount: 2,
             sellerName: 'Duka la Jaribio',
           },
-        },
       })
-      if (error) throw error
       result = { ok: true, kind, response: data }
     } else {
       throw new Error(`Unknown kind: ${kind}`)

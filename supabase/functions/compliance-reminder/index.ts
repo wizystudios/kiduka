@@ -2,6 +2,7 @@
 // and sends owner-compliance-reminder emails. Idempotent per day.
 // Can be invoked by pg_cron OR manually by admin (with optional ownerId + adminMessage).
 import { createClient } from 'npm:@supabase/supabase-js@2'
+import { sendAppEmail } from '../_shared/app-email.ts'
 import { identifyCaller, isServiceOrAdmin } from '../_shared/caller.ts'
 
 const corsHeaders = {
@@ -29,10 +30,8 @@ const sendForOwner = async (admin: any, job: OwnerJob, adminMessage?: string) =>
   const idem = adminMessage
     ? `compliance-manual-${job.ownerId}-${Date.now()}`
     : `compliance-${job.ownerId}-${dayKey()}`
-  await admin.functions.invoke('send-transactional-email', {
-    body: {
-      templateName: 'owner-compliance-reminder',
-      recipientEmail: job.email,
+  await sendAppEmail('owner-compliance-reminder', job.email, {
+      db: admin,
       idempotencyKey: idem,
       templateData: {
         name: job.fullName,
@@ -42,7 +41,6 @@ const sendForOwner = async (admin: any, job: OwnerJob, adminMessage?: string) =>
         daysLeft: job.daysLeft,
         adminMessage,
       },
-    },
   })
   // In-app notification
   await admin.from('admin_notifications').insert({

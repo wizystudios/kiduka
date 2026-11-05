@@ -1,3 +1,4 @@
+import { sendAppEmail } from '../_shared/app-email.ts';
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 import { z } from 'npm:zod@3.23.8';
@@ -35,8 +36,8 @@ Deno.serve(async req => {
  if(!existing) {const {error}=await db.from('servicehub_replies').insert({id:v.reply_id,request_id:record.id,admin_id:user.id,channel:v.channel,message:v.message}); if(error) throw error;}
  let status='opened'; let whatsappUrl: string|undefined;
  if(v.channel==='email') {
- const {data,error}=await db.functions.invoke('send-transactional-email',{body:{templateName:'servicehub-reply',recipientEmail:record.email,idempotencyKey:`servicehub-reply-${v.reply_id}`,templateData:{message:v.message,reference:record.id}}});
- status=!error&&data?.success===true?'queued':'failed';
+ const sent=await sendAppEmail('servicehub-reply',record.email,{db,idempotencyKey:`servicehub-reply-${v.reply_id}`,templateData:{message:v.message,reference:record.id}});
+ status=sent.success?'queued':'failed';
  } else {
  let digits=String(record.phone).replace(/\D/g,''); if(digits.startsWith('0')&&digits.length===10) digits='255'+digits.slice(1); if(digits.length===9) digits='255'+digits;
  if(!/^[1-9]\d{8,14}$/.test(digits)) return respond({error:'Namba ya WhatsApp si sahihi'},400);

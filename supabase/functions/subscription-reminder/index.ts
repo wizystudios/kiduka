@@ -2,6 +2,7 @@
 // ending in {7, 3, 1} days and sends owner-subscription-reminder.
 // Test mode: pass { ownerId, force: true, adminMessage } to send to one owner now.
 import { createClient } from 'npm:@supabase/supabase-js@2'
+import { sendAppEmail } from '../_shared/app-email.ts'
 import { identifyCaller, isServiceOrAdmin } from '../_shared/caller.ts'
 
 const corsHeaders = {
@@ -59,10 +60,8 @@ Deno.serve(async (req) => {
         ? `sub-reminder-test-${s.id}-${Date.now()}`
         : `sub-reminder-${s.id}-${days}d-${dayKey}`
 
-      await admin.functions.invoke('send-transactional-email', {
-        body: {
-          templateName: 'owner-subscription-reminder',
-          recipientEmail: profile.email,
+      await sendAppEmail('owner-subscription-reminder', profile.email, {
+          db: admin,
           idempotencyKey: idempotency,
           templateData: {
             name: profile.full_name,
@@ -72,7 +71,6 @@ Deno.serve(async (req) => {
             adminMessage: adminMessage || undefined,
             isTest: !!force,
           },
-        },
       })
 
       // In-app

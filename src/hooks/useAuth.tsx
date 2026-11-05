@@ -297,14 +297,7 @@ export const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
       // Send login alert email (best-effort, respects consent server-side)
       try {
         const ua = typeof navigator !== 'undefined' ? navigator.userAgent : 'unknown';
-        await supabase.functions.invoke('send-transactional-email', {
-          body: {
-            templateName: 'owner-login-alert',
-            recipientEmail: email,
-            idempotencyKey: `login-${data.user?.id}-${Date.now()}`,
-            templateData: { email, userAgent: ua, loggedInAt: new Date().toISOString() },
-          },
-        });
+        await supabase.functions.invoke('send-login-alert', { body: { userAgent: ua } });
       } catch (e) {
         console.warn('login alert email failed', e);
       }
