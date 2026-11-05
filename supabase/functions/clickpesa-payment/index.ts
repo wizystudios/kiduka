@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { paymentTargetError } from '../_shared/caller.ts';
 
 const corsHeaders = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type' };
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
@@ -29,6 +30,8 @@ serve(async (req) => {
     if (body?.user_id && body.user_id !== user.id) return json({ success: false, error: 'user_id mismatch' }, 403);
 
     const admin = createClient(url, serviceKey);
+    const targetError = await paymentTargetError(admin, user.id, transactionType, phoneRaw, body?.order_id ? String(body.order_id) : null);
+    if (targetError) return json({ success: false, error: targetError }, 403);
     let amount = 0;
     let subscriptionId: string | null = null;
     let orderId: string | null = null;

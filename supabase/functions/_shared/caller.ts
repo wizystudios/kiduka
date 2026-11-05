@@ -60,3 +60,26 @@ export async function canMessagePhone(userClient: any, userId: string, phone: st
   const results = await Promise.all(checks.map((q) => q.then((r: { data: unknown[] | null }) => r, () => ({ data: null }))))
   return results.some((r: { data: unknown[] | null }) => Array.isArray(r.data) && r.data.length > 0)
 }
+
+const tail9 = (p?: string | null) => String(p || '').replace(/\D/g, '').slice(-9)
+
+/**
+ * Payment prompts may only go to a phone tied to the bill:
+ * - subscription: the owner's own profile phone (when one is saved)
+ * - order: the unpaid order's own customer phone
+ * Returns an error message, or null when allowed.
+ */
+// deno-lint-ignore no-explicit-any
+export async function paymentTargetError(admin: any, userId: string, type: string, phone: string, orderId?: string | null): Promise<string | null> {
+  if (type === 'subscription_payment') {
+    const { data: p } = await admin.from('profiles').select('phone').eq('id', userId).maybeSingle()
+    if (p?.phone && tail9(p.phone) !== tail9(phone)) return 'Tumia namba ya simu iliyo kwenye wasifu wako'
+    return null
+  }
+  if (!orderId) return 'Oda haijatajwa'
+  const { data: o } = await admin.from('sokoni_orders').select('customer_phone, payment_status').eq('id', orderId).maybeSingle()
+  if (!o) return 'Oda haijapatikana'
+  if (o.payment_status === 'paid') return 'Oda hii imeshalipwa'
+  if (tail9(o.customer_phone) !== tail9(phone)) return 'Namba lazima iwe ya mteja wa oda hii'
+  return null
+}

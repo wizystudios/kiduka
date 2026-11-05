@@ -14,7 +14,7 @@ Deno.serve(async (req) => {
     const { data: tx } = await admin.from('payment_transactions').select('*').eq('provider_reference', orderId).eq('provider', 'harakapay').maybeSingle();
     if (!tx) return json({ success: false }, 404);
     const result = await verifyAndApply(admin, tx);
-    return json({ success: true, status: result.status });
+    void result; return json({ success: true });
   } catch (error) {
     console.error('harakapay-webhook', error);
     return json({ success: false }, 500);
