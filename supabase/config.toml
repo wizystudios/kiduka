@@ -27,3 +27,5 @@ project_id = "lufuusufaijuvekkcqgv"
     verify_jwt = true
   [functions.send-order-confirmation]
     verify_jwt = false
+  [functions.notify-owner-email]
+    verify_jwt = false
