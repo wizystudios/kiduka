@@ -16,7 +16,7 @@ Deno.serve(async (req) => {
   const minute = Math.floor(Date.now() / 60000)
   const result = await sendAppEmail('owner-login-alert', caller.email, {
     templateData: { email: caller.email, userAgent: ua, loggedInAt: new Date().toISOString() },
-    idempotencyKey: `login-${caller.userId}-${minute}`,
+    idempotencyKey: `login-${caller.id}-${minute}`,
   })
   return json(result)
 })
