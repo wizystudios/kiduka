@@ -22,6 +22,11 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "Invalid email" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
+    // Failures and locks are counted per sign-in origin, so a stranger cannot lock someone else's account.
+    const ip = (req.headers.get("x-forwarded-for") || req.headers.get("cf-connecting-ip") || "").split(",")[0].trim();
+    const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(ip || "unknown"));
+    const clientKey = Array.from(new Uint8Array(digest)).slice(0, 16).map((b) => b.toString(16).padStart(2, "0")).join("");
+
     if (action === "check") {
       // Lock status is only disclosed to the signed-in owner of this exact account.
       const checker = await identifyCaller(req);
@@ -31,7 +36,7 @@ Deno.serve(async (req) => {
       const { data } = await adminClient
         .from("login_attempts")
         .select("*")
-        .eq("email", email.toLowerCase())
+        .eq("email", email.toLowerCase()).eq("client_key", clientKey)
         .single();
 
       if (data && data.locked_until) {
@@ -64,7 +69,7 @@ Deno.serve(async (req) => {
       const { data: existing } = await adminClient
         .from("login_attempts")
         .select("*")
-        .eq("email", email.toLowerCase())
+        .eq("email", email.toLowerCase()).eq("client_key", clientKey)
         .single();
 
       if (existing) {
@@ -93,7 +98,7 @@ Deno.serve(async (req) => {
         await adminClient
           .from("login_attempts")
           .update(updates)
-          .eq("email", email.toLowerCase());
+          .eq("email", email.toLowerCase()).eq("client_key", clientKey);
 
         return new Response(JSON.stringify({
           attempts: newCount,
@@ -103,6 +108,7 @@ Deno.serve(async (req) => {
       } else {
         await adminClient.from("login_attempts").insert({
           email: email.toLowerCase(),
+          client_key: clientKey,
           attempt_count: 1,
           last_attempt_at: new Date().toISOString()
         });

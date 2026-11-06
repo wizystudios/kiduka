@@ -1548,6 +1548,7 @@ export type Database = {
       login_attempts: {
         Row: {
           attempt_count: number
+          client_key: string
           created_at: string
           email: string
           id: string
@@ -1557,6 +1558,7 @@ export type Database = {
         }
         Insert: {
           attempt_count?: number
+          client_key?: string
           created_at?: string
           email: string
           id?: string
@@ -1566,6 +1568,7 @@ export type Database = {
         }
         Update: {
           attempt_count?: number
+          client_key?: string
           created_at?: string
           email?: string
           id?: string
