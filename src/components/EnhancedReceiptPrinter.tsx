@@ -13,7 +13,7 @@ interface ReceiptItem {
 }
 
 interface PaymentData {
-  method: 'cash' | 'mobile' | 'bank';
+  method: 'cash' | 'mobile' | 'bank' | 'credit';
   provider?: string;
   phoneNumber?: string;
   accountNumber?: string;

@@ -253,6 +253,13 @@
       "when": 1793912606975,
       "tag": "0035_owner_email_managed_sender",
       "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1793954907748,
+      "tag": "0036_record_sale_debt",
+      "breakpoints": true
     }
   ]
 }

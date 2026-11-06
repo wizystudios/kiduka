@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent } from '@/components/ui/card';
-import { CreditCard, Smartphone, Banknote, CheckCircle, AlertCircle, Loader2, QrCode, Copy, Share2, X } from 'lucide-react';
+import { CreditCard, Smartphone, Banknote, HandCoins, CheckCircle, AlertCircle, Loader2, QrCode, Copy, Share2, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useDataAccess } from '@/hooks/useDataAccess';
 import { BrandMark } from '@/components/BrandMark';
@@ -22,11 +22,12 @@ interface PaymentMethodDialogProps {
 }
 
 interface PaymentData {
-  method: 'cash' | 'mobile' | 'bank';
+  method: 'cash' | 'mobile' | 'bank' | 'credit';
   provider?: string;
   phoneNumber?: string;
   accountNumber?: string;
   transactionId?: string;
+  debt?: { customerId: string | null; customerName: string; customerPhone: string; amountPaid: number };
 }
 
 interface OwnerNumber {
@@ -41,7 +42,12 @@ interface OwnerNumber {
 
 export const PaymentMethodDialog = ({ open, onOpenChange, totalAmount, onPaymentComplete }: PaymentMethodDialogProps) => {
   const { dataOwnerId } = useDataAccess();
-  const [selectedMethod, setSelectedMethod] = useState<'cash' | 'mobile' | 'bank'>('cash');
+  const [selectedMethod, setSelectedMethod] = useState<'cash' | 'mobile' | 'bank' | 'credit'>('cash');
+  const [customers, setCustomers] = useState<{ id: string; name: string; phone: string | null }[]>([]);
+  const [debtCustomerId, setDebtCustomerId] = useState('');
+  const [debtName, setDebtName] = useState('');
+  const [debtPhone, setDebtPhone] = useState('');
+  const [debtPaid, setDebtPaid] = useState('');
   const [mobileProvider, setMobileProvider] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [bankProvider, setBankProvider] = useState('');
@@ -77,6 +83,8 @@ export const PaymentMethodDialog = ({ open, onOpenChange, totalAmount, onPayment
         .eq('is_active', true)
         .order('is_default', { ascending: false });
       if (active) setOwnerNumbers((data as any) || []);
+      const { data: cust } = await supabase.from('customers').select('id,name,phone').eq('owner_id', dataOwnerId).order('name').limit(1000);
+      if (active) setCustomers((cust as any) || []);
     })();
     return () => { active = false; };
   }, [open, dataOwnerId]);
@@ -91,6 +99,7 @@ export const PaymentMethodDialog = ({ open, onOpenChange, totalAmount, onPayment
     { key: 'cash' as const, icon: Banknote, label: 'Taslimu', enabled: true },
     { key: 'mobile' as const, icon: Smartphone, label: 'Simu', enabled: mobileNumbers.length > 0 },
     { key: 'bank' as const, icon: CreditCard, label: 'Benki', enabled: bankNumbers.length > 0 },
+    { key: 'credit' as const, icon: HandCoins, label: 'Deni', enabled: true },
   ].filter(o => o.enabled);
 
   // If the owner switched off a method, never keep it selected
@@ -123,6 +132,15 @@ export const PaymentMethodDialog = ({ open, onOpenChange, totalAmount, onPayment
 
   const handlePayment = async () => {
     if (processing) return;
+    if (selectedMethod === 'credit') {
+      setProcessing(true);
+      finish({ method: 'credit', transactionId: `DENI_${Date.now()}`, debt: {
+        customerId: debtCustomerId || null, customerName: debtName.trim(), customerPhone: debtPhone.trim(),
+        amountPaid: Math.min(totalAmount, Math.max(0, parseFloat(debtPaid || '0') || 0)),
+      } });
+      setProcessing(false);
+      return;
+    }
     if (selectedMethod === 'cash') {
       setProcessing(true);
       finish({ method: 'cash', transactionId: `CASH_${Date.now()}` });
@@ -169,6 +187,7 @@ export const PaymentMethodDialog = ({ open, onOpenChange, totalAmount, onPayment
 
   const isValidPayment = () => {
     if (selectedMethod === 'cash') return true;
+    if (selectedMethod === 'credit') return !!debtCustomerId || debtName.trim().length >= 2;
     if (selectedMethod === 'mobile') return mobileProvider && phoneNumber.length >= 9;
     if (selectedMethod === 'bank') return bankProvider && accountNumber.length >= 10;
     return false;
@@ -193,7 +212,7 @@ export const PaymentMethodDialog = ({ open, onOpenChange, totalAmount, onPayment
         <div className="mx-auto max-w-md p-5 space-y-4">
           {!awaitingPayment && !paymentConfirmed && (
             <>
-              <div className={`grid gap-2 ${methodOptions.length === 1 ? 'grid-cols-1' : methodOptions.length === 2 ? 'grid-cols-2' : 'grid-cols-3'}`}>
+              <div className={`grid gap-2 ${methodOptions.length === 1 ? 'grid-cols-1' : methodOptions.length === 2 ? 'grid-cols-2' : methodOptions.length === 3 ? 'grid-cols-3' : 'grid-cols-4'}`}>
                 {methodOptions.map(opt => (
                   <Card
                     key={opt.key}
@@ -217,7 +236,37 @@ export const PaymentMethodDialog = ({ open, onOpenChange, totalAmount, onPayment
                 </Card>
               )}
 
-              {selectedMethod !== 'cash' && activeNumber && (
+              {selectedMethod === 'credit' && (
+                <div className="space-y-3">
+                  <div>
+                    <Label className="text-xs">Mteja anayedaiwa</Label>
+                    <Select value={debtCustomerId || 'new'} onValueChange={(v) => {
+                      if (v === 'new') { setDebtCustomerId(''); setDebtName(''); setDebtPhone(''); return; }
+                      const c = customers.find(x => x.id === v);
+                      setDebtCustomerId(v); setDebtName(c?.name || ''); setDebtPhone(c?.phone || '');
+                    }}>
+                      <SelectTrigger className="rounded-2xl"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="new">+ Mteja mpya</SelectItem>
+                        {customers.map(c => <SelectItem key={c.id} value={c.id}>{c.name}{c.phone ? ` · ${c.phone}` : ''}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {!debtCustomerId && (
+                    <>
+                      <Input placeholder="Jina la mteja" value={debtName} onChange={(e) => setDebtName(e.target.value)} className="rounded-2xl" />
+                      <Input placeholder="Namba ya simu (si lazima)" type="tel" value={debtPhone} onChange={(e) => setDebtPhone(e.target.value)} className="rounded-2xl" />
+                    </>
+                  )}
+                  <div>
+                    <Label className="text-xs">Kiasi alicholipa sasa (TSh, acha 0 kama hajalipa)</Label>
+                    <Input type="number" min="0" placeholder="0" value={debtPaid} onChange={(e) => setDebtPaid(e.target.value)} className="rounded-2xl" />
+                  </div>
+                  <p className="text-xs text-destructive">Deni: TSh {Math.max(0, totalAmount - (parseFloat(debtPaid || '0') || 0)).toLocaleString()} — litaonekana kwenye Madeni ya mteja.</p>
+                </div>
+              )}
+
+              {selectedMethod !== 'cash' && selectedMethod !== 'credit' && activeNumber && (
                 <div className="space-y-3">
                   <LipaNambaCard
                     businessName={activeNumber.account_name || 'Kiduka'}
@@ -274,7 +323,7 @@ export const PaymentMethodDialog = ({ open, onOpenChange, totalAmount, onPayment
 
               <Button onClick={handlePayment} disabled={!isValidPayment() || processing} className="w-full rounded-full h-12">
                 {processing ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                {selectedMethod === 'cash' ? `Pokea TSh ${totalAmount.toLocaleString()}` : 'Tuma Ombi la Malipo'}
+                {selectedMethod === 'cash' ? `Pokea TSh ${totalAmount.toLocaleString()}` : selectedMethod === 'credit' ? 'Rekodi kama Deni' : 'Tuma Ombi la Malipo'}
               </Button>
             </>
           )}
@@ -308,7 +357,7 @@ export const PaymentMethodDialog = ({ open, onOpenChange, totalAmount, onPayment
           {paymentConfirmed && (
             <KidukaSuccessAnimation
               amount={totalAmount}
-              label={selectedMethod === 'cash' ? 'Taslimu' : selectedMethod === 'mobile' ? 'Pesa za Simu' : 'Benki'}
+              label={selectedMethod === 'credit' ? 'Deni' : selectedMethod === 'cash' ? 'Taslimu' : selectedMethod === 'mobile' ? 'Pesa za Simu' : 'Benki'}
             />
           )}
         </div>

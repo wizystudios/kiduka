@@ -3665,6 +3665,16 @@ export type Database = {
           read_ct: number
         }[]
       }
+      record_sale_debt: {
+        Args: {
+          p_amount_paid: number
+          p_customer_id: string
+          p_customer_name: string
+          p_customer_phone: string
+          p_sale_id: string
+        }
+        Returns: Json
+      }
       request_subscription_activation: {
         Args: { p_proof_path?: string; p_reference?: string }
         Returns: boolean
