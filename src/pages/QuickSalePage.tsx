@@ -76,7 +76,7 @@ export const QuickSalePage = () => {
       if (isDebt && !formData.customer_id && !formData.customer_name.trim()) {
         toast.error('Weka jina la mteja anayedaiwa'); setLoading(false); return;
       }
-      const amount_paid = !isDebt ? total_amount : formData.payment_status === 'partial' ? Math.min(total_amount, parseFloat(formData.amount_paid || '0')) : formData.payment_status === 'paid' && formData.payment_method === 'credit' ? 0 : formData.payment_status === 'paid' ? total_amount : parseFloat(formData.amount_paid || '0');
+      const amount_paid = !isDebt ? total_amount : formData.payment_status === 'partial' ? Math.min(total_amount, parseFloat(formData.amount_paid || '0')) : 0;
       const balance = total_amount - amount_paid;
 
       const { data: sale, error: saleError } = await supabase.from('sales').insert({
