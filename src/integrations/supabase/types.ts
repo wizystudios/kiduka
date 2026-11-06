@@ -3555,15 +3555,6 @@ export type Database = {
         Returns: Json
       }
       compute_business_billing: { Args: { p_owner_id: string }; Returns: Json }
-      delete_email: {
-        Args: { message_id: number; queue_name: string }
-        Returns: boolean
-      }
-      email_queue_dispatch: { Args: never; Returns: undefined }
-      enqueue_email: {
-        Args: { payload: Json; queue_name: string }
-        Returns: number
-      }
       ensure_owner_business: { Args: { _owner_id: string }; Returns: string }
       format_delete_error: {
         Args: { p_code: string; p_message: string }
@@ -3594,15 +3585,6 @@ export type Database = {
       is_business_member: {
         Args: { _business_id: string; _user_id?: string }
         Returns: boolean
-      }
-      move_to_dlq: {
-        Args: {
-          dlq_name: string
-          message_id: number
-          payload: Json
-          source_queue: string
-        }
-        Returns: number
       }
       next_invoice_number: { Args: { _owner_id: string }; Returns: string }
       notify_owner_email: {
@@ -3656,14 +3638,6 @@ export type Database = {
       process_sokoni_order_to_sale: {
         Args: { order_id: string }
         Returns: string
-      }
-      read_email_batch: {
-        Args: { batch_size: number; queue_name: string; vt: number }
-        Returns: {
-          message: Json
-          msg_id: number
-          read_ct: number
-        }[]
       }
       record_sale_debt: {
         Args: {

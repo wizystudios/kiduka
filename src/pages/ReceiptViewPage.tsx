@@ -30,7 +30,7 @@ export const ReceiptViewPage = () => {
         const t = readSharedTestSale(transactionId) || readTestSale(transactionId);
         if (!t) { setError('Jaribio limeisha muda. Anza jaribio jipya kwenye Mipangilio.'); setLoading(false); return; }
         setIsTest(true);
-        setReceipt({ id: t.id, total: t.total, paymentMethod: 'cash', paymentStatus: 'paid', createdAt: t.createdAt, businessName: t.businessName, items: t.items });
+        setReceipt({ id: t.id, total: t.total, paymentMethod: 'cash', paymentStatus: typeof (t as any).amountPaid === 'number' && (t as any).amountPaid < t.total ? ((t as any).amountPaid > 0 ? 'partial' : 'unpaid') : 'paid', createdAt: t.createdAt, businessName: t.businessName, items: t.items, amountPaid: typeof (t as any).amountPaid === 'number' ? (t as any).amountPaid : undefined });
         setLoading(false); return;
       }
       if (window.location.pathname.startsWith('/jaribio/')) { setError('Namba ya JARIBIO si sahihi'); setLoading(false); return; }
