@@ -18,6 +18,7 @@ interface PaymentData {
   phoneNumber?: string;
   accountNumber?: string;
   transactionId?: string;
+  debt?: { amountPaid: number; customerName?: string };
 }
 
 interface EnhancedReceiptPrinterProps {
@@ -46,6 +47,7 @@ export const EnhancedReceiptPrinter = ({
 }: EnhancedReceiptPrinterProps) => {
   const documentRef = useRef<HTMLDivElement>(null);
   const [busy, setBusy] = useState<'image' | 'pdf' | null>(null);
+  const debt = paymentData.debt;
   const receiptNumber = transactionId.slice(0, 8).toUpperCase();
   const date = new Date().toLocaleString('sw-TZ', { dateStyle: 'medium', timeStyle: 'short' });
 
@@ -84,7 +86,8 @@ export const EnhancedReceiptPrinter = ({
         customerName={customerName}
         customerPhone={paymentData.phoneNumber}
         paymentMethod={paymentData.method}
-        paymentStatus="paid"
+        paymentStatus={debt && debt.amountPaid < total ? (debt.amountPaid > 0 ? 'partial' : 'unpaid') : 'paid'}
+        amountPaid={debt ? debt.amountPaid : undefined}
         items={items.map((item) => ({ name: item.name, quantity: item.quantity, unit_price: item.price, subtotal: item.total }))}
         subtotal={subtotal}
         taxAmount={vatAmount}

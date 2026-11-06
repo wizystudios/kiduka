@@ -24,6 +24,8 @@ export interface BusinessDocumentProps {
   taxAmount?: number;
   total: number;
   notes?: string;
+  /** Amount actually paid; when below total the document shows paid and owed lines */
+  amountPaid?: number;
   /** Fixed pixel width keeps html2canvas exports identical for both documents */
   width?: number;
 }
@@ -73,6 +75,7 @@ export const BusinessDocument = forwardRef<HTMLDivElement, BusinessDocumentProps
       taxAmount = 0,
       total,
       notes,
+      amountPaid,
       width = 360,
     },
     ref
@@ -180,6 +183,18 @@ export const BusinessDocument = forwardRef<HTMLDivElement, BusinessDocumentProps
               <span>JUMLA</span>
               <span>TSh {total.toLocaleString()}</span>
             </div>
+            {typeof amountPaid === 'number' && amountPaid < total && (
+              <>
+                <div className="flex justify-between" style={{ color: '#4b5563' }}>
+                  <span>Kilicholipwa</span>
+                  <span>TSh {Math.max(0, amountPaid).toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between text-destructive" style={{ fontWeight: 800 }}>
+                  <span>Kinachodaiwa</span>
+                  <span>TSh {(total - Math.max(0, amountPaid)).toLocaleString()}</span>
+                </div>
+              </>
+            )}
           </div>
 
           {notes && <p style={{ fontSize: 12, color: '#6b7280', paddingBottom: 12 }}>{notes}</p>}
