@@ -1,5 +1,5 @@
 import { Badge } from '@/components/ui/badge';
-import { Building2, Users, Wallet, Headset, type LucideIcon } from 'lucide-react';
+import { Building2, Users, Wallet, Headset, BarChart3, type LucideIcon } from 'lucide-react';
 
 export interface AdminTabItem {
   value: string;
@@ -18,6 +18,7 @@ const GROUP_META: Record<string, { icon: LucideIcon; hint: string }> = {
   Biashara: { icon: Building2, hint: 'Hali ya duka, matawi, mauzo na bidhaa' },
   Watumiaji: { icon: Users, hint: 'Akaunti, nenosiri, ruhusa na shughuli' },
   Fedha: { icon: Wallet, hint: 'Usajili, malipo na mapato' },
+  Takwimu: { icon: BarChart3, hint: 'Wageni wa kiduka.shop, matangazo na afya ya mfumo' },
   Huduma: { icon: Headset, hint: 'Msaada, mawasiliano, Sokoni na matangazo' },
 };
 
@@ -32,7 +33,7 @@ export const AdminMobileTabBar = ({ tabs, active, onChange }: Props) => {
 
   return (
     <div className="sticky top-0 z-30 mb-4 space-y-3 bg-background/95 py-2 backdrop-blur">
-      <div className="grid grid-cols-4 gap-1 rounded-3xl bg-muted p-1">
+      <div className="grid grid-cols-5 gap-1 rounded-3xl bg-muted p-1">
         {groups.map((g) => {
           const b = groupBadge(g);
           const Icon = GROUP_META[g]?.icon || Building2;
