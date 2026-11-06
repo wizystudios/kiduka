@@ -36,6 +36,7 @@ import { AdminEmailsPanel } from './AdminEmailsPanel';
 import { AdminUserActivities } from './AdminUserActivities';
 import { AdminMarketplacePanel } from './AdminMarketplacePanel';
 import { AdminAdsPanel } from './AdminAdsPanel';
+import { AdminVisitorAnalytics } from './admin/AdminVisitorAnalytics';
 import { BusinessDeletionDialog } from './BusinessDeletionDialog';
 import { UnifiedDeleteSheet } from './UnifiedDeleteSheet';
 import { BusinessAuditLogsPanel } from './BusinessAuditLogsPanel';
@@ -1420,6 +1421,7 @@ export const SuperAdminDashboard = () => {
             { group: 'Watumiaji', value: 'logs', label: 'Logi' },
             { group: 'Fedha', value: 'subscriptions', label: 'Usajili & Malipo', badge: stats.pendingSubscriptions },
             { group: 'Fedha', value: 'analytics', label: 'Mapato & Analytics' },
+            { group: 'Fedha', value: 'visitors', label: 'Wageni (Analytics)' },
             { group: 'Huduma', value: 'servicehub', label: 'ServiceHUB' },
             { group: 'Huduma', value: 'chat', label: 'Mazungumzo' },
             { group: 'Huduma', value: 'emails', label: 'Barua' },
@@ -1972,6 +1974,7 @@ export const SuperAdminDashboard = () => {
           <AdminMarketplacePanel ownerId={selectedBusiness} />
         </TabsContent>
 
+        <TabsContent value="visitors" className="space-y-4"><AdminVisitorAnalytics /></TabsContent>
         {/* Ads Management Tab */}
         <TabsContent value="ads" className="space-y-4">
           <AdminAdsPanel ownerId={selectedBusiness} />
