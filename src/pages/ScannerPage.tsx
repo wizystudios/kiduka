@@ -33,11 +33,12 @@ interface CartItem extends Product {
 }
 
 interface PaymentData {
-  method: 'cash' | 'mobile' | 'bank';
+  method: 'cash' | 'mobile' | 'bank' | 'credit';
   provider?: string;
   phoneNumber?: string;
   accountNumber?: string;
   transactionId?: string;
+  debt?: { customerId: string | null; customerName: string; customerPhone: string; amountPaid: number };
 }
 
 export const ScannerPage = () => {
@@ -588,6 +589,20 @@ export const ScannerPage = () => {
       if (saleError) throw saleError;
       const sale = result as unknown as { sale_id: string; total: number };
       if (!sale?.sale_id) throw new Error('Mauzo hayakuhifadhiwa');
+
+      if (paymentData.method === 'credit' && paymentData.debt) {
+        const { error: debtError } = await supabase.rpc('record_sale_debt', {
+          p_sale_id: sale.sale_id,
+          p_customer_id: paymentData.debt.customerId,
+          p_customer_name: paymentData.debt.customerName,
+          p_customer_phone: paymentData.debt.customerPhone,
+          p_amount_paid: paymentData.debt.amountPaid,
+        } as any);
+        if (debtError) {
+          console.error('Debt record failed:', debtError);
+          toast({ title: 'Deni halijaandikwa', description: 'Mauzo yamehifadhiwa, lakini deni la mteja halijaandikwa.', variant: 'destructive' });
+        }
+      }
 
       const receiptItems = cart.map(item => ({
         name: item.name,
