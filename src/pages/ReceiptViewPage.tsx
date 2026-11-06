@@ -13,6 +13,7 @@ interface ReceiptData {
   createdAt: string;
   businessName: string;
   items: BusinessDocumentItem[];
+  amountPaid?: number;
 }
 
 export const ReceiptViewPage = () => {
@@ -33,12 +34,13 @@ export const ReceiptViewPage = () => {
         setLoading(false); return;
       }
       if (window.location.pathname.startsWith('/jaribio/')) { setError('Namba ya JARIBIO si sahihi'); setLoading(false); return; }
-      const { data: sale, error: saleError } = await supabase.from('sales').select('id,owner_id,total_amount,payment_method,payment_status,created_at,sales_items(quantity,unit_price,subtotal,products(name))').eq('id', transactionId).single();
+      const { data: sale, error: saleError } = await supabase.from('sales').select('id,owner_id,total_amount,payment_method,payment_status,payment_details,created_at,sales_items(quantity,unit_price,subtotal,products(name))').eq('id', transactionId).single();
       if (saleError || !sale) { setError('Risiti haijapatikana'); setLoading(false); return; }
       const { data: owner } = await supabase.from('profiles').select('business_name').eq('id', sale.owner_id).single();
       if (!owner?.business_name?.trim()) { setError('Jina la biashara halijawekwa'); setLoading(false); return; }
       setReceipt({
         id: sale.id, total: Number(sale.total_amount), paymentMethod: sale.payment_method || 'cash', paymentStatus: sale.payment_status || 'paid', createdAt: sale.created_at,
+        amountPaid: sale.payment_status && sale.payment_status !== 'paid' ? Number((sale.payment_details as any)?.amount_paid ?? 0) : undefined,
         businessName: owner.business_name,
         items: (sale.sales_items || []).map((item: any) => ({ name: item.products?.name || 'Bidhaa', quantity: Number(item.quantity), unit_price: Number(item.unit_price), subtotal: Number(item.subtotal) }))
       });
@@ -53,7 +55,7 @@ export const ReceiptViewPage = () => {
   return (
     <main className="min-h-screen bg-muted/30 px-3 py-6 md:py-10">
       {isTest && <p className="mx-auto mb-3 max-w-xl rounded-2xl border border-primary/30 bg-primary/10 p-3 text-center text-xs font-medium text-primary">JARIBIO — risiti hii haikuhifadhiwa; stock na wateja hawajaguswa.</p>}
-      <BusinessDocument kind="receipt" businessName={receipt.businessName} documentNumber={isTest ? 'JARIBIO' : receipt.id.slice(0, 8).toUpperCase()} documentDate={new Date(receipt.createdAt).toLocaleString('sw-TZ')} paymentMethod={receipt.paymentMethod} paymentStatus={receipt.paymentStatus} items={receipt.items} subtotal={receipt.total} total={receipt.total} />
+      <BusinessDocument kind="receipt" businessName={receipt.businessName} documentNumber={isTest ? 'JARIBIO' : receipt.id.slice(0, 8).toUpperCase()} documentDate={new Date(receipt.createdAt).toLocaleString('sw-TZ')} paymentMethod={receipt.paymentMethod} paymentStatus={receipt.paymentStatus} items={receipt.items} subtotal={receipt.total} total={receipt.total} amountPaid={receipt.amountPaid} />
     </main>
   );
 };
