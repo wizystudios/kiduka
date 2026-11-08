@@ -288,6 +288,13 @@
       "when": 1794124596528,
       "tag": "0040_credit_sale_link",
       "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1794124691757,
+      "tag": "0041_temporary_credit_verification",
+      "breakpoints": true
     }
   ]
 }

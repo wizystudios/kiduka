@@ -3860,6 +3860,7 @@ export type Database = {
         Returns: Json
       }
       verify_admin_password: { Args: { p_password: string }; Returns: Json }
+      verify_trade_credit_safely: { Args: never; Returns: Json }
     }
     Enums: {
       app_role: "owner" | "assistant" | "super_admin"
