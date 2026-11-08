@@ -1,3 +1,6 @@
+import { settleCustomerDebt } from '@/lib/tradeCredit';
+import { useDataAccess } from '@/hooks/useDataAccess';
+import { usePermissions } from '@/hooks/usePermissions';
 import { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -39,26 +42,29 @@ export const CustomerReportsPage = () => {
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
   const [editAmount, setEditAmount] = useState('');
   const { user } = useAuth();
+  const { dataOwnerId, branchId, loading: scopeLoading } = useDataAccess();
+  const { can } = usePermissions();
 
   useEffect(() => {
-    if (user?.id) fetchReports();
-  }, [user?.id]);
+    if (dataOwnerId && !scopeLoading) fetchReports();
+  }, [dataOwnerId, branchId, scopeLoading]);
 
   const fetchReports = async () => {
-    if (!user?.id) return;
+    if (!dataOwnerId || scopeLoading) return;
     setLoading(true);
     try {
       const { data: customers, error: customersError } = await supabase
         .from('customers')
         .select('id, name, phone, outstanding_balance, total_purchases')
-        .eq('owner_id', user.id);
+        .eq('owner_id', dataOwnerId);
 
       if (customersError) throw customersError;
 
       const { data: txCounts, error: txError } = await supabase
         .from('customer_transactions')
-        .select('customer_id, total_amount, amount_paid')
-        .eq('owner_id', user.id);
+        .select('customer_id, total_amount, amount_paid, transaction_type')
+        .neq('transaction_type', 'payment')
+        .eq('owner_id', dataOwnerId);
 
       if (txError) throw txError;
 
@@ -78,7 +84,8 @@ export const CustomerReportsPage = () => {
 
       txCounts?.forEach(tx => {
         if (tx.customer_id && customerMap.has(tx.customer_id)) {
-          const customer = customerMap.get(tx.customer_id)!;
+          const customer = customerMap.get(tx.customer_id);
+          if (!customer) return;
           customer.transaction_count++;
           customer.total_paid += tx.amount_paid || 0;
         }
@@ -99,7 +106,7 @@ export const CustomerReportsPage = () => {
         .from('customer_transactions')
         .select('id, product_name, total_amount, amount_paid, balance, payment_status, transaction_date')
         .eq('customer_id', customerId)
-        .eq('owner_id', user?.id)
+        .eq('owner_id', dataOwnerId || '')
         .order('transaction_date', { ascending: false });
 
       if (error) throw error;
@@ -116,52 +123,17 @@ export const CustomerReportsPage = () => {
 
   const handleEditTransaction = (tx: Transaction) => {
     setEditingTransaction(tx);
-    setEditAmount(tx.amount_paid.toString());
+    if (!can('debts_manage') || tx.balance <= 0) return;
+    setEditAmount('');
   };
 
   const handleSaveEdit = async () => {
-    if (!editingTransaction || !user?.id) return;
-    
-    const newAmountPaid = parseFloat(editAmount);
-    if (isNaN(newAmountPaid) || newAmountPaid < 0) {
-      toast.error('Kiasi si sahihi');
-      return;
-    }
-
+    if (!editingTransaction || !selectedCustomer || !can('debts_manage')) return;
     try {
-      const newBalance = editingTransaction.total_amount - newAmountPaid;
-      const newStatus = newBalance <= 0 ? 'paid' : newAmountPaid > 0 ? 'partial' : 'unpaid';
-
-      const { error } = await supabase
-        .from('customer_transactions')
-        .update({
-          amount_paid: newAmountPaid,
-          balance: newBalance,
-          payment_status: newStatus
-        })
-        .eq('id', editingTransaction.id);
-
-      if (error) throw error;
-
-      if (selectedCustomer) {
-        const balanceDiff = editingTransaction.balance - newBalance;
-        await supabase
-          .from('customers')
-          .update({ 
-            outstanding_balance: Math.max(0, selectedCustomer.outstanding_balance - balanceDiff)
-          })
-          .eq('id', selectedCustomer.id);
-
-        await fetchTransactions(selectedCustomer.id);
-        await fetchReports();
-      }
-
-      setEditingTransaction(null);
-      toast.success('Imesasishwa!');
-    } catch (error) {
-      console.error('Error updating transaction:', error);
-      toast.error('Imeshindwa kusasisha');
-    }
+      await settleCustomerDebt(selectedCustomer.id, Number(editAmount), editingTransaction.id);
+      await fetchTransactions(selectedCustomer.id); await fetchReports();
+      setEditingTransaction(null); toast.success('Malipo yamesasishwa kwenye deni, mauzo na risiti');
+    } catch { toast.error('Kiasi si sahihi au malipo hayajahifadhiwa'); }
   };
 
   const handleExport = () => {
@@ -334,7 +306,7 @@ export const CustomerReportsPage = () => {
                                 <Badge variant={tx.payment_status === 'paid' ? 'default' : 'destructive'} className="text-xs">
                                   {tx.payment_status === 'paid' ? 'Amelipa' : tx.payment_status === 'partial' ? 'Sehemu' : 'Hajalipa'}
                                 </Badge>
-                                <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handleEditTransaction(tx)}>
+                                <Button disabled={!can('debts_manage') || tx.balance <= 0} title="Rekodi malipo ya deni" size="icon" variant="ghost" className="h-6 w-6" onClick={() => handleEditTransaction(tx)}>
                                   <Edit className="h-3 w-3" />
                                 </Button>
                               </>
