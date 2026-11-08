@@ -306,7 +306,7 @@ export default function SuppliersPage({ embedded = false }: { embedded?: boolean
       <Dialog open={showOrderDialog} onOpenChange={setShowOrderDialog}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Manunuzi / Huduma Mpya ya Manunuzi</DialogTitle>
+            <DialogTitle>Manunuzi au Huduma Mpya</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
             <div>
