@@ -281,6 +281,13 @@
       "when": 1794123888863,
       "tag": "0039_trade_credit_and_admin_summary",
       "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "7",
+      "when": 1794124596528,
+      "tag": "0040_credit_sale_link",
+      "breakpoints": true
     }
   ]
 }
