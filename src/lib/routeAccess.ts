@@ -17,7 +17,7 @@ export const staffRouteRules: Record<string, { feature?: string; permission?: st
   '/suppliers': { feature: 'inventory', permission: 'suppliers_manage' },
   '/warranty': { feature: 'products', permission: 'warranty_manage' },
   '/discounts': { feature: 'products', permission: 'discounts_manage' },
-  '/groups': { feature: 'customers', permission: 'groups_manage' },
+  '/groups': { feature: 'customers', anyPermission: ['groups_manage', 'suppliers_manage'] },
   '/customers': { feature: 'customers', permission: 'can_view_customers' },
   '/credit-management': { feature: 'customers', permission: 'debts_manage' },
   '/micro-loans': { feature: 'customers', permission: 'loans_manage' },

@@ -1,3 +1,4 @@
+import { settleCustomerDebt } from '@/lib/tradeCredit';
 import { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -217,26 +218,7 @@ export const CustomersPage = () => {
     if (isNaN(amount) || amount <= 0) return;
     setSavingPayment(true);
     try {
-      const newBalance = Math.max(0, (quickPayCustomer.outstanding_balance || 0) - amount);
-      const { error } = await supabase
-        .from('customers')
-        .update({ outstanding_balance: newBalance })
-        .eq('id', quickPayCustomer.id);
-      if (error) throw error;
-
-      // Record as transaction
-      await supabase.from('customer_transactions').insert({
-        customer_id: quickPayCustomer.id,
-        customer_name: quickPayCustomer.name,
-        owner_id: paymentOwnerId,
-        branch_id: branchId || null,
-        transaction_type: 'payment',
-        total_amount: amount,
-        amount_paid: amount,
-        balance: 0,
-        payment_status: 'paid',
-        payment_method: 'cash',
-      });
+      await settleCustomerDebt(quickPayCustomer.id, amount);
 
       toast({ title: 'Malipo yamerekodishwa', description: `TSh ${amount.toLocaleString()} kutoka ${quickPayCustomer.name}` });
       setQuickPayOpen(false);

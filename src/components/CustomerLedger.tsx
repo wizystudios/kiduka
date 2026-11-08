@@ -1,3 +1,4 @@
+import { settleCustomerDebt } from '@/lib/tradeCredit';
 import { useState, useEffect, type ReactNode } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -52,6 +53,7 @@ export const CustomerLedger = ({ customerId, customerName, open, onOpenChange, i
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const [paymentAmount, setPaymentAmount] = useState('');
   const [qrFor, setQrFor] = useState<Transaction | null>(null);
+  const [saving, setSaving] = useState(false);
   const [customerPhone, setCustomerPhone] = useState<string | null>(null);
 
   useEffect(() => {
@@ -86,37 +88,12 @@ export const CustomerLedger = ({ customerId, customerName, open, onOpenChange, i
   };
 
   const handlePayment = async () => {
-    if (!selectedTransaction || !paymentAmount) return;
+    if (!selectedTransaction || !paymentAmount || saving) return;
+    setSaving(true);
 
     try {
       const payment = parseFloat(paymentAmount);
-      const newAmountPaid = selectedTransaction.amount_paid + payment;
-      const newBalance = selectedTransaction.total_amount - newAmountPaid;
-      const newStatus = newBalance <= 0 ? 'paid' : newBalance < selectedTransaction.total_amount ? 'partial' : 'unpaid';
-
-      const { error } = await supabase
-        .from('customer_transactions')
-        .update({
-          amount_paid: newAmountPaid,
-          balance: Math.max(0, newBalance),
-          payment_status: newStatus
-        })
-        .eq('id', selectedTransaction.id);
-
-      if (error) throw error;
-
-      // Update customer balance
-      const { data: customer } = await supabase
-        .from('customers')
-        .select('outstanding_balance')
-        .eq('id', customerId)
-        .single();
-
-      const updatedBalance = (customer?.outstanding_balance || 0) - payment;
-      await supabase
-        .from('customers')
-        .update({ outstanding_balance: Math.max(0, updatedBalance) })
-        .eq('id', customerId);
+      await settleCustomerDebt(customerId, payment, selectedTransaction.id);
 
       toast.success('Malipo yamerekodishwa!');
       setPaymentDialogOpen(false);
@@ -126,7 +103,7 @@ export const CustomerLedger = ({ customerId, customerName, open, onOpenChange, i
     } catch (error) {
       console.error('Error recording payment:', error);
       toast.error('Imeshindwa kurekodi malipo');
-    }
+    } finally { setSaving(false); }
   };
 
   const getStatusBadge = (status: string) => {
@@ -147,8 +124,8 @@ export const CustomerLedger = ({ customerId, customerName, open, onOpenChange, i
     );
   };
 
-  const totalTransactions = transactions.reduce((sum, t) => sum + t.total_amount, 0);
-  const totalPaid = transactions.reduce((sum, t) => sum + t.amount_paid, 0);
+  const totalTransactions = transactions.filter(t => t.transaction_type !== 'payment').reduce((sum, t) => sum + t.total_amount, 0);
+  const totalPaid = transactions.filter(t => t.transaction_type !== 'payment').reduce((sum, t) => sum + t.amount_paid, 0);
   const totalOutstanding = transactions.reduce((sum, t) => sum + t.balance, 0);
 
   return (
@@ -171,34 +148,34 @@ export const CustomerLedger = ({ customerId, customerName, open, onOpenChange, i
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                 <Card>
                   <CardContent className="pt-6">
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
                       <div>
                         <p className="text-sm text-muted-foreground">Jumla ya Biashara</p>
                         <p className="text-2xl font-bold">TZS {totalTransactions.toLocaleString()}</p>
                       </div>
-                      <TrendingUp className="h-8 w-8 text-blue-600" />
+                      <TrendingUp className="h-8 w-8 text-primary" />
                     </div>
                   </CardContent>
                 </Card>
                 <Card>
                   <CardContent className="pt-6">
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
                       <div>
                         <p className="text-sm text-muted-foreground">Amelipa</p>
-                        <p className="text-2xl font-bold text-green-600">TZS {totalPaid.toLocaleString()}</p>
+                        <p className="text-2xl font-bold text-success">TZS {totalPaid.toLocaleString()}</p>
                       </div>
-                      <CheckCircle className="h-8 w-8 text-green-600" />
+                      <CheckCircle className="h-8 w-8 text-success" />
                     </div>
                   </CardContent>
                 </Card>
                 <Card>
                   <CardContent className="pt-6">
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
                       <div>
                         <p className="text-sm text-muted-foreground">Deni</p>
-                        <p className="text-2xl font-bold text-red-600">TZS {totalOutstanding.toLocaleString()}</p>
+                        <p className="text-2xl font-bold text-destructive">TZS {totalOutstanding.toLocaleString()}</p>
                       </div>
-                      <TrendingDown className="h-8 w-8 text-red-600" />
+                      <TrendingDown className="h-8 w-8 text-destructive" />
                     </div>
                   </CardContent>
                 </Card>
@@ -217,8 +194,8 @@ export const CustomerLedger = ({ customerId, customerName, open, onOpenChange, i
                   transactions.map((transaction) => (
                     <Card key={transaction.id} className="hover:shadow-md transition-shadow">
                       <CardHeader className="pb-3">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <div className="flex flex-wrap items-center gap-3">
                             <Calendar className="h-4 w-4 text-muted-foreground" />
                             <span className="text-sm font-medium">
                               {format(new Date(transaction.transaction_date), 'dd MMM yyyy')}
@@ -271,12 +248,12 @@ export const CustomerLedger = ({ customerId, customerName, open, onOpenChange, i
                           </div>
                           <div>
                             <p className="text-muted-foreground">Amelipa:</p>
-                            <p className="font-medium text-green-600">TZS {transaction.amount_paid.toLocaleString()}</p>
+                            <p className="font-medium text-success">TZS {transaction.amount_paid.toLocaleString()}</p>
                           </div>
                           {transaction.balance > 0 && (
                             <div>
                               <p className="text-muted-foreground">Salio:</p>
-                              <p className="font-medium text-red-600">TZS {transaction.balance.toLocaleString()}</p>
+                              <p className="font-medium text-destructive">TZS {transaction.balance.toLocaleString()}</p>
                             </div>
                           )}
                           {transaction.payment_method && (
@@ -320,7 +297,7 @@ export const CustomerLedger = ({ customerId, customerName, open, onOpenChange, i
                   </>
                 )}
                 <p className="text-sm text-muted-foreground">Salio:</p>
-                <p className="text-2xl font-bold text-red-600">
+                <p className="text-2xl font-bold text-destructive">
                   TZS {selectedTransaction.balance.toLocaleString()}
                 </p>
               </div>
@@ -347,7 +324,7 @@ export const CustomerLedger = ({ customerId, customerName, open, onOpenChange, i
                 >
                   Ghairi
                 </Button>
-                <Button onClick={handlePayment}>Rekodi Malipo</Button>
+                <Button disabled={saving} onClick={handlePayment}>{saving ? 'Inahifadhi…' : 'Rekodi Malipo'}</Button>
               </div>
             </div>
           )}
