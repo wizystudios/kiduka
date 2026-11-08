@@ -1,0 +1,1 @@
+DROP FUNCTION public.verify_trade_credit_safely();

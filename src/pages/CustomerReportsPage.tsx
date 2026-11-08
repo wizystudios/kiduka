@@ -53,18 +53,22 @@ export const CustomerReportsPage = () => {
     if (!dataOwnerId || scopeLoading) return;
     setLoading(true);
     try {
-      const { data: customers, error: customersError } = await supabase
+      let customerQuery = supabase
         .from('customers')
         .select('id, name, phone, outstanding_balance, total_purchases')
         .eq('owner_id', dataOwnerId);
+      if (branchId) customerQuery = customerQuery.eq('branch_id', branchId);
+      const { data: customers, error: customersError } = await customerQuery;
 
       if (customersError) throw customersError;
 
-      const { data: txCounts, error: txError } = await supabase
+      let transactionQuery = supabase
         .from('customer_transactions')
         .select('customer_id, total_amount, amount_paid, transaction_type')
         .neq('transaction_type', 'payment')
         .eq('owner_id', dataOwnerId);
+      if (branchId) transactionQuery = transactionQuery.eq('branch_id', branchId);
+      const { data: txCounts, error: txError } = await transactionQuery;
 
       if (txError) throw txError;
 
