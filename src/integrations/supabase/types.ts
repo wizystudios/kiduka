@@ -876,6 +876,7 @@ export type Database = {
           payment_status: string
           product_name: string | null
           quantity: number | null
+          sale_id: string | null
           total_amount: number
           transaction_date: string
           transaction_type: string
@@ -896,6 +897,7 @@ export type Database = {
           payment_status?: string
           product_name?: string | null
           quantity?: number | null
+          sale_id?: string | null
           total_amount: number
           transaction_date?: string
           transaction_type: string
@@ -916,6 +918,7 @@ export type Database = {
           payment_status?: string
           product_name?: string | null
           quantity?: number | null
+          sale_id?: string | null
           total_amount?: number
           transaction_date?: string
           transaction_type?: string
@@ -935,6 +938,13 @@ export type Database = {
             columns: ["customer_id"]
             isOneToOne: false
             referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_transactions_sale_id_fkey"
+            columns: ["sale_id"]
+            isOneToOne: false
+            referencedRelation: "sales"
             referencedColumns: ["id"]
           },
         ]
@@ -2219,14 +2229,17 @@ export type Database = {
         Row: {
           amount_paid: number | null
           balance: number | null
+          branch_id: string | null
           created_at: string
           expected_delivery: string | null
+          expense_id: string | null
           id: string
           items: Json
           notes: string | null
           order_date: string
           owner_id: string
           payment_method: string | null
+          purchase_kind: string
           status: string
           supplier_id: string | null
           supplier_name: string
@@ -2236,14 +2249,17 @@ export type Database = {
         Insert: {
           amount_paid?: number | null
           balance?: number | null
+          branch_id?: string | null
           created_at?: string
           expected_delivery?: string | null
+          expense_id?: string | null
           id?: string
           items?: Json
           notes?: string | null
           order_date?: string
           owner_id: string
           payment_method?: string | null
+          purchase_kind?: string
           status?: string
           supplier_id?: string | null
           supplier_name: string
@@ -2253,14 +2269,17 @@ export type Database = {
         Update: {
           amount_paid?: number | null
           balance?: number | null
+          branch_id?: string | null
           created_at?: string
           expected_delivery?: string | null
+          expense_id?: string | null
           id?: string
           items?: Json
           notes?: string | null
           order_date?: string
           owner_id?: string
           payment_method?: string | null
+          purchase_kind?: string
           status?: string
           supplier_id?: string | null
           supplier_name?: string
@@ -2268,6 +2287,20 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "purchase_orders_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "business_branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchase_orders_expense_id_fkey"
+            columns: ["expense_id"]
+            isOneToOne: false
+            referencedRelation: "expenses"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "purchase_orders_supplier_id_fkey"
             columns: ["supplier_id"]
@@ -2752,6 +2785,42 @@ export type Database = {
         }
         Relationships: []
       }
+      site_visits: {
+        Row: {
+          created_at: string
+          device: string | null
+          id: string
+          path: string
+          referrer_host: string | null
+          session_id: string
+          utm_campaign: string | null
+          utm_medium: string | null
+          utm_source: string | null
+        }
+        Insert: {
+          created_at?: string
+          device?: string | null
+          id?: string
+          path: string
+          referrer_host?: string | null
+          session_id: string
+          utm_campaign?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+        }
+        Update: {
+          created_at?: string
+          device?: string | null
+          id?: string
+          path?: string
+          referrer_host?: string | null
+          session_id?: string
+          utm_campaign?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+        }
+        Relationships: []
+      }
       sokoni_customers: {
         Row: {
           country: string | null
@@ -3106,6 +3175,54 @@ export type Database = {
           reason?: string
         }
         Relationships: []
+      }
+      trade_payments: {
+        Row: {
+          amount: number
+          branch_id: string | null
+          created_at: string
+          customer_id: string | null
+          id: string
+          owner_id: string
+          payment_method: string
+          purchase_order_id: string | null
+        }
+        Insert: {
+          amount: number
+          branch_id?: string | null
+          created_at?: string
+          customer_id?: string | null
+          id: string
+          owner_id: string
+          payment_method: string
+          purchase_order_id?: string | null
+        }
+        Update: {
+          amount?: number
+          branch_id?: string | null
+          created_at?: string
+          customer_id?: string | null
+          id?: string
+          owner_id?: string
+          payment_method?: string
+          purchase_order_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trade_payments_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trade_payments_purchase_order_id_fkey"
+            columns: ["purchase_order_id"]
+            isOneToOne: false
+            referencedRelation: "purchase_orders"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_activities: {
         Row: {
@@ -3500,6 +3617,7 @@ export type Database = {
         Returns: Json
       }
       admin_reactivate_user: { Args: { p_user_id: string }; Returns: Json }
+      admin_system_summary: { Args: { p_days?: number }; Returns: Json }
       apply_staff_sale_effects: {
         Args: { p_customer_id: string; p_debt: number; p_sale_id: string }
         Returns: Json
@@ -3558,6 +3676,19 @@ export type Database = {
         Returns: Json
       }
       compute_business_billing: { Args: { p_owner_id: string }; Returns: Json }
+      create_trade_purchase: {
+        Args: {
+          p_branch_id: string
+          p_kind: string
+          p_method?: string
+          p_notes: string
+          p_paid: number
+          p_request_id: string
+          p_supplier_id: string
+          p_total: number
+        }
+        Returns: string
+      }
       ensure_owner_business: { Args: { _owner_id: string }; Returns: string }
       format_delete_error: {
         Args: { p_code: string; p_message: string }
@@ -3662,6 +3793,25 @@ export type Database = {
       }
       set_admin_password: {
         Args: { p_current_password?: string; p_new_password: string }
+        Returns: Json
+      }
+      settle_customer_debt: {
+        Args: {
+          p_amount: number
+          p_customer_id: string
+          p_method?: string
+          p_request_id: string
+          p_transaction_id?: string
+        }
+        Returns: Json
+      }
+      settle_trade_purchase: {
+        Args: {
+          p_amount: number
+          p_method?: string
+          p_order_id: string
+          p_request_id: string
+        }
         Returns: Json
       }
       sokoni_register_customer: {
