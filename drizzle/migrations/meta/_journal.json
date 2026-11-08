@@ -281,6 +281,34 @@
       "when": 1794123888863,
       "tag": "0039_trade_credit_and_admin_summary",
       "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "7",
+      "when": 1794124596528,
+      "tag": "0040_credit_sale_link",
+      "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1794124691757,
+      "tag": "0041_temporary_credit_verification",
+      "breakpoints": true
+    },
+    {
+      "idx": 42,
+      "version": "7",
+      "when": 1794124720067,
+      "tag": "0042_safe_credit_verification_correction",
+      "breakpoints": true
+    },
+    {
+      "idx": 43,
+      "version": "7",
+      "when": 1794124755280,
+      "tag": "0043_remove_temporary_credit_verification",
+      "breakpoints": true
     }
   ]
 }

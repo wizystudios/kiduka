@@ -1,10 +1,10 @@
 # Kiduka completion roadmap
 
 ## Takwimu and credit settlement
-- [ ] Make system analytics readable on phone and desktop with explicit metric names and date ranges.
-- [ ] Include suppliers in Makundi using the shared navigation.
-- [ ] Support supplier purchases/services on credit and consistent partial/full repayments alongside customer sale debt.
-- [ ] Verify scoped financial rules and responsive views without changing customer records.
+- [x] Make system analytics readable on phone and desktop with explicit metric names and Tanzania calendar-date ranges; signed-in admin checked on both sizes.
+- [x] Include suppliers in Makundi using the shared navigation.
+- [x] Support supplier purchases/services on credit and consistent partial/full repayments alongside customer sale debt; safe rolled-back 10,000/3,000/2,000/5,000 scenario passed, including invoice/receipt values and retry protection.
+- [x] Verify financial rules and responsive views without changing customer records; synthetic records rolled back, admin UI has no runtime errors. Full staff/branch walkthrough remains in the pre-existing audit section.
 
 ## Notification and Settings safety verification
 - [x] Give every transient notification a QR and Ona zaidi, preserving its original actions. Browser-verified normal, message, success, error, info, warning, loading, custom and promise; list items now display an actual QR too.
