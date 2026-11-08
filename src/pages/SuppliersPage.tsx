@@ -1,3 +1,5 @@
+import { useDataAccess } from '@/hooks/useDataAccess';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,7 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 import { openWhatsApp } from '@/utils/whatsappUtils';
 import {
   Truck, Plus, Search, Phone, Mail, MapPin, Building2,
-  Edit, Trash2, MessageCircle, ShoppingCart, X
+  Edit, Trash2, MessageCircle, ShoppingCart, X, Wallet, History
 } from 'lucide-react';
 
 interface Supplier {
@@ -43,15 +45,16 @@ interface PurchaseOrder {
   notes: string | null;
   items: any[];
   created_at: string;
+  purchase_kind: string;
 }
 
 const emptySupplier = { name: '', phone: '', email: '', address: '', company_name: '', tin_number: '', notes: '' };
-const emptyPO = { supplier_id: '', supplier_name: '', total_amount: 0, amount_paid: 0, expected_delivery: '', notes: '', items: [] as any[], payment_method: '' };
+const emptyPO = { supplier_id: '', supplier_name: '', total_amount: 0, amount_paid: 0, expected_delivery: '', notes: '', items: [] as any[], payment_method: 'cash', purchase_kind: 'goods' };
 
-export default function SuppliersPage() {
-  const { getEffectiveOwnerId } = usePermissions();
+export default function SuppliersPage({ embedded = false }: { embedded?: boolean }) {
+  const { can } = usePermissions();
+  const { dataOwnerId: ownerId, branchId, loading: scopeLoading } = useDataAccess();
   const { toast } = useToast();
-  const ownerId = getEffectiveOwnerId();
 
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [orders, setOrders] = useState<PurchaseOrder[]>([]);
@@ -63,15 +66,24 @@ export default function SuppliersPage() {
   const [form, setForm] = useState(emptySupplier);
   const [poForm, setPoForm] = useState(emptyPO);
   const [submitting, setSubmitting] = useState(false);
+  const [payOrder, setPayOrder] = useState<PurchaseOrder | null>(null);
+  const [payment, setPayment] = useState('');
+  const [paymentId, setPaymentId] = useState(() => crypto.randomUUID());
+  const [orderId, setOrderId] = useState(() => crypto.randomUUID());
+  const [history, setHistory] = useState<{ id: string; amount: number; created_at: string; purchase_order_id: string | null }[]>([]);
+  const [historyOrder, setHistoryOrder] = useState<PurchaseOrder | null>(null);
 
-  useEffect(() => { if (ownerId) fetchData(); }, [ownerId]);
+
+  useEffect(() => { setOrders([]); setSuppliers([]); if (ownerId && !scopeLoading && can('suppliers_manage')) fetchData(); }, [ownerId, branchId, scopeLoading]);
 
   const fetchData = async () => {
-    if (!ownerId) return;
+    if (!ownerId || scopeLoading || !can('suppliers_manage')) return;
     setLoading(true);
+    let orderQuery = supabase.from('purchase_orders').select('*').eq('owner_id', ownerId);
+    if (branchId) orderQuery = orderQuery.eq('branch_id', branchId);
     const [supRes, poRes] = await Promise.all([
       supabase.from('suppliers').select('*').eq('owner_id', ownerId).order('name'),
-      supabase.from('purchase_orders').select('*').eq('owner_id', ownerId).order('created_at', { ascending: false }).limit(50),
+      orderQuery.order('created_at', { ascending: false }),
     ]);
     if (supRes.error || poRes.error) toast({title:'Imeshindwa kupakia wasambazaji au manunuzi',variant:'destructive'});
     setSuppliers((supRes.data as any[]) || []);
@@ -80,7 +92,7 @@ export default function SuppliersPage() {
   };
 
   const handleSaveSupplier = async () => {
-    if (!form.name.trim() || !ownerId) return;
+    if (!form.name.trim() || !ownerId || !can('suppliers_manage')) return;
     setSubmitting(true);
     const result = editingSupplier
       ? await supabase.from('suppliers').update({ ...form }).eq('id', editingSupplier.id)
@@ -104,26 +116,34 @@ export default function SuppliersPage() {
   const handleSavePO = async () => {
     if (!poForm.supplier_name.trim() || !ownerId) return;
     setSubmitting(true);
-    const balance = poForm.total_amount - poForm.amount_paid;
-    const {error} = await supabase.from('purchase_orders').insert({
-      owner_id: ownerId,
-      supplier_id: poForm.supplier_id || null,
-      supplier_name: poForm.supplier_name,
-      total_amount: poForm.total_amount,
-      amount_paid: poForm.amount_paid,
-      balance,
-      expected_delivery: poForm.expected_delivery || null,
-      notes: poForm.notes || null,
-      payment_method: poForm.payment_method || null,
-      items: poForm.items,
-      status: balance <= 0 ? 'paid' : 'pending',
+    const {error} = await supabase.rpc('create_trade_purchase', {
+      p_supplier_id: poForm.supplier_id, p_total: poForm.total_amount, p_paid: poForm.amount_paid,
+      p_kind: poForm.purchase_kind, p_notes: poForm.notes, p_branch_id: branchId || undefined,
+      p_request_id: orderId, p_method: poForm.payment_method || 'cash',
     });
-    if(error){setSubmitting(false);toast({title:'Oda haijahifadhiwa. Kagua ruhusa na mtandao.',variant:'destructive'});return;}
-    toast({ title: 'Oda imeundwa' });
+    if(error){setSubmitting(false);toast({title:'Manunuzi hayajahifadhiwa',description:error.message,variant:'destructive'});return;}
+    toast({ title: 'Manunuzi na deni vimehifadhiwa' });
+    window.dispatchEvent(new Event('kiduka:trade-updated'));
     setShowOrderDialog(false);
     setPoForm(emptyPO);
     setSubmitting(false);
     fetchData();
+  };
+
+  const handlePayment = async () => {
+    if (!payOrder || submitting) return;
+    setSubmitting(true);
+    const { error } = await supabase.rpc('settle_trade_purchase', { p_order_id: payOrder.id, p_amount: Number(payment), p_request_id: paymentId, p_method: 'cash' });
+    setSubmitting(false);
+    if (error) { toast({ title: 'Malipo hayajahifadhiwa', description: error.message, variant: 'destructive' }); return; }
+    toast({ title: 'Malipo yamehifadhiwa; deni limesasishwa' });
+    setPayOrder(null); setPayment(''); fetchData();
+    window.dispatchEvent(new Event('kiduka:trade-updated'));
+  };
+  const showHistory = async (order: PurchaseOrder) => {
+    const { data, error } = await supabase.from('trade_payments').select('id,amount,created_at,purchase_order_id').eq('purchase_order_id', order.id).order('created_at');
+    if (error) { toast({ title: 'Historia haijapakiwa', variant: 'destructive' }); return; }
+    setHistory(data || []); setHistoryOrder(order);
   };
 
   const filtered = suppliers.filter(s =>
@@ -135,14 +155,14 @@ export default function SuppliersPage() {
   const totalOwed = suppliers.reduce((s, x) => s + (x.outstanding_balance || 0), 0);
 
   return (
-    <div className="container mx-auto p-4 max-w-3xl">
-      <div className="flex items-center justify-between mb-4">
+    <div className={embedded ? "min-w-0" : "container mx-auto p-4 max-w-5xl"}>
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
         <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
+          <h1 className="break-words text-xl font-bold [overflow-wrap:anywhere] flex items-center gap-2">
             <Truck className="h-6 w-6" />
             Wasambazaji
           </h1>
-          <p className="text-sm text-muted-foreground">Simamia wasambazaji na manunuzi</p>
+          <p className="text-sm text-muted-foreground">Manunuzi ya bidhaa na huduma</p>
         </div>
         <Button size="sm" className="gap-1" onClick={() => { setForm(emptySupplier); setEditingSupplier(null); setShowSupplierDialog(true); }}>
           <Plus className="h-4 w-4" /> Ongeza
@@ -150,20 +170,20 @@ export default function SuppliersPage() {
       </div>
 
       {/* Stats */}
-      <div className="flex items-center justify-around border-y border-border/40 py-3 mb-4">
+      <div className="grid grid-cols-1 gap-4 border-y border-border py-3 mb-4 sm:grid-cols-3">
         <div className="text-center">
-          <p className="text-2xl font-bold">{suppliers.length}</p>
+          <p className="break-words text-xl font-bold [overflow-wrap:anywhere]">{suppliers.length}</p>
           <p className="text-xs text-muted-foreground">Wasambazaji</p>
         </div>
         <div className="text-center">
-          <p className="text-2xl font-bold">{orders.length}</p>
-          <p className="text-xs text-muted-foreground">Oda</p>
+          <p className="break-words text-xl font-bold [overflow-wrap:anywhere]">{orders.length}</p>
+          <p className="text-xs text-muted-foreground">Manunuzi</p>
         </div>
         <div className="text-center">
-          <p className={`text-2xl font-bold ${totalOwed > 0 ? 'text-destructive' : ''}`}>
+          <p className={`break-words text-xl font-bold [overflow-wrap:anywhere] ${totalOwed > 0 ? 'text-destructive' : ''}`}>
             TSh {totalOwed.toLocaleString()}
           </p>
-          <p className="text-xs text-muted-foreground">Deni</p>
+          <p className="text-xs text-muted-foreground">Deni tunalodaiwa</p>
         </div>
       </div>
 
@@ -186,7 +206,7 @@ export default function SuppliersPage() {
           ) : (
             filtered.map(s => (
               <div key={s.id} className="p-3 border border-border/40 rounded-lg space-y-2">
-                <div className="flex items-start justify-between">
+                <div className="flex flex-wrap items-start justify-between gap-2">
                   <div>
                     <p className="font-medium">{s.name}</p>
                     {s.company_name && <p className="text-xs text-muted-foreground flex items-center gap-1"><Building2 className="h-3 w-3" />{s.company_name}</p>}
@@ -209,7 +229,7 @@ export default function SuppliersPage() {
                     </Button>
                   </div>
                 </div>
-                <div className="flex gap-3 text-xs text-muted-foreground">
+                <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
                   {s.phone && <span className="flex items-center gap-1"><Phone className="h-3 w-3" />{s.phone}</span>}
                   {s.email && <span className="flex items-center gap-1"><Mail className="h-3 w-3" />{s.email}</span>}
                   {s.address && <span className="flex items-center gap-1"><MapPin className="h-3 w-3" />{s.address}</span>}
@@ -223,26 +243,33 @@ export default function SuppliersPage() {
         </TabsContent>
 
         <TabsContent value="orders" className="mt-4 space-y-3">
-          <Button size="sm" className="gap-1 w-full" variant="outline" onClick={() => { setPoForm(emptyPO); setShowOrderDialog(true); }}>
-            <ShoppingCart className="h-4 w-4" /> Oda Mpya
+          <Button size="sm" className="gap-1 w-full" variant="outline" onClick={() => { setPoForm(emptyPO); setOrderId(crypto.randomUUID()); setShowOrderDialog(true); }}>
+            <ShoppingCart className="h-4 w-4" /> Manunuzi / Huduma Mpya
           </Button>
 
           {orders.length === 0 ? (
-            <p className="text-center text-muted-foreground py-8">Hakuna oda za manunuzi</p>
+            <p className="text-center text-muted-foreground py-8">Hakuna manunuzi au huduma zilizorekodiwa</p>
           ) : (
             orders.map(o => (
               <div key={o.id} className="p-3 border border-border/40 rounded-lg space-y-1">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-wrap items-center justify-between gap-2">
                   <span className="font-medium text-sm">{o.supplier_name}</span>
                   <Badge variant={o.status === 'paid' ? 'default' : o.status === 'delivered' ? 'secondary' : 'outline'} className="text-xs">
-                    {o.status === 'paid' ? 'Imelipwa' : o.status === 'delivered' ? 'Imepokelewa' : 'Inasubiri'}
+                    {o.balance <= 0 ? 'Imelipwa' : o.amount_paid > 0 ? 'Sehemu imelipwa' : 'Kwa mkopo'}
                   </Badge>
                 </div>
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
                   <span>{new Date(o.order_date).toLocaleDateString('sw-TZ')}</span>
                   <span className="font-bold text-foreground">TSh {o.total_amount.toLocaleString()}</span>
                 </div>
-                {o.balance > 0 && <p className="text-xs text-destructive">Baki: TSh {o.balance.toLocaleString()}</p>}
+                <p className="text-xs text-muted-foreground">{o.purchase_kind === 'service' ? 'Huduma' : 'Bidhaa'} · Kilicholipwa: TSh {o.amount_paid.toLocaleString()}</p>
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <p className="text-sm text-destructive">Kinachodaiwa: TSh {o.balance.toLocaleString()}</p>
+                  <div className="flex gap-2">
+                    <Button size="icon" variant="ghost" aria-label="Historia ya malipo" onClick={() => showHistory(o)}><History className="h-4 w-4" /></Button>
+                    {o.balance > 0 && <Button size="sm" onClick={() => { setPayOrder(o); setPayment(''); setPaymentId(crypto.randomUUID()); }}><Wallet className="mr-1 h-4 w-4" />Lipa deni</Button>}
+                  </div>
+                </div>
               </div>
             ))
           )}
@@ -279,34 +306,49 @@ export default function SuppliersPage() {
       <Dialog open={showOrderDialog} onOpenChange={setShowOrderDialog}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Oda Mpya ya Manunuzi</DialogTitle>
+            <DialogTitle>Manunuzi / Huduma Mpya ya Manunuzi</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
             <div>
               <Label className="text-xs">Msambazaji *</Label>
-              <select className="w-full border rounded-md p-2 text-sm bg-background" value={poForm.supplier_id}
-                onChange={e => {
-                  const s = suppliers.find(x => x.id === e.target.value);
-                  setPoForm(f => ({ ...f, supplier_id: e.target.value, supplier_name: s?.name || '' }));
-                }}>
-                <option value="">Chagua msambazaji...</option>
-                {suppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-              </select>
+              <Select value={poForm.supplier_id} onValueChange={id => { const supplier = suppliers.find(x => x.id === id); setPoForm(f => ({ ...f, supplier_id: id, supplier_name: supplier?.name || '' })); }}>
+                <SelectTrigger><SelectValue placeholder="Chagua msambazaji / mtoa huduma" /></SelectTrigger>
+                <SelectContent>{suppliers.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}</SelectContent>
+              </Select>
             </div>
+            <div><Label>Aina ya manunuzi</Label><Select value={poForm.purchase_kind} onValueChange={purchase_kind => setPoForm(f => ({ ...f, purchase_kind }))}>
+              <SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="goods">Bidhaa</SelectItem><SelectItem value="service">Huduma</SelectItem></SelectContent>
+            </Select></div>
             <div className="grid grid-cols-2 gap-2">
               <div><Label className="text-xs">Jumla (TSh) *</Label><Input type="number" value={poForm.total_amount || ''} onChange={e => setPoForm(f => ({ ...f, total_amount: Number(e.target.value) }))} /></div>
               <div><Label className="text-xs">Kilicholipwa</Label><Input type="number" value={poForm.amount_paid || ''} onChange={e => setPoForm(f => ({ ...f, amount_paid: Number(e.target.value) }))} /></div>
             </div>
-            <div><Label className="text-xs">Tarehe ya Kupokea</Label><Input type="date" value={poForm.expected_delivery} onChange={e => setPoForm(f => ({ ...f, expected_delivery: e.target.value }))} /></div>
+            <p className="text-sm text-destructive">Kinachodaiwa: TSh {Math.max(0, poForm.total_amount - poForm.amount_paid).toLocaleString()}</p>
             <div><Label className="text-xs">Njia ya Malipo</Label><Input value={poForm.payment_method} onChange={e => setPoForm(f => ({ ...f, payment_method: e.target.value }))} placeholder="Taslimu, M-Pesa..." /></div>
             <div><Label className="text-xs">Maelezo</Label><Textarea value={poForm.notes} onChange={e => setPoForm(f => ({ ...f, notes: e.target.value }))} rows={2} /></div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowOrderDialog(false)}>Ghairi</Button>
-            <Button onClick={handleSavePO} disabled={!poForm.supplier_name.trim() || !poForm.total_amount || submitting}>
-              {submitting ? 'Inaunda...' : 'Unda Oda'}
+            <Button onClick={handleSavePO} disabled={!poForm.supplier_name.trim() || poForm.total_amount <= 0 || poForm.amount_paid < 0 || poForm.amount_paid > poForm.total_amount || submitting}>
+              {submitting ? 'Inaunda...' : 'Hifadhi manunuzi'}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={!!payOrder} onOpenChange={open => !open && setPayOrder(null)}>
+        <DialogContent><DialogHeader><DialogTitle>Lipa deni — {payOrder?.supplier_name}</DialogTitle></DialogHeader>
+          <p className="text-destructive">Kinachodaiwa: TSh {payOrder?.balance.toLocaleString()}</p>
+          <Label htmlFor="supplier-payment">Kiasi kinacholipwa sasa (TSh)</Label>
+          <Input id="supplier-payment" type="number" min="1" max={payOrder?.balance} value={payment} onChange={e => setPayment(e.target.value)} />
+          <Button variant="outline" onClick={() => setPayment(String(payOrder?.balance || 0))}>Lipa yote</Button>
+          <Button disabled={submitting || !payOrder || Number(payment) <= 0 || Number(payment) > payOrder.balance} onClick={handlePayment}>{submitting ? 'Inahifadhi…' : 'Rekodi malipo'}</Button>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={!!historyOrder} onOpenChange={open => !open && setHistoryOrder(null)}>
+        <DialogContent><DialogHeader><DialogTitle>Historia ya malipo — {historyOrder?.supplier_name}</DialogTitle></DialogHeader>
+          <p className="text-sm">Kilicholipwa mwanzo: TSh {historyOrder ? (historyOrder.amount_paid - history.reduce((sum, row) => sum + row.amount, 0)).toLocaleString() : '0'}</p>
+          {history.map(row => <div key={row.id} className="flex justify-between gap-3 border-b border-border py-2 text-sm"><span>{new Date(row.created_at).toLocaleDateString('sw-TZ')}</span><span className="tabular-nums">TSh {row.amount.toLocaleString()}</span></div>)}
+          {history.length === 0 && <p className="text-muted-foreground">Hakuna malipo ya nyongeza</p>}
         </DialogContent>
       </Dialog>
     </div>
