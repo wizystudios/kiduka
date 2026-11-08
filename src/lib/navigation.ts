@@ -39,7 +39,7 @@ export const primaryNavigationItems: AppNavItem[] = [
   { id: 'stock', feature: 'inventory', label: 'Stock', icon: ClipboardList, href: '/inventory-snapshots', permission: 'can_view_inventory' },
   { id: 'orders', label: 'Oda', icon: Crown, href: '/sokoni-orders', permission: 'sokoni_orders_manage' },
   { id: 'rewards', label: 'Tuzo', icon: Gift, href: '/rewards', anyPermission: ['discounts_manage', 'returns_view', 'marketplace_manage'] },
-  { id: 'groups', feature: 'customers', label: 'Makundi', icon: Users, href: '/groups', permission: 'groups_manage' },
+  { id: 'groups', feature: 'customers', label: 'Makundi', icon: Users, href: '/groups', anyPermission: ['groups_manage', 'suppliers_manage'] },
   { id: 'mikopo', feature: 'customers', label: 'Mikopo', icon: CreditCard, href: '/credit-management', permission: 'debts_manage' },
   { id: 'invoices', feature: 'sales', label: 'Ankara', icon: FileText, href: '/invoices', permission: 'invoices_view' },
   { id: 'payments', label: 'Malipo', icon: Wallet, href: '/lipa-namba', permission: 'payment_numbers_manage' },
@@ -51,7 +51,6 @@ export const primaryNavigationItems: AppNavItem[] = [
 ];
 
 export const utilityNavigationItems: AppNavItem[] = [
-  { id: 'suppliers', label: 'Wasambazaji', icon: Store, href: '/suppliers', feature: 'inventory', permission: 'suppliers_manage' },
   { id: 'servicehub', label: 'ServiceHUB', icon: HelpCircle, href: '/servicehub', permission: null },
   { id: 'notifications', label: 'Arifa', icon: Bell, href: '/notifications', permission: null },
   { id: 'subscription', label: 'Michango', icon: Crown, href: '/subscription', permission: 'billing_view' },

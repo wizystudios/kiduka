@@ -1,3 +1,7 @@
+import { useSearchParams } from 'react-router-dom';
+import SuppliersPage from '@/pages/SuppliersPage';
+import { useDataAccess } from '@/hooks/useDataAccess';
+import { settleCustomerDebt } from '@/lib/tradeCredit';
 import { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/hooks/useAuth';
@@ -19,9 +23,11 @@ import {
 
 export default function GroupsPage() {
   const { userProfile, user } = useAuth();
-  const { getEffectiveOwnerId } = usePermissions();
+  const { can } = usePermissions();
+  const { dataOwnerId: ownerId, branchId, loading: scopeLoading } = useDataAccess();
+  const [params, setParams] = useSearchParams();
+  const activeTab = params.get('tab') || (can('groups_manage') ? 'customers' : 'suppliers');
   const { toast } = useToast();
-  const ownerId = getEffectiveOwnerId();
   const isOwner = userProfile?.role === 'owner' || userProfile?.role === 'super_admin';
 
   const [customers, setCustomers] = useState<any[]>([]);
@@ -41,26 +47,26 @@ export default function GroupsPage() {
   const [ledgerOpen, setLedgerOpen] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<{ id: string; name: string } | null>(null);
 
-  useEffect(() => { if (ownerId) fetchAll(); }, [ownerId]);
+  useEffect(() => { setCustomers([]); if (ownerId && !scopeLoading && can('groups_manage')) fetchAll(); }, [ownerId, branchId, scopeLoading]);
 
   const fetchAll = async () => {
+    if (!ownerId || scopeLoading) return;
     setLoading(true);
-    const [c, s] = await Promise.all([
-      supabase.from('customers').select('*').eq('owner_id', ownerId!).order('name'),
-      supabase.from('suppliers').select('*').eq('owner_id', ownerId!).order('name'),
-    ]);
+    let query = supabase.from('customers').select('*').eq('owner_id', ownerId);
+    if (branchId) query = query.eq('branch_id', branchId);
+    const c = await query.order('name');
+    if (c.error) toast({ title: 'Wateja hawajapakiwa', variant: 'destructive' });
     setCustomers(c.data || []);
-    setSuppliers(s.data || []);
     setLoading(false);
   };
 
   const handleSaveCustomer = async () => {
-    if (!form.name?.trim() || !ownerId) return;
+    if (!form.name?.trim() || !ownerId || !can('can_edit_customers')) return;
     setSubmitting(true);
     if (editing) {
       await supabase.from('customers').update({ name: form.name, phone: form.phone, email: form.email, notes: form.notes }).eq('id', editing.id);
     } else {
-      await supabase.from('customers').insert({ name: form.name, phone: form.phone, email: form.email, notes: form.notes, owner_id: ownerId });
+      await supabase.from('customers').insert({ name: form.name, phone: form.phone, email: form.email, notes: form.notes, owner_id: ownerId, branch_id: branchId });
     }
     toast({ title: editing ? 'Mteja amebadilishwa' : 'Mteja ameongezwa' });
     setShowDialog(null); setForm({}); setEditing(null); setSubmitting(false); fetchAll();
@@ -79,6 +85,7 @@ export default function GroupsPage() {
   };
 
   const handleDeleteCustomer = async (id: string) => {
+    if (!can('customers_delete')) return;
     await supabase.from('customers').delete().eq('id', id);
     toast({ title: 'Imefutwa' }); fetchAll();
   };
@@ -89,18 +96,12 @@ export default function GroupsPage() {
   };
 
   const handleQuickPay = async () => {
-    if (!quickPayCustomer || !quickPayAmount || !user) return;
+    if (!quickPayCustomer || !quickPayAmount || !can('debts_manage')) return;
     const amount = parseFloat(quickPayAmount);
     if (isNaN(amount) || amount <= 0) return;
     setSavingPayment(true);
     try {
-      const newBalance = Math.max(0, (quickPayCustomer.outstanding_balance || 0) - amount);
-      await supabase.from('customers').update({ outstanding_balance: newBalance }).eq('id', quickPayCustomer.id);
-      await supabase.from('customer_transactions').insert({
-        customer_id: quickPayCustomer.id, customer_name: quickPayCustomer.name, owner_id: user.id,
-        transaction_type: 'payment', total_amount: amount, amount_paid: amount, balance: 0,
-        payment_status: 'paid', payment_method: 'cash',
-      });
+      await settleCustomerDebt(quickPayCustomer.id, amount);
       toast({ title: 'Malipo yamerekodishwa', description: `TSh ${amount.toLocaleString()} kutoka ${quickPayCustomer.name}` });
       setQuickPayOpen(false); setQuickPayAmount(''); setQuickPayCustomer(null); fetchAll();
     } catch {
@@ -117,7 +118,7 @@ export default function GroupsPage() {
     <div className="container mx-auto p-4 max-w-3xl">
       <div className="text-center mb-4">
         <h1 className="text-2xl font-bold">Makundi</h1>
-        <p className="text-sm text-muted-foreground">Wateja{isOwner ? ' na Wasaidizi' : ''}</p>
+        <p className="text-sm text-muted-foreground">Wateja · Wasambazaji{isOwner ? ' · Wasaidizi' : ''}</p>
       </div>
 
       <div className="relative mb-4">
@@ -125,9 +126,10 @@ export default function GroupsPage() {
         <Input placeholder="Tafuta..." className="pl-10 rounded-2xl" value={search} onChange={e => setSearch(e.target.value)} />
       </div>
 
-      <Tabs defaultValue="customers" className="w-full">
-        <TabsList className={`grid w-full ${isOwner ? 'grid-cols-2' : 'grid-cols-1'}`}>
-          <TabsTrigger value="customers" className="gap-1 text-xs"><Users className="h-3.5 w-3.5" /> Wateja ({customers.length})</TabsTrigger>
+      <Tabs value={activeTab} onValueChange={tab => setParams({ tab })} className="w-full">
+        <TabsList className="flex h-auto w-full flex-wrap gap-1">
+          {can('groups_manage') && <TabsTrigger value="customers" className="gap-1 text-xs"><Users className="h-3.5 w-3.5" /> Wateja</TabsTrigger>}
+          {can('suppliers_manage') && <TabsTrigger value="suppliers" className="gap-1 text-xs"><Truck className="h-3.5 w-3.5" /> Wasambazaji</TabsTrigger>}
           {isOwner && <TabsTrigger value="users" className="gap-1 text-xs"><UserCheck className="h-3.5 w-3.5" /> Wasaidizi</TabsTrigger>}
         </TabsList>
 
@@ -146,22 +148,22 @@ export default function GroupsPage() {
             </div>
           )}
 
-          <Button size="sm" className="w-full gap-1 rounded-full" onClick={() => { setForm({}); setEditing(null); setShowDialog('customer'); }}>
+          <Button disabled={!can('can_edit_customers')} size="sm" className="w-full gap-1 rounded-full" onClick={() => { setForm({}); setEditing(null); setShowDialog('customer'); }}>
             <Plus className="h-4 w-4" /> Ongeza Mteja
           </Button>
           {filteredCustomers.map(c => (
             <div key={c.id} className="p-3 border border-border/40 rounded-xl">
-              <div className="flex items-start justify-between">
+              <div className="flex flex-wrap items-start justify-between gap-2">
                 <div className="flex-1 min-w-0">
                   <p className="font-medium text-sm">{c.name}</p>
-                  <div className="flex gap-2 text-xs text-muted-foreground">
+                  <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
                     {c.phone && <span className="flex items-center gap-1"><Phone className="h-3 w-3" />{c.phone}</span>}
                     {c.email && <span className="flex items-center gap-1"><Mail className="h-3 w-3" />{c.email}</span>}
                   </div>
                   {(c.outstanding_balance || 0) > 0 && <Badge variant="destructive" className="text-xs mt-1">Deni: TSh {c.outstanding_balance?.toLocaleString()}</Badge>}
                 </div>
                 <div className="flex gap-1 flex-shrink-0">
-                  {(c.outstanding_balance || 0) > 0 && (
+                  {can('debts_manage') && (c.outstanding_balance || 0) > 0 && (
                     <Button size="sm" variant="default" className="h-7 px-2 text-xs gap-1 rounded-xl" onClick={() => { setQuickPayCustomer(c); setQuickPayOpen(true); }}>
                       <Wallet className="h-3 w-3" /> Lipa
                     </Button>
@@ -170,8 +172,8 @@ export default function GroupsPage() {
                     <FileText className="h-3.5 w-3.5" />
                   </Button>
                   {c.phone && <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => openWhatsApp(c.phone, `Habari ${c.name}`)}><MessageCircle className="h-3.5 w-3.5" /></Button>}
-                  <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => { setEditing(c); setForm(c); setShowDialog('customer'); }}><Edit className="h-3.5 w-3.5" /></Button>
-                  <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={() => handleDeleteCustomer(c.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
+                  <Button disabled={!can('can_edit_customers')} size="icon" variant="ghost" className="h-7 w-7" onClick={() => { setEditing(c); setForm(c); setShowDialog('customer'); }}><Edit className="h-3.5 w-3.5" /></Button>
+                  <Button disabled={!can('customers_delete')} size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={() => handleDeleteCustomer(c.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
                 </div>
               </div>
             </div>
@@ -179,32 +181,7 @@ export default function GroupsPage() {
           {filteredCustomers.length === 0 && <p className="text-center text-muted-foreground py-8">Hakuna wateja</p>}
         </TabsContent>
 
-        <TabsContent value="suppliers" className="mt-4 space-y-3">
-          <Button size="sm" className="w-full gap-1 rounded-full" onClick={() => { setForm({}); setEditing(null); setShowDialog('supplier'); }}>
-            <Plus className="h-4 w-4" /> Ongeza Msambazaji
-          </Button>
-          {filteredSuppliers.map(s => (
-            <div key={s.id} className="p-3 border border-border/40 rounded-xl space-y-1">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="font-medium text-sm">{s.name}</p>
-                  {s.company_name && <p className="text-xs text-muted-foreground flex items-center gap-1"><Building2 className="h-3 w-3" />{s.company_name}</p>}
-                </div>
-                <div className="flex gap-1">
-                  {s.phone && <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => openWhatsApp(s.phone, `Habari ${s.name}`)}><MessageCircle className="h-3.5 w-3.5" /></Button>}
-                  <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => { setEditing(s); setForm(s); setShowDialog('supplier'); }}><Edit className="h-3.5 w-3.5" /></Button>
-                  <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={() => handleDeleteSupplier(s.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
-                </div>
-              </div>
-              <div className="flex gap-3 text-xs text-muted-foreground">
-                {s.phone && <span className="flex items-center gap-1"><Phone className="h-3 w-3" />{s.phone}</span>}
-                {s.address && <span className="flex items-center gap-1"><MapPin className="h-3 w-3" />{s.address}</span>}
-              </div>
-              {(s.outstanding_balance || 0) > 0 && <Badge variant="destructive" className="text-xs">Deni: TSh {s.outstanding_balance?.toLocaleString()}</Badge>}
-            </div>
-          ))}
-          {filteredSuppliers.length === 0 && <p className="text-center text-muted-foreground py-8">Hakuna wasambazaji</p>}
-        </TabsContent>
+        {can('suppliers_manage') && <TabsContent value="suppliers" className="mt-4"><SuppliersPage embedded /></TabsContent>}
 
         {isOwner && (
           <TabsContent value="users" className="mt-4">

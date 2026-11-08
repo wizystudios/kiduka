@@ -1,4 +1,5 @@
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Building2, Users, Wallet, Headset, BarChart3, type LucideIcon } from 'lucide-react';
 
 export interface AdminTabItem {
@@ -39,30 +40,32 @@ export const AdminMobileTabBar = ({ tabs, active, onChange }: Props) => {
           const Icon = GROUP_META[g]?.icon || Building2;
           const on = activeGroup === g;
           return (
-            <button
+            <Button
               key={g}
               type="button"
               aria-pressed={on}
-              onClick={() => onChange(tabs.find((t) => t.group === g)!.value)}
-              className={`relative flex min-w-0 flex-col items-center gap-1 rounded-3xl px-1 py-2 text-[11px] font-semibold transition-all sm:flex-row sm:justify-center sm:gap-2 sm:text-sm ${
+              variant="ghost"
+              onClick={() => { const first = tabs.find(t => t.group === g); if (first) onChange(first.value); }}
+              className={`relative flex h-auto min-w-0 flex-col items-center gap-1 whitespace-normal rounded-3xl px-0.5 py-2 text-[10px] font-semibold transition-all sm:flex-row sm:justify-center sm:gap-2 sm:text-sm ${
                 on ? 'bg-card text-primary shadow-sm' : 'text-muted-foreground hover:text-foreground'
               }`}
             >
               <Icon className="h-4 w-4 flex-shrink-0" />
-              <span className="truncate">{g}</span>
+              <span>{g}</span>
               {b > 0 && (
                 <Badge variant="destructive" className="absolute right-1 top-1 h-4 min-w-4 justify-center p-0 text-[9px]">{b}</Badge>
               )}
-            </button>
+            </Button>
           );
         })}
       </div>
       {meta && <p className="px-1 text-xs text-muted-foreground">{meta.hint}</p>}
       <div className="no-scrollbar flex gap-1.5 overflow-x-auto pb-0.5">
         {tabs.filter((t) => t.group === activeGroup).map((tab) => (
-          <button
+          <Button
             key={tab.value}
             type="button"
+            variant="ghost"
             onClick={() => onChange(tab.value)}
             className={`relative h-9 flex-shrink-0 rounded-full px-4 text-xs font-medium transition-colors ${
               active === tab.value ? 'bg-primary text-primary-foreground' : 'border border-border bg-card text-muted-foreground hover:text-foreground'
@@ -72,7 +75,7 @@ export const AdminMobileTabBar = ({ tabs, active, onChange }: Props) => {
             {!!tab.badge && tab.badge > 0 && (
               <Badge variant="destructive" className="absolute -top-1 -end-1 h-4 min-w-4 justify-center p-0 text-[9px]">{tab.badge}</Badge>
             )}
-          </button>
+          </Button>
         ))}
       </div>
     </div>

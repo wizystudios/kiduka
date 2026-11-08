@@ -1,5 +1,11 @@
 # Kiduka completion roadmap
 
+## Takwimu and credit settlement
+- [ ] Make system analytics readable on phone and desktop with explicit metric names and date ranges.
+- [ ] Include suppliers in Makundi using the shared navigation.
+- [ ] Support supplier purchases/services on credit and consistent partial/full repayments alongside customer sale debt.
+- [ ] Verify scoped financial rules and responsive views without changing customer records.
+
 ## Notification and Settings safety verification
 - [x] Give every transient notification a QR and Ona zaidi, preserving its original actions. Browser-verified normal, message, success, error, info, warning, loading, custom and promise; list items now display an actual QR too.
 - [x] Click Settings sale test; verify one notification, both links, JARIBIO receipt and zero operational writes. New-tab QR link opens the same public artificial receipt; network shows only read-only role RPCs, no sale/product/customer writes.
