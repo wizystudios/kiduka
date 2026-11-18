@@ -309,6 +309,13 @@
       "when": 1794124755280,
       "tag": "0043_remove_temporary_credit_verification",
       "breakpoints": true
+    },
+    {
+      "idx": 44,
+      "version": "7",
+      "when": 1795035977871,
+      "tag": "0044_loan_payment_updates_loan",
+      "breakpoints": true
     }
   ]
 }

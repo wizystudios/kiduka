@@ -1,3 +1,4 @@
+import { UsersPage } from '@/pages/UsersPage';
 import { useSearchParams } from 'react-router-dom';
 import SuppliersPage from '@/pages/SuppliersPage';
 import { useDataAccess } from '@/hooks/useDataAccess';
@@ -185,11 +186,7 @@ export default function GroupsPage() {
 
         {isOwner && (
           <TabsContent value="users" className="mt-4">
-            <div className="text-center py-8">
-              <UserCheck className="h-10 w-10 text-muted-foreground mx-auto mb-2" />
-              <p className="text-sm text-muted-foreground mb-3">Simamia wasaidizi wako</p>
-              <Button className="rounded-full" onClick={() => window.location.href = '/users'}>Fungua Watumiaji</Button>
-            </div>
+            <UsersPage />
           </TabsContent>
         )}
       </Tabs>

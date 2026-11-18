@@ -118,7 +118,7 @@ export default function SuppliersPage({ embedded = false }: { embedded?: boolean
     setSubmitting(true);
     const {error} = await supabase.rpc('create_trade_purchase', {
       p_supplier_id: poForm.supplier_id, p_total: poForm.total_amount, p_paid: poForm.amount_paid,
-      p_kind: poForm.purchase_kind, p_notes: poForm.notes, p_branch_id: branchId || undefined,
+      p_kind: poForm.purchase_kind, p_notes: poForm.notes, p_branch_id: (branchId || null) as string,
       p_request_id: orderId, p_method: poForm.payment_method || 'cash',
     });
     if(error){setSubmitting(false);toast({title:'Manunuzi hayajahifadhiwa',description:error.message,variant:'destructive'});return;}

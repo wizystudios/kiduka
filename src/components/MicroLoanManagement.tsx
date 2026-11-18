@@ -184,6 +184,8 @@ export const MicroLoanManagement = () => {
     switch (status) {
       case 'active':
         return <Badge className="bg-green-500">Ipo</Badge>;
+      case 'paid':
+        return <Badge className="bg-blue-500">Deni limelipwa</Badge>;
       case 'completed':
         return <Badge className="bg-blue-500">Imekamilika</Badge>;
       case 'overdue':
