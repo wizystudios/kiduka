@@ -1,3 +1,5 @@
+import { MoreVertical } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useState, useMemo } from 'react';
 import { CatalogFilterBar } from '@/components/catalog/CatalogFilterBar';
 import { matchesCatalogFilter, type CatalogFilter } from '@/lib/productCatalog';
@@ -232,93 +234,53 @@ export const ProductsPage = () => {
   return (
     <div className="p-2 space-y-2 pb-16">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1">
-            <Package className="h-4 w-4 text-blue-600" />
-            <div>
-              <h2 className="text-sm font-bold text-gray-900">Bidhaa</h2>
-              <p className="text-xs text-gray-600">{products.length} bidhaa</p>
-            </div>
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2 min-w-0">
+          <Package className="h-5 w-5 text-primary shrink-0" />
+          <div className="min-w-0">
+            <h2 className="text-base font-bold text-foreground">Bidhaa</h2>
+            <p className="text-xs text-muted-foreground">{products.filter(p => !p.is_archived).length} bidhaa{isOffline ? ' · Offline' : ''}</p>
           </div>
-          
-          {/* Offline Status Badge */}
-          {isOffline && (
-            <Badge variant="outline" className="text-orange-600 border-orange-300 bg-orange-50 text-xs">
-              <WifiOff className="h-3 w-3 mr-1" />
-              Offline
-            </Badge>
-          )}
-          {!isOffline && (
-            <Badge variant="outline" className="text-green-600 border-green-300 bg-green-50 text-xs">
-              <Cloud className="h-3 w-3 mr-1" />
-              Online
-            </Badge>
-          )}
         </div>
-        
-        <div className="flex gap-1 w-full sm:w-auto">
-          <Button 
-            onClick={handleRefresh}
-            variant="outline"
-            disabled={refreshing}
-            className="text-blue-600 border-blue-600 hover:bg-blue-50 text-xs px-2 py-1 h-7 flex-1 sm:flex-none"
-          >
-            {refreshing ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Sasisha'}
+        <div className="flex items-center gap-1.5">
+          <Button disabled={!can('products_create')} onClick={handleAddProduct} className="h-9 rounded-full px-4 text-sm">
+            <Plus className="h-4 w-4 mr-1" />Ongeza bidhaa
           </Button>
-          <Button 
-            disabled={!can('products_export')} onClick={exportToCSV}
-            variant="outline"
-            className="text-xs px-2 py-1 h-7 flex-1 sm:flex-none"
-          >
-            <Download className="h-3 w-3 mr-1" />
-            CSV
-          </Button>
-          <Button 
-            disabled={!can('products_export')} onClick={exportToExcel}
-            variant="outline"
-            className="text-xs px-2 py-1 h-7 flex-1 sm:flex-none"
-          >
-            <FileSpreadsheet className="h-3 w-3 mr-1" />
-            Excel
-          </Button>
-          <Button 
-            disabled={!can('products_import')} onClick={() => navigate('/products/import')}
-            variant="outline"
-            className="text-xs px-2 py-1 h-7 flex-1 sm:flex-none"
-          >
-            <FileSpreadsheet className="h-3 w-3 mr-1" />
-            Ingiza
-          </Button>
-          <Button 
-            disabled={!can('products_create')} onClick={handleAddProduct}
-            className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-2 py-1 h-7 flex-1 sm:flex-none"
-          >
-            <Plus className="h-3 w-3 mr-1" />
-            Ongeza
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="icon" className="h-9 w-9 rounded-full" aria-label="Zaidi">
+                {refreshing ? <Loader2 className="h-4 w-4 animate-spin" /> : <MoreVertical className="h-4 w-4" />}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={handleRefresh}>Sasisha orodha</DropdownMenuItem>
+              <DropdownMenuItem disabled={!can('products_import')} onClick={() => navigate('/products/import')}>Ingiza kutoka faili</DropdownMenuItem>
+              <DropdownMenuItem disabled={!can('products_export')} onClick={exportToExcel}>Pakua Excel</DropdownMenuItem>
+              <DropdownMenuItem disabled={!can('products_export')} onClick={exportToCSV}>Pakua CSV</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
       {/* Search + Archive Toggle */}
       <div className="flex gap-2">
         <div className="relative flex-1">
-          <Search className="absolute left-2 top-1.5 h-3 w-3 text-gray-400" />
+          <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Tafuta..."
+            placeholder="Tafuta jina au barcode"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-7 text-xs h-7"
+            className="pl-9 text-sm h-9 rounded-2xl"
           />
         </div>
         <Button
           variant={showArchived ? "default" : "outline"}
           size="sm"
-          className="h-7 text-xs px-2"
+          className="h-9 text-xs px-3 rounded-full"
           onClick={() => setShowArchived(!showArchived)}
         >
           {showArchived ? <Eye className="h-3 w-3 mr-1" /> : <EyeOff className="h-3 w-3 mr-1" />}
-          {showArchived ? 'Onyesha Hai' : `Zilizohifadhiwa (${archivedCount})`}
+          {showArchived ? 'Zinazotumika' : `Zilizowekwa kando (${archivedCount})`}
         </Button>
       </div>
 
@@ -346,19 +308,18 @@ export const ProductsPage = () => {
                   <CollapsibleTrigger className="w-full">
                     <div className="flex justify-between items-center">
                       <div className="flex-1 min-w-0 text-left">
-                        <div className="flex items-center gap-1 mb-0.5">
-                          <h3 className="font-semibold text-xs truncate">{product.name}</h3>
-                          <Badge className={`${stockStatus.color} text-xs px-1 py-0`}>
-                            {stockStatus.label}
-                          </Badge>
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-semibold text-sm truncate">{product.name}</h3>
+                          <Badge className={`${stockStatus.color} text-[10px] px-1.5 py-0 shrink-0`}>{stockStatus.label}</Badge>
                         </div>
-                        <div className="flex justify-between items-center">
-                          <span className="text-xs font-bold text-green-600">
-                            {(product.price || 0).toLocaleString()} TZS
-                          </span>
-                          <span className="text-xs text-gray-600">
-                            Stock: {product.stock_quantity || 0}
-                          </span>
+                        {(product.sector || product.category) && (
+                          <p className="text-[11px] text-muted-foreground truncate">
+                            {[product.sector, product.category, product.brand, product.variant_name].filter(Boolean).join(' › ')}
+                          </p>
+                        )}
+                        <div className="flex justify-between items-center mt-0.5">
+                          <span className="text-sm font-bold text-success">TSh {(product.price || 0).toLocaleString()}</span>
+                          <span className="text-xs text-muted-foreground">Stock: {product.stock_quantity || 0}</span>
                         </div>
                       </div>
                       <div className="ml-2">
@@ -376,9 +337,6 @@ export const ProductsPage = () => {
                       {/* Details */}
                       {product.barcode && (
                         <p className="text-xs text-gray-600">Barcode: {product.barcode}</p>
-                      )}
-                      {product.category && (
-                        <p className="text-xs text-muted-foreground">{[product.sector, product.category, product.brand, product.variant_name].filter(Boolean).join(' › ')}</p>
                       )}
                       {product.description && (
                         <p className="text-xs text-gray-600">{product.description}</p>

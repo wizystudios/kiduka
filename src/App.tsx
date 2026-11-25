@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from '@/hooks/useAuth';
 import { BusinessProvider } from '@/hooks/useBusinessContext';
 import { LanguageProvider } from '@/contexts/LanguageContext';
+import { UiTranslator } from '@/components/UiTranslator';
 
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { AppLayout } from '@/components/AppLayout';
@@ -110,6 +111,7 @@ export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <LanguageProvider>
+        <UiTranslator />
       <Router>
         <AuthProvider>
           <BusinessProvider>

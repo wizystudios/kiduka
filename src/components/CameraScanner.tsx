@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { BarcodeFormat, BrowserMultiFormatReader, DecodeHintType } from '@zxing/library';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { ArrowLeft, CameraOff, Keyboard } from 'lucide-react';
 
 interface CameraScannerProps {
@@ -29,6 +30,7 @@ export const CameraScanner = ({ onScan, onClose, isOpen, title = 'Scan barcode y
   const [status, setStatus] = useState<'starting' | 'active' | 'slow' | 'error'>('starting');
   const [message, setMessage] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
+  const [manual, setManual] = useState('');
 
   useEffect(() => {
     if (!isOpen) return;
@@ -108,9 +110,11 @@ export const CameraScanner = ({ onScan, onClose, isOpen, title = 'Scan barcode y
           {status === 'starting' ? 'Inafungua kamera…'
             : message ?? (status === 'slow' ? 'Barcode haijaonekana. Sogeza simu karibu, weka mwanga, au iandike.' : 'Weka barcode ndani ya kisanduku cha kijani.')}
         </p>
-        {status === 'slow' && (
-          <Button variant="outline" className="rounded-full" onClick={onClose}><Keyboard className="mr-2 h-4 w-4" />Andika barcode</Button>
-        )}
+        <form className="flex gap-2" onSubmit={(e) => { e.preventDefault(); const c = manual.trim(); if (c) onScan(c); }}>
+          <Input value={manual} onChange={(e) => setManual(e.target.value)} inputMode="numeric" placeholder="Au andika barcode hapa"
+            className="h-10 rounded-2xl text-sm" autoFocus={status === 'slow' || status === 'error'} />
+          <Button type="submit" className="h-10 rounded-full px-4" disabled={!manual.trim()}><Keyboard className="mr-1 h-4 w-4" />Tumia</Button>
+        </form>
       </div>
     </div>
   );
