@@ -1,3 +1,4 @@
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useState, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -177,11 +178,14 @@ export default function BookkeepingPage() {
 
       {/* Date filter */}
       <div className="flex gap-1 mb-4">
-        {(['week', 'month', 'year'] as const).map(f => (
-          <Button key={f} size="sm" variant={dateFilter === f ? 'default' : 'outline'} onClick={() => setDateFilter(f)} className="text-xs">
-            {f === 'week' ? 'Wiki' : f === 'month' ? 'Mwezi' : 'Mwaka'}
-          </Button>
-        ))}
+        <Select value={dateFilter} onValueChange={(v) => setDateFilter(v as 'week' | 'month' | 'year')}>
+          <SelectTrigger className="h-8 text-xs rounded-2xl w-36" aria-label="Kipindi"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="week">Wiki</SelectItem>
+            <SelectItem value="month">Mwezi</SelectItem>
+            <SelectItem value="year">Mwaka</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       <Tabs defaultValue="income" className="w-full">

@@ -1,3 +1,4 @@
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useEffect, useState } from "react";
 import { safeCell, csvRow, safeRow } from '@/lib/safeCell';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -333,34 +334,15 @@ export const ProfitLossPage = () => {
 
       {/* Date Range Selector */}
       <div className="flex items-center gap-2 flex-wrap">
-        <Button 
-          variant={range === 7 ? 'default' : 'outline'} 
-          size="sm" 
-          onClick={() => setRange(7)}
-        >
-          7 Siku
-        </Button>
-        <Button 
-          variant={range === 30 ? 'default' : 'outline'} 
-          size="sm" 
-          onClick={() => setRange(30)}
-        >
-          30 Siku
-        </Button>
-        <Button 
-          variant={range === 90 ? 'default' : 'outline'} 
-          size="sm" 
-          onClick={() => setRange(90)}
-        >
-          90 Siku
-        </Button>
-        <Button 
-          variant={range === "custom" ? 'default' : 'outline'} 
-          size="sm" 
-          onClick={() => setRange("custom")}
-        >
-          Chagua
-        </Button>
+        <Select value={String(range)} onValueChange={(v) => setRange(v === 'custom' ? 'custom' : (Number(v) as any))}>
+          <SelectTrigger className="h-8 text-xs rounded-2xl w-40" aria-label="Kipindi"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="7">Siku 7</SelectItem>
+            <SelectItem value="30">Siku 30</SelectItem>
+            <SelectItem value="90">Siku 90</SelectItem>
+            <SelectItem value="custom">Tarehe maalum</SelectItem>
+          </SelectContent>
+        </Select>
         
         {range === "custom" && (
           <div className="flex gap-2 items-center">

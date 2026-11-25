@@ -236,6 +236,10 @@ export const EditProductPage = () => {
           maxImages={5}
         />
             
+            <CatalogPicker
+              value={{ sector: formData.sector, category: formData.category, brand: formData.brand, variant_name: formData.variant_name }}
+              onChange={(v) => setFormData(f => ({ ...f, sector: v.sector ?? '', category: v.category ?? '', brand: v.brand ?? '', variant_name: v.variant_name ?? '' }))} />
+
             <div>
               <Label htmlFor="name">Jina la Bidhaa *</Label>
               <Input
@@ -312,10 +316,6 @@ export const EditProductPage = () => {
                 />
               </div>
             </div>
-
-            <CatalogPicker
-              value={{ sector: formData.sector, category: formData.category, brand: formData.brand, variant_name: formData.variant_name }}
-              onChange={(v) => setFormData(f => ({ ...f, sector: v.sector ?? '', category: v.category ?? '', brand: v.brand ?? '', variant_name: v.variant_name ?? '' }))} />
 
             <div>
               <Label htmlFor="description">Maelezo</Label>
