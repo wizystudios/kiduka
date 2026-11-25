@@ -1,101 +1,117 @@
-
 import { useEffect, useRef, useState } from 'react';
-import { BrowserMultiFormatReader } from '@zxing/library';
+import { BarcodeFormat, BrowserMultiFormatReader, DecodeHintType } from '@zxing/library';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Camera, X } from 'lucide-react';
+import { ArrowLeft, CameraOff, Keyboard } from 'lucide-react';
 
 interface CameraScannerProps {
   onScan: (barcode: string) => void;
   onClose: () => void;
   isOpen: boolean;
+  title?: string;
 }
 
-export const CameraScanner = ({ onScan, onClose, isOpen }: CameraScannerProps) => {
+const NOT_FOUND_AFTER_MS = 12000;
+
+/** EAN/UPC check digit; other formats are trusted to the decoder. */
+export const isValidBarcode = (code: string) => {
+  const c = code.trim();
+  if (!c) return false;
+  if (!/^\d+$/.test(c) || ![8, 12, 13, 14].includes(c.length)) return c.length >= 4;
+  const digits = c.split('').map(Number);
+  const check = digits.pop()!;
+  const sum = digits.reverse().reduce((s, d, i) => s + d * (i % 2 === 0 ? 3 : 1), 0);
+  return (10 - (sum % 10)) % 10 === check;
+};
+
+/** Full-screen live scanner using the same engine and look as the sales scanner. */
+export const CameraScanner = ({ onScan, onClose, isOpen, title = 'Scan barcode ya bidhaa' }: CameraScannerProps) => {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const [isScanning, setIsScanning] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const readerRef = useRef<BrowserMultiFormatReader | null>(null);
+  const [status, setStatus] = useState<'starting' | 'active' | 'slow' | 'error'>('starting');
+  const [message, setMessage] = useState<string | null>(null);
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
-    if (isOpen && !isScanning) {
-      startScanning();
-    } else if (!isOpen) {
-      stopScanning();
-    }
+    if (!isOpen) return;
+    let cancelled = false;
+    let stream: MediaStream | null = null;
+    const hints = new Map();
+    hints.set(DecodeHintType.POSSIBLE_FORMATS, [BarcodeFormat.EAN_13, BarcodeFormat.EAN_8, BarcodeFormat.UPC_A, BarcodeFormat.UPC_E,
+      BarcodeFormat.CODE_128, BarcodeFormat.CODE_39, BarcodeFormat.ITF, BarcodeFormat.QR_CODE]);
+    hints.set(DecodeHintType.TRY_HARDER, true);
+    const reader = new BrowserMultiFormatReader(hints, 80);
+    setStatus('starting'); setMessage(null);
+    const slowTimer = window.setTimeout(() => { if (!cancelled) setStatus('slow'); }, NOT_FOUND_AFTER_MS);
+
+    (async () => {
+      try {
+        if (!navigator.mediaDevices?.getUserMedia) throw Object.assign(new Error(), { name: 'Unsupported' });
+        stream = await navigator.mediaDevices.getUserMedia({ audio: false,
+          video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } } });
+        if (cancelled || !videoRef.current) return;
+        const [track] = stream.getVideoTracks();
+        try {
+          const caps = track.getCapabilities?.() as any;
+          if (caps?.focusMode?.includes?.('continuous')) await track.applyConstraints({ advanced: [{ focusMode: 'continuous' } as any] });
+        } catch { /* focus optional */ }
+        videoRef.current.srcObject = stream;
+        await videoRef.current.play().catch(() => undefined);
+        setStatus('active');
+        await reader.decodeFromStream(stream, videoRef.current, (result) => {
+          if (cancelled || !result) return;
+          const code = result.getText().trim();
+          if (!isValidBarcode(code)) { setMessage('Barcode hii haisomeki vizuri. Jaribu tena au iandike.'); return; }
+          cancelled = true;
+          if (navigator.vibrate) navigator.vibrate(80);
+          onScan(code);
+        });
+      } catch (err: any) {
+        if (cancelled) return;
+        setStatus('error');
+        setMessage(err?.name === 'NotAllowedError' ? 'Ruhusu kamera kwenye mipangilio ya browser, kisha jaribu tena.'
+          : 'Kamera haikufunguka. Funga app nyingine zinazotumia kamera, kisha jaribu tena.');
+      }
+    })();
 
     return () => {
-      stopScanning();
+      cancelled = true;
+      window.clearTimeout(slowTimer);
+      reader.reset();
+      stream?.getTracks().forEach(t => t.stop());
     };
-  }, [isOpen]);
-
-  const startScanning = async () => {
-    try {
-      setError(null);
-      setIsScanning(true);
-      
-      readerRef.current = new BrowserMultiFormatReader();
-      
-      if (videoRef.current) {
-        const result = await readerRef.current.decodeOnceFromVideoDevice(undefined, videoRef.current);
-        if (result) {
-          onScan(result.getText());
-          stopScanning();
-        }
-      }
-    } catch (err) {
-      console.error('Error starting camera:', err);
-      setError('Unable to access camera. Please ensure camera permissions are granted.');
-      setIsScanning(false);
-    }
-  };
-
-  const stopScanning = () => {
-    if (readerRef.current) {
-      readerRef.current.reset();
-      readerRef.current = null;
-    }
-    setIsScanning(false);
-  };
+  }, [isOpen, attempt]);
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
-      <Card className="w-full max-w-md">
-        <CardContent className="p-6">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-semibold flex items-center">
-              <Camera className="h-5 w-5 mr-2" />
-              Scan Barcode
-            </h3>
-            <Button variant="ghost" size="sm" onClick={onClose}>
-              <X className="h-4 w-4" />
-            </Button>
+    <div className="fixed inset-0 z-50 flex flex-col bg-foreground">
+      <div className="relative flex-1 overflow-hidden">
+        <video ref={videoRef} className="absolute inset-0 h-full w-full object-cover" autoPlay playsInline muted />
+        <div className="absolute left-4 right-4 top-4 z-20 flex items-center gap-3">
+          <Button size="icon" variant="secondary" aria-label="Funga" className="h-11 w-11 rounded-full" onClick={onClose}><ArrowLeft className="h-5 w-5" /></Button>
+          <p className="text-sm font-medium text-background">{title}</p>
+        </div>
+        {status !== 'error' && (
+          <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+            <div className="h-40 w-72 rounded-3xl border-4 border-success" />
           </div>
-          
-          {error ? (
-            <div className="text-center py-8">
-              <p className="text-red-600 mb-4">{error}</p>
-              <Button onClick={startScanning} variant="outline">
-                Try Again
-              </Button>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <video
-                ref={videoRef}
-                className="w-full h-64 bg-gray-200 rounded-lg"
-                autoPlay
-                playsInline
-              />
-              <p className="text-sm text-gray-600 text-center">
-                Position the barcode within the camera view
-              </p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+        )}
+        {status === 'error' && (
+          <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 px-6 text-center text-background">
+            <CameraOff className="h-10 w-10" />
+            <p className="text-sm">{message}</p>
+            <Button className="rounded-full" onClick={() => setAttempt(a => a + 1)}>Jaribu tena</Button>
+          </div>
+        )}
+      </div>
+      <div className="space-y-2 bg-background p-4 text-center">
+        <p className="text-sm text-foreground">
+          {status === 'starting' ? 'Inafungua kamera…'
+            : message ?? (status === 'slow' ? 'Barcode haijaonekana. Sogeza simu karibu, weka mwanga, au iandike.' : 'Weka barcode ndani ya kisanduku cha kijani.')}
+        </p>
+        {status === 'slow' && (
+          <Button variant="outline" className="rounded-full" onClick={onClose}><Keyboard className="mr-2 h-4 w-4" />Andika barcode</Button>
+        )}
+      </div>
     </div>
   );
 };

@@ -132,14 +132,17 @@ export const AddProductPage = () => {
 
       <form onSubmit={handleSubmit} className="space-y-3">
                 
+        <Button type="button" onClick={() => setScanOpen(true)} disabled={loading} className="w-full h-11 rounded-full">
+          <Camera className="h-5 w-5 mr-2" />Scan barcode kwa kamera
+        </Button>
+
         <div>
-          <Label className="text-xs">Barcode</Label>
+          <Label className="text-xs">Barcode (au iandike)</Label>
           <div className="flex gap-2">
             <Input value={formData.barcode} onChange={(e) => { setBarcodeGenerated(false); setLookupNote(''); setFormData({...formData, barcode: e.target.value}); }}
               onBlur={() => runLookup()} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); runLookup(); } }}
               placeholder="Scan au ingiza barcode" className="text-sm h-8" />
-            <Button type="button" variant="outline" onClick={() => setScanOpen(true)} className="h-8 px-2" disabled={loading} aria-label="Scan kwa kamera"><Camera className="h-4 w-4" /></Button>
-            <Button type="button" variant="outline" onClick={generateBarcode} className="text-xs px-2 h-8" disabled={loading}>Zalisha</Button>
+                        <Button type="button" variant="outline" onClick={generateBarcode} className="text-xs px-2 h-8" disabled={loading}>Zalisha</Button>
           </div>
           {lookupNote && <p className="text-[11px] text-muted-foreground mt-1">{lookupNote}</p>}
         </div>
@@ -170,7 +173,7 @@ export const AddProductPage = () => {
             <Input type="number" step={formData.is_weight_based ? "0.1" : "1"} value={formData.stock_quantity} onChange={(e) => setFormData({...formData, stock_quantity: e.target.value})} placeholder="0" className="text-sm h-8" required />
           </div>
           <div>
-            <Label className="text-xs">Kiwango cha Stock Ndogo</Label>
+            <Label className="text-xs">Nijulishe stock ikifika</Label>
             <Input type="number" value={formData.low_stock_threshold} onChange={(e) => setFormData({...formData, low_stock_threshold: e.target.value})} placeholder="10" className="text-sm h-8" />
           </div>
         </div>
@@ -182,31 +185,24 @@ export const AddProductPage = () => {
           <Textarea value={formData.description} onChange={(e) => setFormData({...formData, description: e.target.value})} placeholder="Maelezo ya bidhaa (si lazima)" rows={2} className="text-sm" />
         </div>
 
-        <div className="border-t border-border pt-3">
-          <div className="flex items-center space-x-2 mb-3">
-            <input type="checkbox" id="is_weight_based" checked={formData.is_weight_based} onChange={(e) => setFormData({...formData, is_weight_based: e.target.checked})} className="rounded" />
-            <Label htmlFor="is_weight_based" className="text-xs font-medium">Bidhaa hii inazwa kwa uzito/kipimo</Label>
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <Label className="text-xs">Inauzwa kwa</Label>
+            <Select value={formData.unit_type} onValueChange={(v) => setFormData({...formData, unit_type: v, is_weight_based: v !== 'piece'})}>
+              <SelectTrigger className="h-8 text-sm rounded-2xl"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="piece">Kipande / pakiti</SelectItem>
+                <SelectItem value="kg">Kilo (kg)</SelectItem>
+                <SelectItem value="g">Gramu (g)</SelectItem>
+                <SelectItem value="ltr">Lita</SelectItem>
+                <SelectItem value="ml">Mililita (ml)</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
-          
           {formData.is_weight_based && (
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <Label className="text-xs">Aina ya Kipimo</Label>
-                <Select value={formData.unit_type} onValueChange={(v) => setFormData({...formData, unit_type: v})}>
-                  <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="kg">Kilogramu (kg)</SelectItem>
-                    <SelectItem value="g">Gramu (g)</SelectItem>
-                    <SelectItem value="ltr">Lita (ltr)</SelectItem>
-                    <SelectItem value="ml">Millilita (ml)</SelectItem>
-                    <SelectItem value="piece">Kipande</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label className="text-xs">Kiwango cha Chini</Label>
-                <Input type="number" step="0.1" value={formData.min_quantity} onChange={(e) => setFormData({...formData, min_quantity: e.target.value})} placeholder="0.1" className="text-sm h-8" />
-              </div>
+            <div>
+              <Label className="text-xs">Kiasi kidogo cha kuuza</Label>
+              <Input type="number" step="0.1" value={formData.min_quantity} onChange={(e) => setFormData({...formData, min_quantity: e.target.value})} placeholder="0.1" className="text-sm h-8" />
             </div>
           )}
         </div>

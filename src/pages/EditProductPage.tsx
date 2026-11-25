@@ -306,7 +306,7 @@ export const EditProductPage = () => {
                 />
               </div>
               <div>
-                <Label htmlFor="threshold">Kiwango cha Stock Ndogo</Label>
+                <Label htmlFor="threshold">Nijulishe stock ikifika</Label>
                 <Input
                   id="threshold"
                   type="number"
@@ -339,7 +339,7 @@ export const EditProductPage = () => {
                   className="rounded"
                 />
                 <Label htmlFor="is_weight_based" className="font-medium">
-                  Bidhaa hii inazwa kwa uzito/kipimo (kg, lita, n.k.)
+                  Inauzwa kwa kilo au lita (si kipande)
                 </Label>
               </div>
               
@@ -361,7 +361,7 @@ export const EditProductPage = () => {
                     </Select>
                   </div>
                   <div>
-                    <Label htmlFor="min_quantity">Kiwango cha Chini</Label>
+                    <Label htmlFor="min_quantity">Kiasi kidogo cha kuuza</Label>
                     <Input
                       id="min_quantity"
                       type="number"
