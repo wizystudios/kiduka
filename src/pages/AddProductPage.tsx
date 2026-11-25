@@ -5,7 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Save, Loader2, WifiOff, Cloud } from 'lucide-react';
+import { ArrowLeft, Save, Loader2, WifiOff, Cloud, Camera } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useDataAccess } from '@/hooks/useDataAccess';
 import { useOfflineProducts } from '@/hooks/useOfflineProducts';
@@ -13,6 +13,7 @@ import { MultiImageUpload } from '@/components/MultiImageUpload';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { logActivity } from '@/hooks/useActivityLogger';
+import { CameraScanner } from '@/components/CameraScanner';
 import { CatalogPicker } from '@/components/catalog/CatalogPicker';
 import { contributeBarcode, lookupBarcode } from '@/lib/catalogLookup';
 import type { CatalogFields } from '@/lib/productCatalog';
@@ -35,6 +36,7 @@ export const AddProductPage = () => {
   const [barcodeGenerated, setBarcodeGenerated] = useState(false);
   const [shopProducts, setShopProducts] = useState<CatalogFields[]>([]);
   const [lookupNote, setLookupNote] = useState('');
+  const [scanOpen, setScanOpen] = useState(false);
 
   useEffect(() => {
     if (!dataOwnerId) return;
@@ -42,8 +44,8 @@ export const AddProductPage = () => {
       .then(({ data }) => setShopProducts(data ?? []));
   }, [dataOwnerId]);
 
-  const runLookup = async () => {
-    const code = formData.barcode.trim();
+  const runLookup = async (scanned?: string) => {
+    const code = (scanned ?? formData.barcode).trim();
     if (!code || barcodeGenerated) return;
     const match = await lookupBarcode(code, dataOwnerId);
     if (!match) { setLookupNote('Barcode mpya — jaza taarifa mara moja, itakumbukwa.'); return; }
@@ -125,23 +127,30 @@ export const AddProductPage = () => {
         )}
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-3">
-        <MultiImageUpload existingImages={productImages} onImagesChange={setProductImages} maxImages={5} />
-        
-        <div>
-          <Label className="text-xs">Jina la Bidhaa *</Label>
-          <Input value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} placeholder="Ingiza jina" className="text-sm h-8" required />
-        </div>
+      <CameraScanner isOpen={scanOpen} onClose={() => setScanOpen(false)}
+        onScan={(code) => { setScanOpen(false); setBarcodeGenerated(false); setFormData(f => ({ ...f, barcode: code })); runLookup(code); }} />
 
+      <form onSubmit={handleSubmit} className="space-y-3">
+                
         <div>
           <Label className="text-xs">Barcode</Label>
           <div className="flex gap-2">
             <Input value={formData.barcode} onChange={(e) => { setBarcodeGenerated(false); setLookupNote(''); setFormData({...formData, barcode: e.target.value}); }}
-              onBlur={runLookup} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); runLookup(); } }}
+              onBlur={() => runLookup()} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); runLookup(); } }}
               placeholder="Scan au ingiza barcode" className="text-sm h-8" />
+            <Button type="button" variant="outline" onClick={() => setScanOpen(true)} className="h-8 px-2" disabled={loading} aria-label="Scan kwa kamera"><Camera className="h-4 w-4" /></Button>
             <Button type="button" variant="outline" onClick={generateBarcode} className="text-xs px-2 h-8" disabled={loading}>Zalisha</Button>
           </div>
           {lookupNote && <p className="text-[11px] text-muted-foreground mt-1">{lookupNote}</p>}
+        </div>
+
+        <CatalogPicker shopProducts={shopProducts} disabled={loading}
+          value={{ sector: formData.sector, category: formData.category, brand: formData.brand, variant_name: formData.variant_name }}
+          onChange={(v) => setFormData(f => ({ ...f, sector: v.sector ?? '', category: v.category ?? '', brand: v.brand ?? '', variant_name: v.variant_name ?? '' }))} />
+
+        <div>
+          <Label className="text-xs">Jina la Bidhaa *</Label>
+          <Input value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} placeholder="Ingiza jina" className="text-sm h-8" required />
         </div>
 
         <div className="grid grid-cols-2 gap-2">
@@ -166,9 +175,7 @@ export const AddProductPage = () => {
           </div>
         </div>
 
-        <CatalogPicker shopProducts={shopProducts} disabled={loading}
-          value={{ sector: formData.sector, category: formData.category, brand: formData.brand, variant_name: formData.variant_name }}
-          onChange={(v) => setFormData(f => ({ ...f, sector: v.sector ?? '', category: v.category ?? '', brand: v.brand ?? '', variant_name: v.variant_name ?? '' }))} />
+        <MultiImageUpload existingImages={productImages} onImagesChange={setProductImages} maxImages={5} />
 
         <div>
           <Label className="text-xs">Maelezo</Label>

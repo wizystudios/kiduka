@@ -180,14 +180,6 @@ export const InventorySnapshotPage = () => {
           </div>
         </div>
         
-        <div className="bg-yellow-50 border-l-4 border-yellow-500 p-4 rounded-lg">
-          <p className="text-sm text-yellow-800 mb-2">
-            <strong>⚠️ Kumbuka:</strong> Hii ni kwa ajili ya biashara ambazo zinaweza kuhesabu stock mara mbili kwa siku.
-          </p>
-          <p className="text-sm text-yellow-800">
-            Kama biashara yako ni ya haraka sana na hakuna muda wa kuhesabu, tumia <strong>"Scanner"</strong> badala yake!
-          </p>
-        </div>
       </div>
 
       {/* Date Selector */}

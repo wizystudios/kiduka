@@ -285,15 +285,18 @@ export const SalesPage = () => {
         </div>
       </div>
 
-      {/* Period pills */}
-      <div className="flex flex-wrap gap-1.5">
-        {(['today','week','month','year','custom','all'] as PeriodKey[]).map(p => (
-          <Button key={p} size="sm" variant={selectedPeriod === p ? 'default' : 'outline'} className="rounded-full text-xs h-7"
-            onClick={() => setSelectedPeriod(p)}>
-            {p === 'today' ? 'Leo' : p === 'week' ? 'Wiki' : p === 'month' ? 'Mwezi' : p === 'year' ? 'Mwaka' : p === 'custom' ? 'Tarehe Maalum' : 'Zote'}
-          </Button>
-        ))}
-      </div>
+      {/* Period */}
+      <Select value={selectedPeriod} onValueChange={(v) => setSelectedPeriod(v as PeriodKey)}>
+        <SelectTrigger className="h-8 text-xs rounded-2xl w-44" aria-label="Kipindi"><SelectValue /></SelectTrigger>
+        <SelectContent>
+          <SelectItem value="today">Leo</SelectItem>
+          <SelectItem value="week">Wiki hii</SelectItem>
+          <SelectItem value="month">Mwezi</SelectItem>
+          <SelectItem value="year">Mwaka</SelectItem>
+          <SelectItem value="custom">Tarehe maalum</SelectItem>
+          <SelectItem value="all">Zote</SelectItem>
+        </SelectContent>
+      </Select>
 
       {/* Sub-filters based on period */}
       {(selectedPeriod === 'month' || selectedPeriod === 'year') && (
