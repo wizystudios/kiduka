@@ -14,9 +14,9 @@ export async function lookupBarcode(barcode: string, ownerId: string | null): Pr
     if (data) return { ...data, productId: data.id, price: Number(data.price), source: 'shop' };
   }
   if (!isShareableBarcode(code)) return null;
-  const { data } = await supabase.from('catalog_items')
-    .select('name, sector, category, brand, variant_name, unit_type').eq('barcode', code).maybeSingle();
-  return data ? { ...data, source: 'registry' } : null;
+  const { data } = await supabase.rpc('lookup_catalog_barcode', { p_barcode: code });
+  const row = Array.isArray(data) ? data[0] : null;
+  return row ? { ...row, source: 'registry' } : null;
 }
 
 /** Remember a barcode's descriptive details (never price/stock) for other shops. Silent on failure. */

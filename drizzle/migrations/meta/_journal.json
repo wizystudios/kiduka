@@ -323,6 +323,13 @@
       "when": 1795628895203,
       "tag": "0045_product_catalog_hierarchy",
       "breakpoints": true
+    },
+    {
+      "idx": 46,
+      "version": "7",
+      "when": 1795629258245,
+      "tag": "0046_catalog_items_exact_lookup_only",
+      "breakpoints": true
     }
   ]
 }

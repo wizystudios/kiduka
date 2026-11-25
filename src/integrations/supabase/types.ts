@@ -3768,6 +3768,17 @@ export type Database = {
         Args: { _business_id: string; _user_id?: string }
         Returns: boolean
       }
+      lookup_catalog_barcode: {
+        Args: { p_barcode: string }
+        Returns: {
+          brand: string
+          category: string
+          name: string
+          sector: string
+          unit_type: string
+          variant_name: string
+        }[]
+      }
       next_invoice_number: { Args: { _owner_id: string }; Returns: string }
       notify_owner_email: {
         Args: {
