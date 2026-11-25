@@ -1,5 +1,12 @@
 # Kiduka completion roadmap
 
+## Mauzo, Stock, language and scanner cleanup
+- [x] Simplify Mauzo with one filter area, compact summary and shared mobile/desktop detail.
+- [x] Simplify Stock with searchable rows, normal-sized count controls and optional chart.
+- [x] Apply simple Swahili terminology across built-in app text, retaining English and user records.
+- [x] Share immediate native barcode detection with ZXing fallback in sale and registration scanners; decode/manual flows verified with test camera; owner phone speed still unverified.
+- [x] Verify signed-in mobile/desktop views, focused tests and preview build.
+
 ## Takwimu and credit settlement
 - [x] Make system analytics readable on phone and desktop with explicit metric names and Tanzania calendar-date ranges; signed-in admin checked on both sizes.
 - [x] Include suppliers in Makundi using the shared navigation.

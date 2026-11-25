@@ -46,7 +46,7 @@ export const AddProductPage = () => {
 
   const runLookup = async (scanned?: string) => {
     const code = (scanned ?? formData.barcode).trim();
-    if (!code || barcodeGenerated) return;
+    if (!code || (barcodeGenerated && !scanned)) return;
     const match = await lookupBarcode(code, dataOwnerId);
     if (!match) { setLookupNote('Barcode mpya — jaza taarifa mara moja, itakumbukwa.'); return; }
     if (match.source === 'shop') { setLookupNote(`Tayari una bidhaa hii: ${match.name}. Ihariri badala ya kuiongeza upya.`); return; }

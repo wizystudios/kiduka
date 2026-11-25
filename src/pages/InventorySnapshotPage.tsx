@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Calendar, ClipboardList, TrendingDown, Package, Loader2, CheckCircle2, XCircle } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { ClipboardList, Loader2, CheckCircle2, Search, MoreVertical } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useDataAccess } from '@/hooks/useDataAccess';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -41,6 +43,8 @@ export const InventorySnapshotPage = () => {
   const [snapshots, setSnapshots] = useState<Snapshot[]>([]);
   const [loading, setLoading] = useState(true);
   const [recording, setRecording] = useState(false);
+  const [search, setSearch] = useState('');
+  const [view, setView] = useState('list');
   const [selectedDate, setSelectedDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const { user } = useAuth();
   const { dataOwnerId, branchId, isReady } = useDataAccess();
@@ -77,7 +81,7 @@ export const InventorySnapshotPage = () => {
       setSnapshots(snapshotsData || []);
     } catch (error) {
       console.error('Error fetching data:', error);
-      toast.error('Imeshindwa kupakia data');
+      toast.error('Taarifa za stock hazijafunguka. Jaribu tena.');
     } finally {
       setLoading(false);
     }
@@ -118,9 +122,9 @@ export const InventorySnapshotPage = () => {
       if (error) throw error;
 
       toast.success(
-        type === 'opening' 
-          ? 'Hesabu ya asubuhi imerekodishwa!' 
-          : 'Hesabu ya jioni imerekodishwa!'
+        type === 'opening'
+          ? 'Hesabu ya asubuhi imehifadhiwa!'
+          : 'Hesabu ya jioni imehifadhiwa!'
       );
       
       fetchData();
@@ -166,157 +170,62 @@ export const InventorySnapshotPage = () => {
     );
   }
 
+  const visibleProducts = productReport.filter(product => product.name.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase()));
+
   return (
-    <div className="p-4 space-y-4 pb-20">
-      {/* Header with Warning */}
-      <div className="space-y-3">
-        <div className="flex items-center gap-3">
-          <ClipboardList className="h-8 w-8 text-primary" />
-          <div>
-            <h1 className="text-2xl font-bold">Hesabu ya Stock</h1>
-            <p className="text-base text-muted-foreground">
-              Rekodi hesabu ya asubuhi na jioni
-            </p>
-          </div>
-        </div>
-        
+    <div className="p-4 space-y-4 pb-24 min-w-0">
+      <header className="flex items-center justify-between gap-3">
+        <h1 className="text-xl font-bold">Stock</h1>
+        {can('inventory_automation') && <DropdownMenu>
+          <DropdownMenuTrigger asChild><Button size="icon" variant="ghost" className="h-11 w-11" aria-label="Machaguo ya stock"><MoreVertical className="h-5 w-5" /></Button></DropdownMenuTrigger>
+          <DropdownMenuContent align="end"><DropdownMenuItem asChild><a href="/inventory-automation">Kuagiza stock</a></DropdownMenuItem></DropdownMenuContent>
+        </DropdownMenu>}
+      </header>
+
+      <section className="flex items-baseline justify-between gap-3 border-b border-border pb-4">
+        <p className="text-sm text-muted-foreground">Aina za bidhaa</p><p className="text-xl font-bold">{products.length}</p>
+      </section>
+
+      <div className="grid grid-cols-[minmax(0,3fr)_minmax(0,2fr)] gap-2">
+        <Input type="date" aria-label="Tarehe ya hesabu" value={selectedDate} onChange={e => setSelectedDate(e.target.value)} max={format(new Date(), 'yyyy-MM-dd')} className="h-11 min-w-0 rounded-2xl text-base" />
+        <Select value={view} onValueChange={setView}>
+          <SelectTrigger aria-label="Mwonekano wa stock" className="h-11 rounded-2xl"><SelectValue /></SelectTrigger>
+          <SelectContent><SelectItem value="list">Orodha</SelectItem><SelectItem value="chart">Chati</SelectItem></SelectContent>
+        </Select>
       </div>
 
-      {/* Date Selector */}
-      <div className="flex items-center gap-2 p-3 rounded-2xl border border-border/50">
-        <Calendar className="h-5 w-5 text-muted-foreground" />
-        <input
-          type="date"
-          value={selectedDate}
-          onChange={(e) => setSelectedDate(e.target.value)}
-          className="flex-1 px-3 py-2 border rounded-2xl text-base bg-background"
-          max={format(new Date(), 'yyyy-MM-dd')}
-        />
+      {can('inventory_snapshot_create') && <section className="space-y-2">
+        <h2 className="text-sm font-semibold">Hifadhi hesabu ya siku</h2>
+        <div className="grid grid-cols-2 gap-2">
+          <Button onClick={() => recordSnapshot('opening')} disabled={recording || !products.length || hasOpeningCount} variant={hasOpeningCount ? 'outline' : 'default'} className="h-11 rounded-full gap-2">
+            {recording ? <Loader2 className="h-4 w-4 animate-spin" /> : hasOpeningCount ? <CheckCircle2 className="h-4 w-4 text-success" /> : <ClipboardList className="h-4 w-4" />}Asubuhi
+          </Button>
+          <Button onClick={() => recordSnapshot('closing')} disabled={recording || !products.length || !hasOpeningCount || hasClosingCount} variant="outline" className="h-11 rounded-full gap-2">
+            {hasClosingCount ? <CheckCircle2 className="h-4 w-4 text-success" /> : <ClipboardList className="h-4 w-4" />}Jioni
+          </Button>
+        </div>
+        <p className="text-xs text-muted-foreground">{hasClosingCount ? 'Hesabu zote zimehifadhiwa.' : hasOpeningCount ? 'Asubuhi imehifadhiwa. Jioni bado.' : 'Hesabu bado haijahifadhiwa.'}</p>
+      </section>}
+
+      <div className="relative">
+        <Search className="absolute left-3 top-3.5 h-4 w-4 text-muted-foreground" />
+        <Input aria-label="Tafuta bidhaa kwenye stock" placeholder="Tafuta bidhaa" value={search} onChange={e => setSearch(e.target.value)} className="h-11 pl-10 rounded-2xl text-base" />
       </div>
 
-      <StockChart items={products} />
-      {can('inventory_automation') && (
-        <div className="flex justify-center">
-          <Button asChild variant="outline" className="rounded-full"><a href="/inventory-automation">Sheria za kuagiza & makadirio</a></Button>
-        </div>
-      )}
-      {/* Action Buttons */}
-      <div className="flex justify-center gap-8 flex-wrap">
-        <Button
-          onClick={() => recordSnapshot('opening')}
-          disabled={recording || hasOpeningCount || !can('inventory_snapshot_create')}
-          className="h-36 w-36 rounded-full flex-col gap-2 whitespace-normal shrink-0"
-          variant={hasOpeningCount ? "outline" : "default"}
-        >
-          {hasOpeningCount ? (
-            <CheckCircle2 className="h-6 w-6 text-green-600" />
-          ) : (
-            <Package className="h-6 w-6" />
-          )}
-          <div className="text-center">
-            <div className="font-semibold text-base">Hesabu ya Asubuhi</div>
-            <div className="text-sm opacity-80">
-              {hasOpeningCount ? 'Imerekodishwa' : 'Rekodi stock ya kuanzia'}
-            </div>
+      {view === 'chart' ? <StockChart items={visibleProducts} /> : <section className="divide-y divide-border">
+        {visibleProducts.map(product => <article key={product.id} className="py-4 space-y-2">
+          <div className="flex items-start justify-between gap-3">
+            <h3 className="font-medium text-sm break-words min-w-0" data-no-translate>{product.name}</h3>
+            <div className="shrink-0 text-right"><p className="text-xs text-muted-foreground">Iliyopo sasa</p><p className={`font-semibold ${product.stock_quantity <= 0 ? 'text-destructive' : 'text-foreground'}`}><span>{product.stock_quantity}</span> <span className="text-xs font-normal" data-no-translate>{product.unit_type || ''}</span></p></div>
           </div>
-        </Button>
-
-        <Button
-          onClick={() => recordSnapshot('closing')}
-          disabled={recording || !hasOpeningCount || hasClosingCount || !can('inventory_snapshot_create')}
-          className="h-36 w-36 rounded-full flex-col gap-2 whitespace-normal shrink-0"
-          variant={hasClosingCount ? "outline" : "default"}
-        >
-          {hasClosingCount ? (
-            <CheckCircle2 className="h-6 w-6 text-green-600" />
-          ) : (
-            <TrendingDown className="h-6 w-6" />
-          )}
-          <div className="text-center">
-            <div className="font-semibold text-base">Hesabu ya Jioni</div>
-            <div className="text-sm opacity-80">
-              {hasClosingCount ? 'Imerekodishwa' : 'Rekodi stock iliyobaki'}
-            </div>
-          </div>
-        </Button>
-      </div>
-
-      {/* Sales Report */}
-      {hasOpeningCount && (
-        <div className="space-y-3">
-          <h3 className="text-lg font-bold">Ripoti ya Mauzo</h3>
-          <div className="space-y-3">
-            {productReport.map(product => (
-              <div
-                key={product.id}
-                className="p-3 border border-border/50 rounded-2xl space-y-2"
-              >
-                <div className="flex items-center justify-between">
-                  <div className="font-medium text-base">{product.name}</div>
-                  {product.sold !== undefined ? (
-                    <Badge 
-                      variant={product.sold > 0 ? "default" : "secondary"}
-                      className="text-sm"
-                    >
-                      {product.sold > 0 ? (
-                        <>Uliuza: {product.sold}</>
-                      ) : (
-                        <>Hakuna mauzo</>
-                      )}
-                    </Badge>
-                  ) : (
-                    <Badge variant="outline" className="text-sm">
-                      Subiri hesabu ya jioni
-                    </Badge>
-                  )}
-                </div>
-                
-                <div className="grid grid-cols-2 gap-3 text-sm text-muted-foreground">
-                  {product.opening !== undefined && (
-                    <div>Asubuhi: <span className="font-medium text-foreground">{product.opening}</span></div>
-                  )}
-                  {product.closing !== undefined && (
-                    <div>Jioni: <span className="font-medium text-foreground">{product.closing}</span></div>
-                  )}
-                  {product.price !== undefined && product.sold !== undefined && (
-                    <>
-                      <div>Bei: <span className="font-medium text-foreground">TZS {product.price.toLocaleString()}</span></div>
-                      <div>Mapato: <span className="font-medium text-success">TZS {(product.revenue || 0).toLocaleString()}</span></div>
-                    </>
-                  )}
-                </div>
-              </div>
-            ))}
-            
-            {/* Total Summary */}
-            {hasClosingCount && (
-              <div className="pt-4 border-t mt-4">
-                <div className="flex justify-between items-center text-base font-bold">
-                  <span>Jumla ya Mapato:</span>
-                  <span className="text-green-600 text-xl">
-                    TZS {productReport.reduce((sum, p) => sum + (p.revenue || 0), 0).toLocaleString()}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center text-sm text-muted-foreground mt-2">
-                  <span>Bidhaa zilizouzwa:</span>
-                  <span>{productReport.reduce((sum, p) => sum + (p.sold || 0), 0)}</span>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Empty State */}
-      {!hasOpeningCount && (
-        <div className="text-center py-12 border-2 border-dashed rounded-3xl">
-          <ClipboardList className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
-          <h3 className="font-semibold text-lg mb-2">Anza Kuhesabu</h3>
-          <p className="text-sm text-muted-foreground">
-            Bonyeza "Hesabu ya Asubuhi" kurekodi stock yako ya kuanzia siku
-          </p>
-        </div>
-      )}
+          {(product.opening !== undefined || product.closing !== undefined) && <dl className="grid grid-cols-3 gap-2 text-xs">
+            <div><dt className="text-muted-foreground">Asubuhi</dt><dd className="mt-1 font-medium">{product.opening ?? '—'}</dd></div>
+            <div><dt className="text-muted-foreground">Jioni</dt><dd className="mt-1 font-medium">{product.closing ?? '—'}</dd></div>
+            <div><dt className="text-muted-foreground">Tofauti</dt><dd className="mt-1 font-medium">{product.sold ?? '—'}</dd></div>
+          </dl>}
+        </article>)}
+      </section>}
+      {view === 'list' && !visibleProducts.length && <div className="py-10 text-center text-sm text-muted-foreground">{search ? 'Hakuna bidhaa yenye jina hilo.' : 'Hakuna bidhaa za kuonyesha.'}</div>}
     </div>
   );
 };

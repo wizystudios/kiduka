@@ -4,13 +4,14 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Calendar, Search, Download, FileText, Store, User as UserIcon } from 'lucide-react';
+import { Calendar, Search, Download, FileText, Store, MoreVertical, ChevronRight } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useDataAccess } from '@/hooks/useDataAccess';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { exportToExcel, exportToPDF, createPrintableTable, ExportColumn } from '@/utils/exportUtils';
 import { MasterDetailLayout } from '@/components/MasterDetailLayout';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
 interface Sale {
   id: string;
@@ -35,6 +36,8 @@ interface Sale {
 }
 
 type PeriodKey = 'today' | 'week' | 'month' | 'year' | 'custom' | 'all';
+
+const paymentLabel = (method: string) => ({ cash: 'Pesa taslimu', mobile: 'Pesa ya simu', bank: 'Benki', credit: 'Kwa mkopo' }[method] || method || 'Pesa taslimu');
 
 const MONTHS_SW = ['Januari','Februari','Machi','Aprili','Mei','Juni','Julai','Agosti','Septemba','Oktoba','Novemba','Desemba'];
 
@@ -227,67 +230,49 @@ export const SalesPage = () => {
   for (let y = new Date().getFullYear(); y >= 2023; y--) yearOptions.push(y);
 
   const saleDetail = selectedSale ? (
-    <div className="space-y-4">
-      <div className="grid grid-cols-2 gap-3 text-sm">
+    <div className="space-y-4 min-w-0">
+      <div className="grid grid-cols-2 gap-3 text-sm break-words">
         <div><p className="text-xs text-muted-foreground">Tarehe</p><p className="font-medium">{formatDate(selectedSale.created_at)}</p></div>
-        <div><p className="text-xs text-muted-foreground">Njia</p><p className="font-medium">{selectedSale.payment_method || 'Taslimu'}</p></div>
-        {isOwner && <div><p className="text-xs text-muted-foreground">Muuzaji</p><p className="font-medium">{selectedSale.seller_name}</p></div>}
-        {selectedSale.branch_name && <div><p className="text-xs text-muted-foreground">Tawi</p><p className="font-medium">{selectedSale.branch_name}</p></div>}
+        <div><p className="text-xs text-muted-foreground">Njia ya malipo</p><p className="font-medium">{paymentLabel(selectedSale.payment_method)}</p></div>
+        {isOwner && <div><p className="text-xs text-muted-foreground">Muuzaji</p><p className="font-medium" data-no-translate>{selectedSale.seller_name}</p></div>}
+        {selectedSale.branch_name && <div><p className="text-xs text-muted-foreground">Tawi</p><p className="font-medium" data-no-translate>{selectedSale.branch_name}</p></div>}
+        {selectedSale.customers && <div><p className="text-xs text-muted-foreground">Mteja</p><p className="font-medium" data-no-translate>{selectedSale.customers.name}</p>{selectedSale.customers.phone && <p>{selectedSale.customers.phone}</p>}</div>}
       </div>
       <div className="space-y-2">
         <h4 className="font-semibold">Bidhaa</h4>
         {selectedSale.sales_items.map((item, index) => (
-          <div key={index} className="flex justify-between border-b border-border py-3 text-sm">
-            <div><p className="font-medium">{item.products?.name || 'Bidhaa'}</p><p className="text-xs text-muted-foreground">{item.quantity} × TSh {item.unit_price.toLocaleString()}</p></div>
-            <p className="font-medium">TSh {item.subtotal.toLocaleString()}</p>
+          <div key={index} className="flex flex-wrap gap-3 justify-between border-b border-border py-3 text-sm">
+            <div className="min-w-0 flex-1"><p className="font-medium break-words" data-no-translate>{item.products?.name || 'Bidhaa'}</p><p className="text-xs text-muted-foreground">{item.quantity} × TSh {item.unit_price.toLocaleString()}</p></div>
+            <p className="font-medium shrink-0">TSh {item.subtotal.toLocaleString()}</p>
           </div>
         ))}
       </div>
-      <div className="flex justify-between border-t border-border pt-4 text-lg font-bold"><span>Jumla</span><span className="text-primary">TSh {selectedSale.total_amount.toLocaleString()}</span></div>
+      {!!selectedSale.discount_amount && <div className="flex justify-between text-sm"><span>Punguzo</span><span>−TSh {selectedSale.discount_amount.toLocaleString()}</span></div>}
+      <div className="flex flex-wrap gap-2 justify-between border-t border-border pt-4 text-lg font-bold"><span>Jumla</span><span className="text-primary">TSh {selectedSale.total_amount.toLocaleString()}</span></div>
     </div>
   ) : null;
 
   return (
     <div className="p-4 space-y-4 pb-24">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-lg font-bold">Historia ya Mauzo</h2>
-          <p className="text-xs text-muted-foreground">{periodLabel()}</p>
-        </div>
-        <div className="flex gap-1.5">
-          <Button variant="outline" size="sm" onClick={handleExportExcel} disabled={!filteredSales.length} className="rounded-full">
-            <Download className="h-3.5 w-3.5 mr-1" /> Excel
-          </Button>
-          <Button variant="outline" size="sm" onClick={handleExportPDF} disabled={!filteredSales.length} className="rounded-full">
-            <FileText className="h-3.5 w-3.5 mr-1" /> PDF
-          </Button>
-        </div>
-      </div>
+      <header className="flex items-center justify-between gap-3">
+        <h2 className="text-xl font-bold">Mauzo</h2>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild><Button size="icon" variant="ghost" className="h-11 w-11" aria-label="Pakua ripoti"><MoreVertical className="h-5 w-5" /></Button></DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={handleExportExcel} disabled={!filteredSales.length}><Download className="mr-2 h-4 w-4" />Pakua Excel</DropdownMenuItem>
+            <DropdownMenuItem onClick={handleExportPDF} disabled={!filteredSales.length}><FileText className="mr-2 h-4 w-4" />Pakua PDF</DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </header>
 
-      {/* Totals summary - prominent */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 p-3 border border-border/60 rounded-2xl bg-muted/30">
-        <div className="text-center">
-          <p className="text-[10px] text-muted-foreground uppercase">Mapato</p>
-          <p className="text-base font-bold text-success">TSh {stats.totalRevenue.toLocaleString()}</p>
-        </div>
-        <div className="text-center">
-          <p className="text-[10px] text-muted-foreground uppercase">Miamala</p>
-          <p className="text-base font-bold text-primary">{stats.totalTx}</p>
-        </div>
-        <div className="text-center">
-          <p className="text-[10px] text-muted-foreground uppercase">Bidhaa</p>
-          <p className="text-base font-bold">{stats.totalItems}</p>
-        </div>
-        <div className="text-center">
-          <p className="text-[10px] text-muted-foreground uppercase">Wastani</p>
-          <p className="text-base font-bold">TSh {Math.round(stats.avg).toLocaleString()}</p>
-        </div>
-      </div>
+      <section aria-label="Muhtasari wa mauzo" className="grid grid-cols-[minmax(0,2fr)_minmax(0,1fr)] gap-4 border-b border-border pb-4">
+        <div className="min-w-0"><p className="text-sm text-muted-foreground">Jumla ya mauzo</p><p className="text-xl font-bold text-success break-words">TSh {stats.totalRevenue.toLocaleString()}</p></div>
+        <div><p className="text-sm text-muted-foreground">Idadi ya mauzo</p><p className="text-xl font-bold">{stats.totalTx}</p></div>
+      </section>
 
       {/* Period */}
       <Select value={selectedPeriod} onValueChange={(v) => setSelectedPeriod(v as PeriodKey)}>
-        <SelectTrigger className="h-8 text-xs rounded-2xl w-44" aria-label="Kipindi"><SelectValue /></SelectTrigger>
+        <SelectTrigger className="h-11 text-sm rounded-2xl w-full" aria-label="Kipindi"><SelectValue /></SelectTrigger>
         <SelectContent>
           <SelectItem value="today">Leo</SelectItem>
           <SelectItem value="week">Wiki hii</SelectItem>
@@ -302,21 +287,21 @@ export const SalesPage = () => {
       {(selectedPeriod === 'month' || selectedPeriod === 'year') && (
         <div className="flex gap-2">
           <Select value={String(selYear)} onValueChange={(v) => setSelYear(Number(v))}>
-            <SelectTrigger className="rounded-2xl h-9"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="rounded-2xl h-11 min-w-0"><SelectValue /></SelectTrigger>
             <SelectContent>{yearOptions.map(y => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}</SelectContent>
           </Select>
           {selectedPeriod === 'month' && (
             <Select value={String(selMonth)} onValueChange={(v) => setSelMonth(Number(v))}>
-              <SelectTrigger className="rounded-2xl h-9"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="rounded-2xl h-11 min-w-0"><SelectValue /></SelectTrigger>
               <SelectContent>{MONTHS_SW.map((m, i) => <SelectItem key={i} value={String(i)}>{m}</SelectItem>)}</SelectContent>
             </Select>
           )}
         </div>
       )}
       {selectedPeriod === 'custom' && (
-        <div className="flex gap-2">
-          <Input type="date" value={customStart} onChange={(e) => setCustomStart(e.target.value)} className="rounded-2xl h-9" />
-          <Input type="date" value={customEnd} onChange={(e) => setCustomEnd(e.target.value)} className="rounded-2xl h-9" />
+        <div className="grid grid-cols-2 gap-2">
+          <Input aria-label="Kuanzia tarehe" type="date" value={customStart} onChange={(e) => setCustomStart(e.target.value)} className="rounded-2xl h-11 min-w-0" />
+          <Input aria-label="Hadi tarehe" type="date" value={customEnd} onChange={(e) => setCustomEnd(e.target.value)} className="rounded-2xl h-11 min-w-0" />
         </div>
       )}
 
@@ -324,7 +309,7 @@ export const SalesPage = () => {
       <div className="flex flex-col sm:flex-row gap-2">
         {isOwner && branches.length > 0 && (
           <Select value={selectedBranchId} onValueChange={setSelectedBranchId}>
-            <SelectTrigger className="rounded-2xl h-10 sm:w-48">
+            <SelectTrigger className="rounded-2xl h-11 sm:w-48" aria-label="Tawi">
               <Store className="h-3.5 w-3.5 mr-1.5" /><SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -335,37 +320,28 @@ export const SalesPage = () => {
         )}
         <div className="relative flex-1">
           <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Tafuta risiti, muuzaji, mteja, bidhaa..."
-            value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10 rounded-2xl" />
+          <Input placeholder="Tafuta risiti, mteja au bidhaa" aria-label="Tafuta mauzo"
+            value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10 rounded-2xl h-11 text-base" />
         </div>
       </div>
 
-      {/* Sales list + desktop details */}
-      <MasterDetailLayout hasSelection={!!selectedSale} list={<div className="space-y-2">
+      {/* Persistent desktop detail; the same content opens on a phone. */}
+      <MasterDetailLayout hasSelection={!!selectedSale} list={<div className="divide-y divide-border">
         {filteredSales.map(sale => (
-          <div key={sale.id} className="p-3 border border-border/50 rounded-2xl hover:bg-muted/30 cursor-pointer"
+          <Button key={sale.id} variant="ghost" className="h-auto w-full rounded-none py-4 px-1 text-left font-normal whitespace-normal justify-start gap-2"
             onClick={() => { setSelectedSale(sale); if (window.innerWidth < 768) setDialogOpen(true); }}>
-            <div className="flex items-center justify-between mb-1">
-              <div className="flex items-center gap-2 flex-wrap">
+            <div className="min-w-0 flex-1 space-y-1">
+              <div className="flex flex-wrap justify-between gap-x-3 gap-y-1">
                 <h3 className="font-semibold text-sm">#{sale.id.slice(0, 8).toUpperCase()}</h3>
-                <Badge variant="outline" className="text-[10px]">{sale.payment_method || 'Taslimu'}</Badge>
-                {sale.branch_name && <Badge variant="secondary" className="text-[10px]"><Store className="h-2.5 w-2.5 mr-0.5" />{sale.branch_name}</Badge>}
+                <p className="text-sm font-bold">TSh {sale.total_amount.toLocaleString()}</p>
               </div>
-              <p className="text-sm font-bold">TZS {sale.total_amount.toLocaleString()}</p>
+              <p className="text-sm truncate" data-no-translate>{sale.customers?.name || sale.sales_items.map(i => i.products?.name || '').filter(Boolean).join(', ') || '—'}</p>
+              <div className="flex flex-wrap justify-between gap-1 text-xs text-muted-foreground">
+                <span>{formatDate(sale.created_at)}</span><span>{paymentLabel(sale.payment_method)}</span>
+              </div>
             </div>
-            <div className="flex items-center justify-between text-xs text-muted-foreground">
-              <span>{formatDate(sale.created_at)}</span>
-              {isOwner && sale.seller_name && (
-                <span className="flex items-center gap-1"><UserIcon className="h-3 w-3" />{sale.seller_name}</span>
-              )}
-            </div>
-            <div className="mt-1 text-xs text-muted-foreground">
-              {sale.sales_items.slice(0, 2).map((i, idx) => (
-                <span key={idx}>{i.quantity}x {i.products?.name || 'Bidhaa'}{idx < Math.min(sale.sales_items.length, 2) - 1 ? ', ' : ''}</span>
-              ))}
-              {sale.sales_items.length > 2 && <span> +{sale.sales_items.length - 2}</span>}
-            </div>
-          </div>
+            <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+          </Button>
         ))}
         {!filteredSales.length && (
           <div className="text-center py-12">
@@ -374,55 +350,14 @@ export const SalesPage = () => {
             <p className="text-xs text-muted-foreground">{periodLabel()}</p>
           </div>
         )}
-      </div>} detail={<div className="sticky top-14 p-5"><h3 className="mb-5 text-lg font-bold">Muamala #{selectedSale?.id.slice(0, 8).toUpperCase()}</h3>{saleDetail}</div>} />
+      </div>} detail={<div className="sticky top-14 p-5"><h3 className="mb-5 text-lg font-bold">Mauzo #{selectedSale?.id.slice(0, 8).toUpperCase()}</h3>{saleDetail}</div>} />
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl max-h-[85dvh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Muamala #{selectedSale?.id.slice(0, 8).toUpperCase()}</DialogTitle>
+            <DialogTitle>Mauzo #{selectedSale?.id.slice(0, 8).toUpperCase()}</DialogTitle>
           </DialogHeader>
-          {selectedSale && (
-            <div className="space-y-4 md:hidden">
-              <div className="grid grid-cols-2 gap-3 text-sm">
-                <div><p className="text-xs text-muted-foreground">Tarehe</p><p className="font-medium">{formatDate(selectedSale.created_at)}</p></div>
-                <div><p className="text-xs text-muted-foreground">Njia</p><p className="font-medium">{selectedSale.payment_method || 'Taslimu'}</p></div>
-                {isOwner && (
-                  <div><p className="text-xs text-muted-foreground">Muuzaji</p><p className="font-medium">{selectedSale.seller_name}</p></div>
-                )}
-                {selectedSale.branch_name && (
-                  <div><p className="text-xs text-muted-foreground">Tawi</p><p className="font-medium">{selectedSale.branch_name}</p></div>
-                )}
-                {selectedSale.customers && (
-                  <>
-                    <div><p className="text-xs text-muted-foreground">Mteja</p><p className="font-medium">{selectedSale.customers.name}</p></div>
-                    {selectedSale.customers.phone && <div><p className="text-xs text-muted-foreground">Simu</p><p className="font-medium">{selectedSale.customers.phone}</p></div>}
-                  </>
-                )}
-              </div>
-              <div>
-                <h4 className="font-semibold text-sm mb-2">Bidhaa</h4>
-                <div className="space-y-1">
-                  {selectedSale.sales_items.map((item, i) => (
-                    <div key={i} className="flex justify-between p-2 bg-muted/50 rounded-xl text-sm">
-                      <div>
-                        <p className="font-medium">{item.products?.name || 'Bidhaa'}</p>
-                        <p className="text-xs text-muted-foreground">{item.quantity} × TSh {item.unit_price.toLocaleString()}</p>
-                      </div>
-                      <p className="font-medium">TSh {item.subtotal.toLocaleString()}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <div className="border-t pt-3">
-                {!!selectedSale.discount_amount && selectedSale.discount_amount > 0 && (
-                  <div className="flex justify-between text-sm text-destructive mb-1"><span>Punguzo:</span><span>-TSh {selectedSale.discount_amount.toLocaleString()}</span></div>
-                )}
-                <div className="flex justify-between text-base font-bold">
-                  <span>Jumla:</span><span className="text-primary">TSh {selectedSale.total_amount.toLocaleString()}</span>
-                </div>
-              </div>
-            </div>
-          )}
+          {saleDetail}
         </DialogContent>
       </Dialog>
     </div>

@@ -1,6 +1,8 @@
 import { useEffect } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { buildTranslator, type Dict } from '@/lib/uiTranslate';
+import simpleSw from '@/i18n/sw-simple.json';
+import simpleEn from '@/i18n/en-simple.json';
 
 const ATTRS = ['placeholder', 'title', 'aria-label'];
 const SKIP = new Set(['SCRIPT', 'STYLE', 'TEXTAREA', 'CODE', 'PRE']);
@@ -10,30 +12,33 @@ export function UiTranslator() {
   const { language } = useLanguage();
 
   useEffect(() => {
-    if (language === 'sw') return;
     let cancelled = false;
-    const originals = new Map<Node, string>();
-    const attrOriginals = new Map<Element, Record<string, string>>();
+    const originals = new Map<Node, { original: string; output: string }>();
+    const attrOriginals = new Map<Element, Record<string, { original: string; output: string }>>();
     let observer: MutationObserver | null = null;
 
-    import('@/i18n/en.json').then(({ default: dict }) => {
+    const loadDictionary = language === 'sw' ? Promise.resolve(simpleSw) : import('@/i18n/en.json').then(({ default: dict }) => ({ ...dict, ...simpleEn }));
+    loadDictionary.then(dict => {
       if (cancelled) return;
       const tr = buildTranslator(dict as Dict);
-      const skip = (el: Element | null) => !!el?.closest('[data-no-translate],[contenteditable="true"]') || (!!el && SKIP.has(el.tagName));
+      const skip = (el: Element | null) => !!el?.closest('[data-no-translate],[contenteditable="true"],script,style,textarea,code,pre') || (!!el && SKIP.has(el.tagName));
 
       const doText = (n: Text) => {
         if (skip(n.parentElement)) return;
         const cur = n.nodeValue ?? '';
+        if (originals.get(n)?.output === cur) return;
         const out = tr(cur);
-        if (out && out !== cur) { if (!originals.has(n)) originals.set(n, cur); n.nodeValue = out; }
+        if (out && out !== cur) { originals.set(n, { original: cur, output: out }); n.nodeValue = out; }
+        else originals.delete(n);
       };
       const doEl = (el: Element) => {
         if (skip(el)) return;
         for (const a of ATTRS) {
           const v = el.getAttribute(a); if (!v) continue;
+          if (attrOriginals.get(el)?.[a]?.output === v) continue;
           const out = tr(v);
           if (out && out !== v) {
-            const rec = attrOriginals.get(el) ?? {}; if (!(a in rec)) rec[a] = v; attrOriginals.set(el, rec);
+            const rec = attrOriginals.get(el) ?? {}; rec[a] = { original: v, output: out }; attrOriginals.set(el, rec);
             el.setAttribute(a, out);
           }
         }
@@ -61,8 +66,8 @@ export function UiTranslator() {
     return () => {
       cancelled = true;
       observer?.disconnect();
-      originals.forEach((v, n) => { (n as Text).nodeValue = v; });
-      attrOriginals.forEach((rec, el) => Object.entries(rec).forEach(([a, v]) => el.setAttribute(a, v)));
+      originals.forEach((v, n) => { if (n.nodeValue === v.output) n.nodeValue = v.original; });
+      attrOriginals.forEach((rec, el) => Object.entries(rec).forEach(([a, v]) => { if (el.getAttribute(a) === v.output) el.setAttribute(a, v.original); }));
     };
   }, [language]);
 

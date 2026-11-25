@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Home, CameraOff, Search, Plus, Minus, ShoppingCart, Edit2, Trash2, X, RotateCcw, Check, History, Activity } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
-import { BarcodeFormat, BrowserMultiFormatReader, DecodeHintType } from '@zxing/library';
+import { FastBarcodeReader, isValidBarcode } from '@/lib/fastBarcodeReader';
 
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -66,7 +66,7 @@ export const ScannerPage = () => {
   const [videoAudit, setVideoAudit] = useState({ readyState: 0, width: 0, height: 0 });
   const videoRef = useRef<HTMLVideoElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
-  const readerRef = useRef<BrowserMultiFormatReader | null>(null);
+  const readerRef = useRef<FastBarcodeReader | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const lastScanRef = useRef<{ code: string; at: number }>({ code: '', at: 0 });
   const scanProcessingRef = useRef(false);
@@ -131,19 +131,7 @@ export const ScannerPage = () => {
     }
     let cancelled = false;
     let blankTimer: number | undefined;
-    const hints = new Map();
-    hints.set(DecodeHintType.POSSIBLE_FORMATS, [
-      BarcodeFormat.EAN_13,
-      BarcodeFormat.EAN_8,
-      BarcodeFormat.UPC_A,
-      BarcodeFormat.UPC_E,
-      BarcodeFormat.CODE_128,
-      BarcodeFormat.CODE_39,
-      BarcodeFormat.ITF,
-      BarcodeFormat.QR_CODE,
-    ]);
-    hints.set(DecodeHintType.TRY_HARDER, true);
-    const reader = new BrowserMultiFormatReader(hints, 80);
+    const reader = new FastBarcodeReader();
     readerRef.current = reader;
     setCameraError(null);
     setLastCameraErrorName(null);
@@ -197,6 +185,7 @@ export const ScannerPage = () => {
 
         setCameraStatus('requesting');
         const stream = await navigator.mediaDevices.getUserMedia({ video: baseVideo, audio: false });
+        if (cancelled || !videoRef.current) { stream.getTracks().forEach(track => track.stop()); return; }
         streamRef.current = stream;
         setPermissionState('granted');
 
@@ -245,7 +234,8 @@ export const ScannerPage = () => {
             setLastCameraErrorName((decodeError as any).name);
           }
           if (result) {
-            const code = result.getText();
+            const code = result.getText().trim();
+            if (!isValidBarcode(code, result.getFormat?.())) return;
             const now = Date.now();
             if (scanProcessingRef.current) return;
             // Continuous camera should not keep adding the same item while it stays in frame.

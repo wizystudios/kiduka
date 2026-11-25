@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { BarcodeFormat, BrowserMultiFormatReader, DecodeHintType } from '@zxing/library';
+import { FastBarcodeReader, isValidBarcode, SCAN_HELP_AFTER_MS } from '@/lib/fastBarcodeReader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ArrowLeft, CameraOff, Keyboard } from 'lucide-react';
@@ -11,18 +11,7 @@ interface CameraScannerProps {
   title?: string;
 }
 
-const NOT_FOUND_AFTER_MS = 12000;
-
-/** EAN/UPC check digit; other formats are trusted to the decoder. */
-export const isValidBarcode = (code: string) => {
-  const c = code.trim();
-  if (!c) return false;
-  if (!/^\d+$/.test(c) || ![8, 12, 13, 14].includes(c.length)) return c.length >= 4;
-  const digits = c.split('').map(Number);
-  const check = digits.pop()!;
-  const sum = digits.reverse().reduce((s, d, i) => s + d * (i % 2 === 0 ? 3 : 1), 0);
-  return (10 - (sum % 10)) % 10 === check;
-};
+export { isValidBarcode } from '@/lib/fastBarcodeReader';
 
 /** Full-screen live scanner using the same engine and look as the sales scanner. */
 export const CameraScanner = ({ onScan, onClose, isOpen, title = 'Scan barcode ya bidhaa' }: CameraScannerProps) => {
@@ -36,20 +25,19 @@ export const CameraScanner = ({ onScan, onClose, isOpen, title = 'Scan barcode y
     if (!isOpen) return;
     let cancelled = false;
     let stream: MediaStream | null = null;
-    const hints = new Map();
-    hints.set(DecodeHintType.POSSIBLE_FORMATS, [BarcodeFormat.EAN_13, BarcodeFormat.EAN_8, BarcodeFormat.UPC_A, BarcodeFormat.UPC_E,
-      BarcodeFormat.CODE_128, BarcodeFormat.CODE_39, BarcodeFormat.ITF, BarcodeFormat.QR_CODE]);
-    hints.set(DecodeHintType.TRY_HARDER, true);
-    const reader = new BrowserMultiFormatReader(hints, 80);
+    const reader = new FastBarcodeReader();
     setStatus('starting'); setMessage(null);
-    const slowTimer = window.setTimeout(() => { if (!cancelled) setStatus('slow'); }, NOT_FOUND_AFTER_MS);
+    let slowTimer: number | undefined;
+    const startupTimer = window.setTimeout(() => {
+      if (!cancelled) setMessage('Kamera bado inafunguka. Unaweza kuandika barcode chini.');
+    }, SCAN_HELP_AFTER_MS);
 
     (async () => {
       try {
         if (!navigator.mediaDevices?.getUserMedia) throw Object.assign(new Error(), { name: 'Unsupported' });
         stream = await navigator.mediaDevices.getUserMedia({ audio: false,
           video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } } });
-        if (cancelled || !videoRef.current) return;
+        if (cancelled || !videoRef.current) { stream.getTracks().forEach(t => t.stop()); return; }
         const [track] = stream.getVideoTracks();
         try {
           const caps = track.getCapabilities?.() as any;
@@ -57,17 +45,26 @@ export const CameraScanner = ({ onScan, onClose, isOpen, title = 'Scan barcode y
         } catch { /* focus optional */ }
         videoRef.current.srcObject = stream;
         await videoRef.current.play().catch(() => undefined);
+        if (cancelled) return;
+        window.clearTimeout(startupTimer);
+        setMessage(null);
         setStatus('active');
+        slowTimer = window.setTimeout(() => { if (!cancelled) setStatus('slow'); }, SCAN_HELP_AFTER_MS);
         await reader.decodeFromStream(stream, videoRef.current, (result) => {
           if (cancelled || !result) return;
           const code = result.getText().trim();
-          if (!isValidBarcode(code)) { setMessage('Barcode hii haisomeki vizuri. Jaribu tena au iandike.'); return; }
+          if (!isValidBarcode(code, result.getFormat?.())) { setMessage('Barcode hii haisomeki vizuri. Jaribu tena au iandike.'); return; }
           cancelled = true;
+          window.clearTimeout(slowTimer);
+          reader.reset();
+          stream?.getTracks().forEach(t => t.stop());
           if (navigator.vibrate) navigator.vibrate(80);
           onScan(code);
         });
       } catch (err: any) {
         if (cancelled) return;
+        window.clearTimeout(startupTimer);
+        window.clearTimeout(slowTimer);
         setStatus('error');
         setMessage(err?.name === 'NotAllowedError' ? 'Ruhusu kamera kwenye mipangilio ya browser, kisha jaribu tena.'
           : 'Kamera haikufunguka. Funga app nyingine zinazotumia kamera, kisha jaribu tena.');
@@ -77,6 +74,7 @@ export const CameraScanner = ({ onScan, onClose, isOpen, title = 'Scan barcode y
     return () => {
       cancelled = true;
       window.clearTimeout(slowTimer);
+      window.clearTimeout(startupTimer);
       reader.reset();
       stream?.getTracks().forEach(t => t.stop());
     };
@@ -85,12 +83,12 @@ export const CameraScanner = ({ onScan, onClose, isOpen, title = 'Scan barcode y
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-foreground">
+    <div className="fixed inset-x-0 top-12 bottom-16 z-[45] flex flex-col bg-foreground md:top-10 md:bottom-0 md:left-16">
       <div className="relative flex-1 overflow-hidden">
         <video ref={videoRef} className="absolute inset-0 h-full w-full object-cover" autoPlay playsInline muted />
-        <div className="absolute left-4 right-4 top-4 z-20 flex items-center gap-3">
+        <div className="absolute inset-x-0 top-0 z-20 flex items-center gap-3 bg-background/95 px-4 py-2">
           <Button size="icon" variant="secondary" aria-label="Funga" className="h-11 w-11 rounded-full" onClick={onClose}><ArrowLeft className="h-5 w-5" /></Button>
-          <p className="text-sm font-medium text-background">{title}</p>
+          <p className="text-sm font-medium text-foreground">{title}</p>
         </div>
         {status !== 'error' && (
           <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
@@ -107,13 +105,13 @@ export const CameraScanner = ({ onScan, onClose, isOpen, title = 'Scan barcode y
       </div>
       <div className="space-y-2 bg-background p-4 text-center">
         <p className="text-sm text-foreground">
-          {status === 'starting' ? 'Inafungua kamera…'
-            : message ?? (status === 'slow' ? 'Barcode haijaonekana. Sogeza simu karibu, weka mwanga, au iandike.' : 'Weka barcode ndani ya kisanduku cha kijani.')}
+          {message ?? (status === 'starting' ? 'Inafungua kamera…'
+            : status === 'slow' ? 'Bado haijasomeka. Weka mwanga au andika barcode chini.' : 'Elekeza kamera kwenye barcode.')}
         </p>
         <form className="flex gap-2" onSubmit={(e) => { e.preventDefault(); const c = manual.trim(); if (c) onScan(c); }}>
           <Input value={manual} onChange={(e) => setManual(e.target.value)} inputMode="numeric" placeholder="Au andika barcode hapa"
-            className="h-10 rounded-2xl text-sm" autoFocus={status === 'slow' || status === 'error'} />
-          <Button type="submit" className="h-10 rounded-full px-4" disabled={!manual.trim()}><Keyboard className="mr-1 h-4 w-4" />Tumia</Button>
+            className="h-11 rounded-2xl text-base" aria-label="Andika barcode" />
+          <Button type="submit" className="h-11 rounded-full px-4" disabled={!manual.trim()}><Keyboard className="mr-1 h-4 w-4" />Tumia</Button>
         </form>
       </div>
     </div>

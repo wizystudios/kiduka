@@ -41,3 +41,4 @@
 - Read global admin totals through the protected aggregate RPC with Tanzania calendar-day boundaries, because client row limits and mixed periods misstate system statistics.
 - Keep the product hierarchy as products.sector/category/brand/variant_name with taxonomy in src/lib/productCatalog.ts, and share only descriptive barcode details via catalog_items (never price or stock), because shops need scan-to-fill without exposing each other's commercial data.
 - Translate the app's built-in Swahili UI text at runtime from the generated dictionary in src/i18n (applied on screen by UiTranslator, matched only against app strings), because most text is hardcoded and user records must never be sent for translation.
+- Share the native-first barcode reader with a portable ZXing fallback between registration and sales; decode immediately and cancel late camera streams, because mobile speed and camera cleanup must remain consistent.
