@@ -8,6 +8,8 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
 } from 'recharts';
 import { format, subDays, startOfDay } from 'date-fns';
+import { CatalogFilterBar } from '@/components/catalog/CatalogFilterBar';
+import { groupByLevel, LEVEL_LABEL, matchesCatalogFilter, type CatalogFilter, type CatalogLevel } from '@/lib/productCatalog';
 
 interface SalesData { date: string; revenue: number; sales_count: number; }
 interface TopProduct { name: string; quantity: number; revenue: number; }
@@ -22,6 +24,9 @@ export default function SalesAnalyticsPage() {
   const [salesTrend, setSalesTrend] = useState<SalesData[]>([]);
   const [topProducts, setTopProducts] = useState<TopProduct[]>([]);
   const [categoryData, setCategoryData] = useState<CategoryData[]>([]);
+  const [saleItems, setSaleItems] = useState<any[]>([]);
+  const [catFilter, setCatFilter] = useState<CatalogFilter>({});
+  const [level, setLevel] = useState<CatalogLevel>('sector');
   const [lowStock, setLowStock] = useState<LowStockItem[]>([]);
   const [stats, setStats] = useState({ totalRevenue: 0, totalSales: 0, avgOrderValue: 0, topProductName: '' });
 
@@ -47,7 +52,7 @@ export default function SalesAnalyticsPage() {
       setSalesTrend(Array.from(trendMap.entries()).map(([date, data]) => ({ date, revenue: data.revenue, sales_count: data.count })));
 
       const { data: itemsData, error: itemsError } = await supabase
-        .from('sales_items').select('quantity, subtotal, product_id, products (name, category)')
+        .from('sales_items').select('quantity, subtotal, product_id, products (name, sector, category, brand, variant_name)')
         .gte('created_at', thirtyDaysAgo.toISOString());
       if (itemsError) throw itemsError;
 
@@ -69,6 +74,7 @@ export default function SalesAnalyticsPage() {
         const category = item.products?.category || 'Zingine';
         categoryMap.set(category, (categoryMap.get(category) || 0) + Number(item.subtotal));
       });
+      setSaleItems((itemsData || []).map((i: any) => ({ quantity: Number(i.quantity), subtotal: Number(i.subtotal), product: i.products })));
       setCategoryData(Array.from(categoryMap.entries()).map(([name, value]) => ({ name, value })));
 
       const totalRevenue = salesData?.reduce((sum, s) => sum + Number(s.total_amount), 0) || 0;
@@ -162,18 +168,33 @@ export default function SalesAnalyticsPage() {
           </ResponsiveContainer>
         </div>
 
-        <div>
-          <p className="text-sm font-medium mb-2">Mauzo kwa Kategoria</p>
-          <ResponsiveContainer width="100%" height={200}>
-            <PieChart>
-              <Pie data={categoryData} cx="50%" cy="50%" labelLine={false} label={(entry) => entry.name} outerRadius={70} fill="#8884d8" dataKey="value">
-                {categoryData.map((_, index) => (
-                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+        <div className="space-y-2">
+          <p className="text-sm font-medium">Mauzo kwa Kundi</p>
+          <CatalogFilterBar products={saleItems.map(i => i.product ?? {})} value={catFilter} onChange={setCatFilter} />
+          <div className="flex gap-1.5 overflow-x-auto">
+            {(Object.keys(LEVEL_LABEL) as CatalogLevel[]).map(l => (
+              <button key={l} type="button" onClick={() => setLevel(l)}
+                className={`text-xs px-3 py-1 rounded-full border shrink-0 ${level === l ? 'bg-primary text-primary-foreground border-primary' : 'border-border text-muted-foreground'}`}>
+                Kwa {LEVEL_LABEL[l]}
+              </button>
+            ))}
+          </div>
+          {(() => {
+            const rows = groupByLevel(saleItems.filter(i => matchesCatalogFilter(i.product ?? {}, catFilter)), level);
+            const total = rows.reduce((a, r) => a + r.revenue, 0);
+            if (rows.length === 0) return <p className="text-xs text-muted-foreground py-3">Hakuna mauzo katika kundi hili kwa siku 30.</p>;
+            return (
+              <div className="divide-y divide-border/50">
+                {rows.map((r, idx) => (
+                  <div key={r.name} className="py-2 text-xs">
+                    <div className="flex justify-between gap-2"><span className="truncate font-medium">{r.name}</span><span className="font-semibold shrink-0">{r.revenue.toLocaleString()} TSh</span></div>
+                    <div className="mt-1 h-1.5 rounded-full bg-muted overflow-hidden"><div className="h-full rounded-full" style={{ width: `${total ? (r.revenue / total) * 100 : 0}%`, background: COLORS[idx % COLORS.length] }} /></div>
+                    <p className="text-[11px] text-muted-foreground mt-0.5">Idadi {r.quantity.toLocaleString()} · {total ? Math.round((r.revenue / total) * 100) : 0}%</p>
+                  </div>
                 ))}
-              </Pie>
-              <Tooltip />
-            </PieChart>
-          </ResponsiveContainer>
+              </div>
+            );
+          })()}
         </div>
 
         <div>

@@ -316,6 +316,13 @@
       "when": 1795035977871,
       "tag": "0044_loan_payment_updates_loan",
       "breakpoints": true
+    },
+    {
+      "idx": 45,
+      "version": "7",
+      "when": 1795628895203,
+      "tag": "0045_product_catalog_hierarchy",
+      "breakpoints": true
     }
   ]
 }

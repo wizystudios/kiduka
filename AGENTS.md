@@ -39,3 +39,4 @@
 - Record unpaid or partly paid sales as customer debt through the server `record_sale_debt` RPC (creates the customer if needed, updates balance, invoice and ledger), because a completed sale with an unpaid balance must always appear in Madeni.
 - Settle trade credit through request-ID-protected server transactions linking customer debt to sales/invoices and supplier debt to purchase records; service expense is recognized once at purchase, because partial payments must not double-count revenue or expense.
 - Read global admin totals through the protected aggregate RPC with Tanzania calendar-day boundaries, because client row limits and mixed periods misstate system statistics.
+- Keep the product hierarchy as products.sector/category/brand/variant_name with taxonomy in src/lib/productCatalog.ts, and share only descriptive barcode details via catalog_items (never price or stock), because shops need scan-to-fill without exposing each other's commercial data.

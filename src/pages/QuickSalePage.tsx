@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import { CatalogFilterBar } from '@/components/catalog/CatalogFilterBar';
+import { matchesCatalogFilter, type CatalogFilter } from '@/lib/productCatalog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -14,7 +16,7 @@ import { logActivity } from '@/hooks/useActivityLogger';
 import { InvoiceGenerator } from '@/components/InvoiceGenerator';
 
 interface Customer { id: string; name: string; }
-interface ProductOption { id: string; name: string; price: number; stock_quantity: number | null; }
+interface ProductOption { id: string; name: string; price: number; stock_quantity: number | null; barcode?: string | null; sector?: string | null; category?: string | null; brand?: string | null; variant_name?: string | null; }
 
 export const QuickSalePage = () => {
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -22,6 +24,7 @@ export const QuickSalePage = () => {
   const [productId, setProductId] = useState<string>('');
   const [saveProduct, setSaveProduct] = useState(true);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [catFilter, setCatFilter] = useState<CatalogFilter>({});
   const [customerPhone, setCustomerPhone] = useState('');
   const [loading, setLoading] = useState(false);
   const [showInvoice, setShowInvoice] = useState(false);
@@ -39,7 +42,7 @@ export const QuickSalePage = () => {
 
   const fetchProducts = async () => {
     if (!dataOwnerId) return;
-    let query = supabase.from('products').select('id, name, price, stock_quantity')
+    let query = supabase.from('products').select('id, name, price, stock_quantity, barcode, sector, category, brand, variant_name')
       .eq('owner_id', dataOwnerId).or('is_archived.is.null,is_archived.eq.false');
     if (branchId) query = query.or(`branch_id.eq.${branchId},branch_id.is.null`);
     const { data } = await query.order('name').limit(1000);
@@ -47,11 +50,13 @@ export const QuickSalePage = () => {
   };
 
   const term = formData.product_name.trim().toLowerCase();
-  const suggestions = term ? products.filter(p => p.name.toLowerCase().includes(term)).slice(0, 8) : products.slice(0, 8);
-  const exactProduct = products.find(p => p.name.trim().toLowerCase() === term);
+  const label = (p: ProductOption) => p.variant_name && !p.name.toLowerCase().includes(p.variant_name.toLowerCase()) ? `${p.name} ${p.variant_name}` : p.name;
+  const filtered = products.filter(p => matchesCatalogFilter(p, catFilter));
+  const suggestions = (term ? filtered.filter(p => label(p).toLowerCase().includes(term) || (p.barcode ?? '') === formData.product_name.trim()) : filtered).slice(0, 12);
+  const exactProduct = products.find(p => label(p).trim().toLowerCase() === term);
   const pickProduct = (p: ProductOption) => {
     setProductId(p.id);
-    setFormData(f => ({ ...f, product_name: p.name, unit_price: String(p.price ?? '') }));
+    setFormData(f => ({ ...f, product_name: label(p), unit_price: String(p.price ?? '') }));
     setShowSuggestions(false);
   };
   const isDebt = formData.payment_status !== 'paid' || formData.payment_method === 'credit';
@@ -246,10 +251,11 @@ export const QuickSalePage = () => {
 
             <div>
               <Label className="text-xs">Bidhaa</Label>
+              <div className="mb-2"><CatalogFilterBar products={products} value={catFilter} onChange={(f) => { setCatFilter(f); setShowSuggestions(true); }} /></div>
               <div className="relative">
                 <Input
                   value={formData.product_name}
-                  placeholder="Tafuta au andika jina la bidhaa"
+                  placeholder="Tafuta jina, scan barcode au andika mpya"
                   autoComplete="off"
                   onFocus={() => setShowSuggestions(true)}
                   onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
@@ -261,7 +267,7 @@ export const QuickSalePage = () => {
                     {suggestions.map(p => (
                       <button type="button" key={p.id} onMouseDown={(e) => e.preventDefault()} onClick={() => pickProduct(p)}
                         className="flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-muted">
-                        <span className="truncate">{p.name}</span>
+                        <span className="min-w-0"><span className="block truncate">{label(p)}</span>{(p.category || p.brand) && <span className="block truncate text-[11px] text-muted-foreground">{[p.sector, p.category, p.brand].filter(Boolean).join(' › ')}</span>}</span>
                         <span className="ml-2 shrink-0 text-xs text-muted-foreground">TZS {Number(p.price || 0).toLocaleString()} · Stoo {p.stock_quantity ?? 0}</span>
                       </button>
                     ))}

@@ -780,6 +780,48 @@ export type Database = {
         }
         Relationships: []
       }
+      catalog_items: {
+        Row: {
+          barcode: string
+          brand: string | null
+          category: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          name: string
+          sector: string | null
+          unit_type: string | null
+          updated_at: string
+          variant_name: string | null
+        }
+        Insert: {
+          barcode: string
+          brand?: string | null
+          category?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name: string
+          sector?: string | null
+          unit_type?: string | null
+          updated_at?: string
+          variant_name?: string | null
+        }
+        Update: {
+          barcode?: string
+          brand?: string | null
+          category?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name?: string
+          sector?: string | null
+          unit_type?: string | null
+          updated_at?: string
+          variant_name?: string | null
+        }
+        Relationships: []
+      }
       chat_messages: {
         Row: {
           created_at: string
@@ -2038,6 +2080,7 @@ export type Database = {
           archived_by: string | null
           barcode: string | null
           branch_id: string | null
+          brand: string | null
           business_id: string | null
           category: string | null
           cost_price: number | null
@@ -2053,6 +2096,7 @@ export type Database = {
           owner_id: string
           parent_product_id: string | null
           price: number
+          sector: string | null
           stock_quantity: number
           unit: string | null
           unit_type: string | null
@@ -2065,6 +2109,7 @@ export type Database = {
           archived_by?: string | null
           barcode?: string | null
           branch_id?: string | null
+          brand?: string | null
           business_id?: string | null
           category?: string | null
           cost_price?: number | null
@@ -2080,6 +2125,7 @@ export type Database = {
           owner_id: string
           parent_product_id?: string | null
           price: number
+          sector?: string | null
           stock_quantity?: number
           unit?: string | null
           unit_type?: string | null
@@ -2092,6 +2138,7 @@ export type Database = {
           archived_by?: string | null
           barcode?: string | null
           branch_id?: string | null
+          brand?: string | null
           business_id?: string | null
           category?: string | null
           cost_price?: number | null
@@ -2107,6 +2154,7 @@ export type Database = {
           owner_id?: string
           parent_product_id?: string | null
           price?: number
+          sector?: string | null
           stock_quantity?: number
           unit?: string | null
           unit_type?: string | null

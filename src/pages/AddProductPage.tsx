@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -13,6 +13,9 @@ import { MultiImageUpload } from '@/components/MultiImageUpload';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { logActivity } from '@/hooks/useActivityLogger';
+import { CatalogPicker } from '@/components/catalog/CatalogPicker';
+import { contributeBarcode, lookupBarcode } from '@/lib/catalogLookup';
+import type { CatalogFields } from '@/lib/productCatalog';
 
 interface ProductImage { id?: string; image_url: string; display_order: number; is_primary: boolean; }
 
@@ -21,7 +24,7 @@ export const AddProductPage = () => {
   const [productImages, setProductImages] = useState<ProductImage[]>([]);
   const [formData, setFormData] = useState({
     name: '', barcode: '', price: '', cost_price: '', stock_quantity: '',
-    category: '', description: '', low_stock_threshold: '10',
+    category: '', sector: '', brand: '', variant_name: '', description: '', low_stock_threshold: '10',
     is_weight_based: false, unit_type: 'piece', min_quantity: '0.1',
   });
   
@@ -29,8 +32,30 @@ export const AddProductPage = () => {
   const { dataOwnerId, branchId, loading: dataLoading, isReady } = useDataAccess();
   const { createProduct, isOffline } = useOfflineProducts(isReady ? dataOwnerId : null, branchId);
 
+  const [barcodeGenerated, setBarcodeGenerated] = useState(false);
+  const [shopProducts, setShopProducts] = useState<CatalogFields[]>([]);
+  const [lookupNote, setLookupNote] = useState('');
+
+  useEffect(() => {
+    if (!dataOwnerId) return;
+    supabase.from('products').select('sector, category, brand, variant_name').eq('owner_id', dataOwnerId).eq('is_archived', false).limit(1000)
+      .then(({ data }) => setShopProducts(data ?? []));
+  }, [dataOwnerId]);
+
+  const runLookup = async () => {
+    const code = formData.barcode.trim();
+    if (!code || barcodeGenerated) return;
+    const match = await lookupBarcode(code, dataOwnerId);
+    if (!match) { setLookupNote('Barcode mpya — jaza taarifa mara moja, itakumbukwa.'); return; }
+    if (match.source === 'shop') { setLookupNote(`Tayari una bidhaa hii: ${match.name}. Ihariri badala ya kuiongeza upya.`); return; }
+    setFormData(f => ({ ...f, name: f.name || match.name, sector: match.sector || f.sector, category: match.category || f.category,
+      brand: match.brand || f.brand, variant_name: match.variant_name || f.variant_name, unit_type: match.unit_type || f.unit_type }));
+    setLookupNote(`Taarifa zimejazwa kutoka barcode: ${match.name}. Weka bei na stock.`);
+  };
+
   const generateBarcode = () => {
     const barcode = '8' + Date.now().toString().slice(-11);
+    setBarcodeGenerated(true); setLookupNote('');
     setFormData({...formData, barcode});
     toast.success(`Barcode: ${barcode}`);
   };
@@ -47,7 +72,8 @@ export const AddProductPage = () => {
         name: formData.name.trim(), barcode: formData.barcode || '8' + Date.now().toString().slice(-11),
         price: parseFloat(formData.price), cost_price: formData.cost_price ? parseFloat(formData.cost_price) : 0,
         stock_quantity: Math.max(0, Math.round(parseFloat(formData.stock_quantity) || 0)),
-        category: formData.category?.trim() || null, description: formData.description?.trim() || null,
+        category: formData.category?.trim() || null, sector: formData.sector?.trim() || null,
+        brand: formData.brand?.trim() || null, variant_name: formData.variant_name?.trim() || null, description: formData.description?.trim() || null,
         low_stock_threshold: parseInt(formData.low_stock_threshold), is_weight_based: formData.is_weight_based,
         unit_type: formData.unit_type, min_quantity: parseFloat(formData.min_quantity) || 0.1,
         image_url: primaryImage?.image_url || null, owner_id: dataOwnerId, branch_id: branchId || undefined
@@ -63,6 +89,10 @@ export const AddProductPage = () => {
         }
       }
 
+      if (!barcodeGenerated) {
+        contributeBarcode({ barcode: formData.barcode, name: formData.name, sector: formData.sector, category: formData.category,
+          brand: formData.brand, variant_name: formData.variant_name, unit_type: formData.unit_type }).catch(() => {});
+      }
       logActivity('product_add', `Bidhaa "${formData.name}" imeongezwa`, { product_name: formData.name, price: formData.price });
       navigate('/products');
     } catch (error: any) {
@@ -106,9 +136,12 @@ export const AddProductPage = () => {
         <div>
           <Label className="text-xs">Barcode</Label>
           <div className="flex gap-2">
-            <Input value={formData.barcode} onChange={(e) => setFormData({...formData, barcode: e.target.value})} placeholder="Ingiza au zalisha" className="text-sm h-8" />
+            <Input value={formData.barcode} onChange={(e) => { setBarcodeGenerated(false); setLookupNote(''); setFormData({...formData, barcode: e.target.value}); }}
+              onBlur={runLookup} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); runLookup(); } }}
+              placeholder="Scan au ingiza barcode" className="text-sm h-8" />
             <Button type="button" variant="outline" onClick={generateBarcode} className="text-xs px-2 h-8" disabled={loading}>Zalisha</Button>
           </div>
+          {lookupNote && <p className="text-[11px] text-muted-foreground mt-1">{lookupNote}</p>}
         </div>
 
         <div className="grid grid-cols-2 gap-2">
@@ -133,10 +166,9 @@ export const AddProductPage = () => {
           </div>
         </div>
 
-        <div>
-          <Label className="text-xs">Kategoria</Label>
-          <Input value={formData.category} onChange={(e) => setFormData({...formData, category: e.target.value})} placeholder="Elektroniki, Chakula, n.k." className="text-sm h-8" />
-        </div>
+        <CatalogPicker shopProducts={shopProducts} disabled={loading}
+          value={{ sector: formData.sector, category: formData.category, brand: formData.brand, variant_name: formData.variant_name }}
+          onChange={(v) => setFormData(f => ({ ...f, sector: v.sector ?? '', category: v.category ?? '', brand: v.brand ?? '', variant_name: v.variant_name ?? '' }))} />
 
         <div>
           <Label className="text-xs">Maelezo</Label>

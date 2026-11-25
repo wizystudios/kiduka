@@ -86,3 +86,7 @@
 - [x] Verify centered branch name, adjacent Hai badge, location in settings, spacing and persistent desktop branch list.
 - [x] Scanner sale Ttt, TSh 250; ShopWithUs receipt, linked invoice and stock 25→24 verified; current unpaid balance displayed.
 - [ ] Physical-phone payment approval, fingerprint and camera scan (owner device required).
+
+## Product catalog
+- [x] Sekta > Kundi > Chapa > Ukubwa on add/edit product, barcode auto-fill from shared registry, filters in Bidhaa and Mauzo ya Haraka, category drill-down report.
+- [ ] Registry starts empty (no invented barcodes); fills as shops save scanned products.

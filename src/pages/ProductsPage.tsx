@@ -1,4 +1,6 @@
 import { useState, useMemo } from 'react';
+import { CatalogFilterBar } from '@/components/catalog/CatalogFilterBar';
+import { matchesCatalogFilter, type CatalogFilter } from '@/lib/productCatalog';
 import { safeCell, csvRow, safeRow } from '@/lib/safeCell';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -29,6 +31,9 @@ interface ProductLocal {
   price: number;
   stock_quantity: number;
   category?: string | null;
+  sector?: string | null;
+  brand?: string | null;
+  variant_name?: string | null;
   description?: string | null;
   low_stock_threshold?: number | null;
   is_weight_based?: boolean | null;
@@ -41,6 +46,7 @@ interface ProductLocal {
 export const ProductsPage = () => {
   const { can } = usePermissions();
   const [searchTerm, setSearchTerm] = useState('');
+  const [catFilter, setCatFilter] = useState<CatalogFilter>({});
   const [selectedWeightProduct, setSelectedWeightProduct] = useState<ProductLocal | null>(null);
   const [expandedProduct, setExpandedProduct] = useState<string | null>(null);
   const [showArchived, setShowArchived] = useState(false);
@@ -185,7 +191,7 @@ export const ProductsPage = () => {
   };
 
   const filteredProducts = useMemo(() => {
-    let filtered = products.filter(p => showArchived ? p.is_archived : !p.is_archived);
+    let filtered = products.filter(p => (showArchived ? p.is_archived : !p.is_archived) && matchesCatalogFilter(p, catFilter));
     
     if (!searchTerm.trim()) return filtered;
     
@@ -193,9 +199,11 @@ export const ProductsPage = () => {
     return filtered.filter(product =>
       product.name?.toLowerCase().includes(searchLower) ||
       product.barcode?.toLowerCase().includes(searchLower) ||
-      product.category?.toLowerCase().includes(searchLower)
+      product.category?.toLowerCase().includes(searchLower) ||
+      product.brand?.toLowerCase().includes(searchLower) ||
+      product.variant_name?.toLowerCase().includes(searchLower)
     );
-  }, [products, searchTerm, showArchived]);
+  }, [products, searchTerm, showArchived, catFilter]);
 
   const archivedCount = useMemo(() => products.filter(p => p.is_archived).length, [products]);
   const selectedProduct = useMemo(
@@ -314,6 +322,8 @@ export const ProductsPage = () => {
         </Button>
       </div>
 
+      <CatalogFilterBar products={products.filter(p => !p.is_archived)} value={catFilter} onChange={setCatFilter} />
+
       {/* Products list + desktop details */}
       <MasterDetailLayout
         hasSelection={!!selectedProduct}
@@ -368,7 +378,7 @@ export const ProductsPage = () => {
                         <p className="text-xs text-gray-600">Barcode: {product.barcode}</p>
                       )}
                       {product.category && (
-                        <p className="text-xs text-gray-600">Aina: {product.category}</p>
+                        <p className="text-xs text-muted-foreground">{[product.sector, product.category, product.brand, product.variant_name].filter(Boolean).join(' › ')}</p>
                       )}
                       {product.description && (
                         <p className="text-xs text-gray-600">{product.description}</p>
@@ -488,7 +498,7 @@ export const ProductsPage = () => {
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4 border-y border-border py-4 text-sm">
-                <div><p className="text-xs text-muted-foreground">Kategoria</p><p className="font-medium">{selectedProduct.category || '—'}</p></div>
+                <div><p className="text-xs text-muted-foreground">Kategoria</p><p className="font-medium">{[selectedProduct.sector, selectedProduct.category, selectedProduct.brand, selectedProduct.variant_name].filter(Boolean).join(' › ') || '—'}</p></div>
                 <div><p className="text-xs text-muted-foreground">Barcode</p><p className="font-medium">{selectedProduct.barcode || '—'}</p></div>
               </div>
               {selectedProduct.description && <p className="text-sm text-muted-foreground">{selectedProduct.description}</p>}

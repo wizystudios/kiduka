@@ -1,4 +1,5 @@
 
+import { CatalogPicker } from '@/components/catalog/CatalogPicker';
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -32,6 +33,9 @@ export const EditProductPage = () => {
     cost_price: '',
     stock_quantity: '',
     category: '',
+    sector: '',
+    brand: '',
+    variant_name: '',
     description: '',
     low_stock_threshold: '10',
     is_weight_based: false,
@@ -66,6 +70,9 @@ export const EditProductPage = () => {
         cost_price: data.cost_price?.toString() || '',
         stock_quantity: data.stock_quantity?.toString() || '',
         category: data.category || '',
+        sector: data.sector || '',
+        brand: data.brand || '',
+        variant_name: data.variant_name || '',
         description: data.description || '',
         low_stock_threshold: data.low_stock_threshold?.toString() || '10',
         is_weight_based: data.is_weight_based || false,
@@ -130,6 +137,9 @@ export const EditProductPage = () => {
         ...(can('products_cost_edit') ? { cost_price: formData.cost_price ? parseFloat(formData.cost_price) : null } : {}),
         ...(can('can_edit_inventory') ? { stock_quantity: parseFloat(formData.stock_quantity) } : {}),
         category: formData.category?.trim() || null,
+        sector: formData.sector?.trim() || null,
+        brand: formData.brand?.trim() || null,
+        variant_name: formData.variant_name?.trim() || null,
         description: formData.description?.trim() || null,
         low_stock_threshold: parseInt(formData.low_stock_threshold),
         is_weight_based: formData.is_weight_based,
@@ -303,15 +313,9 @@ export const EditProductPage = () => {
               </div>
             </div>
 
-            <div>
-              <Label htmlFor="category">Kategoria</Label>
-              <Input
-                id="category"
-                value={formData.category}
-                onChange={(e) => setFormData({...formData, category: e.target.value})}
-                placeholder="Elektroniki, Chakula, n.k."
-              />
-            </div>
+            <CatalogPicker
+              value={{ sector: formData.sector, category: formData.category, brand: formData.brand, variant_name: formData.variant_name }}
+              onChange={(v) => setFormData(f => ({ ...f, sector: v.sector ?? '', category: v.category ?? '', brand: v.brand ?? '', variant_name: v.variant_name ?? '' }))} />
 
             <div>
               <Label htmlFor="description">Maelezo</Label>

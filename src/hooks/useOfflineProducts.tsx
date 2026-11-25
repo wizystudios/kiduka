@@ -11,6 +11,9 @@ interface Product {
   stock_quantity: number;
   barcode?: string | null;
   category?: string | null;
+  sector?: string | null;
+  brand?: string | null;
+  variant_name?: string | null;
   description?: string | null;
   owner_id: string;
   branch_id?: string | null;
