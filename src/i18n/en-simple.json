@@ -180,5 +180,9 @@
   "Elekeza kamera kwenye barcode.": "Point the camera at the barcode.",
   "Taarifa za mauzo": "Sales Report",
   "Tafuta bidhaa": "Search products",
-  "Kwa mkopo": "On credit"
+  "Kwa mkopo": "On credit",
+  "Barcode haijaonekana. Sogeza karibu, weka mwanga, au iandike.": "Barcode not seen. Move closer, add light, or type it.",
+  "Andika barcode": "Type barcode",
+  "Jioni bado.": "Evening count not done yet.",
+  "Anza na hesabu ya asubuhi.": "Start with the morning count."
 }

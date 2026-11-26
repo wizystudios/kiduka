@@ -254,8 +254,9 @@ export const SalesPage = () => {
 
   return (
     <div className="p-4 space-y-4 pb-24">
-      <header className="flex items-center justify-between gap-3">
-        <h2 className="text-xl font-bold">Mauzo</h2>
+      <section aria-label="Muhtasari wa mauzo" className="grid grid-cols-[minmax(0,2fr)_minmax(0,1fr)_auto] items-start gap-3 border-b border-border pb-4">
+        <div className="min-w-0"><p className="text-sm text-muted-foreground">Jumla ya mauzo</p><p className="text-xl font-bold text-success break-words">TSh {stats.totalRevenue.toLocaleString()}</p></div>
+        <div><p className="text-sm text-muted-foreground">Idadi ya mauzo</p><p className="text-xl font-bold">{stats.totalTx}</p></div>
         <DropdownMenu>
           <DropdownMenuTrigger asChild><Button size="icon" variant="ghost" className="h-11 w-11" aria-label="Pakua ripoti"><MoreVertical className="h-5 w-5" /></Button></DropdownMenuTrigger>
           <DropdownMenuContent align="end">
@@ -263,11 +264,6 @@ export const SalesPage = () => {
             <DropdownMenuItem onClick={handleExportPDF} disabled={!filteredSales.length}><FileText className="mr-2 h-4 w-4" />Pakua PDF</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
-      </header>
-
-      <section aria-label="Muhtasari wa mauzo" className="grid grid-cols-[minmax(0,2fr)_minmax(0,1fr)] gap-4 border-b border-border pb-4">
-        <div className="min-w-0"><p className="text-sm text-muted-foreground">Jumla ya mauzo</p><p className="text-xl font-bold text-success break-words">TSh {stats.totalRevenue.toLocaleString()}</p></div>
-        <div><p className="text-sm text-muted-foreground">Idadi ya mauzo</p><p className="text-xl font-bold">{stats.totalTx}</p></div>
       </section>
 
       {/* Period */}
@@ -347,7 +343,6 @@ export const SalesPage = () => {
           <div className="text-center py-12">
             <Calendar className="h-10 w-10 text-muted-foreground mx-auto mb-2" />
             <p className="text-sm font-medium">Hakuna mauzo</p>
-            <p className="text-xs text-muted-foreground">{periodLabel()}</p>
           </div>
         )}
       </div>} detail={<div className="sticky top-14 p-5"><h3 className="mb-5 text-lg font-bold">Mauzo #{selectedSale?.id.slice(0, 8).toUpperCase()}</h3>{saleDetail}</div>} />

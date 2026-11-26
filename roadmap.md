@@ -97,3 +97,5 @@
 ## Product catalog
 - [x] Sekta > Kundi > Chapa > Ukubwa on add/edit product, barcode auto-fill from shared registry, filters in Bidhaa and Mauzo ya Haraka, category drill-down report.
 - [ ] Registry starts empty (no invented barcodes); fills as shops save scanned products.
+
+- [ ] Rahisisha Kiswahili kilichobaki app nzima (kimesimamishwa kwa ombi la kubana credit)

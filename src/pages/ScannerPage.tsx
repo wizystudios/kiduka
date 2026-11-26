@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Home, CameraOff, Search, Plus, Minus, ShoppingCart, Edit2, Trash2, X, RotateCcw, Check, History, Activity } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
-import { FastBarcodeReader, isValidBarcode } from '@/lib/fastBarcodeReader';
+import { FastBarcodeReader, isValidBarcode, SCAN_HELP_AFTER_MS } from '@/lib/fastBarcodeReader';
 
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -62,6 +62,8 @@ export const ScannerPage = () => {
   const [cameraStatus, setCameraStatus] = useState<'starting' | 'permission-check' | 'requesting' | 'active' | 'blank' | 'paused' | 'error'>('starting');
   const [permissionState, setPermissionState] = useState<'unknown' | 'prompt' | 'granted' | 'denied' | 'unsupported'>('unknown');
   const [decodeAttempts, setDecodeAttempts] = useState(0);
+  const [scanSlow, setScanSlow] = useState(false);
+  const slowTimerRef = useRef<number | undefined>();
   const [lastCameraErrorName, setLastCameraErrorName] = useState<string | null>(null);
   const [videoAudit, setVideoAudit] = useState({ readyState: 0, width: 0, height: 0 });
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -203,6 +205,10 @@ export const ScannerPage = () => {
         videoRef.current.srcObject = stream;
         await videoRef.current.play().catch(() => undefined);
         setCameraStatus('active');
+        // No barcode within 3 seconds: say so and offer typing immediately.
+        const armSlow = () => { window.clearTimeout(slowTimerRef.current); setScanSlow(false);
+          slowTimerRef.current = window.setTimeout(() => { if (!cancelled) setScanSlow(true); }, SCAN_HELP_AFTER_MS); };
+        armSlow();
         setVideoAudit({
           readyState: videoRef.current.readyState,
           width: videoRef.current.videoWidth,
@@ -241,6 +247,8 @@ export const ScannerPage = () => {
             // Continuous camera should not keep adding the same item while it stays in frame.
             if (code === lastScanRef.current.code && now - lastScanRef.current.at < 4500) return;
             lastScanRef.current = { code, at: now };
+            window.clearTimeout(slowTimerRef.current); setScanSlow(false);
+            slowTimerRef.current = window.setTimeout(() => { if (!cancelled) setScanSlow(true); }, SCAN_HELP_AFTER_MS + 4500);
             scanProcessingRef.current = true;
             skipNextSearchRef.current = true;
             setSearchQuery(code);
@@ -272,6 +280,7 @@ export const ScannerPage = () => {
     })();
     return () => {
       cancelled = true;
+      window.clearTimeout(slowTimerRef.current); setScanSlow(false);
       if (blankTimer) window.clearInterval(blankTimer);
       try { reader.reset(); } catch {}
       try { streamRef.current?.getTracks().forEach(track => track.stop()); } catch {}
@@ -779,6 +788,13 @@ export const ScannerPage = () => {
           <div>Video: <span className="font-mono">{videoAudit.width}×{videoAudit.height} r{videoAudit.readyState}</span></div>
           {lastCameraErrorName && <div>Error: <span className="font-mono text-red-200">{lastCameraErrorName}</span></div>}
         </div>
+        )}
+
+        {scanSlow && cameraStatus === 'active' && !cameraError && (
+          <div role="status" className="absolute inset-x-4 bottom-32 z-20 flex flex-col items-center gap-2 rounded-3xl bg-background/95 p-3 text-center text-sm text-foreground">
+            <p>Barcode haijaonekana. Sogeza karibu, weka mwanga, au iandike.</p>
+            <Button size="sm" className="rounded-full" onClick={() => searchInputRef.current?.focus()}>Andika barcode</Button>
+          </div>
         )}
 
         {/* Green corner brackets */}

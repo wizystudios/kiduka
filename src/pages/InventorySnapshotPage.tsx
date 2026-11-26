@@ -182,10 +182,6 @@ export const InventorySnapshotPage = () => {
         </DropdownMenu>}
       </header>
 
-      <section className="flex items-baseline justify-between gap-3 border-b border-border pb-4">
-        <p className="text-sm text-muted-foreground">Aina za bidhaa</p><p className="text-xl font-bold">{products.length}</p>
-      </section>
-
       <div className="grid grid-cols-[minmax(0,3fr)_minmax(0,2fr)] gap-2">
         <Input type="date" aria-label="Tarehe ya hesabu" value={selectedDate} onChange={e => setSelectedDate(e.target.value)} max={format(new Date(), 'yyyy-MM-dd')} className="h-11 min-w-0 rounded-2xl text-base" />
         <Select value={view} onValueChange={setView}>
@@ -204,7 +200,7 @@ export const InventorySnapshotPage = () => {
             {hasClosingCount ? <CheckCircle2 className="h-4 w-4 text-success" /> : <ClipboardList className="h-4 w-4" />}Jioni
           </Button>
         </div>
-        <p className="text-xs text-muted-foreground">{hasClosingCount ? 'Hesabu zote zimehifadhiwa.' : hasOpeningCount ? 'Asubuhi imehifadhiwa. Jioni bado.' : 'Hesabu bado haijahifadhiwa.'}</p>
+        <p className="text-xs text-muted-foreground">{hasClosingCount ? 'Hesabu zote zimehifadhiwa.' : hasOpeningCount ? 'Jioni bado.' : 'Anza na hesabu ya asubuhi.'}</p>
       </section>}
 
       <div className="relative">
